@@ -75,6 +75,8 @@ const Timer = (() => {
   function tick() {
     const x = st();
     if (x.running && countdown() && remaining() <= 0) {
+      // tam odak: bitirmeden önce uygulama dışında geçen süre kontrol edilsin (sayaç duraklatılabilir)
+      if (x.phase === 'focus' && h.beforeFinish && h.beforeFinish()) { h.onTick && h.onTick(api.state()); return; }
       const endTime = x.resumedAt + (duration() * 1000 - x.accum);
       if (x.phase === 'focus') finishFocus(duration(), endTime);
       else finishBreak(endTime);
@@ -116,6 +118,21 @@ const Timer = (() => {
         h.onStart && h.onStart(x.phase, resumed);
       }
       tick();
+    },
+    // geçmiş bir anda duraklat (tam odakta uygulamadan çıkılan an); süre o ana kadar dolmuşsa dokunmaz
+    pauseAt(t) {
+      const x = st();
+      if (!x.running) return false;
+      t = Math.min(t, Date.now());
+      const run = Math.max(0, t - x.resumedAt);
+      if (countdown() && duration() * 1000 - (x.accum + run) <= 0) return false;
+      x.accum += run;
+      x.running = false;
+      x.resumedAt = null;
+      persist();
+      h.onPause && h.onPause();
+      tick();
+      return true;
     },
     // "Bitir": odakta oturumu kaydeder; molada molayı bitirir
     finish() {

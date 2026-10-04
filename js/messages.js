@@ -104,7 +104,7 @@ const Messages = (() => {
       '{kitten} kocaman gözleriyle sana bakıyor 🥺 Mola verince seninle oynamak istiyor.',
     ],
     meetVesper: ['Tanıştırayım: bu Vesper, benim gece arkadaşım 🐈‍⬛ Mavi gözleri yıldızlar kadar parlak.'],
-    meetKitten: ['Bu da minik {kitten}! 🧡 Kocaman gözlü, yerinde duramayan sarman bebeğimiz.'],
+    meetKitten: ['Bu da minik {kitten}! 🧡 Kocaman gözlü, yerinde duramayan sarı bebeğimiz.'],
     yilbasi: ['Mutlu yıllar {name}! 🎄 Yeni yılda bütün hayallerin gerçek olsun ✨'],
     bayram: ['Bayramın mübarek olsun {name} 🌙 Bugün kendine de güzel davran, olur mu?'],
     ulusal: ['Bayramımız kutlu olsun 🇹🇷 Geleceği kuran gençlerden biri de sensin {name}.'],
@@ -125,7 +125,7 @@ const Messages = (() => {
   };
 
   function fill(t) {
-    return t.replace(/\{name\}/g, Store.data.settings.name || 'canım').replace(/\{kitten\}/g, Store.data.settings.kittenName || 'Sarman');
+    return t.replace(/\{name\}/g, Store.data.settings.name || 'canım').replace(/\{kitten\}/g, Store.data.settings.kittenName || 'Güçlü');
   }
 
   function timeOfDay(d = new Date()) {

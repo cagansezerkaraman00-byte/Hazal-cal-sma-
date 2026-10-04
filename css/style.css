@@ -480,6 +480,16 @@ body.focusing #weather-pop { display: none !important; }
 body.focusing .focus-intent:not(:empty) { display: block; }
 body.focusing .park { display: flex; }
 body.focusing .focus-exit { display: block; }
+/* tam odak: sayacı durdurmadan açılabilen uygulamalar */
+.allow-apps { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin: 10px 0 2px; }
+.allow-lbl { width: 100%; text-align: center; font-size: .75rem; font-weight: 800; color: var(--muted); }
+.allow-app {
+  display: inline-flex; align-items: center; gap: 4px; padding: 6px 11px; border-radius: 99px; text-decoration: none;
+  border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--text); font-weight: 800; font-size: .8rem;
+}
+.allow-app:hover { border-color: var(--accent-line); background: var(--accent-soft); }
+.allow-set { margin: -2px 0 8px 52px; }
+@media (max-width: 520px) { .allow-set { margin-left: 0; } }
 body.focusing #app { padding-bottom: 24px; }
 
 /* ---------- Karşılama kartı ---------- */

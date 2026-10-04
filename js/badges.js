@@ -85,7 +85,7 @@ const Badges = (() => {
     // Luna ve özel günler
     { id: 'luna10', cat: 'ozel', e: '🐟', n: "Luna'nın Dostu", d: "Luna'yı 10 kez besle", prog: (c) => c.fed, max: 10, msg: 'Kedilerin bile seni bu kadar sevmesine şaşmamalı 🐟' },
     { id: 'luna50', cat: 'ozel', e: '🐠', n: 'Kedi Kraliçesi', d: "Luna'yı 50 kez besle", prog: (c) => c.fed, max: 50, msg: 'Luna senin en sadık çalışma arkadaşın, ben de en sadık hayranın 💛' },
-    { id: 'friends', cat: 'ozel', e: '🐈‍⬛', n: 'Kedi Ailesi', d: 'Vesper ve minik sarmanla tanış', test: (c) => c.friends, msg: 'Vesper ve minik sarman da geldi 🐈‍⬛ Bu küçük dünya senin için kuruldu.' },
+    { id: 'friends', cat: 'ozel', e: '🐈‍⬛', n: 'Kedi Ailesi', d: 'Vesper ve minik Güçlü ile tanış', test: (c) => c.friends, msg: 'Vesper ve minik Güçlü de geldi 🐈‍⬛ Bu küçük dünya senin için kuruldu.' },
     { id: 'bayram', cat: 'ozel', e: '🌙', n: 'Bayram Çalışkanı', d: 'Bir bayram gününde çalış', test: (c) => c.special.has('ramazan') || c.special.has('kurban'), msg: 'Bayramda bile çalıştın 🌙 Bayramın mübarek olsun güzelim, emeğin de.' },
     { id: 'newyear', cat: 'ozel', e: '🎆', n: 'Yeni Yıl Yıldızı', d: 'Yılbaşı haftasında çalış', test: (c) => c.special.has('yilbasi'), msg: 'Yeni yıla çalışarak girdin 🎆 Bu yıl senin yılın olacak, biliyorum.' },
     { id: 'valentine', cat: 'ozel', e: '💘', n: 'Kalbimin Sahibi', d: "14 Şubat'ta çalış", test: (c) => c.special.has('sevgililer'), msg: 'Sevgililer Günü’nde bile ders 💘 Sen hem kalbimin hem hedeflerinin sahibisin.' },

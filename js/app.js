@@ -228,6 +228,57 @@
     '🍎 Hafif bir atıştırmalık iyi gelir',
   ];
 
+  // ======================================================================
+  // Tam odak: izinli uygulamalar (yapay zekâ, YouTube, Spotify)
+  // ======================================================================
+  // Web uygulaması hangi uygulamaya geçildiğini göremez; bu yüzden izinli uygulamalar
+  // odak ekranındaki düğmelerden açılır ve o çıkış "izinli" diye işaretlenir.
+  const AWAY_GRACE = 15000; // kısa bakışlar sayılmaz
+  const APPS = {
+    chatgpt: { e: '🤖', n: 'ChatGPT', url: 'https://chatgpt.com/' },
+    gemini: { e: '✨', n: 'Gemini', url: 'https://gemini.google.com/app' },
+    claude: { e: '🧡', n: 'Claude', url: 'https://claude.ai/new' },
+    youtube: { e: '▶️', n: 'YouTube', url: 'https://www.youtube.com/' },
+    spotify: { e: '🎧', n: 'Spotify', url: 'https://open.spotify.com/' },
+  };
+  let allowExit = null; // {app, at}: izinli düğmeye dokunulduğu an
+  const allowedApps = () => (D().settings.allowedApps || []).filter((k) => APPS[k]);
+  function appUrl(k) {
+    if (k === 'spotify') { const p = spotifyParts(D().settings.spotify); if (p) return `https://open.spotify.com/${p.type}/${p.id}`; }
+    return APPS[k].url;
+  }
+  function renderAllowApps() {
+    const list = allowedApps();
+    $('#allow-apps').innerHTML = list.length ? `<span class="allow-lbl">Sayaç durmadan aç:</span>${list.map((k) => `<a class="allow-app" href="${appUrl(k)}" target="_blank" rel="noopener" data-app="${k}">${APPS[k].e} ${APPS[k].n}</a>`).join('')}` : '';
+    $('#allow-chips').innerHTML = Object.keys(APPS).map((k) => `<button class="chip ${list.includes(k) ? 'active' : ''}" type="button" data-app="${k}" aria-pressed="${list.includes(k)}">${APPS[k].e} ${APPS[k].n}</button>`).join('');
+    $('#allow-set').classList.toggle('hidden', !D().settings.pauseOnLeave);
+  }
+  // uygulama dışındaki süreyi değerlendir: tam odakta izinsiz çıkış 15 sn'yi geçtiyse sayaç o anda durur
+  function checkAway() {
+    const x = D().timer, a = x && x.away;
+    if (!a || a.app || a.paused || !D().settings.pauseOnLeave) return false;
+    const s = Timer.state();
+    if (!(s.running && s.phase === 'focus') || Date.now() - a.at <= AWAY_GRACE) return false;
+    if (!Timer.pauseAt(a.at + AWAY_GRACE)) return false;
+    a.paused = true;
+    save();
+    return true;
+  }
+  // geri dönüş: duruma göre tek bir nazik cümle
+  function welcomeBack() {
+    const x = D().timer, a = x && x.away;
+    if (!a) return;
+    checkAway();
+    delete x.away;
+    save();
+    const m = Math.round((Date.now() - a.at) / 60000);
+    let text = '';
+    if (a.paused) text = `Hoş geldin! Uygulamadan çıkınca sayaç durdu ⏸ Hazır olduğunda "Devam"a bas, kaldığımız yerden sürdürelim 🐾`;
+    else if (a.app && m >= 1) text = `${APPS[a.app].n}'dan hoş geldin ${APPS[a.app].e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
+    else if (!a.app && m >= 1 && !D().settings.pauseOnLeave) text = `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`;
+    if (text) { Scene.say(text); lastMsgAt = Date.now(); }
+  }
+
   function renderTimer(s) {
     $$('#kind-seg button').forEach((b) => b.classList.toggle('active', b.dataset.kind === s.kind));
     const isBreak = s.phase !== 'focus';
@@ -259,6 +310,8 @@
       if (focusing) window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     $('#focus-intent').textContent = !isBreak && s.intent ? '🎯 ' + s.intent : '';
+    const showApps = s.running && !isBreak && D().settings.pauseOnLeave && allowedApps().length > 0;
+    if (showApps !== !$('#allow-apps').classList.contains('hidden')) $('#allow-apps').classList.toggle('hidden', !showApps);
     const ii = $('#intent-input');
     if (document.activeElement !== ii && ii.value !== (s.intent || '')) ii.value = s.intent || '';
     // mini sayaç ve sekme başlığı
@@ -297,6 +350,7 @@
     onPause() { syncSceneMode(); lockScreen(false); },
     onReset() { syncSceneMode(); lockScreen(false); },
     onTooShort() { toast('⏱️', '1 dakikadan kısa oturumlar kaydedilmez'); },
+    beforeFinish: () => checkAway(),
     onFocusDone(session) {
       lockScreen(false);
       Sound.chime();
@@ -974,7 +1028,7 @@
     $('#set-focusmode').checked = s.focusMode;
     $('#set-quiet').checked = s.quietFocus;
     $('#set-pauseleave').checked = s.pauseOnLeave;
-    $('#set-kitten').value = s.kittenName || 'Sarman';
+    $('#set-kitten').value = s.kittenName || 'Güçlü';
     $('#set-weather').checked = s.weather;
     $$('#theme-seg button').forEach((b) => b.classList.toggle('active', b.dataset.theme === s.theme));
     $('#city-chips').innerHTML = CITIES.map(([n, la, lo]) => `<button class="chip ${Math.abs(la - s.lat) < 0.05 && Math.abs(lo - s.lon) < 0.05 ? 'active' : ''}" data-lat="${la}" data-lon="${lo}" data-name="${n}">${n}</button>`).join('');
@@ -982,6 +1036,7 @@
     $('#loc-text').textContent = `Şu an: ${s.lat.toFixed(2)}, ${s.lon.toFixed(2)} · Gün doğumu ${fmtDayMin(sun.sunrise)} · Gün batımı ${fmtDayMin(sun.sunset)}`;
     renderSubjectEdit();
     renderBackupInfo();
+    renderAllowApps();
   }
 
   // son yedek ne zaman alındı (yedek, verinin tek güvencesi)
@@ -1021,8 +1076,26 @@
     bool('#set-autofocus', 'autoFocus');
     bool('#set-sound', 'sound');
     bool('#set-quiet', 'quietFocus');
-    bool('#set-pauseleave', 'pauseOnLeave');
-    $('#set-kitten').addEventListener('change', (e) => { D().settings.kittenName = e.target.value.trim().slice(0, 20) || 'Sarman'; e.target.value = D().settings.kittenName; save(); });
+    $('#set-pauseleave').addEventListener('change', (e) => {
+      D().settings.pauseOnLeave = e.target.checked; save();
+      renderAllowApps(); renderTimer(Timer.state());
+    });
+    $('#allow-chips').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-app]');
+      if (!b) return;
+      const set = new Set(allowedApps());
+      set.has(b.dataset.app) ? set.delete(b.dataset.app) : set.add(b.dataset.app);
+      D().settings.allowedApps = Object.keys(APPS).filter((k) => set.has(k)); // sabit sıra
+      save(); renderAllowApps(); renderTimer(Timer.state());
+    });
+    // izinli uygulama düğmesi: bu çıkış sayacı durdurmaz (bağlantı o anki Spotify listesine güncellenir)
+    $('#allow-apps').addEventListener('click', (e) => {
+      const a = e.target.closest('a[data-app]');
+      if (!a) return;
+      a.href = appUrl(a.dataset.app);
+      allowExit = { app: a.dataset.app, at: Date.now() };
+    });
+    $('#set-kitten').addEventListener('change', (e) => { D().settings.kittenName = e.target.value.trim().slice(0, 20) || 'Güçlü'; e.target.value = D().settings.kittenName; save(); });
     $('#call-cats').addEventListener('click', (e) => {
       const b = e.target.closest('button[data-visit]');
       if (!b) return;
@@ -1275,6 +1348,8 @@
     if (window.Diag) Diag.init(App);
     renderSubjectSelects();
     Timer.init(timerHandlers);
+    renderAllowApps();
+    welcomeBack(); // uygulama dışındayken sayfa kapanmışsa (iOS) dönüşte değerlendir
     syncSceneMode();
     if (Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
 
@@ -1335,30 +1410,25 @@
       const k = U.dateKey(new Date());
       if (k !== lastDay) { lastDay = k; renderHome(); if (currentTab === 'plan' && window.PlanUI) PlanUI.render(); }
     }, 60000);
-    // Uygulamadan çıkış: varsayılan nazik "hoş geldin", sıkı modda sayaç duraklar (YPT gibi)
-    let hiddenAt = 0;
+    // Uygulamadan çıkış: tam odakta izinli uygulamalar dışında sayaç durur, değilse nazik "hoş geldin"
+    let awayTimer = 0;
     document.addEventListener('visibilitychange', () => {
       const s = Timer.state();
       const focusing = s.running && s.phase === 'focus';
       if (document.hidden) {
-        if (focusing) {
-          hiddenAt = Date.now();
-          if (D().settings.pauseOnLeave) Timer.toggle();
-        }
+        if (!focusing) return;
+        const app = allowExit && Date.now() - allowExit.at < 15000 ? allowExit.app : null;
+        allowExit = null;
+        D().timer.away = { at: Date.now(), app }; // sayfa arka planda kapatılsa da açılışta değerlendirilir
+        save();
+        // arka planda kod çalışmaya devam ediyorsa (bilgisayar sekmesi) süre dolunca hemen durdur
+        clearTimeout(awayTimer);
+        if (D().settings.pauseOnLeave && !app) awayTimer = setTimeout(checkAway, AWAY_GRACE + 500);
         return;
       }
-      if (focusing) lockScreen(true);
-      if (hiddenAt) {
-        const away = Date.now() - hiddenAt;
-        hiddenAt = 0;
-        if (away > 60000) {
-          const m = Math.round(away / 60000);
-          Scene.say(D().settings.pauseOnLeave
-            ? `Hoş geldin! Sayaç seni bekledi ⏸ Hazır olunca "Devam"a bas, kaldığımız yerden sürdürelim.`
-            : `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`);
-          lastMsgAt = Date.now();
-        }
-      }
+      clearTimeout(awayTimer);
+      welcomeBack();
+      if (Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
     });
 
     let saved = 'home';

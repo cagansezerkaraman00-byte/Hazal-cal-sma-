@@ -20,7 +20,7 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - Sen çalışırken kitabının ve fenerinin başına yatar; molada etrafta dolaşır, arada **yün yumağıyla oynar** 🧶; akşamları kıvrılıp uyur (Zzz)
 - Ona dokununca zıplar, miyavlar, kalpler çıkar
 - Her odak oturumunda 🐟 balık kazanırsın, Luna'yı besleyebilirsin
-- **Vesper** (mavi gözlü simsiyah kedi) ve **sarman yavru** (kocaman gözlü bebek kedi) arada bir uğrar: Vesper gezinip Luna'nın yanına oturur, yavru zıplaya zıplaya gelip kıvrılıp uyur, geceleri hep birlikte uyurlar. Odaklanırken rahatsız etmezler; Ayarlar → Kediler'den çağrılabilir, yavruya isim konabilir
+- **Vesper** (mavi gözlü simsiyah kedi) ve sarı yavru **Güçlü** (kocaman gözlü bebek kedi) arada bir uğrar: Vesper gezinip Luna'nın yanına oturur, yavru zıplaya zıplaya gelip kıvrılıp uyur, geceleri hep birlikte uyurlar. Odaklanırken rahatsız etmezler; Ayarlar → Kediler'den çağrılabilir, yavruya isim konabilir
 
 **🎯 Sade odak ekranı**
 - Başlat'a basınca her şey gizlenir: sadece Luna, sayaç, ders ve oturum hedefi kalır
@@ -31,7 +31,7 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 **⏱️ YPT'den esinlenen özellikler** (sosyal kısımlar yok, sadece Hazal için)
 - **Derslerim** kutucukları: dokununca sayaç o dersle başlar, bugün kaç dakika çalışıldığı yazar
 - **24 saatlik zaman çizelgesi** (bugün) ve **haftalık zaman çizelgesi**: hangi saatte hangi ders
-- İsteğe bağlı **sıkı mod**: uygulamadan çıkınca sayaç duraklar; varsayılanda Luna sadece nazikçe "hoş geldin" der
+- **Tam odak** (varsayılan açık): uygulamadan çıkınca sayaç 15 saniye sonra durur, dönüşte Luna nazikçe "Devam" demeni bekler. **İzinli uygulamalar** (ChatGPT, Gemini, Claude, YouTube, Spotify) odak ekranındaki düğmelerden açılırsa sayaç hiç durmaz; liste Ayarlar → Odak'tan seçilir. Web uygulaması hangi uygulamaya geçildiğini göremediği için izinli çıkış bu düğmelerle işaretlenir; sayfa arka planda kapansa bile dönüşte doğru hesaplanır
 
 **🍅 Zamanlayıcı**
 - Pomodoro (odak / kısa mola / uzun mola) ve serbest kronometre

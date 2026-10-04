@@ -75,6 +75,7 @@
             </div>
             <div class="dots" id="cycle-dots"></div>
             <div class="focus-intent" id="focus-intent"></div>
+            <div class="allow-apps hidden" id="allow-apps" aria-label="Sayacı durdurmadan açılabilen uygulamalar"></div>
             <div class="setup" id="timer-setup">
               <div class="subject-row">
                 <select id="subject-select" aria-label="Ders"></select>
@@ -290,11 +291,11 @@
             </ul>
           </details>
           <details>
-            <summary>🐾 Ben, Vesper ve minik sarman</summary>
+            <summary>🐾 Ben, Vesper ve minik Güçlü</summary>
             <ul>
               <li>Bana dokunursan zıplarım 💕 Her odak oturumunda bir 🐟 kazanırsın; üstteki balık düğmesiyle beni besleyebilirsin.</li>
               <li>Molada ve boştayken arada yün yumağıyla oynarım; yumağa sen de dokunabilirsin 🧶 Akşamları daha çok kıvrılıp uyurum.</li>
-              <li><b>Vesper</b> (mavi gözlü siyah kedi) ve <b>sarman yavru</b> arada bir uğrar; geceleri yanımda uyurlar. Odaklanırken seni rahatsız etmezler. Ayarlar → Kediler'den çağırabilir, yavruya isim koyabilirsin.</li>
+              <li><b>Vesper</b> (mavi gözlü siyah kedi) ve sarı yavrumuz <b>Güçlü</b> arada bir uğrar; geceleri yanımda uyurlar. Odaklanırken seni rahatsız etmezler. Ayarlar → Kediler'den çağırabilir, yavruya isim koyabilirsin.</li>
               <li>Dünya gerçek zamanlı: güneş ve ay bulunduğun şehre göre hareket eder, mevsimler aya göre değişir (kışın kar, ilkbaharda çiçekli ağaç, yazın ayçiçekleri, sonbaharda düşen yapraklar). Geceleri zambaklar açar, mevsimin takımyıldızı görünür. Yılbaşı, bayramlar, ulusal bayramlar ve 14 Şubat'ta sahne süslenir.</li>
             </ul>
           </details>
@@ -341,7 +342,7 @@
           <details>
             <summary>❓ Sık sorulanlar</summary>
             <ul>
-              <li><b>Sayfayı kapatırsam sayaç durur mu?</b> Hayır; geri geldiğinde doğru süreyi gösterir. İstersen Ayarlar → Odak → <b>sıkı mod</b> ile uygulamadan çıkınca duraklatabilirsin.</li>
+              <li><b>Sayfayı kapatırsam sayaç durur mu?</b> Hayır; geri geldiğinde doğru süreyi gösterir. Ama <b>tam odak</b> açıksa (varsayılan) uygulamadan çıkınca 15 saniye sonra durur; geri gelince "Devam" demen yeterli. Yapay zekâ, YouTube ve Spotify'ı odak ekranındaki düğmelerden açarsan sayaç hiç durmaz. Ayarlar → Odak'tan kapatabilir ya da izinli uygulamaları seçebilirsin.</li>
               <li><b>Bildirim gelmiyor?</b> Ayarlar → Odak → Bildirim'i aç ve izin ver. iPhone'da bildirimler için uygulamayı Ana Ekrana eklemiş olman gerekir.</li>
               <li><b>Bir şey çalışmıyor mu (hava durumu, Spotify…)?</b> Ayarlar → <b>Tanılama</b>'yı aç: neyin neden çalışmadığını orada yazarım. <b>Bağlantıları test et</b> ile internetin hangi servislere ulaştığını görebilir, <b>Raporu kopyala</b> ile durumu paylaşabilirsin.</li>
               <li><b>Luna çok konuşuyor / hiç konuşmuyor?</b> Ayarlar → Odak'tan konuşma sıklığını değiştir; odaklanırken zaten sessizim.</li>
@@ -379,15 +380,19 @@
             <h2>🎯 Odak</h2>
             <label class="switch"><input type="checkbox" id="set-focusmode"> Başlayınca sade odak ekranına geç</label>
             <label class="switch"><input type="checkbox" id="set-quiet"> Odaklanırken Luna sessiz kalsın</label>
-            <label class="switch"><input type="checkbox" id="set-pauseleave"> Uygulamadan çıkınca sayacı duraklat (sıkı mod)</label>
+            <label class="switch"><input type="checkbox" id="set-pauseleave"> 🔒 Tam odak: uygulamadan çıkınca sayaç dursun</label>
+            <div class="allow-set" id="allow-set">
+              <p class="muted small">Bu uygulamaları odak ekranındaki düğmelerden açarsan sayaç durmaz. Başka bir yere geçersen 15 saniye sonra durur; ekranı kilitlemek de çıkmak sayılır (odaklanırken ekran açık kalır).</p>
+              <div class="chips" id="allow-chips"></div>
+            </div>
             <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
             <label class="switch"><input type="checkbox" id="set-notify"> Bildirim gönder (uygulama arka plandayken)</label>
             <label class="field">Luna molada/boşta ne sıklıkla konuşsun? (dakika, 0 = hiç) <input type="number" id="set-msg" min="0" max="240"></label>
           </div>
           <div class="card">
             <h2>🐈 Kediler</h2>
-            <p class="muted small">Luna ana karakter; Vesper (mavi gözlü siyah kedi) ve sarman yavru arada bir uğrar. Molada ve boştayken gelirler, odaklanırken seni rahatsız etmezler.</p>
-            <label class="field">Sarman yavrunun adı <input id="set-kitten" maxlength="20"></label>
+            <p class="muted small">Luna ana karakter; Vesper (mavi gözlü siyah kedi) ve sarı yavru Güçlü arada bir uğrar. Molada ve boştayken gelirler, odaklanırken seni rahatsız etmezler.</p>
+            <label class="field">Sarı yavrunun adı <input id="set-kitten" maxlength="20"></label>
             <div class="row" id="call-cats">
               <button class="btn soft" data-visit="vesper">🐈‍⬛ Vesper'ı çağır</button>
               <button class="btn soft" data-visit="kitten">🧡 Yavruyu çağır</button>

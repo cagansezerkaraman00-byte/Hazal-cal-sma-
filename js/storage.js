@@ -86,8 +86,9 @@ const Store = (() => {
       notify: false,
       focusMode: true,   // başlayınca sade odak ekranı
       quietFocus: true,  // odaklanırken Luna konuşmasın
-      pauseOnLeave: false, // sıkı mod: uygulamadan çıkınca sayaç duraklar
-      kittenName: 'Sarman', // sarman yavrunun adı
+      pauseOnLeave: true, // tam odak: uygulamadan çıkınca sayaç durur (izinli uygulamalar hariç)
+      allowedApps: ['chatgpt', 'gemini', 'claude', 'youtube', 'spotify'], // tam odakta sayacı durdurmayan uygulamalar
+      kittenName: 'Güçlü', // sarı yavrunun adı
       theme: 'light',    // light | dark | auto (gün batımında koyu)
       weather: true,     // günlük hava durumu
       city: 'İstanbul',
@@ -135,6 +136,8 @@ const Store = (() => {
     if (!obj || typeof obj !== 'object') return def;
     const out = { ...def, ...obj };
     out.settings = { ...def.settings, ...(obj.settings || {}) };
+    if (!Array.isArray(out.settings.allowedApps)) out.settings.allowedApps = def.settings.allowedApps.slice();
+    if (out.settings.kittenName === 'Sarman') out.settings.kittenName = 'Güçlü'; // yavrunun yeni adı
     for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards']) {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }
