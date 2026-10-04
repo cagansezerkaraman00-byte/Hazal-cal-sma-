@@ -16,6 +16,7 @@ const Timer = (() => {
       firstStart: null,
       cycle: keep.cycle || 0,
       subjectId: keep.subjectId || (Store.data.subjects[0] && Store.data.subjects[0].id) || '',
+      intent: keep.intent || '',  // "bu oturumda ne yapacağım?"
     };
   }
 
@@ -47,6 +48,7 @@ const Timer = (() => {
       end: endTime,
       minutes: Math.max(1, Math.round(sec / 60)),
       subjectId: x.subjectId,
+      intent: x.intent || '',
       kind: x.kind,
     };
     const keep = { cycle: x.cycle + 1, subjectId: x.subjectId };
@@ -129,18 +131,19 @@ const Timer = (() => {
     },
     reset() {
       const x = st();
-      Store.data.timer = fresh(x.kind, { cycle: x.cycle, subjectId: x.subjectId });
+      Store.data.timer = fresh(x.kind, { cycle: x.cycle, subjectId: x.subjectId, intent: x.intent });
       persist();
       h.onReset && h.onReset();
       tick();
     },
     setKind(kind) {
       const x = st();
-      Store.data.timer = fresh(kind, { subjectId: x.subjectId });
+      Store.data.timer = fresh(kind, { subjectId: x.subjectId, intent: x.intent });
       persist();
       tick();
     },
     setSubject(id) { st().subjectId = id; persist(); },
+    setIntent(text) { st().intent = String(text || '').slice(0, 80); persist(); },
     duration,
   };
   return api;

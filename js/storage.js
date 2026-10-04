@@ -63,7 +63,8 @@ const Store = (() => {
       autoFocus: false,
       sound: true,
       notify: false,
-      lunaColor: 'gece',
+      focusMode: true,   // başlayınca sade odak ekranı
+      quietFocus: true,  // odaklanırken Luna konuşmasın
       lat: 41.01,
       lon: 28.97,
       spotify: 'https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn',

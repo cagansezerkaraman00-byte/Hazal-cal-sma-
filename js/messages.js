@@ -74,7 +74,7 @@ const Messages = (() => {
       'Balığımız kalmadı 🥺 Bir odak oturumu tamamlarsan bir balık kazanırsın!',
     ],
     welcome: [
-      'Merhaba {name}! Ben Luna 🐈‍⬛ Seninle birlikte çalışacağım. Hadi ilk oturumu başlatalım!',
+      'Merhaba {name}! Ben Luna 🤍 Bundan sonra derslerinde hep yanındayım. Hadi ilk oturumu başlatalım!',
     ],
     comeback: [
       'Seni özledim {name}! Bugün kısa bir oturumla başlamaya ne dersin?',

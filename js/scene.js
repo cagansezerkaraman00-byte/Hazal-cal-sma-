@@ -1,98 +1,162 @@
 /* Gökyüzü sahnesi: gerçek saate göre güneş/ay, yıldızlar, bulutlar ve pixel art Luna. */
 
 const Scene = (() => {
-  // ---------- Sprite'lar (k: gövde, d: koyu, w: beyaz, p: pembe, e: göz, y: yıldız tasma) ----------
+  // ---------- Luna'nın sprite'ları ----------
+  // Gerçek Luna: bembeyaz, uzun tüylü, kehribar gözlü, pembe burunlu ve pembe kulaklı.
+  // o: dış hat, w: beyaz tüy, s: tüy gölgesi, p: pembe, e: kehribar göz, k: göz bebeği
+  const PART = {
+    head: [
+      '..o........o..',
+      '..oo......oo..',
+      '..opo....opo..',
+      '..oppo..oppo..',
+      '.owppooooppwo.',
+      '.owwwwwwwwwwo.',
+      'oowwwwwwwwwwoo',
+      'owweewwwweewwo',
+      'owwekwwwwkewwo',
+      'oswwwwppwwwwso',
+      '.oswwwwwwwwso.',
+      '..oowwwwwwoo..',
+    ],
+    loafBody: [
+      '......o...o.o......',
+      '....oowoooowoo.....',
+      '...owwwwwwwwwwoo...',
+      '..owwwwwwwwwwwwwo..',
+      '.owwwwwwwwwwwwwwwo.',
+      'owwwwwwwwwwwwwwwwso',
+      'owwwwwwwwwwwwwwwwso',
+      'owwwwwwwwwwwwwwwsso',
+      'owwwwwwwwwwwwwwssso',
+      'owwwwwwwwwwwwwsssso',
+      'oswwwwwwwwwwwssssso',
+      'osswwwwwwwwsssssso.',
+      '.oooooooooooooooo..',
+    ],
+    ruff: [
+      'owwwwwwwwwwww',
+      'owwswwwwswwww',
+      'oswwwwwwwwwww',
+    ],
+    pawsLoaf: [
+      '.owwwoowwwwo',
+      '..oooo.oooo.',
+    ],
+    tailLoafA: [
+      '.....oo.',
+      '....owwo',
+      'oooowwso',
+      'owwwwsso',
+      '.oooooo.',
+    ],
+    tailLoafB: [
+      '........',
+      '.....ooo',
+      'ooooowwo',
+      'owwwwsso',
+      '.oooooo.',
+    ],
+    walkBody: [
+      '....o..o...o.......',
+      '..oowoowoooooooooo.',
+      '.owwwwwwwwwwwwwwwwo',
+      'owwwwwwwwwwwwwwwwwo',
+      'owwwwwwwwwwwwwwwwwo',
+      'oswwwwwwwwwwwwwwwso',
+      '.osswwwwwwwwwwwssso',
+      '..ooossssssssssooo.',
+    ],
+    legsA: [
+      '.owo..owo....owo..owo.',
+      '.owo..owo....owo..owo.',
+      '.owwo.owwo...owwo.owwo',
+      '.oooo.oooo...oooo.oooo',
+    ],
+    legsB: [
+      'owo....owo..owo....owo',
+      'owo....owo..owo....owo',
+      'owwo...owwo.owwo...owwo',
+      'oooo...oooo.oooo...oooo',
+    ],
+    tailWalkA: [
+      '..ooo...',
+      '.owwwo..',
+      'owwwwwo.',
+      'owwwwso.',
+      '.owwwo..',
+      '..owwo..',
+      '..owwwo.',
+      '...owwwo',
+      '....owwo',
+    ],
+    tailWalkB: [
+      '........',
+      '.ooo....',
+      'owwwoo..',
+      'owwwwwo.',
+      '.owwwso.',
+      '..owwwo.',
+      '..owwwo.',
+      '...owwwo',
+      '....owwo',
+    ],
+  };
+
+  function blank(w, h) { return Array.from({ length: h }, () => '.'.repeat(w)); }
+  function put(base, part, x, y) {
+    const out = base.map((r) => r.split(''));
+    part.forEach((row, j) => {
+      [...row].forEach((ch, i) => {
+        if (ch !== '.' && out[y + j] && x + i < out[y + j].length && x + i >= 0) out[y + j][x + i] = ch;
+      });
+    });
+    return out.map((r) => r.join(''));
+  }
+  function closeEyes(rows) {
+    let first = true;
+    return rows.map((r) => {
+      if (!/[ek]/.test(r)) return r;
+      const res = first ? r.replace(/[ek]/g, 'w') : r.replace(/[ek]/g, 'o');
+      first = false;
+      return res;
+    });
+  }
+
+  function buildLuna() {
+    const S = {};
+    const loaf = (tail, sleeping) => {
+      let b = blank(33, 17);
+      b = put(b, PART.loafBody, 8, 3);
+      b = put(b, tail, 24, 11);
+      b = put(b, PART.ruff, 1, sleeping ? 13 : 12);
+      b = put(b, sleeping ? closeEyes(PART.head) : PART.head, 0, sleeping ? 3 : 1);
+      b = put(b, PART.pawsLoaf, 1, 15);
+      return b;
+    };
+    S.loafA = loaf(PART.tailLoafA);
+    S.loafB = loaf(PART.tailLoafB);
+    S.sleep = loaf(PART.tailLoafB, true);
+    const walk = (legs, tail) => {
+      let b = blank(36, 19);
+      b = put(b, tail, 0, 0);
+      b = put(b, PART.walkBody, 4, 7);
+      b = put(b, legs, 4, 15);
+      b = put(b, PART.head, 20, 2);
+      return b;
+    };
+    S.walkA = walk(PART.legsA, PART.tailWalkA);
+    S.walkB = walk(PART.legsB, PART.tailWalkB);
+    return S;
+  }
+
+  const LUNA = buildLuna();
+  LUNA.loafBlink = closeEyes(LUNA.loafA);
+  LUNA.walkBlinkA = closeEyes(LUNA.walkA);
+  LUNA.walkBlinkB = closeEyes(LUNA.walkB);
+
+  // Diğer küçük çizimler
   const SPR = {
-    walkA: [
-      '................k...k.',
-      '...............kpk.kpk',
-      '...............kkkkkkk',
-      '..k............kekkekk',
-      '.k.............kkkpkkk',
-      '.k.............kkwwwkk',
-      '.k....kkkkkkkkkkyyykk.',
-      '..k..kkkkkkkkkkkkkkk..',
-      '...kkkkkkkkkkkkkkkkw..',
-      '....kkkkkkkkkkkkkkww..',
-      '.....kkkkkkkkkkkkkk...',
-      '.....kk.kk....kk.kk...',
-      '.....kk.kk....kk.kk...',
-      '.....ww.ww....ww.ww...',
-    ],
-    walkB: [
-      '................k...k.',
-      '...............kpk.kpk',
-      '...............kkkkkkk',
-      '...k...........kekkekk',
-      '..k............kkkpkkk',
-      '.k.............kkwwwkk',
-      '.k....kkkkkkkkkkyyykk.',
-      '..k..kkkkkkkkkkkkkkk..',
-      '...kkkkkkkkkkkkkkkkw..',
-      '....kkkkkkkkkkkkkkww..',
-      '.....kkkkkkkkkkkkkk...',
-      '....kk..kk....kk..kk..',
-      '...kk....kk..kk....kk.',
-      '...ww....ww..ww....ww.',
-    ],
-    sitA: [
-      '..........k...k.',
-      '.........kpk.kpk',
-      '.........kkkkkkk',
-      '.........kekkekk',
-      '.........kkkpkkk',
-      '.........kkwwwkk',
-      '..........kyyyk.',
-      '.........kkkkkk.',
-      '........kkkkkwk.',
-      '.......kkkkkkwk.',
-      '......kkkkkkkwk.',
-      '......kkkkkkkwk.',
-      '.kk...kkkkkkkkk.',
-      'k..k..kkkkkkkkk.',
-      '...kkkkkkkwk.wk.',
-      '.....kkkkkww.ww.',
-    ],
-    sitB: [
-      '..........k...k.',
-      '.........kpk.kpk',
-      '.........kkkkkkk',
-      '.........kekkekk',
-      '.........kkkpkkk',
-      '.........kkwwwkk',
-      '..........kyyyk.',
-      '.........kkkkkk.',
-      '........kkkkkwk.',
-      '.......kkkkkkwk.',
-      '......kkkkkkkwk.',
-      '......kkkkkkkwk.',
-      '......kkkkkkkkk.',
-      '......kkkkkkkkk.',
-      'kkkkkkkkkkwk.wk.',
-      '.....kkkkkww.ww.',
-    ],
-    sleepA: [
-      '..........k..k....',
-      '.........kpkkpk...',
-      '...kkkkkkkkkkkkk..',
-      '..kkkkkkkkkdkkdk..',
-      '.kkkkkkkkkkkkpkk..',
-      '.kkkkkkkkkkkwwkk..',
-      'kkkkkkkkkkkkkkkk..',
-      'kkkkkkkkkkkkkkkkk.',
-      '.kwwkkkkkkkkkkkk..',
-    ],
-    sleepB: [
-      '..................',
-      '..........k..k....',
-      '...kkkkkkkpkkpk...',
-      '..kkkkkkkkkdkkdk..',
-      '.kkkkkkkkkkkkpkk..',
-      '.kkkkkkkkkkkwwkk..',
-      'kkkkkkkkkkkkkkkkk.',
-      'kkkkkkkkkkkkkkkkk.',
-      '.kwwkkkkkkkkkkkk..',
-    ],
     book: [
       '.bbbb.bbbb.',
       'bwwwwbwwwwb',
@@ -121,19 +185,12 @@ const Scene = (() => {
     ],
   };
 
-  const PALETTES = {
-    gece:    { k: '#2d2a44', d: '#13111e', w: '#ece7fa', p: '#f5a3c0', e: '#ffd84d', y: '#ffcf3f' },
-    gri:     { k: '#8d91a8', d: '#4b4e62', w: '#f4f2fa', p: '#f5a3c0', e: '#7cff9b', y: '#ffcf3f' },
-    turuncu: { k: '#e8913a', d: '#8f4a12', w: '#fff3e2', p: '#ff9db3', e: '#7be36f', y: '#7ad3ff' },
-    beyaz:   { k: '#f2f0f8', d: '#9a96ad', w: '#ffffff', p: '#ffb3c8', e: '#5fc2ff', y: '#ffcf3f' },
-    krem:    { k: '#dcc19a', d: '#8c6b45', w: '#fff8ec', p: '#f39bb2', e: '#4fb0ff', y: '#ff7eb6' },
-  };
+  const LUNA_PAL = { o: '#7d7699', w: '#fdfcff', s: '#d9d4ea', p: '#f4a3b8', e: '#e9b44c', k: '#5b3d1a' };
   const ITEM_PAL = { b: '#7a4fd0', w: '#f8f3ff', l: '#c7bde6', y: '#ffcf3f', o: '#fff1a8', f: '#7ad3ff', e: '#13111e', h: '#ff6b9a' };
 
   // ---------- Durum ----------
   let cv, ctx, wrap, bubbleEl;
   let W = 200, H = 90, scale = 4, horizon = 60, groundY = 80;
-  let pal = PALETTES.gece;
   let stars = [], clouds = [], flies = [], particles = [], hillFar = [], hillNear = [];
   let shooting = null, nextShoot = 6;
   let mode = 'idle';   // idle | focus | break
@@ -241,7 +298,7 @@ const Scene = (() => {
     horizon = Math.round(H * 0.68);
     groundY = H - 7;
     ctx.imageSmoothingEnabled = false;
-    L.x = U.clamp(L.x, 4, W - 26);
+    L.x = U.clamp(L.x, 4, Math.max(4, W - 40));
     build();
   }
 
@@ -471,22 +528,39 @@ const Scene = (() => {
   }
 
   // ---------- Luna ----------
-  const studyX = () => Math.round(W * 0.42);
+  const studyX = () => Math.round(U.clamp(W * 0.42 - 26, 4, W - 60));
   const isLateNight = () => { const h = new Date().getHours(); return h >= 23 || h < 6; };
 
+  function lunaRows() {
+    const blink = L.blink > 0;
+    if (L.state === 'walk') {
+      const f = Math.floor(L.ft * 6) % 2;
+      return blink ? (f ? LUNA.walkBlinkA : LUNA.walkBlinkB) : (f ? LUNA.walkA : LUNA.walkB);
+    }
+    if (L.state === 'sleep') return LUNA.sleep;
+    if (L.state === 'eat') return Math.floor(L.ft * 6) % 2 ? LUNA.loafBlink : LUNA.loafA;
+    if (blink) return LUNA.loafBlink;
+    return Math.floor(L.ft * 1.2) % 3 === 0 ? LUNA.loafB : LUNA.loafA;
+  }
   function lunaSpriteSize() {
-    if (L.state === 'walk') return [22, 14];
-    if (L.state === 'sleep') return [18, 9];
-    return [16, 16];
+    const r = lunaRows();
+    return [r[0].length, r.length];
+  }
+  // yürürken kafa sağda çizilir, otururken solda; yöne göre aynalanır
+  const lunaFlip = () => (L.state === 'walk' ? L.dir < 0 : L.dir > 0);
+  function headX() {
+    const [w] = lunaSpriteSize();
+    const native = L.state === 'walk' ? 27 : 7;
+    return L.x + (lunaFlip() ? w - native : native);
   }
 
   function chooseNext() {
     if (Math.random() < 0.55) {
-      L.target = Math.round(U.rand(6, W - 30));
+      L.target = Math.round(U.rand(4, W - 40));
       L.state = 'walk';
     } else {
       L.state = 'sit';
-      L.wait = U.rand(3, 8);
+      L.wait = U.rand(4, 10);
     }
   }
 
@@ -509,22 +583,22 @@ const Scene = (() => {
       fishItem.vy += 200 * dt;
       fishItem.y = Math.min(groundY - 3, fishItem.y + fishItem.vy * dt);
       if (L.state !== 'eat') {
-        L.target = fishItem.x - 10;
+        L.target = fishItem.x - LUNA.loafA[0].length + 2;
         L.state = 'walk';
         if (Math.abs(L.x - L.target) < 1.5 && fishItem.y >= groundY - 3) {
           L.state = 'eat'; L.eatT = 2.2; L.dir = 1;
         }
       } else {
         L.eatT -= dt;
-        if (Math.random() < dt * 6) hearts(L.x + 14, groundY - 18, 1);
-        if (L.eatT <= 0) { fishItem = null; L.state = 'sit'; L.wait = 3; hearts(L.x + 10, groundY - 18, 5); }
+        if (Math.random() < dt * 6) hearts(headX(), groundY - 18, 1);
+        if (L.eatT <= 0) { fishItem = null; L.state = 'sit'; L.wait = 4; hearts(headX(), groundY - 18, 5); }
       }
     } else if (mode === 'focus') {
       L.target = studyX();
       if (Math.abs(L.x - L.target) > 1) L.state = 'walk';
       else { L.state = 'sit'; L.dir = 1; }
     } else if (mode === 'idle' && isLateNight()) {
-      L.target = Math.round(W * 0.3);
+      L.target = Math.round(U.clamp(W * 0.3 - 16, 4, W - 40));
       if (Math.abs(L.x - L.target) > 1) L.state = 'walk';
       else L.state = 'sleep';
     } else if (L.state === 'sleep') {
@@ -533,42 +607,36 @@ const Scene = (() => {
       L.wait -= dt;
       if (L.wait <= 0) chooseNext();
     } else if (L.state === 'walk' && Math.abs(L.x - L.target) <= 1) {
-      L.state = 'sit'; L.wait = U.rand(2, 6);
+      L.state = 'sit'; L.wait = U.rand(3, 8);
     }
 
     if (L.state === 'walk') {
       const d = L.target - L.x;
-      L.dir = d >= 0 ? 1 : -1;
+      if (Math.abs(d) > 0.5) L.dir = d >= 0 ? 1 : -1;
       L.x += Math.sign(d) * Math.min(Math.abs(d), speed * dt);
     }
 
     // uyurken Zzz
     if (L.state === 'sleep' && Math.random() < dt * 0.8) {
-      particles.push({ kind: 'z', x: L.x + 14, y: groundY - 12, vx: 3, vy: -5, life: 2.5, t: 0 });
+      particles.push({ kind: 'z', x: headX(), y: groundY - 15, vx: 3 * (lunaFlip() ? 1 : -1), vy: -5, life: 2.5, t: 0 });
     }
   }
 
   function drawLuna() {
-    const [w, h] = lunaSpriteSize();
+    const rows = lunaRows();
+    const w = rows[0].length, h = rows.length;
     const x = L.x, baseY = groundY - h + 1 + L.y;
-    const blinkMap = L.blink > 0 ? { e: 'k' } : null;
-    let rows;
-    if (L.state === 'walk') rows = Math.floor(L.ft * 6) % 2 ? SPR.walkA : SPR.walkB;
-    else if (L.state === 'sleep') rows = Math.floor(L.ft * 0.8) % 2 ? SPR.sleepA : SPR.sleepB;
-    else if (L.state === 'eat') rows = SPR.sitA;
-    else rows = Math.floor(L.ft * 1.2) % 3 === 0 ? SPR.sitB : SPR.sitA;
     // gölge
     ctx.globalAlpha = 0.25;
     ctx.fillStyle = '#000';
-    ctx.fillRect(Math.round(x + 2), groundY + 1, w - 4, 1);
+    ctx.fillRect(Math.round(x + 3), groundY + 1, w - 6, 1);
     ctx.globalAlpha = 1;
-    const map = L.state === 'eat' && Math.floor(L.ft * 6) % 2 ? { e: 'k' } : blinkMap;
-    sprite(rows, x, baseY, pal, L.dir < 0, 1, map);
+    sprite(rows, x, baseY, LUNA_PAL, lunaFlip());
   }
 
   function drawStudyProps(night) {
     if (mode !== 'focus') return;
-    const bx = studyX() + 17, by = groundY - 4;
+    const bx = studyX() + LUNA.loafA[0].length + 1, by = groundY - 4;
     sprite(SPR.book, bx, by, ITEM_PAL);
     const lx = bx + 13, ly = groundY - 5;
     if (night > 0.2) {
@@ -602,7 +670,7 @@ const Scene = (() => {
       } else if (p.kind === 'z') {
         ctx.globalAlpha = a; ctx.fillStyle = '#e9e4ff';
         const x = Math.round(p.x), y = Math.round(p.y);
-        ctx.fillRect(x, y, 3, 1); ctx.fillRect(x + 1, y + 1, 1, 1); ctx.fillRect(x, y + 2, 3, 1);
+        ctx.fillRect(x, y, 4, 1); ctx.fillRect(x + 2, y + 1, 1, 1); ctx.fillRect(x + 1, y + 2, 1, 1); ctx.fillRect(x, y + 3, 4, 1);
         ctx.globalAlpha = 1;
       }
     }
@@ -615,8 +683,8 @@ const Scene = (() => {
   // ---------- Konuşma balonu ----------
   function positionBubble() {
     if (!bubbleEl || bubbleEl.classList.contains('hidden')) return;
-    const [w, h] = lunaSpriteSize();
-    const cx = (L.x + w / 2) * scale;
+    const [, h] = lunaSpriteSize();
+    const cx = headX() * scale;
     const bw = bubbleEl.offsetWidth;
     const ww = wrap.clientWidth;
     const left = U.clamp(cx - bw / 2, 8, ww - bw - 8);
@@ -671,7 +739,7 @@ const Scene = (() => {
     if (x >= L.x - 3 && x <= L.x + w + 3 && y >= top - 4 && y <= groundY + 3) {
       if (L.state === 'sleep') { L.state = 'sit'; L.wait = 4; }
       L.vy = -70;
-      hearts(L.x + w / 2, top, 4);
+      hearts(headX(), top, 4);
       onPoke && onPoke();
     } else {
       sparkles(x, y, 8);
@@ -682,17 +750,23 @@ const Scene = (() => {
     init(canvas, bubble, opts = {}) {
       cv = canvas; wrap = canvas.parentElement; bubbleEl = bubble; ctx = cv.getContext('2d');
       onPoke = opts.onPoke;
-      this.setPalette(Store.data.settings.lunaColor);
       resize();
       L.x = W * 0.2;
-      window.addEventListener('resize', resize);
+      if (window.ResizeObserver) new ResizeObserver(resize).observe(wrap);
+      else window.addEventListener('resize', resize);
       cv.addEventListener('pointerdown', hit);
       requestAnimationFrame(frame);
     },
     setMode(m) { mode = m; if (m !== 'focus' && L.state === 'sit') L.wait = 1; },
-    setPalette(name) { pal = PALETTES[name] || PALETTES.gece; },
-    palettes: Object.keys(PALETTES),
-    paletteColor: (name) => (PALETTES[name] || PALETTES.gece).k,
+    // Luna'nın küçük portresi (rapor başlığı vb.)
+    portrait(canvas) {
+      const rows = LUNA.loafA;
+      canvas.width = rows[0].length; canvas.height = rows.length;
+      const c = canvas.getContext('2d');
+      rows.forEach((row, j) => [...row].forEach((ch, i) => {
+        if (ch !== '.') { c.fillStyle = LUNA_PAL[ch]; c.fillRect(i, j, 1, 1); }
+      }));
+    },
     say(text, opts = {}) {
       if (!bubbleEl) return;
       bubbleEl.innerHTML = (opts.love ? '<span class="love-tag">💌</span> ' : '') + U.esc(text);
@@ -703,11 +777,12 @@ const Scene = (() => {
       positionBubble();
     },
     feed() {
-      fishItem = { x: U.clamp(L.x + (L.dir > 0 ? 34 : -14), 20, W - 12), y: 0, vy: 0 };
+      const lw = LUNA.loafA[0].length;
+      fishItem = { x: U.clamp(L.x + (L.dir > 0 ? lw + 10 : -14), lw + 4, W - 10), y: 0, vy: 0 };
       if (L.state === 'sleep') L.state = 'sit';
       L.state = 'walk';
     },
-    celebrate() { sparkles(L.x + 8, groundY - 16, 30); hearts(L.x + 8, groundY - 18, 6); L.vy = -80; },
+    celebrate() { sparkles(headX(), groundY - 16, 30); hearts(headX(), groundY - 20, 6); L.vy = -80; },
     sunInfo() { return sun || solar(new Date()); },
   };
 })();

@@ -41,10 +41,8 @@
     <!-- Sekmeler -->
     <nav class="tabs" id="tabs">
       <button data-tab="home" class="active"><span>🏠</span><b>Çalış</b></button>
-      <button data-tab="stats"><span>📊</span><b>İstatistik</b></button>
-      <button data-tab="report"><span>🔭</span><b>Rapor</b></button>
-      <button data-tab="tasks"><span>📝</span><b>Görevler</b></button>
-      <button data-tab="music"><span>🎧</span><b>Müzik</b></button>
+      <button data-tab="progress"><span>📈</span><b>İlerleme</b></button>
+      <button data-tab="plan"><span>📝</span><b>Plan</b></button>
       <button data-tab="settings"><span>⚙️</span><b>Ayarlar</b></button>
     </nav>
 
@@ -53,11 +51,12 @@
       <section class="tab active" id="tab-home">
         <div class="grid">
           <div class="card timer-card">
+            <button class="focus-exit" id="focus-exit" type="button" title="Sayaç çalışmaya devam eder">Diğer ekranlar ↗</button>
             <div class="seg" id="kind-seg">
               <button data-kind="pomodoro">🍅 Pomodoro</button>
               <button data-kind="free">⏱️ Serbest</button>
             </div>
-            <div class="phase" id="phase-label">Odak</div>
+            <div class="phase" id="phase-label">ODAK</div>
             <div class="ring-wrap">
               <svg viewBox="0 0 200 200" class="ring">
                 <circle cx="100" cy="100" r="88" class="ring-bg"/>
@@ -69,15 +68,23 @@
               </div>
             </div>
             <div class="dots" id="cycle-dots"></div>
-            <div class="subject-row">
-              <select id="subject-select" aria-label="Ders"></select>
-              <button class="icon-btn" id="add-subject-quick" title="Yeni ders">＋</button>
+            <div class="focus-intent" id="focus-intent"></div>
+            <div class="setup" id="timer-setup">
+              <div class="subject-row">
+                <select id="subject-select" aria-label="Ders"></select>
+                <button class="icon-btn" id="add-subject-quick" title="Yeni ders">＋</button>
+              </div>
+              <input id="intent-input" class="intent" maxlength="80" placeholder="🎯 Bu oturumda ne yapacağım? (örn. 20 türev sorusu)">
             </div>
             <div class="controls">
               <button class="btn ghost" id="btn-reset" title="Sıfırla">↺</button>
               <button class="btn primary big" id="btn-toggle">Başla</button>
               <button class="btn ghost" id="btn-finish" title="Bitir ve kaydet">✓</button>
             </div>
+            <form class="park" id="park-form" autocomplete="off">
+              <input id="park-input" maxlength="140" placeholder="💭 Aklına başka bir şey mi geldi? Yaz, sonraya bırak">
+              <button class="btn soft">Sonraya</button>
+            </form>
           </div>
 
           <div class="card today-card">
@@ -101,26 +108,51 @@
             <ul class="task-list compact" id="home-tasks"></ul>
             <div id="home-exams"></div>
           </div>
+
+          <details class="card wide-card music-card" id="music-card">
+            <summary><span>🎧 Müzik ve odak sesleri</span><span class="muted small" id="music-now"></span></summary>
+            <div class="music-body">
+              <p class="muted small">Spotify'da bir çalma listesi açıp <b>Paylaş → Bağlantıyı kopyala</b> de ve buraya yapıştır. Tarayıcıda Spotify'a giriş yapılmışsa şarkıların tamamı çalar.</p>
+              <form class="inline-form" id="spotify-form">
+                <input id="spotify-input" placeholder="https://open.spotify.com/playlist/…">
+                <button class="btn primary">Yükle</button>
+              </form>
+              <div class="chips" id="spotify-presets"></div>
+              <div class="spotify-frame" id="spotify-frame"></div>
+              <h3 class="sub-h">🌧️ Odak sesleri</h3>
+              <div class="mixer" id="mixer"></div>
+            </div>
+          </details>
         </div>
       </section>
 
-      <!-- İSTATİSTİK -->
-      <section class="tab" id="tab-stats">
-        <div class="seg period" data-period-for="stats">
-          <button data-days="7" class="active">7 gün</button>
+      <!-- İLERLEME -->
+      <section class="tab" id="tab-progress">
+        <div class="report-head card">
+          <canvas class="report-luna" id="report-luna" aria-hidden="true"></canvas>
+          <div>
+            <h2>Luna'nın Raporu</h2>
+            <p class="muted" id="report-intro"></p>
+          </div>
+        </div>
+        <div class="seg period" id="period-seg">
+          <button data-days="7" class="active">Bu hafta</button>
           <button data-days="30">30 gün</button>
           <button data-days="0">Tümü</button>
         </div>
-        <div class="tiles" id="stat-tiles"></div>
+        <div class="tiles" id="report-highlights"></div>
         <div class="grid">
-          <div class="card wide-card">
-            <h2>Günlük çalışma</h2>
-            <div class="bars" id="day-bars"></div>
-          </div>
+          <div class="card good"><h2>⭐ Güçlü yönlerin</h2><ul class="insights" id="rep-strengths"></ul></div>
+          <div class="card warn"><h2>🔧 Eksikler ve düzeltmeler</h2><ul class="insights" id="rep-improve"></ul></div>
+          <div class="card tip wide-card"><h2>💡 Öneriler</h2><ul class="insights" id="rep-tips"></ul></div>
           <div class="card wide-card">
             <h2>Saatlere göre verim <span class="muted small">(yükseklik: süre · renk: verim)</span></h2>
             <div class="hours" id="hour-chart"></div>
             <div class="legend"><span><i style="background:var(--r1)"></i>düşük</span><span><i style="background:var(--r3)"></i>orta</span><span><i style="background:var(--r5)"></i>yüksek</span><span><i style="background:var(--unrated)"></i>puansız</span></div>
+          </div>
+          <div class="card wide-card">
+            <h2>Günlük çalışma</h2>
+            <div class="bars" id="day-bars"></div>
           </div>
           <div class="card">
             <h2>Dersler</h2>
@@ -131,58 +163,22 @@
             <div class="bars small-bars" id="weekday-bars"></div>
           </div>
           <div class="card wide-card">
-            <h2>Yıldız haritan <span class="muted small">(son 16 hafta)</span></h2>
+            <h2>Yıldız haritan <span class="muted small">(son 16 hafta · ★ = hedef tamam)</span></h2>
             <div class="calendar" id="calendar"></div>
-          </div>
-          <div class="card wide-card">
-            <h2>Oturum geçmişi</h2>
-            <ul class="session-list history" id="history"></ul>
-          </div>
-        </div>
-      </section>
-
-      <!-- RAPOR -->
-      <section class="tab" id="tab-report">
-        <div class="report-head card">
-          <div class="report-luna">🐈‍⬛</div>
-          <div>
-            <h2>Luna'nın Raporu</h2>
-            <p class="muted" id="report-intro"></p>
-          </div>
-        </div>
-        <div class="seg period" data-period-for="report">
-          <button data-days="7" class="active">Bu hafta</button>
-          <button data-days="30">30 gün</button>
-          <button data-days="0">Tümü</button>
-        </div>
-        <div class="tiles" id="report-highlights"></div>
-        <div class="grid">
-          <div class="card good"><h2>⭐ Güçlü yönlerin</h2><ul class="insights" id="rep-strengths"></ul></div>
-          <div class="card warn"><h2>🔧 Eksikler & düzeltmeler</h2><ul class="insights" id="rep-improve"></ul></div>
-          <div class="card tip"><h2>💡 Öneriler</h2><ul class="insights" id="rep-tips"></ul></div>
-          <div class="card">
-            <h2>📌 Tekrar listesi</h2>
-            <p class="muted small">Oturum sonunda "zorlandığım yerler" kısmına yazdıkların buraya düşer.</p>
-            <form class="inline-form" id="review-form">
-              <input id="review-input" placeholder="Tekrar edilecek konu…" maxlength="120">
-              <button class="btn primary">Ekle</button>
-            </form>
-            <ul class="task-list" id="review-list"></ul>
           </div>
           <div class="card wide-card">
             <h2>🏅 Rozetler</h2>
             <div class="badges" id="badges"></div>
           </div>
           <div class="card wide-card">
-            <h2>📓 Notların</h2>
-            <p class="muted small">Oturumlarda neler çalıştığını yazdıkların.</p>
-            <ul class="notes" id="notes-list"></ul>
+            <h2>📓 Notların ve oturumların</h2>
+            <ul class="session-list history" id="history"></ul>
           </div>
         </div>
       </section>
 
-      <!-- GÖREVLER -->
-      <section class="tab" id="tab-tasks">
+      <!-- PLAN -->
+      <section class="tab" id="tab-plan">
         <div class="grid">
           <div class="card">
             <h2>📝 Görevler</h2>
@@ -198,6 +194,15 @@
             <button class="btn soft small-btn" id="clear-done">Tamamlananları temizle</button>
           </div>
           <div class="card">
+            <h2>📌 Tekrar listesi</h2>
+            <p class="muted small">Oturum sonunda "zorlandığım yer" kısmına yazdıkların buraya düşer.</p>
+            <form class="inline-form" id="review-form">
+              <input id="review-input" placeholder="Tekrar edilecek konu…" maxlength="120">
+              <button class="btn primary">Ekle</button>
+            </form>
+            <ul class="task-list" id="review-list"></ul>
+          </div>
+          <div class="card wide-card">
             <h2>⏳ Sınav geri sayımı</h2>
             <form class="task-form" id="exam-form">
               <div class="row">
@@ -211,27 +216,6 @@
         </div>
       </section>
 
-      <!-- MÜZİK -->
-      <section class="tab" id="tab-music">
-        <div class="grid">
-          <div class="card wide-card">
-            <h2>🎧 Spotify</h2>
-            <p class="muted small">Spotify'da bir çalma listesi/albüm/şarkı açıp <b>Paylaş → Bağlantıyı kopyala</b> de, buraya yapıştır. Tarayıcıda Spotify hesabına giriş yaptıysan şarkıların tamamı çalar.</p>
-            <form class="inline-form" id="spotify-form">
-              <input id="spotify-input" placeholder="https://open.spotify.com/playlist/…">
-              <button class="btn primary">Yükle</button>
-            </form>
-            <div class="chips" id="spotify-presets"></div>
-            <div class="spotify-frame" id="spotify-frame"></div>
-          </div>
-          <div class="card wide-card">
-            <h2>🌧️ Odak sesleri</h2>
-            <p class="muted small">Müzikle birlikte ya da tek başına açabilirsin.</p>
-            <div class="mixer" id="mixer"></div>
-          </div>
-        </div>
-      </section>
-
       <!-- AYARLAR -->
       <section class="tab" id="tab-settings">
         <div class="grid">
@@ -240,7 +224,6 @@
             <label class="field">Adın <input id="set-name" maxlength="30"></label>
             <label class="field">Sevgilinin adı <input id="set-partner" maxlength="30" placeholder="Notlarda görünür"></label>
             <label class="field">Günlük hedef (dakika) <input type="number" id="set-goal" min="10" max="900" step="10"></label>
-            <label class="field">Luna ne sıklıkla mesaj atsın? (dakika, 0 = kapalı) <input type="number" id="set-msg" min="0" max="240"></label>
           </div>
           <div class="card">
             <h2>🍅 Zamanlayıcı</h2>
@@ -252,17 +235,14 @@
             <label class="field">Kaç odakta bir uzun mola? <input type="number" id="set-every" min="2" max="10"></label>
             <label class="switch"><input type="checkbox" id="set-autobreak"> Odak bitince mola otomatik başlasın</label>
             <label class="switch"><input type="checkbox" id="set-autofocus"> Mola bitince odak otomatik başlasın</label>
-            <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
-            <label class="switch"><input type="checkbox" id="set-notify"> Bildirim gönder (sekme arka plandayken)</label>
           </div>
           <div class="card">
-            <h2>🐈 Luna</h2>
-            <p class="muted small">Luna'nın rengi</p>
-            <div class="swatches" id="luna-colors"></div>
-            <p class="muted small">Konum (güneşin doğuş/batış saati için)</p>
-            <div class="chips" id="city-chips"></div>
-            <button class="btn soft small-btn" id="use-location">📍 Konumumu kullan</button>
-            <p class="muted small" id="loc-text"></p>
+            <h2>🎯 Odak</h2>
+            <label class="switch"><input type="checkbox" id="set-focusmode"> Başlayınca sade odak ekranına geç</label>
+            <label class="switch"><input type="checkbox" id="set-quiet"> Odaklanırken Luna sessiz kalsın</label>
+            <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
+            <label class="switch"><input type="checkbox" id="set-notify"> Bildirim gönder (uygulama arka plandayken)</label>
+            <label class="field">Luna molada/boşta ne sıklıkla konuşsun? (dakika, 0 = hiç) <input type="number" id="set-msg" min="0" max="240"></label>
           </div>
           <div class="card">
             <h2>📚 Dersler</h2>
@@ -275,9 +255,16 @@
           </div>
           <div class="card wide-card">
             <h2>💌 Sevgilinden notlar</h2>
-            <p class="muted small">Her satır bir not. Luna arada bunları söyler; günlük hedefe ulaşınca da günün gizli notu açılır.</p>
+            <p class="muted small">Her satır bir not. Günlük hedefe ulaşınca günün gizli notu açılır; Luna da molalarda arada birini söyler.</p>
             <textarea id="set-love" rows="7"></textarea>
             <button class="btn primary" id="save-love">Notları kaydet</button>
+          </div>
+          <div class="card">
+            <h2>🌅 Konum</h2>
+            <p class="muted small">Güneşin doğuş ve batış saatleri için.</p>
+            <div class="chips" id="city-chips"></div>
+            <button class="btn soft small-btn" id="use-location">📍 Konumumu kullan</button>
+            <p class="muted small" id="loc-text"></p>
           </div>
           <div class="card">
             <h2>💾 Veriler</h2>
@@ -289,7 +276,7 @@
             <button class="btn danger small-btn" id="reset">Her şeyi sıfırla</button>
           </div>
         </div>
-        <p class="footer">Hazal için sevgiyle yapıldı ✨🐾</p>
+        <p class="footer"></p>
       </section>
     </main>
   </div>

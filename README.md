@@ -1,6 +1,6 @@
-# 🐈‍⬛✨ Luna ile Çalış
+# 🤍✨ Luna ile Çalış
 
-Kedi **Luna** ile yıldızlı, pixel art bir ders çalışma uygulaması. Kurulum gerektirmez, telefona uygulama gibi yüklenebilir, internet olmadan da çalışır.
+Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldızlı, pixel art bir ders çalışma uygulaması. Amaç tek: dikkati dağıtmadan derse odaklanmak. Kurulum gerektirmez, telefona uygulama gibi yüklenebilir, internet olmadan da çalışır.
 
 ## Neler var?
 
@@ -10,12 +10,18 @@ Kedi **Luna** ile yıldızlı, pixel art bir ders çalışma uygulaması. Kurulu
 - Gece yıldızlar, kayan yıldızlar, ateş böcekleri ve gizli bir **kalp takımyıldızı** 💛
 - Saat, tarih ve gün doğumu/batımı saatleri
 
-**🐾 Luna**
-- Pixel art kedi: gezinir, oturur, kuyruğunu sallar, göz kırpar
-- Sen çalışırken kitabının ve fenerinin başına oturur; molada etrafta dolaşır; gece geç saatte uyur (Zzz)
+**🐾 Luna** (gerçek Luna'nın fotoğrafından çizildi)
+- Bembeyaz uzun tüyler, kehribar gözler, pembe burun ve kulaklar
+- Fotoğraftaki gibi patilerini toplayıp "somun" pozunda oturur, kuyruğunu sallar, göz kırpar
+- Sen çalışırken kitabının ve fenerinin başına yatar; molada etrafta dolaşır; gece geç saatte uyur (Zzz)
 - Ona dokununca zıplar, miyavlar, kalpler çıkar
 - Her odak oturumunda 🐟 balık kazanırsın, Luna'yı besleyebilirsin
-- 5 renk seçeneği (siyah, gri, turuncu, beyaz, krem)
+
+**🎯 Sade odak ekranı**
+- Başlat'a basınca her şey gizlenir: sadece Luna, sayaç, ders ve oturum hedefi kalır
+- "Bu oturumda ne yapacağım?" satırı: hedefini yaz, bitince otomatik olarak oturum notuna geçer
+- "💭 Aklına başka bir şey mi geldi?" kutusu: dikkat dağıtan düşünceyi yaz, Plan'a kaydedilsin, derse dön
+- Odaklanırken Luna konuşmaz (ayarlardan değiştirilebilir)
 
 **🍅 Zamanlayıcı**
 - Pomodoro (odak / kısa mola / uzun mola) ve serbest kronometre
@@ -28,7 +34,7 @@ Kedi **Luna** ile yıldızlı, pixel art bir ders çalışma uygulaması. Kurulu
 - Uygulama dışında çalıştıysan elle ekleyebilirsin
 - Zorlandığın yerler otomatik olarak **tekrar listesine** düşer
 
-**📊 İstatistikler**
+**📈 İlerleme** (Luna'nın raporu ve grafikler tek sayfada)
 - Günlük çubuk grafik, **saatlere göre verim** (hangi saatte ne kadar ve ne kadar verimli)
 - Ders dağılımı, haftanın günleri, 16 haftalık "yıldız haritası", oturum geçmişi
 - Seri (art arda gün) takibi
@@ -45,11 +51,11 @@ Kedi **Luna** ile yıldızlı, pixel art bir ders çalışma uygulaması. Kurulu
 - **Sevgilinden notlar:** Ayarlar'a yazılan notları Luna arada söyler; günlük hedefe ulaşınca **günün gizli notu** açılır
 - 17 rozet 🏅
 
-**🎧 Müzik**
+**🎧 Müzik** (Çalış ekranında katlanır kutu)
 - Spotify çalma listesi/albüm bağlantısı yapıştırıp uygulamanın içinden dinleme
 - Yağmur, dalga, şömine, beyaz/kahverengi gürültü ses karıştırıcısı
 
-**📝 Görevler ve sınav geri sayımı**
+**📝 Plan:** görevler, tekrar listesi ve sınav geri sayımı
 
 ## Nasıl açılır?
 

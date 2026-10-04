@@ -6,7 +6,8 @@
   const D = () => Store.data;
   const save = () => Store.save();
 
-  let statsDays = 7, reportDays = 7;
+  let progressDays = 7;
+  let focusDismissed = false; // odak ekranından geçici çıkış
   let lastMsgAt = Date.now();
   let wakeLock = null;
   let currentTab = 'home';
@@ -45,7 +46,7 @@
     if (!fresh.length) return;
     fresh.forEach((b) => { D().badges[b.id] = Date.now(); });
     if (fresh.length <= 2) fresh.forEach((b) => toast(b.e, `Yeni rozet: ${b.n}`, b.d));
-    else toast('🏅', `${fresh.length} yeni rozet kazandın!`, fresh.map((b) => b.e).join(' ') + ' · Rapor sekmesinde');
+    else toast('🏅', `${fresh.length} yeni rozet kazandın!`, fresh.map((b) => b.e).join(' ') + ' · İlerleme sekmesinde');
     Scene.celebrate();
     save();
     renderBadges();
@@ -134,10 +135,8 @@
     currentTab = name;
     $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + name));
-    if (name === 'stats') renderStats();
-    if (name === 'report') renderReport();
-    if (name === 'tasks') renderTasks();
-    if (name === 'music') renderMusic();
+    if (name === 'progress') renderProgress();
+    if (name === 'plan') { renderTasks(); renderReview(); }
     if (name === 'settings') renderSettings();
     if (name === 'home') renderHome();
     try { localStorage.setItem('luna-tab', name); } catch (e) { /* yok say */ }
@@ -172,6 +171,15 @@
     $('#btn-finish').disabled = s.fresh && !isBreak;
     $('#btn-finish').style.opacity = s.fresh && !isBreak ? 0.4 : 1;
     if ($('#subject-select').value !== s.subjectId) $('#subject-select').value = s.subjectId;
+    // sade odak ekranı
+    const focusing = s.running && !isBreak && D().settings.focusMode && !focusDismissed;
+    if (focusing !== document.body.classList.contains('focusing')) {
+      document.body.classList.toggle('focusing', focusing);
+      if (focusing) window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    $('#focus-intent').textContent = !isBreak && s.intent ? '🎯 ' + s.intent : '';
+    const ii = $('#intent-input');
+    if (document.activeElement !== ii && ii.value !== (s.intent || '')) ii.value = s.intent || '';
     // mini sayaç ve sekme başlığı
     const mini = $('#mini-timer');
     if (!s.fresh) {
@@ -192,6 +200,7 @@
   const timerHandlers = {
     onTick: renderTimer,
     onStart(phase, resumed) {
+      if (!resumed) focusDismissed = false;
       syncSceneMode();
       if (phase === 'focus') {
         lockScreen(true);
@@ -205,7 +214,7 @@
       lockScreen(false);
       Sound.chime();
       session.id = U.uid();
-      session.note = ''; session.hard = ''; session.rating = null; session.mood = '';
+      session.note = session.intent || ''; session.hard = ''; session.rating = null; session.mood = '';
       D().sessions.push(session);
       if (session.minutes >= 10) D().fish++;
       save();
@@ -245,6 +254,25 @@
       syncSceneMode();
     }));
     $('#subject-select').addEventListener('change', (e) => Timer.setSubject(e.target.value));
+    $('#intent-input').addEventListener('input', (e) => Timer.setIntent(e.target.value));
+    $('#intent-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); if (!Timer.state().running) Timer.toggle(); } });
+    // "Aklına başka bir şey mi geldi?" → görevlere ekle, odağı bozma
+    $('#park-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const inp = $('#park-input');
+      const text = inp.value.trim();
+      if (!text) return;
+      D().tasks.push({ id: U.uid(), text: '💭 ' + text, subjectId: '', due: '', done: false, created: Date.now() });
+      save();
+      inp.value = '';
+      inp.placeholder = '✓ Plan sekmesine kaydedildi, şimdi derse dön 🐾';
+      setTimeout(() => { inp.placeholder = '💭 Aklına başka bir şey mi geldi? Yaz, sonraya bırak'; }, 3500);
+      renderHome();
+    });
+    $('#focus-exit').addEventListener('click', () => {
+      focusDismissed = true;
+      renderTimer(Timer.state());
+    });
     $('#add-subject-quick').addEventListener('click', () => {
       const name = prompt('Yeni ders adı:');
       if (!name || !name.trim()) return;
@@ -384,8 +412,8 @@
     checkBadges();
     renderHUD();
     renderHome();
-    if (currentTab === 'stats') renderStats();
-    if (currentTab === 'report') renderReport();
+    if (currentTab === 'progress') renderProgress();
+    if (currentTab === 'plan') { renderTasks(); renderReview(); }
   }
 
   // ======================================================================
@@ -399,6 +427,7 @@
       <div>
         <div><b>${U.esc(sub.name)}</b> <span class="meta">${withDate ? `${st.getDate()} ${U.MONTHS[st.getMonth()].slice(0, 3)} · ` : ''}${U.hm(st)}–${U.hm(en)}</span></div>
         ${s.note ? `<div class="note">${U.esc(s.note)}</div>` : ''}
+        ${s.hard ? `<div class="note hard">⚠️ ${U.esc(s.hard)}</div>` : ''}
       </div>
       <div class="right">${U.fmtMin(s.minutes)}<div class="meta">${s.rating ? '⭐'.repeat(s.rating) : ''} ${s.mood || ''}</div></div>
     </li>`;
@@ -443,7 +472,7 @@
 
     // Görevler ve sınavlar
     const tasks = D().tasks.filter((t) => !t.done).sort(taskSort).slice(0, 5);
-    $('#home-tasks').innerHTML = tasks.length ? tasks.map(taskItem).join('') : '<li class="empty" style="display:block">Görev yok. Görevler sekmesinden ekleyebilirsin.</li>';
+    $('#home-tasks').innerHTML = tasks.length ? tasks.map(taskItem).join('') : '<li class="empty" style="display:block">Görev yok. Plan sekmesinden ekleyebilirsin.</li>';
     const exams = upcomingExams().slice(0, 2);
     $('#home-exams').innerHTML = exams.length ? `<h2 style="margin-top:14px">⏳ Yaklaşan sınavlar</h2>` + exams.map(examItem).join('') : '';
   }
@@ -451,20 +480,19 @@
   // ======================================================================
   // İstatistik
   // ======================================================================
-  function renderStats() {
-    const sm = Stats.summary(statsDays);
-    const tiles = [
-      ['⏱️', 'Toplam', U.fmtMin(sm.total)],
-      ['📅', 'Günlük ortalama', U.fmtMin(sm.perDay)],
-      ['🍅', 'Oturum', sm.count],
-      ['⭐', 'Ortalama verim', sm.rating ? sm.rating.toFixed(1) + ' / 5' : '—'],
-      ['🔥', 'Seri / en iyi', `${sm.streak} / ${sm.bestStreak} gün`],
-      ['🌙', 'Çalışılan gün', sm.activeDays],
-    ];
-    $('#stat-tiles').innerHTML = tiles.map(([i, l, v]) => `<div class="tile"><div class="ic">${i}</div><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  // ======================================================================
+  // İlerleme: Luna'nın raporu + grafikler
+  // ======================================================================
+  function renderProgress() {
+    renderReport();
+    renderCharts();
+    renderBadges();
+  }
 
+  function renderCharts() {
+    const sm = Stats.summary(progressDays);
     // günlük çubuklar
-    const n = statsDays === 7 ? 7 : 30;
+    const n = progressDays === 7 ? 7 : 30;
     const days = Stats.byDay(n);
     const goal = D().settings.dailyGoal;
     const max = Math.max(goal, ...days.map((d) => d.minutes), 1);
@@ -501,7 +529,7 @@
     renderCalendar();
 
     const hist = sm.list.slice().sort((a, b) => b.start - a.start).slice(0, 200);
-    $('#history').innerHTML = hist.length ? hist.map((s) => sessionItem(s, true)).join('') : '<li class="empty" style="display:block">Bu dönemde oturum yok</li>';
+    $('#history').innerHTML = hist.length ? hist.map((s) => sessionItem(s, true)).join('') : '<li class="empty" style="display:block">Bu dönemde oturum yok. Oturum sonunda yazdığın notlar burada birikir.</li>';
   }
 
   function renderCalendar() {
@@ -524,27 +552,18 @@
     $('#calendar').innerHTML = html;
   }
 
-  // ======================================================================
-  // Rapor
-  // ======================================================================
   function renderReport() {
-    const r = Stats.report(reportDays);
+    const r = Stats.report(progressDays);
     const name = D().settings.name || 'canım';
-    const period = reportDays === 7 ? 'bu haftaki' : reportDays === 30 ? 'son 30 günlük' : 'tüm';
+    const period = progressDays === 7 ? 'bu haftaki' : progressDays === 30 ? 'son 30 günlük' : 'tüm';
     $('#report-intro').textContent = `${name}, ${period} çalışmalarını inceledim. İşte gözlemlerim 🐾`;
-    $('#report-highlights').innerHTML = r.highlights.map((h) => `<div class="tile"><div class="ic">${h.icon}</div><div class="v">${U.esc(h.value)}</div><div class="l">${U.esc(h.label)}</div></div>`).join('');
+    const sk = Stats.streak();
+    const tiles = r.highlights.concat(sk ? [{ icon: '🔥', label: 'Seri', value: `${sk} gün` }] : []);
+    $('#report-highlights').innerHTML = tiles.map((h) => `<div class="tile"><div class="ic">${h.icon}</div><div class="v">${U.esc(h.value)}</div><div class="l">${U.esc(h.label)}</div></div>`).join('');
     const li = (arr) => arr.map((x) => `<li>${U.esc(x)}</li>`).join('') || '<li class="muted">—</li>';
     $('#rep-strengths').innerHTML = li(r.strengths);
     $('#rep-improve').innerHTML = li(r.improve);
     $('#rep-tips').innerHTML = li(r.tips);
-    renderReview();
-    renderBadges();
-    const notes = Stats.inRange(reportDays).filter((s) => s.note || s.hard).sort((a, b) => b.start - a.start).slice(0, 100);
-    $('#notes-list').innerHTML = notes.length ? notes.map((s) => {
-      const d = new Date(s.start);
-      return `<li><div class="meta">${d.getDate()} ${U.MONTHS[d.getMonth()]} · ${U.hm(d)} · <b style="color:${Store.subject(s.subjectId).color}">${U.esc(Store.subject(s.subjectId).name)}</b> · ${U.fmtMin(s.minutes)} ${s.rating ? '· ' + s.rating + '⭐' : ''}</div>
-        ${s.note ? `<div>${U.esc(s.note)}</div>` : ''}${s.hard ? `<div class="hard">⚠️ ${U.esc(s.hard)}</div>` : ''}</li>`;
-    }).join('') : '<li class="empty">Oturum sonunda not yazdıkça burada birikecek.</li>';
   }
 
   function renderReview() {
@@ -701,6 +720,8 @@
       ? `<iframe src="${src}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify"></iframe>`
       : '<p class="empty">Geçerli bir Spotify bağlantısı yapıştır.</p>';
     $$('#spotify-presets .chip').forEach((c) => c.classList.toggle('active', c.dataset.url === D().settings.spotify));
+    const preset = PRESETS.find(([, u]) => u === D().settings.spotify);
+    $('#music-now').textContent = src ? (preset ? preset[0] : 'Kendi listen') : '';
     spotifyLoaded = true;
   }
   function renderMusic() {
@@ -728,6 +749,8 @@
       $('#spotify-input').value = c.dataset.url;
       loadSpotify();
     });
+    // müzik paneli ilk açıldığında yüklenir (sayfa açılışını yavaşlatmasın)
+    $('#music-card').addEventListener('toggle', () => { if ($('#music-card').open) renderMusic(); });
     $('#mixer').addEventListener('input', (e) => {
       if (e.target.dataset.kind) Sound.setAmbient(e.target.dataset.kind, e.target.value / 100);
     });
@@ -740,7 +763,6 @@
     ['İstanbul', 41.01, 28.97], ['Ankara', 39.93, 32.86], ['İzmir', 38.42, 27.14], ['Bursa', 40.19, 29.06],
     ['Antalya', 36.9, 30.7], ['Eskişehir', 39.78, 30.52], ['Konya', 37.87, 32.48], ['Trabzon', 41.0, 39.72],
   ];
-  const COLOR_NAMES = { gece: 'Siyah', gri: 'Gri', turuncu: 'Turuncu', beyaz: 'Beyaz', krem: 'Krem' };
 
   function renderSettings() {
     const s = D().settings;
@@ -757,7 +779,8 @@
     $('#set-sound').checked = s.sound;
     $('#set-notify').checked = s.notify && 'Notification' in window && Notification.permission === 'granted';
     $('#set-love').value = D().loveNotes.join('\n');
-    $('#luna-colors').innerHTML = Scene.palettes.map((p) => `<button class="swatch ${p === s.lunaColor ? 'active' : ''}" data-p="${p}" style="background:${Scene.paletteColor(p)}" title="${COLOR_NAMES[p] || p}">${COLOR_NAMES[p] || p}</button>`).join('');
+    $('#set-focusmode').checked = s.focusMode;
+    $('#set-quiet').checked = s.quietFocus;
     $('#city-chips').innerHTML = CITIES.map(([n, la, lo]) => `<button class="chip ${Math.abs(la - s.lat) < 0.05 && Math.abs(lo - s.lon) < 0.05 ? 'active' : ''}" data-lat="${la}" data-lon="${lo}">${n}</button>`).join('');
     const sun = Scene.sunInfo();
     $('#loc-text').textContent = `Şu an: ${s.lat.toFixed(2)}, ${s.lon.toFixed(2)} · Gün doğumu ${fmtDayMin(sun.sunrise)} · Gün batımı ${fmtDayMin(sun.sunset)}`;
@@ -789,6 +812,8 @@
     bool('#set-autobreak', 'autoBreak');
     bool('#set-autofocus', 'autoFocus');
     bool('#set-sound', 'sound');
+    bool('#set-quiet', 'quietFocus');
+    $('#set-focusmode').addEventListener('change', (e) => { D().settings.focusMode = e.target.checked; save(); renderTimer(Timer.state()); });
     $('#set-notify').addEventListener('change', async (e) => {
       if (e.target.checked) {
         if (!('Notification' in window)) { toast('🔕', 'Bu tarayıcı bildirimleri desteklemiyor'); e.target.checked = false; return; }
@@ -796,14 +821,6 @@
         if (p !== 'granted') { toast('🔕', 'Bildirim izni verilmedi'); e.target.checked = false; D().settings.notify = false; save(); return; }
       }
       D().settings.notify = e.target.checked; save();
-    });
-    $('#luna-colors').addEventListener('click', (e) => {
-      const b = e.target.closest('.swatch');
-      if (!b) return;
-      D().settings.lunaColor = b.dataset.p; save();
-      Scene.setPalette(b.dataset.p);
-      renderSettings();
-      Scene.say('Yeni rengimi beğendin mi? 😸');
     });
     $('#city-chips').addEventListener('click', (e) => {
       const c = e.target.closest('.chip');
@@ -901,8 +918,10 @@
     if (!iv || document.hidden || !$('#modal').classList.contains('hidden')) return;
     if (Date.now() - lastMsgAt < iv * 60000) return;
     const s = Timer.state();
-    if (Math.random() < 0.3 && sayLove()) return;
-    if (s.running && s.phase === 'focus') say('during');
+    const focusing = s.running && s.phase === 'focus';
+    if (focusing && D().settings.quietFocus) return; // odaklanırken rahatsız etme
+    if (!focusing && Math.random() < 0.35 && sayLove()) return;
+    if (focusing) say('during');
     else if (s.running) say('breakStart');
     else say(Messages.timeOfDay());
   }
@@ -923,18 +942,19 @@
     Scene.init($('#sky'), $('#bubble'), {
       onPoke() { Sound.meow(); say('poke'); },
     });
+    Scene.portrait($('#report-luna'));
     renderSubjectSelects();
     Timer.init(timerHandlers);
     syncSceneMode();
     if (Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
 
     $$('#tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
-    $$('.seg.period').forEach((seg) => seg.addEventListener('click', (e) => {
+    $('#period-seg').addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
-      $$('button', seg).forEach((x) => x.classList.toggle('active', x === b));
-      if (seg.dataset.periodFor === 'stats') { statsDays = +b.dataset.days; renderStats(); }
-      else { reportDays = +b.dataset.days; renderReport(); }
-    }));
+      $$('#period-seg button').forEach((x) => x.classList.toggle('active', x === b));
+      progressDays = +b.dataset.days;
+      renderProgress();
+    });
     $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
     const openSession = (e) => {
