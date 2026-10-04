@@ -45,6 +45,18 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - **Haftalık program:** konuların soru ağırlığına, işaretlediğin durumlara ve denemelerdeki eksiklerine göre otomatik hazırlanır; her gün paragraf + problem rutini, Pazar deneme günü. Hafta boyunca sabit kalır, karışmaz
 - **Bugünün planı** ana ekranda; "Başla ▶" ile sayaç o konuyla başlar, bitince madde kendiliğinden işaretlenir
 
+**🎓 Üniversite, KPSS ve yüksek lisans modu** (Ayarlar → 🎓 Eğitim modu)
+- Tek dokunuşla geçiş; YKS konuları, denemeler ve oturumlar silinmez, istenince geri dönülür. Her modun kendi ders listesi vardır
+- Plan sekmesi **Dönem** olur: okul, fakülte, dönem haftası çubuğu, sıradaki akademik takvim olayı
+- **Dersler:** kod, kredi, AKTS, öğretim üyesi, derslik, haftalık saatler, değerlendirme ağırlıkları, haftalık konular; her ders sayaç derslerine eklenir
+- **Ders programını fotoğraftan okuma** ve **izlenceden (syllabus PDF) doldurma** (Claude, yapılandırılmış çıktı); kaydetmeden önce onay
+- **Akademik takvimi internetten bulma:** önce web araması (kaynaklı), sonra yalnızca bulunan metinden tarih çıkarma; uydurma yok, kaynaklar gösterilir
+- **Otomatik günlük çalışma listesi:** sınava 21/14/10/7/5/3/2/1 gün kala tekrar turları (aralıklı tekrar), ödevler için adım adım plan, o gün görülen dersin aynı gün tekrarı; ▶ ile sayaç başlar, bitince madde işaretlenir
+- **Devamsızlık** ("Gelmedim" ile, saat ve sınır yüzdesine göre kalan hak), **not ortalaması** (harf notu, finalden gereken puan, dönem ortalaması ve GANO, kredi ya da AKTS ağırlıklı)
+- **Telefon takvimine aktarma (.ics):** haftalık tekrar eden dersler, hatırlatmalı sınavlar, akademik takvim
+- **KPSS:** GY-GK dersleri ve konuları tek dokunuşla, konu işaretleme, sınav tarihine göre tekrar planı
+- Ana sayfada sıradaki ders, sınav geri sayımı, dönem haftası, ortalama; sınav yaklaşınca Luna'dan cesaret veren hatırlatma
+
 **📝 Deneme takibi**
 - TYT / AYT / branş denemelerini doğru-yanlış olarak gir, net otomatik hesaplanır (4 yanlış 1 doğruyu götürür)
 - Net gelişim grafiği, ders ders net tablosu, en çok yükselen ders
@@ -175,6 +187,7 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok)
 | `vendor/anthropic/` | Resmî Anthropic TypeScript SDK 0.131 (MIT), esbuild ile tek dosya tarayıcı paketi |
 | `js/hata.js` | Hata defteri: fotoğraflı yanlış sorular, aralıklı yeniden çözme, hata analizi |
 | `js/kaynak.js`, `js/kaynak-ui.js` | Akademik kütüphane: OpenAlex/Crossref/Open Library, APA 7 / Vancouver / IEEE kaynakça |
+| `js/uni.js`, `js/uni-ui.js` | Üniversite / KPSS / yüksek lisans modu: dersler, program, sınav takvimi, devamsızlık, not ortalaması, otomatik plan, .ics, yapay zekâ yardımcıları |
 | `js/diag.js` | Tanılama: bağlantı testleri, durum özeti, hata günlüğü |
 | `js/messages.js` | Luna'nın mesajları |
 | `js/audio.js` | Zil, miyav ve ortam sesleri |
@@ -185,4 +198,4 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok)
 > Dosyalarda değişiklik yaptıktan sonra `sw.js` içindeki `VERSION` değerini artırırsan telefondaki uygulama da güncellenir.
 
 ## Üniversite için uyarlama
-YKS'ye özel kısımlar `js/yks.js` (dersler ve konu ağırlıkları) ve `js/plan.js` (program) dosyalarında toplanmıştır. Üniversitede bölüme göre bu iki dosya yeni derslerle değiştirilerek uygulamanın geri kalanı (sayaç, notlar, kartlar, rozetler, Luna ve dünya) olduğu gibi kullanılabilir. YKS sürümünün yedeği GitHub'da `yedek/yks-2027` dalında saklıdır.
+Artık ayrı bir uyarlama gerekmez: **Ayarlar → 🎓 Eğitim modu → Üniversite** (ya da KPSS, yüksek lisans) seçilince Plan sekmesi Dönem ekranına dönüşür. YKS verileri saklanır; istenince YKS moduna geri dönülür. YKS sürümünün yedeği GitHub'da `yedek/yks-2027` dalında da duruyor.

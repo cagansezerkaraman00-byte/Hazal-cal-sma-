@@ -82,6 +82,19 @@ const Messages = (() => {
       'Bugün çalıştığın her konu, haziranda sana puan olarak dönecek ✨',
       'Hedefe giden yol tek tek çözülen sorulardan geçiyor. Sen bunu yapıyorsun 🐾',
     ],
+    // {what}: "Anatomi vizesine 3 gün kaldı" / "Anatomi vizesi yarın"
+    exam: [
+      '{what}. Plan hazır, adım adım gidiyoruz; sen bunu yaparsın {name} 💪',
+      '{what}. Bugünkü tekrar turu bile kocaman bir adım 🌟',
+      '{what}. Ben hep yanındayım 🐾 Birlikte hallederiz.',
+      '{what}. Hazırlandığın her dakika seninle o salona girecek 💛',
+    ],
+    uni: [
+      'Bugün de kendi hikâyene bir sayfa ekliyorsun {name} 📚',
+      'Küçük ama düzenli adımlar, dönem sonunda kocaman bir fark 🌟',
+      'Kahve gözlerindeki o merak, en büyük gücün ✨',
+      'Bugünkü listeyi birlikte bitirelim mi? Ben buradayım 🐾',
+    ],
     denemeUp: [
       'Netlerin yükseliyor! 📈 Emeğinin karşılığını görüyorsun {name}.',
       'Bu deneme bir öncekinden daha iyi! Gurur duyuyorum 🌟',

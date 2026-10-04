@@ -131,6 +131,9 @@ const Store = (() => {
     tasksDone: 0,
     reviewDone: 0,
     ai: { month: '', usd: 0, req: 0 }, // asistanın bu ayki harcaması (anahtar burada değil)
+    // üniversite / KPSS / yüksek lisans modu
+    uni: { school: '', faculty: '', term: '', termStart: '', termEnd: '', weeks: 14, absPct: 30, gpaBy: 'credit', courses: [], events: [], calendar: [], pastTerms: [], done: {} },
+    subjectSets: {}, // modlara göre ders listeleri (yks | program | archive)
     fish: 0,
     fed: 0,
     timer: null,
@@ -150,6 +153,10 @@ const Store = (() => {
     }
     if (!isObj(out.badges)) out.badges = {};
     if (!isObj(out.ai)) out.ai = def.ai;
+    out.uni = { ...def.uni, ...(isObj(obj.uni) ? obj.uni : {}) };
+    for (const k of ['courses', 'events', 'calendar', 'pastTerms']) if (!Array.isArray(out.uni[k])) out.uni[k] = [];
+    if (!isObj(out.uni.done)) out.uni.done = {};
+    if (!isObj(out.subjectSets)) out.subjectSets = {};
     out.yks = { ...def.yks, ...(isObj(obj.yks) ? obj.yks : {}) };
     if (!isObj(out.yks.topics)) out.yks.topics = {};
     if (!isObj(out.yks.planDone)) out.yks.planDone = {};
@@ -176,7 +183,7 @@ const Store = (() => {
   // Yedeği mevcut verilerle birleştirir: hiçbir kayıt silinmez, eksikler eklenir.
   // id'li listeler id'ye göre, haritalar anahtara göre birleşir; ayarlar bu cihazdaki gibi kalır.
   // Bilinmeyen (ileride eklenecek) alanlar da aynı kurallarla birleşir. Eklenen kayıt sayısını döndürür.
-  const LOCAL_ONLY = new Set(['version', 'settings', 'timer', 'lastGoalDay', 'lastWeatherMsg', 'lastSpecialGreet', 'lastBackup', 'lastBackupNudge', 'lastMoonGreet']);
+  const LOCAL_ONLY = new Set(['version', 'settings', 'timer', 'lastGoalDay', 'lastWeatherMsg', 'lastSpecialGreet', 'lastBackup', 'lastBackupNudge', 'lastMoonGreet', 'lastExamGreet']);
   const COUNTERS = new Set(['fish', 'fed', 'tasksDone', 'reviewDone', 'planItems', 'planFull', 'cardReviews']);
   const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
   const hasIds = (arr) => arr.length > 0 && arr.every((x) => isObj(x) && (typeof x.id === 'string' || typeof x.id === 'number'));
@@ -207,6 +214,7 @@ const Store = (() => {
           if (key === 'badges' || key === 'seen') a[k] = Math.min(x, y);       // ilk kazanılan / ilk görülen an
           else if (COUNTERS.has(k) || key === 'topics') a[k] = Math.max(x, y); // sayaçlar ve konu ilerlemesi
         } else if (typeof x === 'boolean' && typeof y === 'boolean') a[k] = x || y;
+        else if (x === '' && typeof y === 'string' && y) a[k] = y; // boş alan yedektekiyle dolsun (okul adı gibi)
       }
       return a;
     };
@@ -219,6 +227,15 @@ const Store = (() => {
       else if (COUNTERS.has(k) && typeof x === 'number' && typeof y === 'number') data[k] = Math.max(x, y);
     }
     if (data.yks && data.yks.planCache) delete data.yks.planCache; // plan yeniden hesaplansın
+    // üniversite modundaki bir yedeğin ders kutucukları YKS listesine karışmasın
+    if ((data.settings.profile.level || 'yks') === 'yks') {
+      const moved = data.subjects.filter((x) => /^c_/.test(x.id));
+      if (moved.length) {
+        data.subjects = data.subjects.filter((x) => !/^c_/.test(x.id));
+        const prog = data.subjectSets.program || (data.subjectSets.program = []);
+        for (const x of moved) if (!prog.some((y) => y.id === x.id)) prog.push(x);
+      }
+    }
     return added;
   }
 
@@ -235,7 +252,13 @@ const Store = (() => {
     reset() { data = defaults(); this.save(); },
     importJSON(obj) { data = merge(defaults(), obj); this.save(); },
     mergeJSON(obj) { const n = mergeIn(obj); this.save(); return n; },
-    subject(id) { return data.subjects.find((s) => s.id === id) || { id: '', name: 'Genel', color: '#c9c3e6' }; },
+    // aktif listede yoksa diğer modların listelerine de bakılır (geçmiş oturumların ders adı kaybolmasın)
+    subject(id) {
+      const hit = data.subjects.find((s) => s.id === id);
+      if (hit || !id) return hit || { id: '', name: 'Genel', color: '#c9c3e6' };
+      for (const k of Object.keys(data.subjectSets || {})) { const s = (data.subjectSets[k] || []).find((x) => x.id === id); if (s) return s; }
+      return { id: '', name: 'Genel', color: '#c9c3e6' };
+    },
   };
 })();
 

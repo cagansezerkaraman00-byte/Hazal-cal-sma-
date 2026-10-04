@@ -201,8 +201,8 @@ Anlatım:
     };
     if (M.effort) p.output_config = { ...(p.output_config || {}), effort: cfg.effort === 'medium' ? 'medium' : 'high' };
     if (M.fb) { p.betas = ['server-side-fallback-2026-07-01']; p.fallbacks = 'default'; } // güvenlik reddinde önerilen modele devret
-    if (cfg.web && !extra.noTools) p.tools = [{ type: M.ws, name: 'web_search', max_uses: 5 }];
-    delete p.noTools;
+    if ((cfg.web || extra.forceWeb) && !extra.noTools) p.tools = [{ type: M.ws, name: 'web_search', max_uses: 5 }];
+    delete p.noTools; delete p.forceWeb;
     return p;
   }
   function errText(e, Anthropic) {
@@ -332,6 +332,55 @@ Anlatım:
     render();
   }
   let restoreText = '';
+
+  // ---------- Diğer modüller için tek seferlik istek ----------
+  // { text, blob?, web?, schema?, maxTokens? } → { text, sources, json, cost }
+  // schema varsa yapılandırılmış JSON (kaynak gösterimi kapalı), web varsa internette arama (kaynaklı metin)
+  async function call(o) {
+    if (!ready()) throw new Error('Asistan için API anahtarı gerekli (Asistan → ⚙️ Asistan ayarları)');
+    const sp = spend();
+    if (sp.usd >= cfg.budget) throw new Error(`Bu ayın asistan bütçesi doldu (${usd(sp.usd)} / ${usd(cfg.budget)})`);
+    let Anthropic = null;
+    try {
+      const s = await sdk();
+      Anthropic = s.Anthropic;
+      const content = [];
+      if (o.blob) {
+        if (o.blob.type === 'application/pdf') content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: await toB64(o.blob) }, citations: { enabled: false } });
+        else { const img = await prepImage(o.blob); content.push({ type: 'image', source: { type: 'base64', media_type: img.type || 'image/jpeg', data: await toB64(img) } }); }
+      }
+      content.push({ type: 'text', text: o.text });
+      const extra = { noTools: !o.web, forceWeb: !!o.web }; // internetten bulma isteyen iş, ayar kapalı olsa da arar
+      if (o.schema) extra.output_config = { format: { type: 'json_schema', schema: o.schema } };
+      let messages = [{ role: 'user', content }];
+      const p = requestParams(messages, extra);
+      p.max_tokens = o.maxTokens || 16000;
+      if (o.effort && p.output_config && p.output_config.effort) p.output_config.effort = o.effort;
+      delete p.cache_control;
+      let final = null, total = 0;
+      for (let round = 0; round < 4; round++) {
+        const msg = await s.client.beta.messages.create({ ...p, messages });
+        total += costOf(msg.usage, msg.model || cfg.model);
+        if (msg.stop_reason === 'refusal') throw new Error('Bu istek yanıtlanamadı; farklı bir şekilde dene.');
+        final = final ? { ...msg, content: [...final.content, ...msg.content] } : msg;
+        if (msg.stop_reason !== 'pause_turn') break;
+        messages = [...messages, { role: 'assistant', content: msg.content }];
+      }
+      const a = spend();
+      a.usd += total; a.req++;
+      D().stats.aiAsked = (D().stats.aiAsked || 0) + 1;
+      App.save();
+      const r = renderAnswer(final.content);
+      let json = null;
+      if (o.schema) {
+        try { json = JSON.parse(final.content.filter((b) => b.type === 'text').map((b) => b.text).join('')); } catch (e) { throw new Error('Yanıt okunamadı; bir kez daha dene.'); }
+      }
+      return { text: r.text, sources: r.sources, json, cost: total };
+    } catch (e) {
+      if (e && e.message && !Anthropic) throw e;
+      throw new Error(Anthropic && e instanceof Anthropic.APIError ? errText(e, Anthropic) : e.message || errText(e, Anthropic));
+    }
+  }
 
   // ---------- Bilgi kartı üretimi (yapılandırılmış çıktı) ----------
   const CARD_SCHEMA = {
@@ -739,6 +788,8 @@ Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle
     init(app) { App = app; loadCfg(); bind(); },
     render,
     askDeneme,
+    call,
+    ready,
     askAboutFile,
     ask,
     askWeek,

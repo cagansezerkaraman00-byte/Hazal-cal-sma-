@@ -196,6 +196,7 @@
       <!-- PLAN -->
       <section class="tab" id="tab-plan">
         <div id="plan-root"></div>
+        <div id="uni-root" class="hidden"></div>
         <div class="grid">
           <div class="card">
             <h2>📝 Görevler</h2>
@@ -263,6 +264,20 @@
               <li><b>Haftalık program</b> her pazartesi kendiliğinden hazırlanır ve hafta boyunca karışmaz. Konuların soru ağırlığına, işaretlediğin durumlara, denemelerdeki eksiklerine ve son günlerde hangi dersi çalışmadığına bakar. Her gün paragraf + problem rutini, pazar günleri deneme günüdür. <b>↻ Yenile</b> haftayı yeniden karar.</li>
               <li><b>Bugünün planı</b> ana ekranda da durur. <b>Başla ▶</b> sayacı o konuyla başlatır; oturum bitince madde kendiliğinden işaretlenir.</li>
               <li>Sınav tarihi şimdilik tahmini; ÖSYM açıklayınca Plan sekmesinden düzeltebilirsin.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🎓 Üniversite, KPSS ve yüksek lisans modu</summary>
+            <ul>
+              <li>YKS bitince <b>Ayarlar → 🎓 Eğitim modu</b>'ndan <b>Üniversite</b>'ye dokun. YKS konuların, denemelerin ve bütün oturumların silinmez; istediğin an geri dönebilirsin.</li>
+              <li>Plan sekmesi <b>Dönem</b> olur. Ders programının <b>fotoğrafını</b> yükle, Asistan dersleri, saatleri ve derslikleri okusun ya da dersleri elle ekle. Her ders sayaçtaki ders listene de eklenir.</li>
+              <li><b>📄 İzlence</b> (syllabus) PDF'ini yüklersen kredi, AKTS, değerlendirme ağırlıkları (vize %40, final %60…), haftalık konular ve tarihli sınavlar doldurulur. Kaydetmeden önce kontrol edersin.</li>
+              <li><b>🏫 Akademik takvim → İnternetten bul:</b> Asistan okulunun resmî takvimini internette arar, vize, final, bütünleme ve tatil tarihlerini kaynaklarıyla getirir. Resmî siteyle karşılaştırıp istediklerini eklersin.</li>
+              <li><b>Bugünün çalışma listesi</b> kendiliğinden oluşur: sınava 21, 14, 10, 7, 5, 3, 2 ve 1 gün kala tekrar turları (aralıklı tekrar), ödevler için parça parça adımlar, o gün gördüğün derslerin aynı gün tekrarı. ▶ ile o maddeyle sayaç başlar; oturum bitince madde işaretlenir.</li>
+              <li><b>Devamsızlık:</b> bugünkü derste "Gelmedim"e dokun; kaç saat hakkın kaldığını sayarım, sınıra yaklaşınca nazikçe uyarırım.</li>
+              <li><b>Not ortalaması:</b> vize ve final notlarını gir; ders notun, harf notun, dönem ortalaman ve GANO hesaplanır. Finalden en az kaç alman gerektiğini de yazarım.</li>
+              <li><b>📅 Telefon takvimine aktar</b> dersleri haftalık tekrar eden etkinlik, sınavları da bir gün önceden hatırlatmalı olarak telefonunun takvimine ekler.</li>
+              <li><b>KPSS</b> modunda derslerini (Türkçe, Matematik, Tarih…) tek dokunuşla ekleyebilir, sınav tarihini girip geri sayım ve tekrar planı alabilirsin.</li>
             </ul>
           </details>
           <details>
@@ -423,15 +438,38 @@
             <h2>👤 Kişisel</h2>
             <label class="field">Adın <input id="set-name" maxlength="30"></label>
             <label class="field">Sevgilinin adı <input id="set-partner" maxlength="30" placeholder="Notlarda görünür"></label>
-            <label class="field">Eğitim düzeyi <select id="set-level">
-              <option value="yks">YKS hazırlık</option><option value="kpss">KPSS hazırlık</option><option value="uni">Üniversite</option><option value="yl">Yüksek lisans</option><option value="diger">Diğer</option>
-            </select></label>
+            <label class="field">Günlük hedef (dakika) <input type="number" id="set-goal" min="10" max="900" step="10"></label>
+          </div>
+          <div class="card edu-card" id="edu-card">
+            <h2>🎓 Eğitim modu</h2>
+            <div class="seg edu-seg" id="level-seg" role="group" aria-label="Eğitim modu">
+              <button type="button" data-level="yks">📘 YKS</button>
+              <button type="button" data-level="uni">🎓 Üniversite</button>
+              <button type="button" data-level="kpss">🏛️ KPSS</button>
+              <button type="button" data-level="yl">🔬 Yüksek lisans</button>
+            </div>
+            <p class="hint" id="level-hint"></p>
             <div class="row2">
               <label class="field">Bölüm / alan <input id="set-dept" maxlength="60" placeholder="Örn: Tıp, Fizik, Hukuk"></label>
-              <label class="field">Sınıf / dönem <input id="set-year" maxlength="20" placeholder="Örn: 1. sınıf"></label>
+              <label class="field">Sınıf <input id="set-year" maxlength="20" placeholder="Örn: 1. sınıf"></label>
             </div>
-            <p class="muted small">Asistan anlatımını bu bilgilere göre ayarlar.</p>
-            <label class="field">Günlük hedef (dakika) <input type="number" id="set-goal" min="10" max="900" step="10"></label>
+            <div id="uni-fields">
+              <div class="row2">
+                <label class="field">Okul <input id="set-school" maxlength="80" placeholder="Örn: Ege Üniversitesi"></label>
+                <label class="field">Fakülte <input id="set-faculty" maxlength="80" placeholder="Örn: Tıp Fakültesi"></label>
+              </div>
+              <div class="row2">
+                <label class="field">Dönem <input id="set-term" maxlength="30" placeholder="Örn: 2027-2028 Güz"></label>
+                <label class="field">Dönem kaç hafta <input type="number" id="set-weeks" min="6" max="22"></label>
+              </div>
+              <div class="row2">
+                <label class="field">Dönem başlangıcı <input type="date" id="set-termstart"></label>
+                <label class="field">Son ders günü <input type="date" id="set-termend"></label>
+              </div>
+              <label class="field school-only">Devamsızlık sınırı (%) <input type="number" id="set-abs" min="0" max="100"></label>
+              <p class="muted small">Tarihleri bilmiyorsan Asistan okulunun akademik takvimini internetten bulabilir: <b>Dönem → 🏫 Akademik takvim → İnternetten bul</b>.</p>
+            </div>
+            <p class="muted small">Asistan anlatımını da bu bilgilere göre ayarlar.</p>
           </div>
           <div class="card">
             <h2>🍅 Zamanlayıcı</h2>
@@ -554,6 +592,8 @@
   <script src="js/badges.js"></script>
   <script src="js/spotify.js"></script>
   <script src="js/asistan.js"></script>
+  <script src="js/uni.js"></script>
+  <script src="js/uni-ui.js"></script>
   <script src="js/diag.js"></script>
   <script src="js/app.js"></script>
 </body>

@@ -199,12 +199,35 @@
   // ======================================================================
   // Sekmeler
   // ======================================================================
+  const programMode = () => !!(window.Uni && window.UniUI) && Uni.isProgramMode();
+  // Plan sekmesi: YKS'de konu programı, üniversite / KPSS / yüksek lisansta Dönem ekranı
+  function renderPlanTab() {
+    if (programMode()) UniUI.render();
+    else if (window.PlanUI) PlanUI.render();
+    renderTasks(); renderReview();
+  }
+  // eğitim moduna göre sekmeler (YKS verisi silinmez, yalnızca gizlenir)
+  function applyMode() {
+    const lvl = D().settings.profile.level || 'yks', prog = programMode();
+    document.body.dataset.level = lvl;
+    $('#plan-root').classList.toggle('hidden', prog);
+    $('#uni-root').classList.toggle('hidden', !prog);
+    $('#tabs [data-tab="deneme"]').classList.toggle('hidden', prog);
+    $('#tabs [data-tab="plan"] b').textContent = lvl === 'uni' || lvl === 'yl' ? 'Dönem' : 'Plan';
+    if (prog && currentTab === 'deneme') showTab('plan');
+  }
+  // "Anatomi vizesine 3 gün kaldı" / "Anatomi vizesi yarın"
+  function examClause(e) {
+    const n = Uni.daysLeft(e.date);
+    return n >= 2 ? `${Uni.evLeft(e, n)} kaldı` : Uni.evLeft(e, n);
+  }
+
   function showTab(name) {
     currentTab = name;
     $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + name));
     if (name === 'progress') renderProgress();
-    if (name === 'plan') { if (window.PlanUI) PlanUI.render(); renderTasks(); renderReview(); }
+    if (name === 'plan') renderPlanTab();
     if (name === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (name === 'notes' && window.NotesUI) NotesUI.render();
     if (name === 'settings') renderSettings();
@@ -368,6 +391,7 @@
       if (session.minutes >= 10) D().fish++;
       save();
       if (window.PlanUI) PlanUI.onSession(session);
+      if (window.UniUI) UniUI.onSession(session);
       notify('Oturum tamamlandı! 🎉', `${U.fmtMin(session.minutes)} ${Store.subject(session.subjectId).name} çalıştın. Mola zamanı!`);
       say('done');
       openSessionModal(session, { justDone: true });
@@ -628,7 +652,7 @@
     renderHUD();
     renderHome();
     if (currentTab === 'progress') renderProgress();
-    if (currentTab === 'plan') { if (window.PlanUI) PlanUI.render(); renderTasks(); renderReview(); }
+    if (currentTab === 'plan') renderPlanTab();
     if (currentTab === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (currentTab === 'notes' && window.NotesUI) NotesUI.render();
   }
@@ -692,7 +716,8 @@
 
     renderWelcome(mins, pct);
     const tp = $('#today-plan');
-    if (window.PlanUI) { tp.classList.remove('hidden'); PlanUI.renderToday(tp); } else tp.classList.add('hidden');
+    if (programMode()) { tp.classList.remove('hidden'); UniUI.renderToday(tp); }
+    else if (window.PlanUI) { tp.classList.remove('hidden'); PlanUI.renderToday(tp); } else tp.classList.add('hidden');
   }
 
   // 24 saatlik zaman çizelgesi (YPT tarzı): oturumlar gerçek saatlerinde renkli bloklar
@@ -715,6 +740,10 @@
     for (const s of today) per[s.subjectId] = (per[s.subjectId] || 0) + s.minutes;
     const st = Timer.state();
     const live = st.running && st.phase === 'focus' ? st.subjectId : null;
+    if (!D().subjects.length) {
+      $('#subject-tiles').innerHTML = `<p class="muted small">Derslerini ${programMode() ? 'Plan sekmesinden' : 'Ayarlar → Dersler bölümünden'} ekleyince burada görünür; dokununca sayaç o dersle başlar.</p>`;
+      return;
+    }
     $('#subject-tiles').innerHTML = D().subjects.map((x) => `<button class="subj-tile ${live === x.id ? 'active' : ''}" data-id="${x.id}" type="button" style="--c:${x.color}">
       <span class="st-name">${U.esc(x.name)}</span><b class="st-min">${per[x.id] ? U.fmtMin(per[x.id]) : '—'}</b><span class="st-play" aria-hidden="true">${live === x.id ? '●' : '▶'}</span></button>`).join('');
   }
@@ -731,23 +760,40 @@
     const chips = [];
     const days = window.YKS ? YKS.daysLeft() : null;
     const yksMode = (D().settings.profile.level || 'yks') === 'yks';
+    const prog = programMode();
     if (yksMode && days != null && days >= 0) chips.push(['⏳', days === 0 ? 'Bugün!' : `${days} gün`, "YKS'ye", 'gold', 'plan']);
+    // dönem modunda: sıradaki sınav, bugünkü dersler, dönem haftası
+    const nextEx = prog ? Uni.upcoming(60).find((e) => Uni.EXAM.has(e.kind)) || Uni.upcoming(14)[0] : null;
+    if (nextEx) {
+      const n = Uni.daysLeft(nextEx.date), w = Uni.evName(nextEx);
+      chips.push([Uni.EVENT_KINDS[nextEx.kind][0], n === 0 ? 'Bugün!' : n === 1 ? 'Yarın' : `${n} gün`, n <= 1 ? w.nom : w.dat, n <= 7 ? 'gold' : '', 'plan']);
+    }
+    if (prog) {
+      const cls = Uni.classesOn(new Date()).length;
+      if (cls) chips.push(['🏫', `${cls} ders`, 'bugün', '', 'plan']);
+      const wk = Uni.weekOfTerm();
+      if (wk && wk <= (+D().uni.weeks || 14)) chips.push(['📆', `${wk}. hafta`, 'dönem', '']);
+      const g = Uni.isSchool() ? Uni.gpa() : null;
+      if (g && g.overall != null) chips.push(['🎯', g.overall.toFixed(2), 'ortalama', '', 'plan']);
+    }
     if (todayMin > 0) chips.push(['⏱️', U.fmtMin(todayMin), 'bugün', pct >= 100 ? 'up' : '']);
     const wm = weekMinutes();
     if (wm > 0) chips.push(['📅', U.fmtMin(wm), 'bu hafta', '']);
     const sk = Stats.streak();
     if (sk >= 2) chips.push(['🔥', `${sk} gün`, 'seri', 'up']);
-    const done = window.YKS ? YKS.doneCount() : 0;
+    const done = window.YKS && yksMode ? YKS.doneCount() : 0;
     if (done) chips.push(['✅', String(done), 'konu tamam', '', 'plan']);
     const dueCards = window.NotesUI ? NotesUI.dueCount() : 0;
     if (dueCards) chips.push(['🃏', String(dueCards), 'kart seni bekliyor', '', 'notes:cards']);
     const dueHata = window.HataUI ? HataUI.dueCount() : 0;
     if (dueHata) chips.push(['❌', String(dueHata), 'hata sorusu bugün', '', 'notes:hata']);
-    const last = window.Deneme ? Deneme.lastSummary() : null;
+    const last = window.Deneme && !prog ? Deneme.lastSummary() : null;
     if (last) chips.push(['📈', `${last.net} net`, `son ${last.type}${last.delta > 0 ? ' · +' + last.delta : ''}`, last.delta > 0 ? 'up' : '', 'deneme']);
     const msg = pct >= 100 ? 'Bugünkü hedefini tamamladın! Kendinle gurur duy 🎉'
       : sk >= 3 ? `${sk} gündür buradasın, bu istikrar harika 🌟`
       : yksMode && days != null && days >= 0 ? Messages.daily('yks', { days })
+      : nextEx && Uni.daysLeft(nextEx.date) <= 7 ? Messages.daily('exam', { what: examClause(nextEx) })
+      : prog ? Messages.daily('uni')
       : Messages.daily(Messages.timeOfDay());
     $('#welcome').innerHTML = `<div class="welcome-title">${U.esc(Messages.greeting())}</div>
       <div class="welcome-msg">${U.esc(msg)}</div>
@@ -1025,9 +1071,7 @@
     const s = D().settings;
     $('#set-name').value = s.name;
     $('#set-partner').value = s.partner;
-    $('#set-level').value = s.profile.level || 'yks';
-    $('#set-dept').value = s.profile.dept || '';
-    $('#set-year').value = s.profile.year || '';
+    renderEdu();
     $('#set-goal').value = s.dailyGoal;
     $('#set-msg').value = s.msgInterval;
     $('#set-focus').value = s.focus;
@@ -1051,6 +1095,43 @@
     renderSubjectEdit();
     renderBackupInfo();
     renderAllowApps();
+  }
+
+  const LEVEL_HINT = {
+    yks: 'Plan sekmesinde YKS konuların, Deneme sekmesinde netlerin. Üniversiteye başlayınca "Üniversite"ye dokun: YKS verilerin silinmez, istediğin an geri dönebilirsin.',
+    uni: 'Plan sekmesi artık Dönem: dersler, ders programı, sınav takvimi, devamsızlık, not ortalaması ve derslere göre günlük çalışma planı.',
+    yl: 'Dönem ekranında derslerin, seminer ve tez teslim tarihlerin; Kitaplık → Kaynaklar\'da makalelerin ve kaynakçan.',
+    kpss: 'Plan sekmesinde KPSS derslerin ve konuların; sınav tarihini girince geri sayım ve tekrar planı oluşur.',
+    diger: 'Plan sekmesinde kendi derslerin ve sınav tarihlerin.',
+  };
+  function renderEdu() {
+    const s = D().settings, x = D().uni, lvl = s.profile.level || 'yks';
+    $$('#level-seg button').forEach((b) => b.classList.toggle('active', b.dataset.level === lvl));
+    $('#level-hint').textContent = LEVEL_HINT[lvl] || LEVEL_HINT.diger;
+    $('#set-dept').value = s.profile.dept || '';
+    $('#set-year').value = s.profile.year || '';
+    $('#uni-fields').classList.toggle('hidden', lvl === 'yks');
+    $('#edu-card').classList.toggle('is-school', lvl === 'uni' || lvl === 'yl');
+    $('#set-school').value = x.school || '';
+    $('#set-faculty').value = x.faculty || '';
+    $('#set-term').value = x.term || '';
+    $('#set-weeks').value = x.weeks || 14;
+    $('#set-termstart').value = x.termStart || '';
+    $('#set-termend').value = x.termEnd || '';
+    $('#set-abs').value = x.absPct ?? 30;
+  }
+  function changeLevel(lvl) {
+    const old = D().settings.profile.level || 'yks';
+    if (lvl === old) return;
+    const msg = lvl === 'yks' ? 'YKS moduna dönülsün mü? Dönem verilerin silinmez, saklanır.'
+      : old === 'yks' ? `${({ uni: 'Üniversite', kpss: 'KPSS', yl: 'Yüksek lisans' })[lvl] || 'Yeni'} moduna geçilsin mi? YKS konuların, denemelerin ve oturumların silinmez; istediğin an geri dönebilirsin.` : null;
+    if (msg && !confirm(msg)) { renderEdu(); return; }
+    Uni.setMode(lvl);
+    applyMode(); renderEdu(); renderSubjectEdit(); renderSubjectSelects(); renderHome();
+    if (lvl !== 'yks' && old === 'yks') {
+      toast('🎓', lvl === 'kpss' ? 'KPSS modu açık' : 'Yeni dönem, yeni sayfa!', lvl === 'kpss' ? 'Plan sekmesinden derslerini ekleyebilirsin' : 'Okulunu ve dönem tarihlerini yaz, sonra Dönem sekmesinden derslerini ekle', 7000);
+      App.sayText(U.pick(['Yeni bir sayfa açıyoruz! Ben yine yanındayım 🐾', 'Kocaman bir adım daha! Seninle gurur duyuyorum 💛']));
+    }
   }
 
   // son yedek ne zaman alındı (yedek, verinin tek güvencesi)
@@ -1087,9 +1168,19 @@
     $('#set-name').addEventListener('change', (e) => { D().settings.name = e.target.value.trim() || 'Hazal'; save(); renderHUD(); renderFooter(); });
     $('#set-partner').addEventListener('change', (e) => { D().settings.partner = e.target.value.trim(); save(); renderHome(); });
     const prof = (id, key, max) => $(id).addEventListener('change', (e) => { D().settings.profile[key] = e.target.value.trim().slice(0, max); save(); });
-    prof('#set-level', 'level', 10);
     prof('#set-dept', 'dept', 60);
     prof('#set-year', 'year', 20);
+    $('#level-seg').addEventListener('click', (e) => { const b = e.target.closest('[data-level]'); if (b) changeLevel(b.dataset.level); });
+    const uniText = (id, key, max) => $(id).addEventListener('change', (e) => { D().uni[key] = e.target.value.trim().slice(0, max); save(); });
+    uniText('#set-school', 'school', 80);
+    uniText('#set-faculty', 'faculty', 80);
+    uniText('#set-term', 'term', 30);
+    const uniDate = (id, key) => $(id).addEventListener('change', (e) => { D().uni[key] = Uni.validDate(e.target.value) ? e.target.value : ''; save(); });
+    uniDate('#set-termstart', 'termStart');
+    uniDate('#set-termend', 'termEnd');
+    const uniNum = (id, key, a, b) => $(id).addEventListener('change', (e) => { const v = U.clamp(Math.round(+e.target.value || 0), a, b); D().uni[key] = v; e.target.value = v; save(); });
+    uniNum('#set-weeks', 'weeks', 6, 22);
+    uniNum('#set-abs', 'absPct', 0, 100);
     const bool = (id, key) => $(id).addEventListener('change', (e) => { D().settings[key] = e.target.checked; save(); });
     bool('#set-autobreak', 'autoBreak');
     bool('#set-autofocus', 'autoFocus');
@@ -1306,7 +1397,10 @@
     const h = new Date().getHours();
     const moon = Scene.moonInfo && (h >= 18 || h < 4) ? Scene.moonInfo() : null;
     const fullMoon = moon && moon.up && moon.fraction > 0.97 && D().lastMoonGreet !== today;
+    // sınav 3 gün içindeyse günde bir kez cesaret veren hatırlatma
+    const exam = programMode() ? Uni.upcoming(3).find((e) => Uni.EXAM.has(e.kind)) : null;
     setTimeout(() => {
+      if (exam && D().lastExamGreet !== today) { D().lastExamGreet = today; save(); App.sayText(Messages.get('exam', { what: examClause(exam) })); return; }
       if (!ss.length) say('welcome', { ms: 9000 });
       else if (Date.now() - ss[ss.length - 1].start > 3 * 864e5) say('comeback');
       else if (fullMoon) { D().lastMoonGreet = today; save(); say('dolunay', { ms: 8000 }); }
@@ -1346,6 +1440,7 @@
     allowExit(key) { allowExit = { app: key, at: Date.now() }; },
     dismissFocus() { focusDismissed = true; renderTimer(Timer.state()); }, // odak sürerken diğer ekranı göster
     refreshHome() { renderHome(); renderHUD(); checkBadges(); },
+    refreshSubjects() { renderSubjectSelects(); },
     showTab,
     celebrate() { Scene.celebrate(); Sound.chime(); },
     isFocusing() { const s = Timer.state(); return s.running && s.phase === 'focus'; },
@@ -1376,6 +1471,7 @@
     Scene.portrait($('#report-luna'));
     // modüller sayaçtan önce: sayfa kapalıyken biten bir oturum açılışta işlenirken hazır olsunlar
     if (window.PlanUI) PlanUI.init(App);
+    if (window.UniUI) UniUI.init(App);
     if (window.DenemeUI) DenemeUI.init(App);
     if (window.NotesUI) NotesUI.init(App);
     if (window.DepoUI) DepoUI.init(App);
@@ -1441,6 +1537,7 @@
     bindWeather();
 
     applyTheme();
+    applyMode();
     renderClock();
     renderHome();
     renderFooter();
@@ -1451,7 +1548,7 @@
     let lastDay = U.dateKey(new Date());
     setInterval(() => { // gece yarısı geçince günü yenile
       const k = U.dateKey(new Date());
-      if (k !== lastDay) { lastDay = k; renderHome(); if (currentTab === 'plan' && window.PlanUI) PlanUI.render(); }
+      if (k !== lastDay) { lastDay = k; renderHome(); if (currentTab === 'plan') renderPlanTab(); }
     }, 60000);
     // Uygulamadan çıkış: tam odakta izinli uygulamalar dışında sayaç durur, değilse nazik "hoş geldin"
     let awayTimer = 0;
