@@ -122,6 +122,8 @@ const Store = (() => {
     yks: { field: null, examDate: null, topics: {}, planDone: {} },
     denemeler: [],  // {id, date, type: TYT|AYT|BRANS, name, scores: {subjectKey: {d, y}}, eksik: [topicId], note, created}
     notes: [],      // {id, subjectId, title, body, created, updated, pinned}
+    mistakes: [],   // hata defteri: {id, fileId, subjectId, topic, reason, note, box, due, rights}
+    refs: [],       // kaynaklar: {id, type, title, authors:[{family, given}|{literal}], year, container, volume, issue, pages, doi, url, …}
     files: [],      // depo: {id, src: drive|local, rid, name, mime, size, subjectId, kind, note, created}
     cards: [],      // bilgi kartları: {id, subjectId, front, back, box (1-5), due (YYYY-AA-GG), created}
     stats: { planItems: 0, planFull: 0, planFullDates: [], cardReviews: 0, friendsMet: false, seen: {} },
@@ -143,7 +145,7 @@ const Store = (() => {
     out.settings.profile = { ...def.settings.profile, ...(isObj(out.settings.profile) ? out.settings.profile : {}) };
     if (!Array.isArray(out.settings.allowedApps)) out.settings.allowedApps = def.settings.allowedApps.slice();
     if (out.settings.kittenName === 'Sarman') out.settings.kittenName = 'Güçlü'; // yavrunun yeni adı
-    for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files']) {
+    for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files', 'mistakes', 'refs']) {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }
     if (!isObj(out.badges)) out.badges = {};

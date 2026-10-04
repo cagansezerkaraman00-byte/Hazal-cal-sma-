@@ -725,7 +725,8 @@
   function renderWelcome(todayMin, pct) {
     const chips = [];
     const days = window.YKS ? YKS.daysLeft() : null;
-    if (days != null && days >= 0) chips.push(['⏳', days === 0 ? 'Bugün!' : `${days} gün`, "YKS'ye", 'gold', 'plan']);
+    const yksMode = (D().settings.profile.level || 'yks') === 'yks';
+    if (yksMode && days != null && days >= 0) chips.push(['⏳', days === 0 ? 'Bugün!' : `${days} gün`, "YKS'ye", 'gold', 'plan']);
     if (todayMin > 0) chips.push(['⏱️', U.fmtMin(todayMin), 'bugün', pct >= 100 ? 'up' : '']);
     const wm = weekMinutes();
     if (wm > 0) chips.push(['📅', U.fmtMin(wm), 'bu hafta', '']);
@@ -734,12 +735,14 @@
     const done = window.YKS ? YKS.doneCount() : 0;
     if (done) chips.push(['✅', String(done), 'konu tamam', '', 'plan']);
     const dueCards = window.NotesUI ? NotesUI.dueCount() : 0;
-    if (dueCards) chips.push(['🃏', String(dueCards), 'kart seni bekliyor', '', 'notes']);
+    if (dueCards) chips.push(['🃏', String(dueCards), 'kart seni bekliyor', '', 'notes:cards']);
+    const dueHata = window.HataUI ? HataUI.dueCount() : 0;
+    if (dueHata) chips.push(['❌', String(dueHata), 'hata sorusu bugün', '', 'notes:hata']);
     const last = window.Deneme ? Deneme.lastSummary() : null;
     if (last) chips.push(['📈', `${last.net} net`, `son ${last.type}${last.delta > 0 ? ' · +' + last.delta : ''}`, last.delta > 0 ? 'up' : '', 'deneme']);
     const msg = pct >= 100 ? 'Bugünkü hedefini tamamladın! Kendinle gurur duy 🎉'
       : sk >= 3 ? `${sk} gündür buradasın, bu istikrar harika 🌟`
-      : days != null && days >= 0 ? Messages.daily('yks', { days })
+      : yksMode && days != null && days >= 0 ? Messages.daily('yks', { days })
       : Messages.daily(Messages.timeOfDay());
     $('#welcome').innerHTML = `<div class="welcome-title">${U.esc(Messages.greeting())}</div>
       <div class="welcome-msg">${U.esc(msg)}</div>
@@ -1372,6 +1375,8 @@
     if (window.NotesUI) NotesUI.init(App);
     if (window.DepoUI) DepoUI.init(App);
     if (window.Asistan) Asistan.init(App);
+    if (window.HataUI) HataUI.init(App);
+    if (window.KaynakUI) KaynakUI.init(App);
     if (window.Badges) Badges.init(App);
     if (window.SpotifyLink) SpotifyLink.init(App);
     if (window.Diag) Diag.init(App);
@@ -1403,7 +1408,10 @@
     });
     $('#welcome').addEventListener('click', (e) => {
       const b = e.target.closest('[data-tab]');
-      if (b) showTab(b.dataset.tab);
+      if (!b) return;
+      const [tab, view] = b.dataset.tab.split(':'); // ör. notes:hata → Kitaplık'ın Hatalar bölümü
+      if (view && window.NotesUI) NotesUI.setView(view);
+      showTab(tab);
     });
     $('#subject-tiles').addEventListener('click', (e) => {
       const t = e.target.closest('.subj-tile');
@@ -1418,6 +1426,7 @@
     $('#today-list').addEventListener('click', openSession);
     $('#history').addEventListener('click', openSession);
     $('#btn-manual').addEventListener('click', () => openSessionModal(null));
+    $('#ask-week').addEventListener('click', () => { if (window.Asistan) Asistan.askWeek(); });
 
     bindTimer();
     bindTasks();

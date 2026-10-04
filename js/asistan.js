@@ -307,7 +307,9 @@ Anlatım:
       chat.cost = (chat.cost || 0) + total;
       const sp = spend();
       sp.usd += total; sp.req++;
+      D().stats.aiAsked = (D().stats.aiAsked || 0) + 1;
       App.save();
+      if (App.checkBadges) App.checkBadges();
       cfg.lastErr = ''; saveCfg();
       await saveChat();
       if (final.stop_reason === 'max_tokens') App.toast('🎓', 'Yanıt çok uzadığı için kesildi', '"Devam et" yazabilirsin');
@@ -481,6 +483,37 @@ Anlatım:
     App.showTab('asistan');
     newChat('Deneme analizi');
     send(`${ctx}\n\nLütfen:\n1) Güçlü yanlarımı ve en çok net kazanabileceğim dersleri/konuları somut sayılarla çıkar.\n2) Önümüzdeki 2 hafta için günlük, uygulanabilir bir çalışma planı öner; YKS soru ağırlıklarını ve eksik konularımı gözet.\n3) Her öncelikli konu için nasıl çalışmam gerektiğini (hangi tür kaynak, kaç soru, hangi kanıta dayalı teknik) kısaca söyle.\nKısa ve net ol; beni motive eden ama gerçekçi bir dil kullan.`, { confirmed: true });
+  }
+  // başka modüllerden hazır bir istekle yeni sohbet (kaynak özeti, hata sorusu…)
+  function ask(text, title, atts) {
+    App.showTab('asistan');
+    if (live) return;
+    newChat(title || 'Yeni sohbet');
+    pending = (atts || []).slice();
+    send(text, { confirmed: !pending.length });
+  }
+  // haftalık değerlendirme: son 7 günün özeti
+  function askWeek() {
+    const days = Stats.byDay(7);
+    const list = Stats.inRange(7);
+    if (!list.length) { App.toast('📈', 'Bu hafta henüz oturum yok', 'Birkaç oturumdan sonra birlikte değerlendirelim'); return; }
+    const subj = Stats.bySubject(list).map((x) => `${Store.subject(x.id).name}: ${U.fmtMin(x.minutes)} (${x.count} oturum${x.rcnt ? ', ort. verim ' + (x.rsum / x.rcnt).toFixed(1) + '/5' : ''})`).join('; ');
+    const best = App.bestHours ? App.bestHours().slice(0, 3) : [];
+    const goal = D().settings.dailyGoal;
+    const hit = days.filter((d) => d.minutes >= goal).length;
+    const moods = list.filter((s) => s.mood).map((s) => s.mood).join(' ');
+    const wk = U.dateKey(U.addDays(new Date(), -6));
+    const den = Deneme.list().filter((e) => e.date >= wk).map((e) => `${e.date} ${Deneme.label(e)} ${Deneme.fmt(Deneme.total(e))} net`).join('; ');
+    const ctx = `Son 7 günüm:
+- Günlük dakikalar: ${days.map((d) => `${U.DAYS_SHORT[d.date.getDay()]} ${d.minutes}`).join(', ')} (hedef ${goal} dk; ${hit}/7 gün tuttu)
+- Dersler: ${subj}
+${best.length ? `- En verimli saatlerim: ${best.map((h) => U.pad(h) + ':00').join(', ')}
+` : ''}${moods ? `- Oturum sonu ruh hâlim: ${moods}
+` : ''}${den ? `- Bu haftaki denemeler: ${den}
+` : ''}- Bu hafta tekrar edilen kart: ${D().stats.cardReviews || 0} (toplam), hata defterinde bekleyen soru: ${window.HataUI ? HataUI.dueCount() : 0}`;
+    ask(`${ctx}
+
+Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle, verimimi artıracak 2-3 küçük ve uygulanabilir değişiklik öner (zamanlama, ders dağılımı, teknik), ve gelecek hafta için 3 net hedef koy. Kısa, sıcak ve gerçekçi ol.`, '📈 Haftalık değerlendirme');
   }
   function askAboutFile(item) {
     App.showTab('asistan');
@@ -707,6 +740,8 @@ Anlatım:
     render,
     askDeneme,
     askAboutFile,
+    ask,
+    askWeek,
     makeCards,
     status() { const sp = spend(); return { ready: ready(), model: MODELS[cfg.model].n, usd: sp.usd, budget: cfg.budget, req: sp.req, web: cfg.web, err: cfg.lastErr || '' }; },
     // testler ve diğer modüller için

@@ -1,9 +1,9 @@
 /* Çevrimdışı çalışma: uygulama dosyalarını önbelleğe alır. Dosyaları değiştirince VERSION'ı artır. */
-const VERSION = 'luna-v10';
+const VERSION = 'luna-v11';
 const FILES = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/storage.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
-  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/depo.js', 'js/depo-ui.js', 'js/badges.js', 'js/spotify.js', 'js/asistan.js', 'js/diag.js', 'js/app.js',
+  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify.js', 'js/asistan.js', 'js/diag.js', 'js/app.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 

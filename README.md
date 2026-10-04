@@ -70,9 +70,9 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 **💌 Motivasyon**
 - Luna günün saatine göre mesaj atar (günaydın, su iç, artık uyu…)
 - **Sevgilinden notlar:** Ayarlar'a yazılan notları Luna arada söyler; günlük hedefe ulaşınca **günün gizli notu** açılır
-- Açılışta karşılama kartı: YKS'ye kalan gün, bugün ve bu hafta çalışılan süre, seri, biten konular, son deneme neti
+- Açılışta karşılama kartı: YKS'ye kalan gün (eğitim düzeyi YKS ise), bugün ve bu hafta çalışılan süre, seri, biten konular, son deneme neti, bekleyen kartlar ve hata soruları (dokununca ilgili bölüme gider)
 - Molalarda küçük öneriler (su iç, gözlerini dinlendir…)
-- 22 rozet 🏅
+- 64 rozet 🏅 (her birinde Hazal'a kısa bir sevgi notu)
 
 **🎧 Müzik** (Çalış ekranında katlanır kutu)
 - Spotify çalma listesi/albüm bağlantısı yapıştırıp uygulamanın içinden dinleme
@@ -84,7 +84,7 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - Derse göre notlar (arama, sabitleme, **kalın**, `kod`, madde işaretleri)
 - Aralıklı tekrar (Leitner, 5 kutu) ile bilgi kartları ve tekrar modu
 
-**🏅 Rozetler:** 7 kategoride 57 rozet; her birinin içinde Hazal'a yazılmış kısa bir sevgi notu, kilitli olanlarda ilerleme çubuğu
+**🏅 Rozetler:** 7 kategoride 64 rozet; her birinin içinde Hazal'a yazılmış kısa bir sevgi notu, kilitli olanlarda ilerleme çubuğu
 
 **📖 Kılavuz:** Ayarlar'da, Luna'nın ağzından her özelliğin açıklaması
 
@@ -105,6 +105,18 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - Resmî Anthropic SDK (tarayıcı paketi uygulama içinde), Claude Opus 5.5 varsayılan (Sonnet 5.5 / Haiku 4.5 seçilebilir), akışlı yanıt, otomatik önbellek (takip soruları ucuz), güvenlik reddinde sunucu tarafı yedek model, duraklayan aramaların otomatik devamı
 - **Maliyet kontrolü:** her yanıtın maliyeti gösterilir, aylık bütçe (varsayılan 5 $) dolunca durur, büyük PDF'lerden önce jeton sayılıp tahmini maliyet sorulur, büyük PDF'lerde sayfa aralığı (yalnızca metin) seçilebilir
 - API anahtarı yalnızca cihazda (veri yedeğine girmez), sohbetler IndexedDB'de
+
+**❌ Hata defteri** (Kitaplık → Hatalar)
+- Yanlış yapılan sorunun fotoğrafı, ders, konu (YKS konu önerileriyle), **neden** yanlış yapıldığı (bilgi eksiği, yorum, işlem, dikkat, süre) ve püf noktası
+- Aralıklı tekrar: ertesi gün, sonra 3, 7, 21 gün; dört kez üst üste doğru çözülen soru "öğrenildi". Önce çöz, sonra notu aç
+- Hata analizi: en sık hata nedeni ve ona özel öneri, en çok soru biriken konular; "Asistan çözsün" ile adım adım çözüm
+
+**📚 Kaynaklar** (Kitaplık → Kaynaklar)
+- OpenAlex'te makale arama (özet, atıf sayısı, açık erişim bağlantısı; sınır dolarsa Crossref yedeği), **DOI** ile makale (Crossref), **ISBN** ile kitap (Open Library / Google Books), elle ekleme (makale, kitap, web sayfası)
+- **APA 7** (Türkçe karşılıklarıyla, metin içi atıf dahil), **Vancouver** (tıp/sağlık bölümlerinde otomatik önerilir), **IEEE**; Word'e italikleriyle kopyalama, dersin tüm kaynakçasını tek dokunuşla kopyalama
+- Aynı DOI ikinci kez eklenmez, mevcut künye güncel bilgilerle düzenlenir; "Özetle" ile asistana özetletme
+
+**📈 Haftalık değerlendirme:** İlerleme sekmesinden son 7 günün dakikaları, ders dağılımı, verimli saatler, ruh hâli ve denemeleri asistana gönderilir; iyi gidenler, 2-3 küçük değişiklik ve gelecek haftanın 3 hedefi
 
 **🛡️ Veri güvenliği**
 - Kayıtlı veri bir gün okunamazsa uygulama sessizce sıfırlamaz: ham veri kurtarma kopyasına alınır, açılışta haber verilir, Ayarlar → Veriler'den indirilip geri yüklenebilir
@@ -161,6 +173,8 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok)
 | `vendor/pdfjs/` | Mozilla PDF.js 6.4 (Apache-2.0), yalnızca PDF açılınca yüklenir |
 | `js/asistan.js` | Eğitim asistanı (Claude): sohbet, belgeler, kaynak gösterimi, kart üretimi, bütçe |
 | `vendor/anthropic/` | Resmî Anthropic TypeScript SDK 0.131 (MIT), esbuild ile tek dosya tarayıcı paketi |
+| `js/hata.js` | Hata defteri: fotoğraflı yanlış sorular, aralıklı yeniden çözme, hata analizi |
+| `js/kaynak.js`, `js/kaynak-ui.js` | Akademik kütüphane: OpenAlex/Crossref/Open Library, APA 7 / Vancouver / IEEE kaynakça |
 | `js/diag.js` | Tanılama: bağlantı testleri, durum özeti, hata günlüğü |
 | `js/messages.js` | Luna'nın mesajları |
 | `js/audio.js` | Zil, miyav ve ortam sesleri |

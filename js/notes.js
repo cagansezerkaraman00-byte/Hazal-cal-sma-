@@ -3,7 +3,7 @@
 
 const NotesUI = (() => {
   let App = null;
-  let view = 'notes';      // notes | cards | depo
+  let view = 'notes';      // notes | cards | depo | hata | kaynak
   let filterSubject = '';
   let search = '';
   const $ = (s, el = document) => el.querySelector(s);
@@ -51,9 +51,16 @@ const NotesUI = (() => {
         <button data-view="notes" class="${view === 'notes' ? 'active' : ''}">📓 Notlar</button>
         <button data-view="cards" class="${view === 'cards' ? 'active' : ''}">🃏 Kartlar${due ? ` <span class="pill-count">${due}</span>` : ''}</button>
         ${window.DepoUI ? `<button data-view="depo" class="${view === 'depo' ? 'active' : ''}">🗂️ Depo</button>` : ''}
+        ${window.HataUI ? `<button data-view="hata" class="${view === 'hata' ? 'active' : ''}">❌ Hatalar${HataUI.dueCount() ? ` <span class="pill-count">${HataUI.dueCount()}</span>` : ''}</button>` : ''}
+        ${window.KaynakUI ? `<button data-view="kaynak" class="${view === 'kaynak' ? 'active' : ''}">📚 Kaynaklar</button>` : ''}
       </div>
-      ${view === 'depo' ? '<div id="depo-root"></div>' : view === 'notes' ? notesHtml() : cardsHtml(due)}`;
+      ${view === 'depo' ? '<div id="depo-root"></div>' : view === 'hata' ? '<div id="hata-root"></div>' : view === 'kaynak' ? '<div id="kaynak-root"></div>' : view === 'notes' ? notesHtml() : cardsHtml(due)}`;
+    // dar ekranda seçili bölüm görünür kalsın
+    const seg = root.querySelector('.notes-seg'), act = seg && seg.querySelector('.active');
+    if (act && seg.scrollWidth > seg.clientWidth) seg.scrollLeft = act.offsetLeft - (seg.clientWidth - act.offsetWidth) / 2; // yalnızca yatay kaydırma
     if (view === 'depo') DepoUI.render();
+    if (view === 'hata') HataUI.render();
+    if (view === 'kaynak') KaynakUI.render();
   }
 
   function notesHtml() {
@@ -204,7 +211,7 @@ const NotesUI = (() => {
   function bind() {
     const root = $('#notes-root');
     root.addEventListener('click', (e) => {
-      if (e.target.closest('#depo-root')) return; // depo kendi olaylarını yönetir
+      if (e.target.closest('#depo-root, #hata-root, #kaynak-root')) return; // bu bölümler kendi olaylarını yönetir
       const b = e.target.closest('button, .note-card, .card-list li');
       if (!b) return;
       if (b.dataset.view) { view = b.dataset.view; filterSubject = ''; render(); return; }
@@ -218,7 +225,7 @@ const NotesUI = (() => {
       if (li) editCard(D().cards.find((c) => c.id === li.dataset.id));
     });
     root.addEventListener('input', (e) => {
-      if (e.target.closest('#depo-root') || e.target.dataset.f !== 'search') return;
+      if (e.target.closest('#depo-root, #hata-root, #kaynak-root') || e.target.dataset.f !== 'search') return;
       search = e.target.value;
       const pos = e.target.selectionStart;
       render();

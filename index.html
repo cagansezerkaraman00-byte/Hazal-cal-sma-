@@ -155,7 +155,8 @@
         <div class="grid">
           <div class="card good"><h2>⭐ Güçlü yönlerin</h2><ul class="insights" id="rep-strengths"></ul></div>
           <div class="card warn"><h2>🌱 Gelişim fırsatları</h2><ul class="insights" id="rep-improve"></ul></div>
-          <div class="card tip wide-card"><h2>💡 Öneriler</h2><ul class="insights" id="rep-tips"></ul></div>
+          <div class="card tip wide-card"><h2>💡 Öneriler</h2><ul class="insights" id="rep-tips"></ul>
+            <button class="btn soft" id="ask-week" type="button">🎓 Haftamı asistanla değerlendir</button></div>
           <div class="card wide-card">
             <h2>Saatlere göre verim <span class="muted small">(yükseklik: süre · renk: verim)</span></h2>
             <div class="hours" id="hour-chart"></div>
@@ -278,6 +279,23 @@
             <ul>
               <li><b>Notlar:</b> derse göre not al, ara, 📌 ile üste sabitle. <code>**kalın**</code>, <code>`kod`</code> ve satır başında "- " ile madde yazabilirsin.</li>
               <li><b>Kartlar</b> aralıklı tekrar (Leitner) ile çalışır: ön yüze soru, arka yüze cevap. Bildiğin kart bir üst kutuya geçer ve daha seyrek gelir (1 → her gün, 2 → 1 gün, 3 → 3 gün, 4 → haftada bir, 5 → 16 günde bir). Bilemediğin kart 1. kutuya döner. Bu, bilgiyi kalıcı yapmanın en etkili yollarından biri.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>❌ Hata defteri</summary>
+            <ul>
+              <li>Kitaplık → <b>Hatalar</b>'da denemede ya da testte yanlış yaptığın sorunun fotoğrafını çek; dersini, konusunu, <b>neden</b> yanlış yaptığını (bilgi eksiği, yorum, işlem, dikkat, süre) ve doğru cevabı/püf noktasını yaz.</li>
+              <li>Soru ertesi gün, sonra 3, 7 ve 21 gün sonra yeniden karşına çıkar. Önce kendin çöz, sonra notu aç. Bilemezsen başa döner; dört kez üst üste doğru çözdüğün soru "öğrenildi" olur. Bu, aralıklı tekrar ve kendini sınamanın birleşimi; kalıcı öğrenmenin en güçlü yollarından.</li>
+              <li><b>Hata analizi</b> en sık hata nedenini ve en çok soru biriken konuları gösterir. Takıldığın soruyu "🎓 Asistan çözsün" ile adım adım çözdürebilirsin.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📚 Kaynaklar ve kaynakça</summary>
+            <ul>
+              <li>Kitaplık → <b>Kaynaklar</b>'da makale arayabilir (OpenAlex), <b>DOI</b> (makale) ya da <b>ISBN</b> (kitap) yapıştırıp künyeyi otomatik doldurabilir ya da elle ekleyebilirsin.</li>
+              <li>Kaynakların seçtiğin biçimde yazılır: <b>APA 7</b>, <b>Vancouver</b> (tıp ve sağlık bölümleri için önerilir) ya da <b>IEEE</b> (mühendislik). APA'da metin içi atıf da gösterilir. <b>Kopyala</b> ile Word'e yapıştırınca italikler korunur; <b>Kaynakçayı kopyala</b> dersin tüm kaynaklarını sıralı verir.</li>
+              <li>Açık erişimli makalelerde 🔓 bağlantısı tam metne gider. "🎓 Özetle" kaynağı asistana özetletir.</li>
+              <li>Künyeyi yine de kontrol et: veritabanlarındaki bilgiler bazen eksik olabilir (ör. kitap baskısı); ✏️ ile düzeltebilirsin.</li>
             </ul>
           </details>
           <details>
@@ -530,6 +548,9 @@
   <script src="js/notes.js"></script>
   <script src="js/depo.js"></script>
   <script src="js/depo-ui.js"></script>
+  <script src="js/hata.js"></script>
+  <script src="js/kaynak.js"></script>
+  <script src="js/kaynak-ui.js"></script>
   <script src="js/badges.js"></script>
   <script src="js/spotify.js"></script>
   <script src="js/asistan.js"></script>

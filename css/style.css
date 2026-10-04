@@ -1099,6 +1099,44 @@ details.pick-group .chips { margin-top: 8px; }
 .dt-meta { font-size: .72rem; color: var(--muted); font-weight: 700; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
 .dt-meta .tag { font-size: .68rem; }
 
+/* ---------- Kitaplık bölümleri ---------- */
+.notes-seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+.notes-seg::-webkit-scrollbar { display: none; }
+.notes-seg button { white-space: nowrap; flex: none; }
+/* Hata defteri */
+.hata-list { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 8px; }
+.hata-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; }
+.hata-item:hover { border-color: var(--accent-line); }
+.ht-thumb { width: 56px; height: 44px; border-radius: 8px; background: var(--surface-3); display: flex; align-items: center; justify-content: center; overflow: hidden; flex: none; }
+.ht-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ht-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ht-text small { color: var(--muted); font-weight: 600; font-size: .75rem; }
+.ht-preview { display: block; max-width: 100%; max-height: 32vh; margin: 6px auto 4px; border-radius: 10px; }
+.ht-review .ht-img { display: flex; justify-content: center; margin: 8px 0; max-height: 52vh; overflow: auto; border-radius: 12px; background: var(--surface-2); }
+.ht-review .ht-img img { max-width: 100%; height: auto; }
+.ht-review .flash-back { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); border: 1px solid var(--accent-line); font-weight: 700; }
+/* Kaynaklar */
+.kr-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.kr-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.kr-row input { flex: 1 1 220px; min-width: 0; }
+.kr-style label { font-size: .85rem; font-weight: 700; color: var(--muted); }
+.kr-style select { flex: 1 1 200px; }
+.kr-results { margin-bottom: 12px; }
+.kr-res-head, .kr-lib-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.kr-res-head .icon-btn, .kr-lib-head .btn { margin-left: auto; }
+.kr-res-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.kr-res-list li { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; padding: 10px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.kr-res-list li > div { min-width: 0; flex: 1; }
+.kr-res-list b { display: block; font-size: .9rem; overflow-wrap: anywhere; }
+.kr-res-list small { display: block; color: var(--muted); font-weight: 600; font-size: .75rem; margin-top: 2px; overflow-wrap: anywhere; }
+.kr-res-list details p { margin: 6px 0 0; }
+.ref-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.ref-item { padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.ref-cite { font-size: .88rem; line-height: 1.5; padding-left: 1.6em; text-indent: -1.6em; overflow-wrap: anywhere; } /* APA asılı girinti */
+.ref-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.ref-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.ref-acts .chip { padding: 4px 9px; font-size: .75rem; text-decoration: none; }
+
 /* ---------- Asistan ---------- */
 .ai-setup summary { cursor: pointer; font-weight: 800; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .ai-setup label:not(.switch):not(.field) { display: block; font-size: .85rem; font-weight: 700; color: var(--muted); margin: 10px 0 4px; }
