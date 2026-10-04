@@ -1,9 +1,9 @@
 /* Çevrimdışı çalışma: uygulama dosyalarını önbelleğe alır. Dosyaları değiştirince VERSION'ı artır. */
-const VERSION = 'luna-v3';
+const VERSION = 'luna-v4';
 const FILES = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/storage.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
-  'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/app.js',
+  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/badges.js', 'js/app.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 

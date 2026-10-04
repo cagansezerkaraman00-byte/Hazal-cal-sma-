@@ -13,48 +13,10 @@
   let currentTab = 'home';
   let spotifyLoaded = false;
 
-  // ======================================================================
-  // Rozetler
-  // ======================================================================
-  const total = () => D().sessions.reduce((a, s) => a + s.minutes, 0);
-  const BADGES = [
-    { id: 'first', e: '🌱', n: 'İlk Adım', d: 'İlk oturumunu tamamla', test: () => D().sessions.length >= 1 },
-    { id: 'focus50', e: '🎯', n: 'Derin Odak', d: 'Tek oturumda 50+ dakika', test: () => D().sessions.some((s) => s.minutes >= 50) },
-    { id: 'goal', e: '🏆', n: 'Hedef Avcısı', d: 'Günlük hedefe ulaş', test: () => Stats.byDay(400).some((d) => d.minutes >= D().settings.dailyGoal) },
-    { id: 'streak3', e: '🔥', n: 'Isınıyoruz', d: '3 günlük seri', test: () => Stats.bestStreak() >= 3 },
-    { id: 'streak7', e: '☄️', n: 'Kuyruklu Yıldız', d: '7 günlük seri', test: () => Stats.bestStreak() >= 7 },
-    { id: 'streak30', e: '🌌', n: 'Galaksi', d: '30 günlük seri', test: () => Stats.bestStreak() >= 30 },
-    { id: 'early', e: '🌅', n: 'Erken Kuş', d: "08:00'den önce başla", test: () => D().sessions.some((s) => { const h = new Date(s.start).getHours(); return h >= 4 && h < 8; }) },
-    { id: 'owl', e: '🦉', n: 'Gece Kuşu', d: "23:00'ten sonra çalış", test: () => D().sessions.some((s) => { const h = new Date(s.start).getHours(); return h >= 23 || h < 4; }) },
-    { id: 'h10', e: '⭐', n: '10 Saat', d: 'Toplam 10 saat çalış', test: () => total() >= 600 },
-    { id: 'h50', e: '🌟', n: '50 Saat', d: 'Toplam 50 saat çalış', test: () => total() >= 3000 },
-    { id: 'h100', e: '💫', n: '100 Saat', d: 'Toplam 100 saat çalış', test: () => total() >= 6000 },
-    { id: 'pomo25', e: '🍅', n: 'Domates Bahçesi', d: '25 pomodoro tamamla', test: () => D().sessions.filter((s) => s.kind === 'pomodoro').length >= 25 },
-    { id: 'variety', e: '🌈', n: 'Çok Yönlü', d: 'Bir günde 3 farklı ders', test: () => {
-      const m = {};
-      for (const s of D().sessions) { const k = U.dateKey(s.start); (m[k] = m[k] || new Set()).add(s.subjectId); }
-      return Object.values(m).some((x) => x.size >= 3);
-    } },
-    { id: 'shine', e: '✨', n: 'Parlayan Yıldız', d: '5 oturumu 5⭐ verimle bitir', test: () => D().sessions.filter((s) => s.rating === 5).length >= 5 },
-    { id: 'tasks10', e: '✅', n: 'Görev Ustası', d: '10 görev tamamla', test: () => (D().tasksDone || 0) >= 10 },
-    { id: 'review5', e: '📌', n: 'Tekrar Kraliçesi', d: '5 tekrar konusunu bitir', test: () => (D().reviewDone || 0) >= 5 },
-    { id: 'luna10', e: '🐟', n: "Luna'nın Dostu", d: "Luna'yı 10 kez besle", test: () => D().fed >= 10 },
-    { id: 'deneme1', e: '📝', n: 'İlk Deneme', d: 'İlk deneme sonucunu kaydet', test: () => D().denemeler.length >= 1 },
-    { id: 'deneme10', e: '🗂️', n: 'Deneme Kurdu', d: '10 deneme kaydet', test: () => D().denemeler.length >= 10 },
-    { id: 'netup', e: '📈', n: 'Yükselen Yıldız', d: 'Bir önceki denemeye göre 5+ net artış', test: () => !!(window.Deneme && Deneme.hasRise(5)) },
-    { id: 'topic10', e: '📗', n: 'Konu Avcısı', d: '10 konuyu tamamla', test: () => !!(window.YKS && YKS.doneCount() >= 10) },
-    { id: 'topic50', e: '📚', n: 'Konu Ustası', d: '50 konuyu tamamla', test: () => !!(window.YKS && YKS.doneCount() >= 50) },
-  ];
-
+  // Rozetler: badges.js (her rozetin bir sevgi notu var)
   function checkBadges() {
-    const fresh = BADGES.filter((b) => !D().badges[b.id] && b.test());
-    if (!fresh.length) return;
-    fresh.forEach((b) => { D().badges[b.id] = Date.now(); });
-    if (fresh.length <= 2) fresh.forEach((b) => toast(b.e, `Yeni rozet: ${b.n}`, b.d));
-    else toast('🏅', `${fresh.length} yeni rozet kazandın!`, fresh.map((b) => b.e).join(' ') + ' · İlerleme sekmesinde');
-    Scene.celebrate();
-    save();
-    renderBadges();
+    if (!window.Badges) return;
+    if (Badges.check().length && currentTab === 'progress') renderBadges();
   }
 
   // ======================================================================
@@ -236,6 +198,8 @@
     if (name === 'progress') renderProgress();
     if (name === 'plan') { if (window.PlanUI) PlanUI.render(); renderTasks(); renderReview(); }
     if (name === 'deneme' && window.DenemeUI) DenemeUI.render();
+    if (name === 'notes' && window.NotesUI) NotesUI.render();
+    if (name === 'notes' && window.NotesUI) NotesUI.render();
     if (name === 'settings') renderSettings();
     if (name === 'home') renderHome();
     try { localStorage.setItem('luna-tab', name); } catch (e) { /* yok say */ }
@@ -304,6 +268,12 @@
   function syncSceneMode() {
     const s = Timer.state();
     Scene.setMode(s.running ? (s.phase === 'focus' ? 'focus' : 'break') : 'idle');
+    // ders kutucuklarındaki "şu an" işareti
+    const live = s.running && s.phase === 'focus' ? s.subjectId : null;
+    $$('#subject-tiles .subj-tile').forEach((t) => {
+      t.classList.toggle('active', t.dataset.id === live);
+      t.querySelector('.st-play').textContent = t.dataset.id === live ? '●' : '▶';
+    });
   }
 
   const timerHandlers = {
@@ -587,6 +557,7 @@
     if (currentTab === 'progress') renderProgress();
     if (currentTab === 'plan') { if (window.PlanUI) PlanUI.render(); renderTasks(); renderReview(); }
     if (currentTab === 'deneme' && window.DenemeUI) DenemeUI.render();
+    if (currentTab === 'notes' && window.NotesUI) NotesUI.render();
   }
 
   // ======================================================================
@@ -625,7 +596,10 @@
     const todayKey = U.dateKey(new Date());
     const today = D().sessions.filter((s) => U.dateKey(s.start) === todayKey).sort((a, b) => b.start - a.start);
     $('#today-sessions-count').textContent = today.length ? `${today.length} oturum` : '';
+    $('#today-sessions-label').textContent = today.length ? `Bugünün oturumları (${today.length})` : 'Bugünün oturumları';
     $('#today-list').innerHTML = today.length ? today.map((s) => sessionItem(s)).join('') : '<li class="empty" style="display:block">Bugün henüz oturum yok. Luna seni bekliyor 🐾</li>';
+    $('#day-timeline').innerHTML = timelineHtml(new Date(), true);
+    renderSubjectTiles(today);
 
     // Gizli not
     const note = loveNoteOfDay();
@@ -648,6 +622,30 @@
     if (window.PlanUI) { tp.classList.remove('hidden'); PlanUI.renderToday(tp); } else tp.classList.add('hidden');
   }
 
+  // 24 saatlik zaman çizelgesi (YPT tarzı): oturumlar gerçek saatlerinde renkli bloklar
+  function timelineHtml(date, withNow) {
+    const start = U.dayStart(date).getTime(), span = 864e5, end = start + span;
+    let blocks = '';
+    for (const s of D().sessions) {
+      const e = s.end || s.start + s.minutes * 60000;
+      if (e <= start || s.start >= end) continue;
+      const a = Math.max(s.start, start), b = Math.min(e, end);
+      const sub = Store.subject(s.subjectId);
+      blocks += `<i style="left:${((a - start) / span) * 100}%;width:${Math.max(0.5, ((b - a) / span) * 100)}%;background:${sub.color}" title="${U.esc(sub.name)} · ${U.hm(a)}–${U.hm(b)}"></i>`;
+    }
+    const now = Date.now();
+    const marker = withNow && now >= start && now < end ? `<b class="tl-now" style="left:${((now - start) / span) * 100}%"></b>` : '';
+    return `<div class="tl-track">${blocks}${marker}</div><div class="tl-ticks"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>`;
+  }
+  function renderSubjectTiles(today) {
+    const per = {};
+    for (const s of today) per[s.subjectId] = (per[s.subjectId] || 0) + s.minutes;
+    const st = Timer.state();
+    const live = st.running && st.phase === 'focus' ? st.subjectId : null;
+    $('#subject-tiles').innerHTML = D().subjects.map((x) => `<button class="subj-tile ${live === x.id ? 'active' : ''}" data-id="${x.id}" type="button" style="--c:${x.color}">
+      <span class="st-name">${U.esc(x.name)}</span><b class="st-min">${per[x.id] ? U.fmtMin(per[x.id]) : '—'}</b><span class="st-play" aria-hidden="true">${live === x.id ? '●' : '▶'}</span></button>`).join('');
+  }
+
   // Açılışta başarıyı gösteren, hep olumlu karşılama kartı
   function weekMinutes() {
     const today = U.dayStart(new Date());
@@ -667,6 +665,8 @@
     if (sk >= 2) chips.push(['🔥', `${sk} gün`, 'seri', 'up']);
     const done = window.YKS ? YKS.doneCount() : 0;
     if (done) chips.push(['✅', String(done), 'konu tamam', '']);
+    const dueCards = window.NotesUI ? NotesUI.dueCount() : 0;
+    if (dueCards) chips.push(['🃏', String(dueCards), 'kart seni bekliyor', '']);
     const last = window.Deneme ? Deneme.lastSummary() : null;
     if (last) chips.push(['📈', `${last.net} net`, `son ${last.type}${last.delta > 0 ? ' · +' + last.delta : ''}`, last.delta > 0 ? 'up' : '']);
     const msg = pct >= 100 ? 'Bugünkü hedefini tamamladın! Kendinle gurur duy 🎉'
@@ -728,6 +728,10 @@
     }).join('');
 
     renderCalendar();
+    $('#week-timeline').innerHTML = Array.from({ length: 7 }, (_, i) => {
+      const d = U.addDays(U.dayStart(new Date()), i - 6);
+      return `<div class="wt-row"><span class="wt-day">${U.DAYS_SHORT[d.getDay()]}</span><div class="timeline">${timelineHtml(d, i === 6)}</div></div>`;
+    }).join('');
 
     const hist = sm.list.slice().sort((a, b) => b.start - a.start).slice(0, 200);
     $('#history').innerHTML = hist.length ? hist.map((s) => sessionItem(s, true)).join('') : '<li class="empty" style="display:block">Bu dönemde oturum yok. Oturum sonunda yazdığın notlar burada birikir.</li>';
@@ -780,12 +784,9 @@
   }
 
   function renderBadges() {
-    $('#badges').innerHTML = BADGES.map((b) => {
-      const on = D().badges[b.id];
-      return `<div class="badge ${on ? 'on' : ''}" title="${on ? new Date(on).toLocaleDateString('tr-TR') + ' tarihinde kazanıldı' : 'Henüz kazanılmadı'}">
-        <div class="e">${b.e}</div><div class="n">${b.n}</div><div class="d">${b.d}</div></div>`;
-    }).join('');
+    if (window.Badges) Badges.render($('#badges'));
   }
+
 
   // ======================================================================
   // Görevler & sınavlar
@@ -894,7 +895,7 @@
       $('#spotify-presets').innerHTML = PRESETS.map(([n, u]) => `<button class="chip" data-url="${u}">${n}</button>`).join('');
       $('#mixer').innerHTML = [
         ['yagmur', '🌧️', 'Yağmur'], ['dalga', '🌊', 'Dalgalar'], ['somine', '🔥', 'Şömine'],
-        ['kahverengi', '🟤', 'Kahverengi gürültü'], ['beyaz', '⚪', 'Beyaz gürültü'],
+        ['kutuphane', '📚', 'Kütüphane'], ['kahverengi', '🟤', 'Kahverengi gürültü'], ['beyaz', '⚪', 'Beyaz gürültü'],
       ].map(([k, e, n]) => `<div class="mix"><span class="e">${e}</span><div><div class="n">${n}</div><input type="range" min="0" max="100" value="0" data-kind="${k}" aria-label="${n}"></div></div>`).join('');
     }
     $('#spotify-input').value = D().settings.spotify;
@@ -946,6 +947,7 @@
     $('#set-love').value = D().loveNotes.join('\n');
     $('#set-focusmode').checked = s.focusMode;
     $('#set-quiet').checked = s.quietFocus;
+    $('#set-pauseleave').checked = s.pauseOnLeave;
     $('#set-weather').checked = s.weather;
     $$('#theme-seg button').forEach((b) => b.classList.toggle('active', b.dataset.theme === s.theme));
     $('#city-chips').innerHTML = CITIES.map(([n, la, lo]) => `<button class="chip ${Math.abs(la - s.lat) < 0.05 && Math.abs(lo - s.lon) < 0.05 ? 'active' : ''}" data-lat="${la}" data-lon="${lo}" data-name="${n}">${n}</button>`).join('');
@@ -980,6 +982,7 @@
     bool('#set-autofocus', 'autoFocus');
     bool('#set-sound', 'sound');
     bool('#set-quiet', 'quietFocus');
+    bool('#set-pauseleave', 'pauseOnLeave');
     $('#set-focusmode').addEventListener('change', (e) => { D().settings.focusMode = e.target.checked; save(); renderTimer(Timer.state()); });
     $('#set-notify').addEventListener('change', async (e) => {
       if (e.target.checked) {
@@ -1142,6 +1145,8 @@
     // modüller sayaçtan önce: sayfa kapalıyken biten bir oturum açılışta işlenirken hazır olsunlar
     if (window.PlanUI) PlanUI.init(App);
     if (window.DenemeUI) DenemeUI.init(App);
+    if (window.NotesUI) NotesUI.init(App);
+    if (window.Badges) Badges.init(App);
     renderSubjectSelects();
     Timer.init(timerHandlers);
     syncSceneMode();
@@ -1162,6 +1167,20 @@
       const s = D().sessions.find((x) => x.id === li.dataset.id);
       if (s) openSessionModal(s);
     };
+    $('#badges').addEventListener('click', (e) => {
+      const b = e.target.closest('.badge[data-id]');
+      if (b && window.Badges) Badges.openDetail(b.dataset.id);
+    });
+    $('#subject-tiles').addEventListener('click', (e) => {
+      const t = e.target.closest('.subj-tile');
+      if (!t) return;
+      const s = Timer.state();
+      if (s.running && s.phase === 'focus') {
+        if (s.subjectId !== t.dataset.id) toast('⏱️', 'Bir oturum zaten sürüyor', 'Ders değiştirmek için önce bitir ya da duraklat');
+        return;
+      }
+      startStudy({ subjectId: t.dataset.id });
+    });
     $('#today-list').addEventListener('click', openSession);
     $('#history').addEventListener('click', openSession);
     $('#btn-manual').addEventListener('click', () => openSessionModal(null));
@@ -1186,8 +1205,30 @@
       const k = U.dateKey(new Date());
       if (k !== lastDay) { lastDay = k; renderHome(); if (currentTab === 'plan' && window.PlanUI) PlanUI.render(); }
     }, 60000);
+    // Uygulamadan çıkış: varsayılan nazik "hoş geldin", sıkı modda sayaç duraklar (YPT gibi)
+    let hiddenAt = 0;
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
+      const s = Timer.state();
+      const focusing = s.running && s.phase === 'focus';
+      if (document.hidden) {
+        if (focusing) {
+          hiddenAt = Date.now();
+          if (D().settings.pauseOnLeave) Timer.toggle();
+        }
+        return;
+      }
+      if (focusing) lockScreen(true);
+      if (hiddenAt) {
+        const away = Date.now() - hiddenAt;
+        hiddenAt = 0;
+        if (away > 60000) {
+          const m = Math.round(away / 60000);
+          Scene.say(D().settings.pauseOnLeave
+            ? `Hoş geldin! Sayaç seni bekledi ⏸ Hazır olunca "Devam"a bas, kaldığımız yerden sürdürelim.`
+            : `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`);
+          lastMsgAt = Date.now();
+        }
+      }
     });
 
     let saved = 'home';

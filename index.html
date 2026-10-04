@@ -45,6 +45,7 @@
       <button data-tab="home" class="active"><span>🏠</span><b>Çalış</b></button>
       <button data-tab="plan"><span>🗓️</span><b>Plan</b></button>
       <button data-tab="deneme"><span>📝</span><b>Deneme</b></button>
+      <button data-tab="notes"><span>📓</span><b>Notlar</b></button>
       <button data-tab="progress"><span>📈</span><b>İlerleme</b></button>
       <button data-tab="settings"><span>⚙️</span><b>Ayarlar</b></button>
     </nav>
@@ -102,7 +103,13 @@
                 <div class="muted small" id="today-sessions-count"></div>
               </div>
             </div>
-            <ul class="session-list" id="today-list"></ul>
+            <div class="timeline" id="day-timeline" aria-label="Bugünün zaman çizelgesi"></div>
+            <h3 class="sub-h">Derslerim <span class="muted small">dokun, o dersle başlasın</span></h3>
+            <div class="subj-tiles" id="subject-tiles"></div>
+            <details class="today-sessions">
+              <summary><span id="today-sessions-label">Bugünün oturumları</span></summary>
+              <ul class="session-list" id="today-list"></ul>
+            </details>
             <button class="btn soft wide" id="btn-manual">＋ Çalışmamı elle ekle</button>
           </div>
 
@@ -150,6 +157,10 @@
             <h2>Saatlere göre verim <span class="muted small">(yükseklik: süre · renk: verim)</span></h2>
             <div class="hours" id="hour-chart"></div>
             <div class="legend"><span><i style="background:var(--r1)"></i>düşük</span><span><i style="background:var(--r3)"></i>orta</span><span><i style="background:var(--r5)"></i>yüksek</span><span><i style="background:var(--unrated)"></i>puansız</span></div>
+          </div>
+          <div class="card wide-card">
+            <h2>🕰️ Haftalık zaman çizelgesi <span class="muted small">(hangi saatte ne çalıştın)</span></h2>
+            <div class="week-timeline" id="week-timeline"></div>
           </div>
           <div class="card wide-card">
             <h2>Günlük çalışma</h2>
@@ -207,6 +218,11 @@
         </div>
       </section>
 
+      <!-- NOTLAR & KARTLAR -->
+      <section class="tab" id="tab-notes">
+        <div id="notes-root"></div>
+      </section>
+
       <!-- DENEME -->
       <section class="tab" id="tab-deneme">
         <div id="deneme-root"></div>
@@ -245,6 +261,7 @@
             <h2>🎯 Odak</h2>
             <label class="switch"><input type="checkbox" id="set-focusmode"> Başlayınca sade odak ekranına geç</label>
             <label class="switch"><input type="checkbox" id="set-quiet"> Odaklanırken Luna sessiz kalsın</label>
+            <label class="switch"><input type="checkbox" id="set-pauseleave"> Uygulamadan çıkınca sayacı duraklat (sıkı mod)</label>
             <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
             <label class="switch"><input type="checkbox" id="set-notify"> Bildirim gönder (uygulama arka plandayken)</label>
             <label class="field">Luna molada/boşta ne sıklıkla konuşsun? (dakika, 0 = hiç) <input type="number" id="set-msg" min="0" max="240"></label>
@@ -296,6 +313,7 @@
   <script src="js/storage.js"></script>
   <script src="js/messages.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/takvim.js"></script>
   <script src="js/scene.js"></script>
   <script src="js/timer.js"></script>
   <script src="js/stats.js"></script>
@@ -303,6 +321,8 @@
   <script src="js/yks.js"></script>
   <script src="js/plan.js"></script>
   <script src="js/deneme.js"></script>
+  <script src="js/notes.js"></script>
+  <script src="js/badges.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

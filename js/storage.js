@@ -65,6 +65,7 @@ const Store = (() => {
       notify: false,
       focusMode: true,   // başlayınca sade odak ekranı
       quietFocus: true,  // odaklanırken Luna konuşmasın
+      pauseOnLeave: false, // sıkı mod: uygulamadan çıkınca sayaç duraklar
       theme: 'light',    // light | dark | auto (gün batımında koyu)
       weather: true,     // günlük hava durumu
       city: 'İstanbul',
@@ -96,6 +97,9 @@ const Store = (() => {
     // YKS: alan, sınav tarihi, konu durumları (0 başlamadım, 1 çalışıyorum, 2 tekrar, 3 tamam)
     yks: { field: null, examDate: null, topics: {}, planDone: {} },
     denemeler: [],  // {id, date, type: TYT|AYT|BRANS, name, scores: {subjectKey: {d, y}}, eksik: [topicId], note, created}
+    notes: [],      // {id, subjectId, title, body, created, updated, pinned}
+    cards: [],      // bilgi kartları: {id, subjectId, front, back, box (1-5), due (YYYY-AA-GG), created}
+    stats: { planItems: 0, planFull: 0, planFullDates: [], cardReviews: 0, friendsMet: false },
     badges: {},     // id -> timestamp
     tasksDone: 0,
     reviewDone: 0,
@@ -109,7 +113,7 @@ const Store = (() => {
     if (!obj || typeof obj !== 'object') return def;
     const out = { ...def, ...obj };
     out.settings = { ...def.settings, ...(obj.settings || {}) };
-    for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler']) {
+    for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards']) {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }
     const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
@@ -117,6 +121,8 @@ const Store = (() => {
     out.yks = { ...def.yks, ...(isObj(obj.yks) ? obj.yks : {}) };
     if (!isObj(out.yks.topics)) out.yks.topics = {};
     if (!isObj(out.yks.planDone)) out.yks.planDone = {};
+    out.stats = { ...def.stats, ...(isObj(obj.stats) ? obj.stats : {}) };
+    if (!Array.isArray(out.stats.planFullDates)) out.stats.planFullDates = [];
     return out;
   }
 

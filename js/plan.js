@@ -165,8 +165,19 @@ const PlanUI = (() => {
   const doneSet = (date) => new Set(Y().planDone[date] || []);
   function toggleDone(date, key, on) {
     const s = doneSet(date);
+    const was = s.has(key);
     on ? s.add(key) : s.delete(key);
     Y().planDone[date] = [...s];
+    // rozet sayaçları: yapılan madde ve tamamen biten günler
+    const st = D().stats;
+    if (on && !was) st.planItems = (st.planItems || 0) + 1;
+    const w = week();
+    const day = w && w.find((x) => x.date === date);
+    if (on && day && day.items.length && day.items.every((it) => s.has(it.key)) && !st.planFullDates.includes(date)) {
+      st.planFullDates.push(date);
+      if (st.planFullDates.length > 400) st.planFullDates.splice(0, st.planFullDates.length - 400);
+      st.planFull = (st.planFull || 0) + 1;
+    }
     App.save();
   }
 

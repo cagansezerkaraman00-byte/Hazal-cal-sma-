@@ -91,6 +91,25 @@ const Sound = (() => {
       crackle.connect(hp).connect(out); crackle.start();
       return [src, crackle];
     },
+    // Kütüphane: alçak oda uğultusu + arada sayfa çevirme sesleri (zamanlayıcı yok, döngülü tampon)
+    kutuphane: (c, out) => {
+      const room = c.createBufferSource(); room.buffer = noiseBuffer('brown'); room.loop = true;
+      const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 350;
+      const g = c.createGain(); g.gain.value = 0.35;
+      room.connect(lp).connect(g).connect(out); room.start();
+      const len = c.sampleRate * 14, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+      for (const at of [1.2, 5.8, 9.1, 12.4]) {
+        const i0 = Math.floor(at * c.sampleRate), n = Math.floor(0.22 * c.sampleRate);
+        for (let j = 0; j < n && i0 + j < len; j++) {
+          const env = Math.sin((Math.PI * j) / n) * (0.6 + 0.4 * Math.sin(j / 900));
+          d[i0 + j] = (Math.random() * 2 - 1) * env * 0.5;
+        }
+      }
+      const pages = c.createBufferSource(); pages.buffer = buf; pages.loop = true;
+      const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = 0.7;
+      pages.connect(bp).connect(out); pages.start();
+      return [room, pages];
+    },
   };
 
   return {
