@@ -93,6 +93,21 @@ const Messages = (() => {
     play: [
       'Yumağımı yakaladım! 🧶', 'Bu ip benim! Miyav 😼', 'Molada biraz oyun iyi gelir, sen de esne 🧶',
     ],
+    vesper: [
+      'Bu Vesper 🐈‍⬛ Mavi gözlü gece kedimiz; sessizdir ama hep seni izler.',
+      'Vesper selam veriyor 💙 Gözleri gece gibi, kalbi kadife gibi.',
+      'Vesper de burada! Onunla birlikte sessizce odaklanabilirsin 🌙',
+    ],
+    kitten: [
+      '{kitten} geldi! 🧡 Enerjisi hiç bitmez ama en çok senin yanında uyumayı sever.',
+      'Minik {kitten} zıplıyor 🐾 Sen çalışırken o da büyüyor.',
+      '{kitten} kocaman gözleriyle sana bakıyor 🥺 Mola verince seninle oynamak istiyor.',
+    ],
+    meetVesper: ['Tanıştırayım: bu Vesper, benim gece arkadaşım 🐈‍⬛ Mavi gözleri yıldızlar kadar parlak.'],
+    meetKitten: ['Bu da minik {kitten}! 🧡 Kocaman gözlü, yerinde duramayan sarman bebeğimiz.'],
+    yilbasi: ['Mutlu yıllar {name}! 🎄 Yeni yılda bütün hayallerin gerçek olsun ✨'],
+    bayram: ['Bayramın mübarek olsun {name} 🌙 Bugün kendine de güzel davran, olur mu?'],
+    ulusal: ['Bayramımız kutlu olsun 🇹🇷 Geleceği kuran gençlerden biri de sensin {name}.'],
     welcome: [
       'Merhaba {name}! Ben Luna 🤍 Bundan sonra derslerinde hep yanındayım. Hadi ilk oturumu başlatalım!',
     ],
@@ -102,7 +117,7 @@ const Messages = (() => {
   };
 
   function fill(t) {
-    return t.replace(/\{name\}/g, Store.data.settings.name || 'canım');
+    return t.replace(/\{name\}/g, Store.data.settings.name || 'canım').replace(/\{kitten\}/g, Store.data.settings.kittenName || 'Sarman');
   }
 
   function timeOfDay(d = new Date()) {

@@ -7,7 +7,10 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 **🌌 Canlı gökyüzü**
 - Güneş ve ay **gerçek saate ve konuma göre** hareket eder (İstanbul varsayılan; ayarlardan şehir seçilebilir veya konum kullanılabilir)
 - Sabah, gün doğumu, öğle, gün batımı ve gece renkleri; gerçek ay evresi
-- Akşamları gökyüzü yıldızlarla dolar; kayan yıldızlar, ateş böcekleri, gizli bir **kalp takımyıldızı** 💛 ve gece açan **renkli pixel zambaklar** 🌸
+- Akşamları gökyüzü yıldızlarla dolar: Samanyolu, kayan yıldızlar, ateş böcekleri, gizli bir **kalp takımyıldızı** 💛, mevsimin gerçek takımyıldızı (Avcı, Büyük Ayı, Yaz Üçgeni, Kraliçe) ve gece açan **renkli pixel zambaklar** 🌸
+- **Gerçek zamanlı mevsimler:** kışın karlı zemin ve kar yağışı, ilkbaharda çiçek açmış ağaç ve uçuşan yapraklar, yazın ayçiçekleri ve kelebekler, sonbaharda turuncu tepeler ve düşen yapraklar; mevsime göre lale, papatya, gelincik, lavanta, çiğdem, kardelen, mantar
+- **Özel günler:** yılbaşında ışık süsleri, hediyeler, Luna'ya Noel şapkası ve 31 Aralık gecesi havai fişek; Ramazan ve Kurban Bayramı'nda fenerler; ulusal bayramlarda Türk bayrakları; 14 Şubat'ta kalpler
+- Tepede bacası tüten, gece penceresi yanan küçük bir kulübe; gündüz kuş sürüleri
 - **Günlük hava durumu** (Open-Meteo): üstteki çipe dokununca bugün/yarın; yağmur, kar, sis gibi durumlar sahnede de görünür
 - Saat, tarih ve gün doğumu/batımı saatleri
 
@@ -17,12 +20,18 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - Sen çalışırken kitabının ve fenerinin başına yatar; molada etrafta dolaşır, arada **yün yumağıyla oynar** 🧶; akşamları kıvrılıp uyur (Zzz)
 - Ona dokununca zıplar, miyavlar, kalpler çıkar
 - Her odak oturumunda 🐟 balık kazanırsın, Luna'yı besleyebilirsin
+- **Vesper** (mavi gözlü simsiyah kedi) ve **sarman yavru** (kocaman gözlü bebek kedi) arada bir uğrar: Vesper gezinip Luna'nın yanına oturur, yavru zıplaya zıplaya gelip kıvrılıp uyur, geceleri hep birlikte uyurlar. Odaklanırken rahatsız etmezler; Ayarlar → Kediler'den çağrılabilir, yavruya isim konabilir
 
 **🎯 Sade odak ekranı**
 - Başlat'a basınca her şey gizlenir: sadece Luna, sayaç, ders ve oturum hedefi kalır
 - "Bu oturumda ne yapacağım?" satırı: hedefini yaz, bitince otomatik olarak oturum notuna geçer
 - "💭 Aklına başka bir şey mi geldi?" kutusu: dikkat dağıtan düşünceyi yaz, Plan'a kaydedilsin, derse dön
 - Odaklanırken Luna konuşmaz (ayarlardan değiştirilebilir)
+
+**⏱️ YPT'den esinlenen özellikler** (sosyal kısımlar yok, sadece Hazal için)
+- **Derslerim** kutucukları: dokununca sayaç o dersle başlar, bugün kaç dakika çalışıldığı yazar
+- **24 saatlik zaman çizelgesi** (bugün) ve **haftalık zaman çizelgesi**: hangi saatte hangi ders
+- İsteğe bağlı **sıkı mod**: uygulamadan çıkınca sayaç duraklar; varsayılanda Luna sadece nazikçe "hoş geldin" der
 
 **🍅 Zamanlayıcı**
 - Pomodoro (odak / kısa mola / uzun mola) ve serbest kronometre
@@ -67,9 +76,18 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 
 **🎧 Müzik** (Çalış ekranında katlanır kutu)
 - Spotify çalma listesi/albüm bağlantısı yapıştırıp uygulamanın içinden dinleme
-- Yağmur, dalga, şömine, beyaz/kahverengi gürültü ses karıştırıcısı
+- İsteğe bağlı **Spotify hesabı bağlama** (PKCE, şifresiz): kendi çalma listeleri kapaklarıyla listelenir, dokunulan liste uygulamadan çıkmadan çalar (kurulum adımları kılavuzda)
+- Yağmur, dalga, şömine, kütüphane, beyaz/kahverengi gürültü ses karıştırıcısı
 
-**🎨 Görünüm:** açık (varsayılan), koyu ya da gün batımında otomatik koyu tema
+**📓 Notlar ve bilgi kartları**
+- Derse göre notlar (arama, sabitleme, **kalın**, `kod`, madde işaretleri)
+- Aralıklı tekrar (Leitner, 5 kutu) ile bilgi kartları ve tekrar modu
+
+**🏅 Rozetler:** 7 kategoride 57 rozet; her birinin içinde Hazal'a yazılmış kısa bir sevgi notu, kilitli olanlarda ilerleme çubuğu
+
+**📖 Kılavuz:** Ayarlar'da, Luna'nın ağzından her özelliğin açıklaması
+
+**🎨 Görünüm:** açık (varsayılan), koyu ya da gün batımında otomatik koyu tema; iPhone, Android ve tablete uygun (çentik payı, rahat dokunma alanları, yatay mod)
 
 ## Nasıl açılır?
 
@@ -108,6 +126,10 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok)
 | `js/plan.js` | YKS planı, haftalık program, konu takibi |
 | `js/deneme.js` | Deneme netleri, grafik ve eksik konu analizi |
 | `js/weather.js` | Günlük hava durumu (Open-Meteo, anahtarsız) |
+| `js/takvim.js` | Mevsimler ve özel günler (yılbaşı, bayramlar, 14 Şubat) |
+| `js/badges.js` | Rozetler ve sevgi notları |
+| `js/notes.js` | Notlar ve bilgi kartları |
+| `js/spotify.js` | İsteğe bağlı Spotify hesabı bağlama |
 | `js/messages.js` | Luna'nın mesajları |
 | `js/audio.js` | Zil, miyav ve ortam sesleri |
 | `js/app.js` | Arayüz ve her şeyi bağlayan kod |
@@ -115,3 +137,6 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok)
 | `sw.js`, `manifest.webmanifest` | Telefona yükleme ve çevrimdışı çalışma |
 
 > Dosyalarda değişiklik yaptıktan sonra `sw.js` içindeki `VERSION` değerini artırırsan telefondaki uygulama da güncellenir.
+
+## Üniversite için uyarlama
+YKS'ye özel kısımlar `js/yks.js` (dersler ve konu ağırlıkları) ve `js/plan.js` (program) dosyalarında toplanmıştır. Üniversitede bölüme göre bu iki dosya yeni derslerle değiştirilerek uygulamanın geri kalanı (sayaç, notlar, kartlar, rozetler, Luna ve dünya) olduğu gibi kullanılabilir. YKS sürümünün yedeği GitHub'da `yedek/yks-2027` dalında saklıdır.

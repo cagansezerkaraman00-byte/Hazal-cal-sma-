@@ -393,6 +393,9 @@
       : manual ? 'Uygulama dışında çalıştıysan buraya ekleyebilirsin.' : `${startD.toLocaleDateString('tr-TR')} ${U.hm(startD)}`;
     let rating = s.rating || 0, mood = s.mood || '';
 
+    // temiz kutu: önceki pencerelerin dinleyicileri bu pencereye taşınmasın
+    const oldCard = $('#modal-card');
+    oldCard.replaceWith(oldCard.cloneNode(false));
     $('#modal-card').innerHTML = `
       <h3>${title}</h3>
       <p class="sub">${sub}</p>
@@ -657,25 +660,28 @@
   function renderWelcome(todayMin, pct) {
     const chips = [];
     const days = window.YKS ? YKS.daysLeft() : null;
-    if (days != null && days >= 0) chips.push(['⏳', days === 0 ? 'Bugün!' : `${days} gün`, "YKS'ye", 'gold']);
+    if (days != null && days >= 0) chips.push(['⏳', days === 0 ? 'Bugün!' : `${days} gün`, "YKS'ye", 'gold', 'plan']);
     if (todayMin > 0) chips.push(['⏱️', U.fmtMin(todayMin), 'bugün', pct >= 100 ? 'up' : '']);
     const wm = weekMinutes();
     if (wm > 0) chips.push(['📅', U.fmtMin(wm), 'bu hafta', '']);
     const sk = Stats.streak();
     if (sk >= 2) chips.push(['🔥', `${sk} gün`, 'seri', 'up']);
     const done = window.YKS ? YKS.doneCount() : 0;
-    if (done) chips.push(['✅', String(done), 'konu tamam', '']);
+    if (done) chips.push(['✅', String(done), 'konu tamam', '', 'plan']);
     const dueCards = window.NotesUI ? NotesUI.dueCount() : 0;
-    if (dueCards) chips.push(['🃏', String(dueCards), 'kart seni bekliyor', '']);
+    if (dueCards) chips.push(['🃏', String(dueCards), 'kart seni bekliyor', '', 'notes']);
     const last = window.Deneme ? Deneme.lastSummary() : null;
-    if (last) chips.push(['📈', `${last.net} net`, `son ${last.type}${last.delta > 0 ? ' · +' + last.delta : ''}`, last.delta > 0 ? 'up' : '']);
+    if (last) chips.push(['📈', `${last.net} net`, `son ${last.type}${last.delta > 0 ? ' · +' + last.delta : ''}`, last.delta > 0 ? 'up' : '', 'deneme']);
     const msg = pct >= 100 ? 'Bugünkü hedefini tamamladın! Kendinle gurur duy 🎉'
       : sk >= 3 ? `${sk} gündür buradasın, bu istikrar harika 🌟`
       : days != null && days >= 0 ? Messages.daily('yks', { days })
       : Messages.daily(Messages.timeOfDay());
     $('#welcome').innerHTML = `<div class="welcome-title">${U.esc(Messages.greeting())}</div>
       <div class="welcome-msg">${U.esc(msg)}</div>
-      ${chips.length ? `<div class="stat-chips">${chips.map(([ic, v, l, cls]) => `<div class="stat-chip ${cls}"><span class="ic">${ic}</span><b class="v">${U.esc(v)}</b><small class="l">${U.esc(l)}</small></div>`).join('')}</div>` : ''}`;
+      ${chips.length ? `<div class="stat-chips">${chips.map(([ic, v, l, cls, tab]) => {
+        const inner = `<span class="ic">${ic}</span><b class="v">${U.esc(v)}</b><small class="l">${U.esc(l)}</small>`;
+        return tab ? `<button class="stat-chip ${cls}" data-tab="${tab}" type="button">${inner}</button>` : `<div class="stat-chip ${cls}">${inner}</div>`;
+      }).join('')}</div>` : ''}`;
   }
 
   // ======================================================================
@@ -948,6 +954,7 @@
     $('#set-focusmode').checked = s.focusMode;
     $('#set-quiet').checked = s.quietFocus;
     $('#set-pauseleave').checked = s.pauseOnLeave;
+    $('#set-kitten').value = s.kittenName || 'Sarman';
     $('#set-weather').checked = s.weather;
     $$('#theme-seg button').forEach((b) => b.classList.toggle('active', b.dataset.theme === s.theme));
     $('#city-chips').innerHTML = CITIES.map(([n, la, lo]) => `<button class="chip ${Math.abs(la - s.lat) < 0.05 && Math.abs(lo - s.lon) < 0.05 ? 'active' : ''}" data-lat="${la}" data-lon="${lo}" data-name="${n}">${n}</button>`).join('');
@@ -983,6 +990,14 @@
     bool('#set-sound', 'sound');
     bool('#set-quiet', 'quietFocus');
     bool('#set-pauseleave', 'pauseOnLeave');
+    $('#set-kitten').addEventListener('change', (e) => { D().settings.kittenName = e.target.value.trim().slice(0, 20) || 'Sarman'; e.target.value = D().settings.kittenName; save(); });
+    $('#call-cats').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-visit]');
+      if (!b) return;
+      if (App.isFocusing()) { toast('🐾', 'Odaklanırken kediler seni rahatsız etmez', 'Molada çağırabilirsin'); return; }
+      Scene.visit(b.dataset.visit);
+      showTab('home');
+    });
     $('#set-focusmode').addEventListener('change', (e) => { D().settings.focusMode = e.target.checked; save(); renderTimer(Timer.state()); });
     $('#set-notify').addEventListener('change', async (e) => {
       if (e.target.checked) {
@@ -1105,6 +1120,16 @@
 
   function greetOnOpen() {
     const ss = D().sessions;
+    // özel günlerde günde bir kez tebrik
+    const evs = Scene.today ? Scene.today().events.map((e) => e.key) : [];
+    const special = evs.includes('yilbasi') ? 'yilbasi' : evs.includes('ramazan') || evs.includes('kurban') ? 'bayram' : evs.includes('ulusal') ? 'ulusal' : evs.includes('sevgililer') ? 'love' : null;
+    const today = U.dateKey(new Date());
+    if (special && D().lastSpecialGreet !== today) {
+      D().lastSpecialGreet = today;
+      save();
+      setTimeout(() => { if (special === 'love') sayLove(); else say(special, { ms: 9000 }); }, 1200);
+      return;
+    }
     setTimeout(() => {
       if (!ss.length) say('welcome', { ms: 9000 });
       else if (Date.now() - ss[ss.length - 1].start > 3 * 864e5) say('comeback');
@@ -1134,12 +1159,29 @@
     showTab,
     celebrate() { Scene.celebrate(); Sound.chime(); },
     isFocusing() { const s = Timer.state(); return s.running && s.phase === 'focus'; },
+    playSpotify(url) {
+      D().settings.spotify = url;
+      save();
+      if (!$('#spotify-presets').children.length) renderMusic(); else loadSpotify();
+      $('#spotify-input').value = url;
+    },
   };
   window.App = App;
 
   function init() {
     Scene.init($('#sky'), $('#bubble'), {
       onPoke() { Sound.meow(); say('poke'); },
+      onFriend(kind) { Sound.meow(); say(kind === 'vesper' ? 'vesper' : 'kitten'); },
+      // ilk karşılaşma: tanıştırma + iki kediyle de tanışınca rozet
+      onFriendSeen(kind) {
+        const st = D().stats;
+        if (st.seen[kind]) return;
+        st.seen[kind] = Date.now();
+        if (st.seen.vesper && st.seen.kitten) st.friendsMet = true;
+        save();
+        setTimeout(() => { if (!App.isFocusing()) say(kind === 'vesper' ? 'meetVesper' : 'meetKitten'); }, 2500);
+        checkBadges();
+      },
     });
     Scene.portrait($('#report-luna'));
     // modüller sayaçtan önce: sayfa kapalıyken biten bir oturum açılışta işlenirken hazır olsunlar
@@ -1147,6 +1189,7 @@
     if (window.DenemeUI) DenemeUI.init(App);
     if (window.NotesUI) NotesUI.init(App);
     if (window.Badges) Badges.init(App);
+    if (window.SpotifyLink) SpotifyLink.init(App);
     renderSubjectSelects();
     Timer.init(timerHandlers);
     syncSceneMode();
@@ -1170,6 +1213,10 @@
     $('#badges').addEventListener('click', (e) => {
       const b = e.target.closest('.badge[data-id]');
       if (b && window.Badges) Badges.openDetail(b.dataset.id);
+    });
+    $('#welcome').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tab]');
+      if (b) showTab(b.dataset.tab);
     });
     $('#subject-tiles').addEventListener('click', (e) => {
       const t = e.target.closest('.subj-tile');

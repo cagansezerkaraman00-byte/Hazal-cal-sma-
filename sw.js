@@ -1,9 +1,9 @@
 /* Çevrimdışı çalışma: uygulama dosyalarını önbelleğe alır. Dosyaları değiştirince VERSION'ı artır. */
-const VERSION = 'luna-v4';
+const VERSION = 'luna-v5';
 const FILES = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/storage.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
-  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/badges.js', 'js/app.js',
+  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/badges.js', 'js/spotify.js', 'js/app.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 
@@ -24,14 +24,18 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET') return;
   if (url.origin !== location.origin && !url.hostname.includes('fonts.g')) return;
+  // sayfa gezintilerinde sorgu parametresiz anahtar (Spotify dönüşü gibi ?code=… adresler önbelleği şişirmesin)
+  const key = e.request.mode === 'navigate' ? new Request(url.origin + url.pathname) : e.request;
   e.respondWith(
     fetch(e.request)
       .then((res) => {
-        const copy = res.clone();
-        caches.open(VERSION).then((c) => c.put(e.request, copy));
+        if (res.ok && (res.type === 'basic' || res.type === 'cors')) {
+          const copy = res.clone();
+          caches.open(VERSION).then((c) => c.put(key, copy));
+        }
         return res;
       })
-      .catch(() => caches.match(e.request).then((r) => r || caches.match('index.html')))
+      .catch(() => caches.match(key).then((r) => r || caches.match('index.html')))
   );
 });
 

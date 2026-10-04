@@ -1068,6 +1068,32 @@ details.pick-group .chips { margin-top: 8px; }
 .review-actions { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
 .review-actions .btn.big { min-width: 150px; }
 
+/* ---------- Spotify bağlantısı ---------- */
+.sp-account { margin: 4px 0 12px; }
+.sp-connect > summary { cursor: pointer; font-weight: 800; font-size: .88rem; color: var(--accent-ink); padding: 4px 0; }
+.sp-uri { display: block; margin: 6px 0 8px; padding: 6px 10px; border-radius: 10px; background: var(--surface-3); font-size: .78rem; overflow-wrap: anywhere; user-select: all; }
+.sp-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-weight: 800; margin-bottom: 8px; }
+.sp-lists { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; max-height: 260px; overflow: auto; padding: 2px; }
+.sp-item { display: grid; grid-template-columns: 40px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; align-items: center; text-align: left; padding: 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; color: inherit; font: inherit; }
+.sp-item.active { border-color: var(--mint); box-shadow: 0 0 0 2px var(--mint-soft); }
+.sp-item img, .sp-noimg { grid-row: 1 / span 2; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; display: grid; place-items: center; background: var(--surface-3); }
+.sp-name { font-weight: 800; font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-item small { color: var(--muted); font-size: .7rem; }
+
+/* ---------- Kılavuz ---------- */
+.guide { margin-bottom: 14px; }
+.guide details { border-top: 1px solid var(--line); }
+.guide details:first-of-type { border-top: 0; }
+.guide summary { cursor: pointer; list-style: none; padding: 12px 2px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.guide summary::-webkit-details-marker { display: none; }
+.guide summary::after { content: '▾'; color: var(--muted); transition: transform .2s; }
+.guide details[open] > summary::after { transform: rotate(180deg); }
+.guide ul, .guide ol { margin: 0 0 12px; padding-left: 20px; line-height: 1.55; font-size: .92rem; }
+.guide li { margin-bottom: 6px; }
+.guide ol { margin-top: 6px; }
+.guide a { color: var(--accent-ink); font-weight: 700; }
+.guide code { background: var(--surface-3); padding: 1px 5px; border-radius: 5px; font-size: .88em; }
+
 /* ---------- Rozetler 2.0 ---------- */
 button.badge { font: inherit; color: inherit; cursor: pointer; width: 100%; transition: transform .15s; }
 button.badge:hover { transform: translateY(-2px); }
@@ -1135,6 +1161,54 @@ button.badge:active { transform: scale(.97); }
   .hud-date { font-size: .8rem; }
   .hud { padding: 12px; }
   .seg button { padding: 7px 10px; }
+}
+
+/* ---------- Cihaz uyumu: iPhone, Android, tablet ---------- */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { min-height: 100dvh; }
+#app { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+button, a, input, select, textarea, label, summary { touch-action: manipulation; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+button.stat-chip { font: inherit; color: inherit; cursor: pointer; }
+/* sekmeye geçince kartlar yumuşakça belirir */
+.tab.active > .grid > .card, .tab.active > .card, .tab.active .tiles > .tile { animation: rise .32s ease both; }
+.tab.active > .grid > .card:nth-child(2) { animation-delay: .03s; }
+.tab.active > .grid > .card:nth-child(3) { animation-delay: .06s; }
+.tab.active > .grid > .card:nth-child(4) { animation-delay: .09s; }
+.tab.active > .grid > .card:nth-child(n+5) { animation-delay: .12s; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* dokunmatik ekranlar: rahat dokunma alanları, iOS'ta yakınlaşma olmasın */
+@media (pointer: coarse) {
+  .btn, .chip, .seg button, .icon-btn, .plan-go { min-height: 44px; }
+  .chip { padding: 8px 14px; }
+  .topic-status { min-width: 40px; min-height: 40px; }
+  .check { width: 26px; height: 26px; }
+  input, select, textarea { font-size: 16px; }
+  .tabs button { min-height: 52px; }
+}
+/* fare olmayan cihazlarda "üzerine gelince" efekti takılı kalmasın */
+@media (hover: none) {
+  .note-card:hover, button.badge:hover, .subj-tile:hover { transform: none; }
+}
+/* küçük telefonlarda Luna'nın balonu saati kapatmasın */
+@media (max-width: 520px) {
+  .bubble { font-size: .8rem; max-width: min(250px, 70%); padding: 7px 10px; }
+}
+/* tablet */
+@media (min-width: 761px) and (max-width: 1100px) {
+  #app { padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+  .scene { height: clamp(260px, 32vh, 340px); }
+  .grid { gap: 16px; }
+}
+/* yatay tutulan telefon: sahne alçak, sayaç yanına sığsın */
+@media (max-height: 500px) and (orientation: landscape) {
+  .scene { height: 190px; }
+  body.focusing .scene { height: 160px; }
+  .ring-wrap { width: min(190px, 40vh); }
+}
+/* ana ekrandan açılınca (PWA) üst çentik payı */
+@media (display-mode: standalone) {
+  .scene { margin-top: max(10px, env(safe-area-inset-top)); }
 }
 
 /* ---------- Hareket azaltma ---------- */

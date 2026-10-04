@@ -66,6 +66,7 @@ const Store = (() => {
       focusMode: true,   // başlayınca sade odak ekranı
       quietFocus: true,  // odaklanırken Luna konuşmasın
       pauseOnLeave: false, // sıkı mod: uygulamadan çıkınca sayaç duraklar
+      kittenName: 'Sarman', // sarman yavrunun adı
       theme: 'light',    // light | dark | auto (gün batımında koyu)
       weather: true,     // günlük hava durumu
       city: 'İstanbul',
@@ -99,7 +100,7 @@ const Store = (() => {
     denemeler: [],  // {id, date, type: TYT|AYT|BRANS, name, scores: {subjectKey: {d, y}}, eksik: [topicId], note, created}
     notes: [],      // {id, subjectId, title, body, created, updated, pinned}
     cards: [],      // bilgi kartları: {id, subjectId, front, back, box (1-5), due (YYYY-AA-GG), created}
-    stats: { planItems: 0, planFull: 0, planFullDates: [], cardReviews: 0, friendsMet: false },
+    stats: { planItems: 0, planFull: 0, planFullDates: [], cardReviews: 0, friendsMet: false, seen: {} },
     badges: {},     // id -> timestamp
     tasksDone: 0,
     reviewDone: 0,
@@ -123,6 +124,7 @@ const Store = (() => {
     if (!isObj(out.yks.planDone)) out.yks.planDone = {};
     out.stats = { ...def.stats, ...(isObj(obj.stats) ? obj.stats : {}) };
     if (!Array.isArray(out.stats.planFullDates)) out.stats.planFullDates = [];
+    if (!isObj(out.stats.seen)) out.stats.seen = {};
     return out;
   }
 

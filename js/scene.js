@@ -351,6 +351,172 @@ const Scene = (() => {
     e: '#f2b441', E: '#c98524', k: '#4a2f14', h: '#ffffff', x: '#d4cee6',
   };
 
+  // ---------- Vesper ve sarman yavru ----------
+  // Vesper: Luna'nın pozları, simsiyah kadife tüy, mavi gözler (gece silüeti için yumuşak açık dış hat)
+  const VES_PAL = {
+    o: '#4d4768', m: '#3d3956', w: '#2a2639', s: '#34304a', S: '#403b5a', p: '#b77089', P: '#9a5672',
+    e: '#5ccbff', E: '#2c8fe0', k: '#08141f', h: '#ffffff', x: '#6c678c',
+  };
+  // Sarman yavru: küçük gövde, kocaman yeşil gözler. w: turuncu, s: çizgi, c: krem göğüs/pati
+  const KIT = {
+    head: [
+      '..o.........o..',
+      '..oo.......oo..',
+      '..opo.....opo..',
+      '.owpPoooooPpwo.',
+      'owwwwswswswwwwo',
+      'owwhekwwwhekwwo',
+      'owwekkwwwekkwwo',
+      'owwEeewpwEeewwo',
+      'xowwcwmwmwcwwox',
+      '.oscccccccccso.',
+      '..oocccccccoo..',
+    ],
+    sitBody: [
+      '..owwwwwwwwwo..',
+      '.owswcccccwswo.',
+      'owwswcccccwswwo',
+      'owswwcccccwwswo',
+      'owwswcccccwswwo',
+      '.owwcco.occwwo.',
+      '..oooo...oooo..',
+    ],
+    sitTail: [
+      '.....oo',
+      '....owo',
+      '....oso',
+      'ooooowo',
+      'owswswo',
+      '.ooooo.',
+    ],
+    walkBody: [
+      '..ooooooooooo.',
+      '.owswswswswwwo',
+      'owwwwwwwwwwwwo',
+      'owswswswswwcco',
+      '.owwwwwwwwcco.',
+      '..ooooooooooo.',
+    ],
+    legsA: [
+      '.owo..owo..owo.owo',
+      '.ooo..ooo..ooo.ooo',
+    ],
+    legsB: [
+      'owo..owo....owo.ow',
+      'ooo..ooo....ooo.oo',
+    ],
+    tailUp: [
+      '.o...',
+      'owo..',
+      'oso..',
+      'owwo.',
+      '.oswo',
+      '..owo',
+    ],
+    sleep: [
+      '.o.....o..........',
+      'opo...opo.ooooo...',
+      'oPpooopPoowswsoo..',
+      'owwswswwowwwwwwso.',
+      'owoowoowowswswwwo.',
+      'owwwpwwwowwwwwwswo',
+      'occcccccoswswswwso',
+      '.ocpcpccowwwwwwwso',
+      '..ooooooooooooooo.',
+    ],
+  };
+  const KIT_PAL = {
+    o: '#8a4b1f', w: '#ffb45c', s: '#f08a2c', S: '#d06a18', c: '#fff1d6', m: '#c9753a',
+    p: '#ff9db3', P: '#e9789a', e: '#9be36a', E: '#5fae3a', k: '#1f2a12', h: '#ffffff', x: '#e8c9a8',
+  };
+  function kittenRows() {
+    const R = {};
+    let s = blank(17, 17);
+    s = put(s, KIT.sitTail, 10, 9);
+    s = put(s, KIT.sitBody, 1, 10);
+    s = put(s, KIT.head, 1, 0);
+    R.sit = { rows: s, hx: 8 };
+    R.sitB = { rows: eyes(s, 'blink'), hx: 8 };
+    const walk = (legs) => {
+      let w = blank(27, 14);
+      w = put(w, KIT.tailUp, 0, 0);
+      w = put(w, KIT.walkBody, 3, 6);
+      w = put(w, legs, 3, 12);
+      return put(w, KIT.head, 12, 1);
+    };
+    R.walkA = { rows: walk(KIT.legsA), hx: 19 };
+    R.walkB = { rows: walk(KIT.legsB), hx: 19 };
+    R.sleep = { rows: mirror(KIT.sleep), hx: KIT.sleep[0].length - 1 - 4 };
+    return R;
+  }
+
+  // ---------- Mevsimler, çiçekler ve süsler ----------
+  // Gündüz renkleri (gece için mevcut koyu tonlarla karıştırılır)
+  const SEASON = {
+    ilkbahar: { far: '#7fc77c', near: '#58a85e', path: '#9a8a62', leaf: '#5fb062', trunk: '#6b4a32', bloom: '#ffc4dc' },
+    yaz: { far: '#6aa46e', near: '#4c8a52', path: '#8a7a5a', leaf: '#3f8a4a', trunk: '#6b4a32' },
+    sonbahar: { far: '#c4a55a', near: '#a9803f', path: '#8a6c4a', leaf: '#e07a2e', leaf2: '#c7472f', leaf3: '#f0b13c', trunk: '#5e3f2a' },
+    kis: { far: '#dfe6f3', near: '#f2f6fc', path: '#e3eaf5', trunk: '#5a4636', snow: true, nFar: '#3d4767', nNear: '#4a5577', nPath: '#4d5878' },
+  };
+  const FLOWER = {
+    lale: ['.c.', 'ccc', 'cdc', '.g.', 'gg.', '.g.'],
+    papatya: ['.w.', 'wyw', '.w.', '.g.', 'g..'],
+    aycicegi: ['.yyy.', 'yybyy', 'ybbby', 'yybyy', '.yyy.', '..g..', '.gg..', '..g..', '..gg.', '..g..'],
+    gelincik: ['.r.', 'rkr', '.r.', '.g.', '.g.'],
+    lavanta: ['.l.', 'lL.', '.l.', 'Ll.', '.g.', '.g.'],
+    mantar: ['.rrr.', 'rwrrr', 'rrrwr', '..w..', '..w..'],
+    cigdem: ['.p.', 'pPp', 'pPp', '.g.'],
+    kardelen: ['.g.', '.gw', '..w', '.g.', '.g.'],
+  };
+  const FLOWER_PAL = { w: '#ffffff', y: '#ffd23f', b: '#8a5a2b', r: '#e83a3a', k: '#2b1b1b', l: '#b79bff', L: '#8a6be0', p: '#c08cff', P: '#ffe066' };
+  const TULIP = [['#e8414e', '#b8283a'], ['#ff7fae', '#d9558a'], ['#ffd23f', '#d9a514'], ['#b98cff', '#8a5fe0']];
+  const SEASON_FLOWERS = {
+    ilkbahar: ['lale', 'lale', 'papatya', 'cigdem', 'papatya', 'lale'],
+    yaz: ['aycicegi', 'gelincik', 'papatya', 'lavanta', 'gelincik', 'papatya'],
+    sonbahar: ['mantar', 'cigdem', 'papatya', 'mantar'],
+    kis: ['kardelen', 'kardelen'],
+  };
+  const HOUSE = [
+    '......rr.c..',
+    '.....rrrrc..',
+    '....rrrrrr..',
+    '...rrrrrrrr.',
+    '..rrrrrrrrrr',
+    '.rrrrrrrrrrr',
+    '..wwwwwwwww.',
+    '..wnnwwwddw.',
+    '..wnnwwwddw.',
+    '..wwwwwwddw.',
+  ];
+  const DECO = {
+    fener: ['.k.', 'fFf', 'fFf', 'fFf', '.f.'],
+    kalp: ['h.h', 'hhh', '.h.'],
+    hediye: ['..r..', 'bbrbb', 'bbrbb', 'bbrbb'],
+    sapka: ['......ww', '....rrr.', '..rrrrr.', '.rrrrrrr', 'wwwwwwww'],
+    bayrakA: [
+      'rrrrrrrrrrrr',
+      'rrrwwwrrrrrr',
+      'rrwwrrrrrrrr',
+      'rwwrrrrwrrrr',
+      'rwwrrrwwwrrr',
+      'rrwwrrrwrrrr',
+      'rrrwwwrrrrrr',
+      'rrrrrrrrrrrr',
+    ],
+    kusA: ['o...o', '.o.o.', '..o..'],
+    kusB: ['.....', 'oo.oo', '..o..'],
+    kelebekA: ['w.w', '.b.'],
+    kelebekB: ['.w.', '.b.'],
+  };
+  const BULBS = ['#ff5d6c', '#ffd84d', '#5fd3a3', '#6cc4ff', '#c49bff'];
+  // Mevsimin takımyıldızı (gerçek gökyüzünde akşamları görünenler): noktalar + çizgi sırası
+  const CONSTELLATION = {
+    kis: { name: 'Avcı', pts: [[2, 1], [10, 0], [5, 6], [6.5, 6.5], [8, 7], [3, 12], [11, 11]], lines: [[0, 2], [1, 4], [2, 3], [3, 4], [2, 5], [4, 6]] },
+    ilkbahar: { name: 'Büyük Ayı', pts: [[0, 0], [4, 1], [8, 2], [11, 3], [11, 7], [17, 7], [17, 3]], lines: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]] },
+    yaz: { name: 'Yaz Üçgeni', pts: [[0, 9], [13, 0], [9, 13]], lines: [[0, 1], [1, 2], [2, 0]] },
+    sonbahar: { name: 'Kraliçe', pts: [[0, 2], [4, 7], [8, 3], [12, 8], [16, 1]], lines: [[0, 1], [1, 2], [2, 3], [3, 4]] },
+  };
+
   // ---------- Sprite'ları kanvaslara çiz (bir kez) ----------
   function makeCanvas(w, h) {
     const c = document.createElement('canvas');
@@ -406,6 +572,23 @@ const Scene = (() => {
       }
       return o;
     });
+    // Vesper (Luna'nın pozları) ve sarman yavru
+    const sprite = (rows, hx, pal) => ({ c: [paint(rows, pal), paint(rows, pal, true)], w: rows[0].length, h: rows.length, hx });
+    SP.vesper = {};
+    for (const k of ['walkA', 'walkB', 'walkAB', 'walkBB', 'sitUp', 'sitUpB', 'happy', 'sleep', 'loafA', 'loafAB']) SP.vesper[k] = sprite(R[k].rows, R[k].hx, VES_PAL);
+    SP.kitten = {};
+    const KR = kittenRows();
+    for (const k in KR) SP.kitten[k] = sprite(KR[k].rows, KR[k].hx, KIT_PAL);
+    // süsler
+    SP.fener = ['#ff5d6c', '#ffd84d', '#3fc1b0', '#b48bff'].map((f) => paint(DECO.fener, { k: '#4a3a52', f, F: mixHex(f, '#ffffff', 0.45) }));
+    SP.kalp = paint(DECO.kalp, { h: '#ff6b9a' });
+    SP.hediye = [['#ff5d6c', '#ffd84d'], ['#6cc4ff', '#ffffff'], ['#5fd3a3', '#ff5d6c']].map(([b, rr]) => paint(DECO.hediye, { b, r: rr }));
+    SP.sapka = [paint(DECO.sapka, { r: '#e8414e', w: '#ffffff' }), paint(DECO.sapka, { r: '#e8414e', w: '#ffffff' }, true)];
+    // dalgalanma: ikinci karede sağ yarı bir piksel aşağı
+    const wave = DECO.bayrakA.map((row, j) => row.slice(0, 6) + (j === 0 ? 'rrrrrr' : DECO.bayrakA[j - 1].slice(6)));
+    SP.bayrak = [paint(DECO.bayrakA, { r: '#e30a17', w: '#ffffff' }), paint(wave, { r: '#e30a17', w: '#ffffff' })];
+    SP.kus = [paint(DECO.kusA, { o: '#3a3f5a' }), paint(DECO.kusB, { o: '#3a3f5a' })];
+    SP.kelebek = ['#ffb3d1', '#ffe27a', '#b9a8ff', '#9fe3c5'].map((w) => [paint(DECO.kelebekA, { w, b: '#3a2f45' }), paint(DECO.kelebekB, { w, b: '#3a2f45' })]);
     // ip yumağı: dönen şerit desenli 3 kare
     SP.yarn = [0, 1, 2].map((k) => {
       const rows = ['.bbb.'];
@@ -440,6 +623,11 @@ const Scene = (() => {
   let bubbleUntil = 0, bubbleOn = false, bubbleW = 0, bubbleL = -1, bubbleB = -1, bubbleA = -1;
 
   const L = { x: 60, y: 0, vy: 0, dir: 1, state: 'walk', ft: 0, target: 80, wait: 0, blinkIn: 3, blink: 0, eatT: 0, nap: false, awake: 0, speed: 16 };
+  // mevsim / özel gün / dünya ayrıntıları
+  let season = 'yaz', events = [], ev = {}, dayKey = '', flowers = [], house = null, decoCv = null, decoBulbs = [], treeBulbs = [];
+  let birds = null, nextBirds = U.rand(25, 70), butterflies = [], seasonT = 0, smokeT = 0, fireT = 3, flagT = 0;
+  // ziyaretçi kediler
+  let friends = [], nextVisit = U.rand(45, 110), onFriend = null, onFriendSeen = null;
 
   // ---------- Renk yardımcıları ----------
   function hex2rgb(h) {
@@ -478,6 +666,8 @@ const Scene = (() => {
   // Hava durumu: gökyüzü tonu (gündüz/gece), yıldızları örtme, bulut sayısı, güneşin parlaklığı
   const WX = {
     clear: { k: 0, cover: 0, clouds: 4, sun: 1 },
+    // kış ayında gökyüzü açıkken de hafif kar
+    snowLight: { tint: '#e3e9f4', night: '#262c48', k: 0.15, cover: 0.15, clouds: 5, sun: 0.95, snow: 1 },
     cloudy: { tint: '#8d99b0', night: '#1d2136', k: 0.32, cover: 0.45, clouds: 9, sun: 0.72 },
     fog: { tint: '#c4cad6', night: '#3a3f58', k: 0.5, cover: 0.65, clouds: 3, sun: 0.5, fog: 1 },
     drizzle: { tint: '#7f8ca6', night: '#181c30', k: 0.38, cover: 0.6, clouds: 8, sun: 0.55, rain: 0.5 },
@@ -525,6 +715,18 @@ const Scene = (() => {
   // Saniyede bir: güneş, gece katsayısı, güneş/ay konumu; gökyüzü belirgin değiştiyse arka planı yenile
   function updateSun() {
     const date = new Date();
+    const dk = U.dateKey(date);
+    if (dk !== dayKey) {
+      // gün değişti: mevsim ve özel günler yeniden
+      dayKey = dk;
+      const ns = window.Takvim ? Takvim.season(date) : 'yaz';
+      events = window.Takvim ? Takvim.events(date) : [];
+      ev = {};
+      for (const e of events) ev[e.key] = e;
+      if (ns !== season) { season = ns; if (W) buildWorld(); }
+      bgDirty = true;
+      if (W) applyWeather();
+    }
     sun = solar(date);
     hour = date.getHours();
     light = U.clamp((sun.elev + 6) / 16, 0, 1);
@@ -622,6 +824,19 @@ const Scene = (() => {
       const m = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
       for (let j = 1; j < m; j += 2) cg.fillRect(Math.round(x0 + ((x1 - x0) * j) / m), Math.round(y0 + ((y1 - y0) * j) / m), 1, 1);
     }
+    // mevsimin takımyıldızı (sağ tarafta, soluk)
+    const C = CONSTELLATION[season];
+    if (C) {
+      const ox = Math.round(W * 0.68), oy = Math.round(horizon * 0.12);
+      const pts = C.pts.map(([a, b]) => [Math.round(ox + a * 1.4), Math.round(oy + b * 1.4)]);
+      cg.fillStyle = '#cfd8ff';
+      for (const [i0, i1] of C.lines) {
+        const [x0, y0] = pts[i0], [x1, y1] = pts[i1];
+        const m = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+        for (let j = 2; j < m - 1; j += 2) cg.fillRect(Math.round(x0 + ((x1 - x0) * j) / m), Math.round(y0 + ((y1 - y0) * j) / m), 1, 1);
+      }
+      consPts = consPts.concat(pts.filter(([x, y]) => x < W - 1 && y < skyH));
+    }
     // tepeler
     hillFar = []; hillNear = [];
     const p1 = r() * 6, p2 = r() * 6, p3 = r() * 6;
@@ -647,7 +862,29 @@ const Scene = (() => {
       return { c, y, sp: 2 + i * 1.3, off: r() * W, a: 0.32 + 0.08 * i };
     });
     buildLilies(r);
+    buildFlowers(r);
+    // tepedeki küçük kulübe (gece penceresi yanar, kış/sonbahar akşamı bacası tüter)
+    const hx0 = Math.round(W * 0.6);
+    house = W > 120 ? { x: hx0, y: Math.min(hillFar[hx0], hillFar[Math.min(W - 1, hx0 + 11)]) - HOUSE.length + 2 } : null;
+    butterflies = [0, 1, 2].map((i) => ({ x: r() * W, y: groundY - 10 - r() * 10, ph: r() * 6.28, c: i % 4, vx: 0 }));
     applyWeather();
+  }
+
+  // Mevsim çiçekleri: yolun arka kenarına sabit dizilir (çalışma köşesi ve zambaklar boş kalır)
+  function buildFlowers(r) {
+    flowers = [];
+    const kinds = SEASON_FLOWERS[season] || [];
+    if (!kinds.length) return;
+    const sx = studyHX();
+    const busy = (x) => (x > sx - 32 && x < sx + 38) || lilies.some((l) => !l.fg && Math.abs(l.x - x) < 4);
+    const n = U.clamp(Math.round(W / (season === 'kis' ? 26 : season === 'sonbahar' ? 18 : 11)), 3, 26);
+    for (let i = 0, tries = 0; i < n && tries < n * 6; tries++) {
+      const x = 3 + Math.floor(r() * (W - 8));
+      if (busy(x) || flowers.some((f) => Math.abs(f.x - x) < 3)) continue;
+      const back = r() < 0.35; // bir kısmı tepenin üstünde, daha küçük görünür
+      flowers.push({ x, k: kinds[i % kinds.length], t: Math.floor(r() * TULIP.length), back });
+      i++;
+    }
   }
 
   // Zambaklar yolun arka kenarında; Luna'nın çalışma köşesi ve kitap/fener boş kalır. İki tane de ön köşelerde.
@@ -713,8 +950,11 @@ const Scene = (() => {
     return d;
   }
   function applyWeather() {
-    fx = WX[weather.kind] || WX.clear;
-    const it = weather.intensity;
+    let it = weather.intensity;
+    if (season === 'kis' && !['rain', 'drizzle', 'storm'].includes(weather.kind)) {
+      if (weather.kind === 'snow') fx = WX.snow;
+      else { fx = WX.snowLight; it = 0.35; }
+    } else fx = WX[weather.kind] || WX.clear;
     wk = fx.k ? 0.55 + 0.45 * it : 0;
     starVis = 1 - fx.cover * (0.6 + 0.4 * it) * 0.85;
     if (!W) return;
@@ -756,10 +996,11 @@ const Scene = (() => {
       g.globalAlpha = 1;
     }
     // tepeler, yol, çimen, ağaç
-    let far = mixHex(mixHex('#20244a', '#6aa46e', light), '#9a5a7a', dusk * 0.35);
-    let near = mixHex(mixHex('#151833', '#4c8a52', light), '#6b3d5e', dusk * 0.3);
-    let path = mixHex('#1c1d3a', '#8a7a5a', light);
-    let leaf = mixHex('#1d2c3e', '#3f8a4a', light);
+    const SE = SEASON[season] || SEASON.yaz;
+    let far = mixHex(mixHex(SE.nFar || '#20244a', SE.far, light), '#9a5a7a', dusk * 0.35);
+    let near = mixHex(mixHex(SE.nNear || '#151833', SE.near, light), '#6b3d5e', dusk * 0.3);
+    let path = mixHex(SE.nPath || '#1c1d3a', SE.path, light);
+    let leaf = mixHex('#1d2c3e', SE.leaf || '#3f8a4a', light);
     if (tint) { far = mixHex(far, tint, k * 0.5); near = mixHex(near, tint, k * 0.25); path = mixHex(path, tint, k * 0.2); leaf = mixHex(leaf, tint, k * 0.25); }
     if (fx.fog) far = mixHex(far, bottom, 0.6 * wk);
     const snowy = fx.snow ? mixHex('#9aa3c4', '#f4f7ff', light) : null;
@@ -769,6 +1010,7 @@ const Scene = (() => {
     g.clearRect(0, 0, W, H - oy);
     g.fillStyle = far;
     for (let x = 0; x < W; x++) g.fillRect(x, hillFar[x] - oy, 1, H - hillFar[x]);
+    drawHouse(g, oy);
     g.fillStyle = near;
     for (let x = 0; x < W; x++) g.fillRect(x, hillNear[x] - oy, 1, H - hillNear[x]);
     if (snowy) {
@@ -784,16 +1026,9 @@ const Scene = (() => {
       g.fillRect(x, groundY - 1 - oy, 1, 1);
       g.fillRect(x + 2, groundY - 2 - oy, 1, 2);
     }
-    const tx = Math.round(W * 0.82), ty = groundY - oy;
-    g.fillStyle = mixHex('#2a1d2e', '#6b4a32', light);
-    g.fillRect(tx, ty - 14, 3, 14);
-    disc(g, tx + 1, ty - 19, 7, leaf);
-    disc(g, tx - 4, ty - 15, 5, leaf);
-    disc(g, tx + 6, ty - 15, 5, leaf);
-    g.fillStyle = snowy || mixHex(leaf, '#ffffff', 0.15);
-    g.fillRect(tx - 2, ty - 23, 2, 1);
-    g.fillRect(tx + 3, ty - 21, 2, 1);
-    if (snowy) { g.fillRect(tx - 1, ty - 26, 5, 1); g.fillRect(tx - 8, ty - 19, 3, 1); g.fillRect(tx + 8, ty - 19, 3, 1); }
+    stemColor = mixHex('#24413a', season === 'sonbahar' ? '#7a8a3a' : '#4f9a52', light);
+    drawTree(g, Math.round(W * 0.82), groundY - oy, leaf, snowy, SE);
+    drawFlowers(g, oy, far);
     // güneş
     const low = U.clamp(1 - sun.elev / 12, 0, 1);
     sunCv = sunCv || makeCanvas(29, 29);
@@ -821,11 +1056,132 @@ const Scene = (() => {
       cg.fillRect(2, 7, w - 4, 1);
       return c;
     });
+    buildDeco();
     // zambak sapları ve yaprakları
-    stemColor = mixHex('#24413a', '#4f9a52', light);
     const lp = { g: stemColor, G: mixHex(stemColor, '#000000', 0.3) };
     leafCv = [paint(LILY.leaf, lp, true), paint(LILY.leaf, lp)];
     fogColor = mixHex('#59607e', '#e6e9f0', light);
+  }
+
+  // Piksel dizisini doğrudan bir katmana bas (kanvas oluşturmadan)
+  function stamp(g, rows, pal, x, y) {
+    for (let j = 0; j < rows.length; j++) {
+      const row = rows[j];
+      for (let i = 0; i < row.length; i++) {
+        const ch = row[i];
+        if (ch === '.' || !pal[ch]) continue;
+        g.fillStyle = pal[ch];
+        g.fillRect(x + i, y + j, 1, 1);
+      }
+    }
+  }
+  const dim = (c, k = 0.7) => mixHex('#1b1f3a', c, 1 - (1 - light) * k);
+
+  function drawTree(g, tx, ty, leaf, snowy, SE) {
+    const trunk = mixHex('#2a1d2e', SE.trunk, light);
+    const snow = mixHex('#9aa3c4', '#ffffff', light);
+    const r = seeded(77);
+    treeBulbs = [];
+    g.fillStyle = trunk;
+    g.fillRect(tx, ty - 14, 3, 14);
+    if (SE.snow) {
+      // kış: çıplak dallar, üstlerinde kar
+      const br = [[1, -12, -7, -20], [2, -13, 9, -21], [1, -15, 1, -26], [1, -18, -4, -24], [2, -18, 6, -25]];
+      for (const [x0, y0, x1, y1] of br) {
+        const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+        for (let i = 0; i <= n; i++) {
+          const x = Math.round(tx + x0 + ((x1 - x0) * i) / n), y = Math.round(ty + y0 + ((y1 - y0) * i) / n);
+          g.fillStyle = trunk; g.fillRect(x, y, 1, 1);
+          if (i % 2 === 0) { g.fillStyle = snow; g.fillRect(x, y - 1, 1, 1); }
+          if (i > 1 && i % 2) treeBulbs.push([x, y + 1]);
+        }
+      }
+      g.fillStyle = snow;
+      g.fillRect(tx - 3, ty - 1, 9, 1);
+      g.fillRect(tx - 1, ty - 2, 5, 1);
+    } else {
+      disc(g, tx + 1, ty - 19, 7, leaf);
+      disc(g, tx - 4, ty - 15, 5, leaf);
+      disc(g, tx + 6, ty - 15, 5, leaf);
+      const spots = season === 'ilkbahar' ? [dim(SE.bloom), dim('#ffffff')] : season === 'sonbahar' ? [dim(SE.leaf2), dim(SE.leaf3)] : [mixHex(leaf, '#ffffff', 0.15)];
+      const count = season === 'yaz' ? 6 : 22;
+      for (let i = 0; i < count; i++) {
+        const a = r() * 6.28, d = r() * 7;
+        const x = Math.round(tx + 1 + Math.cos(a) * d * 1.3), y = Math.round(ty - 18 + Math.sin(a) * d * 0.8);
+        g.fillStyle = spots[i % spots.length];
+        g.fillRect(x, y, 1, 1);
+        if (i % 3 === 0) treeBulbs.push([x, y]);
+      }
+      if (season === 'sonbahar') { // yere düşmüş yapraklar
+        for (let i = 0; i < 9; i++) { g.fillStyle = spots[i % 2]; g.fillRect(Math.round(tx - 9 + r() * 20), ty + (i % 2), 1, 1); }
+      }
+      if (snowy) { g.fillStyle = snowy; g.fillRect(tx - 1, ty - 26, 5, 1); g.fillRect(tx - 8, ty - 19, 3, 1); g.fillRect(tx + 8, ty - 19, 3, 1); }
+    }
+    // yılbaşı: tepede yıldız, dibinde hediyeler
+    if (ev.yilbasi) {
+      g.fillStyle = '#ffd84d';
+      const sy = SE.snow ? ty - 28 : ty - 28;
+      g.fillRect(tx + 1, sy - 1, 1, 3); g.fillRect(tx, sy, 3, 1);
+      SP.hediye.forEach((h, i) => g.drawImage(h, tx - 9 + i * 7, ty - 3));
+    }
+    flagPos = ev.ulusal ? [tx - 13, ty - 22 + landTop] : null;
+    if (flagPos) { g.fillStyle = mixHex('#3a3040', '#9a8a7a', light); g.fillRect(tx - 13, ty - 22, 1, 22); }
+  }
+  let flagPos = null;
+
+  function drawFlowers(g, oy, far) {
+    for (const f of flowers) {
+      const rows = FLOWER[f.k];
+      const tul = TULIP[f.t];
+      const pal = {};
+      for (const k in FLOWER_PAL) pal[k] = dim(FLOWER_PAL[k]);
+      pal.c = dim(tul[0]); pal.d = dim(tul[1]); pal.g = stemColor;
+      if (f.back) for (const k in pal) pal[k] = mixHex(pal[k], far, 0.35);
+      const baseY = f.back ? Math.min(groundY - 3, hillNear[f.x] + 4) : groundY;
+      stamp(g, rows, pal, f.x - (rows[0].length >> 1), baseY - rows.length - oy);
+    }
+  }
+
+  function drawHouse(g, oy) {
+    if (!house) return;
+    const lit = night > 0.15 || light < 0.45;
+    const pal = { r: dim('#b5544a'), w: dim('#efe0c8'), n: lit ? '#ffd97a' : dim('#7fb2dd'), d: dim('#7a4a2e'), c: dim('#8a5a4a') };
+    const rows = season === 'kis' ? HOUSE.map((row, j) => (j < 3 ? row.replace(/r/g, 'S') : row)) : HOUSE;
+    pal.S = mixHex('#9aa3c4', '#ffffff', light);
+    if (lit) { g.globalAlpha = 0.18; disc(g, house.x + 4, house.y + 8 - oy, 4, '#ffd97a'); g.globalAlpha = 1; }
+    stamp(g, rows, pal, house.x, house.y - oy);
+  }
+
+  // Özel gün süsleri: üstte asılı süs ipi (bayram fenerleri / bayraklar / yılbaşı ışıkları / kalpler)
+  function buildDeco() {
+    decoBulbs = [];
+    const style = ev.ramazan || ev.kurban ? 'fener' : ev.ulusal ? 'bayrak' : ev.yilbasi ? 'isik' : ev.sevgililer ? 'kalp' : null;
+    if (!style) { decoCv = null; return; }
+    decoCv = decoCv && decoCv.width === W && decoCv.height === H ? decoCv : makeCanvas(W, H);
+    const g = decoCv.getContext('2d');
+    g.clearRect(0, 0, W, H);
+    const span = Math.max(40, Math.round(W / 3));
+    const yAt = (x) => 2 + Math.round(5 * Math.sin(Math.PI * ((x % span) / span)));
+    g.fillStyle = dim('#6a5a72', 0.5);
+    for (let x = 0; x < W; x++) g.fillRect(x, yAt(x), 1, 1);
+    if (style === 'fener') {
+      for (let x = 8, i = 0; x < W - 4; x += 16, i++) {
+        const y = yAt(x) + 1;
+        g.fillStyle = dim('#6a5a72', 0.5); g.fillRect(x, y, 1, 2);
+        if (night > 0.2) { g.globalAlpha = 0.16 * night; disc(g, x, y + 5, 5, '#ffd97a'); g.globalAlpha = 1; }
+        g.drawImage(SP.fener[i % SP.fener.length], x - 1, y + 2);
+      }
+    } else if (style === 'bayrak') {
+      for (let x = 3, i = 0; x < W - 3; x += 5, i++) {
+        const y = yAt(x) + 1;
+        g.fillStyle = i % 2 ? '#ffffff' : '#e30a17';
+        g.fillRect(x - 1, y, 3, 1); g.fillRect(x - 1, y + 1, 3, 1); g.fillRect(x, y + 2, 1, 1);
+      }
+    } else if (style === 'kalp') {
+      for (let x = 6; x < W - 3; x += 12) g.drawImage(SP.kalp, x - 1, yAt(x) + 1);
+    } else {
+      for (let x = 2; x < W - 1; x += 5) decoBulbs.push([x, yAt(x) + 1]);
+    }
   }
 
   function buildMoon() {
@@ -1242,6 +1598,8 @@ const Scene = (() => {
     }
   }
 
+  // pozlara göre kafanın en üst satırı (şapka için)
+  const HEAD_TOP = { loafA: 0, loafB: 0, loafAB: 0, happy: 0, sleep: 2, walkA: 1, walkB: 1, walkAB: 1, walkBB: 1, crouch: 4, crouchB: 4, sitUp: 0, sitUpB: 0, playUp: 0, playSwipe: 0 };
   function drawLuna() {
     const g = lunaGeom();
     ctx.globalAlpha = 0.25;
@@ -1251,6 +1609,11 @@ const Scene = (() => {
     // pusudayken kalça sallar
     const wig = L.state === 'crouch' && Math.sin(L.ft * 28) > 0 ? 1 : 0;
     ctx.drawImage(g.c, g.left + wig, g.top);
+    // yılbaşında Noel şapkası
+    if (ev.yilbasi) {
+      const top = HEAD_TOP[poseName()] ?? 0;
+      ctx.drawImage(SP.sapka[L.dir > 0 ? 0 : 1], Math.round(L.x - 4) + wig, g.top + top);
+    }
   }
 
   function drawStudyProps() {
@@ -1270,7 +1633,7 @@ const Scene = (() => {
   }
 
   // ---------- Parçacıklar (sınırlı sayıda) ----------
-  const MAX_P = 70, SPARK_COLS = ['#ffd84d', '#ffffff', '#ff9eb5'];
+  const MAX_P = 120, SPARK_COLS = ['#ffd84d', '#ffffff', '#ff9eb5'];
   function emit(kind, x, y, vx, vy, life, c) {
     if (particles.length < MAX_P) particles.push({ kind, x, y, vx, vy, life, c, t: 0 });
   }
@@ -1289,12 +1652,19 @@ const Scene = (() => {
       particles[n++] = p;
       p.x += p.vx * dt; p.y += p.vy * dt;
       if (p.kind === 'spark') p.vy += 60 * dt;
+      else if (p.kind === 'leaf' || p.kind === 'petal') {
+        p.x += Math.sin(p.t * 2.4 + p.vx) * dt * 7;
+        if (p.y >= groundY) { p.y = groundY; p.vy = 0; p.vx = 0; }
+      }
       let a = 1 - p.t / p.life;
       if (p.kind === 'pollen') a *= 0.5 + 0.5 * Math.sin(p.t * 12);
+      else if (p.kind === 'leaf' || p.kind === 'petal') a = Math.min(1, (p.life - p.t) * 1.5);
       ctx.globalAlpha = a;
       const x = Math.round(p.x), y = Math.round(p.y);
       if (p.kind === 'heart') ctx.drawImage(SP.heart, x - 2, y);
       else if (p.kind === 'z') ctx.drawImage(SP.z, x, y);
+      else if (p.kind === 'smoke') { ctx.globalAlpha = a * 0.4; ctx.fillStyle = p.c; ctx.fillRect(x, y, 2, 2); }
+      else if (p.kind === 'leaf') { ctx.fillStyle = p.c; ctx.fillRect(x, y, 2, 1); }
       else { ctx.fillStyle = p.c; ctx.fillRect(x, y, 1, 1); }
     }
     particles.length = n;
@@ -1361,6 +1731,184 @@ const Scene = (() => {
     }
   }
 
+  // ---------- Ziyaretçi kediler: Vesper ve sarman yavru ----------
+  // Luna ana karakter; diğerleri arada bir gelir, kısa bir "senaryo" oynar ve gider.
+  const FRIEND_SPEED = { vesper: 14, kitten: 40 };
+  function fpose(f) {
+    const blink = f.blink > 0;
+    if (f.kind === 'vesper') {
+      if (f.state === 'walk') return (Math.floor(f.ft * 6) % 2 ? 'walkA' : 'walkB') + (blink ? 'B' : '');
+      if (f.state === 'sleep') return 'sleep';
+      if (f.state === 'happy') return 'happy';
+      if (f.state === 'loaf') return blink ? 'loafAB' : 'loafA';
+      return blink ? 'sitUpB' : 'sitUp';
+    }
+    if (f.state === 'walk') return Math.floor(f.ft * 10) % 2 ? 'walkA' : 'walkB';
+    if (f.state === 'sleep') return 'sleep';
+    return blink ? 'sitB' : 'sit';
+  }
+  function fgeom(f) {
+    const p = SP[f.kind][fpose(f)], right = f.dir > 0;
+    return { p, c: p.c[right ? 0 : 1], left: Math.round(f.x - (right ? p.hx : p.w - 1 - p.hx)), top: Math.round(groundY - p.h + 1 + f.y) };
+  }
+  const spot = (side, dist) => Math.round(U.clamp(L.x + side * dist, 14, W - 14));
+  function addFriend(kind, steps, from) {
+    if (friends.some((f) => f.kind === kind)) return;
+    friends.push({ kind, x: from > 0 ? W + 30 : -30, y: 0, vy: 0, dir: from > 0 ? -1 : 1, state: 'walk', ft: 0, steps, blink: 0, blinkIn: U.rand(2, 5) });
+    if (onFriendSeen) onFriendSeen(kind);
+  }
+  function startVisit(kind) {
+    if (!W || mode === 'focus' || friends.length) return;
+    const side = L.x < W / 2 ? 1 : -1; // Luna'nın daha boş tarafı
+    const from = Math.random() < 0.5 ? 1 : -1;
+    const k = kind || (isEvening() && Math.random() < 0.6 ? 'nap' : Math.random() < 0.45 ? 'vesper' : Math.random() < 0.8 ? 'kitten' : 'family');
+    if (k === 'vesper') {
+      addFriend('vesper', [{ do: 'walk', x: () => spot(side, 38) }, { do: 'greet', t: 2.5 }, { do: 'sit', t: U.rand(8, 14) }, { do: 'loaf', t: U.rand(6, 12) }, { do: 'leave' }], from);
+    } else if (k === 'kitten') {
+      addFriend('kitten', [
+        { do: 'walk', x: () => Math.round(U.rand(20, W - 20)), hop: true, speed: 46 },
+        { do: 'walk', x: () => spot(side, 28), hop: true, speed: 40 },
+        { do: 'greet', t: 2 }, { do: 'sit', t: U.rand(4, 7) }, { do: 'sleep', t: U.rand(14, 26) }, { do: 'sit', t: 2 },
+        { do: 'leave', hop: true, speed: 46 },
+      ], from);
+    } else if (k === 'nap') {
+      // akşam: Luna'nın yanına kıvrılıp uyurlar
+      addFriend('vesper', [{ do: 'walk', x: () => spot(side, 36) }, { do: 'sleep', t: U.rand(50, 110) }, { do: 'sit', t: 3 }, { do: 'leave' }], from);
+      if (Math.random() < 0.6) addFriend('kitten', [{ do: 'wait', t: 3 }, { do: 'walk', x: () => spot(-side, 26), speed: 30 }, { do: 'sleep', t: U.rand(40, 90) }, { do: 'leave', hop: true, speed: 44 }], -from);
+    } else {
+      addFriend('vesper', [{ do: 'walk', x: () => spot(side, 38) }, { do: 'greet', t: 2 }, { do: 'sit', t: U.rand(16, 24) }, { do: 'leave' }], from);
+      addFriend('kitten', [{ do: 'wait', t: 2 }, { do: 'walk', x: () => spot(-side, 26), hop: true, speed: 42 }, { do: 'greet', t: 2 }, { do: 'sleep', t: U.rand(14, 20) }, { do: 'leave', hop: true, speed: 46 }], -from);
+    }
+  }
+  function updateFriends(dt) {
+    if (mode === 'focus') {
+      // odakta sahne sakin: yürüyenler sessizce çıkar, uyuyanlar uyumaya devam eder
+      for (const f of friends) if (f.state !== 'sleep' && !(f.steps[0] && f.steps[0].do === 'leave')) f.steps = [{ do: 'leave' }];
+    } else if (!friends.length && !play && !fishItem) {
+      nextVisit -= dt * (mode === 'break' ? 1.5 : 1);
+      if (nextVisit <= 0) { nextVisit = U.rand(240, 480); startVisit(); }
+    }
+    for (let i = friends.length - 1; i >= 0; i--) {
+      const f = friends[i];
+      f.ft += dt;
+      if (f.y < 0 || f.vy !== 0) { f.vy += 260 * dt; f.y += f.vy * dt; if (f.y >= 0) { f.y = 0; f.vy = 0; } }
+      f.blinkIn -= dt;
+      if (f.blinkIn <= 0) { f.blink = 0.15; f.blinkIn = U.rand(2.5, 6); }
+      if (f.blink > 0) f.blink -= dt;
+      const st = f.steps[0];
+      if (!st) { friends.splice(i, 1); continue; }
+      if (st.do === 'walk' || st.do === 'leave') {
+        if (st.tx == null) st.tx = st.do === 'leave' ? (f.x < W / 2 ? -30 : W + 30) : (typeof st.x === 'function' ? st.x() : st.x);
+        f.state = 'walk';
+        const d = st.tx - f.x;
+        if (Math.abs(d) > 0.5) f.dir = d > 0 ? 1 : -1;
+        f.x += Math.sign(d) * Math.min(Math.abs(d), (st.speed || FRIEND_SPEED[f.kind]) * dt);
+        if (st.hop && f.y === 0 && Math.random() < dt * 2.5) f.vy = -45;
+        if (Math.abs(st.tx - f.x) <= 0.6) {
+          f.steps.shift();
+          if (st.do === 'leave') friends.splice(i, 1);
+        }
+        continue;
+      }
+      if (st.left == null) {
+        st.left = st.t;
+        f.dir = L.x >= f.x ? 1 : -1; // Luna'ya dönük
+        if (st.do === 'greet') {
+          hearts((f.x + L.x) / 2, groundY - 18, 3);
+          if (L.state === 'sit' || L.state === 'walk' || L.state === 'watch') { L.state = 'happy'; L.wait = 3; }
+        }
+      }
+      f.state = st.do === 'greet' ? (f.kind === 'vesper' ? 'happy' : 'sit') : st.do === 'wait' ? 'sit' : st.do;
+      st.left -= dt;
+      if (f.state === 'sleep' && Math.random() < dt * 0.5) emit('z', f.x - f.dir * 3, groundY - 11, -2 * f.dir, -5, 2.2);
+      if (st.left <= 0) f.steps.shift();
+    }
+  }
+  function drawFriends() {
+    for (const f of friends) {
+      if (f.x < -40 || f.x > W + 40) continue;
+      const g = fgeom(f);
+      ctx.globalAlpha = 0.22;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(g.left + 2, groundY + 1, g.p.w - 4, 1);
+      ctx.globalAlpha = 1;
+      ctx.drawImage(g.c, g.left, g.top);
+    }
+  }
+
+  // ---------- Süsler ve mevsim canlılığı (her kare, hafif) ----------
+  function drawDeco() {
+    if (decoCv) { ctx.globalAlpha = 1; ctx.drawImage(decoCv, 0, 0); }
+    const tw = Math.floor(time * 2);
+    // yılbaşı ışıkları: ipte ve ağaçta sırayla yanıp söner
+    if (ev.yilbasi) {
+      const list = decoBulbs.concat(treeBulbs);
+      for (let i = 0; i < list.length; i++) {
+        const [x, y] = list[i];
+        const c = BULBS[(i + tw) % BULBS.length];
+        if (night > 0.2) { ctx.globalAlpha = 0.25 * night; ctx.fillStyle = c; ctx.fillRect(x - 1, y - 1, 3, 3); }
+        ctx.globalAlpha = 0.7 + 0.3 * Math.sin(time * 3 + i);
+        ctx.fillStyle = c;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+    if (flagPos) { ctx.globalAlpha = 1; ctx.drawImage(SP.bayrak[Math.floor(time * 3) % 2], flagPos[0] + 1, flagPos[1]); }
+    ctx.globalAlpha = 1;
+  }
+
+  const LEAF_COLS = ['#e07a2e', '#c7472f', '#f0b13c'], PETAL_COLS = ['#ffc4dc', '#ffd9e8', '#ffffff'], FW_COLS = ['#ff5d6c', '#ffd84d', '#5fd3a3', '#6cc4ff', '#c49bff', '#ffffff'];
+  function seasonFx(dt) {
+    const wet = fx.rain || fx.storm;
+    // sonbaharda yapraklar, ilkbaharda çiçek yaprakları süzülür
+    seasonT += dt;
+    if (seasonT > 0.8 && !wet && particles.length < MAX_P - 30) {
+      seasonT = 0;
+      const tx = Math.round(W * 0.82);
+      if (season === 'sonbahar') emit('leaf', Math.random() < 0.6 ? tx + U.rand(-8, 10) : U.rand(0, W), Math.random() < 0.6 ? groundY - 24 : -2, U.rand(0, 6.28), U.rand(7, 12), U.rand(6, 9), U.pick(LEAF_COLS));
+      else if (season === 'ilkbahar' && light > 0.3) emit('petal', Math.random() < 0.5 ? tx + U.rand(-8, 10) : U.rand(0, W), Math.random() < 0.5 ? groundY - 24 : -2, U.rand(0, 6.28), U.rand(5, 9), U.rand(6, 9), U.pick(PETAL_COLS));
+    }
+    // baca dumanı (kış ve sonbahar akşamları)
+    if (house && (season === 'kis' || season === 'sonbahar') && (night > 0.1 || light < 0.7)) {
+      smokeT += dt;
+      if (smokeT > 0.7) { smokeT = 0; emit('smoke', house.x + 9, house.y - 1, U.rand(1, 3), U.rand(-6, -4), U.rand(2.5, 3.5), mixHex('#6a6f88', '#e8ebf2', light)); }
+    }
+    // kelebekler (ilkbahar/yaz gündüzü)
+    if ((season === 'ilkbahar' || season === 'yaz') && light > 0.55 && !wet && !fx.snow) {
+      for (const b of butterflies) {
+        b.ph += dt;
+        b.x += Math.sin(b.ph * 0.6) * dt * 9 + dt * 3;
+        if (b.x > W + 3) b.x = -3;
+        const y = Math.round(b.y + Math.sin(b.ph * 2.3) * 3);
+        ctx.globalAlpha = 0.95;
+        ctx.drawImage(SP.kelebek[b.c][Math.floor(b.ph * 8) % 2], Math.round(b.x), y);
+      }
+    }
+    // kuş sürüsü (gündüz, açık havada arada bir)
+    if (light > 0.6 && !wet) {
+      nextBirds -= dt;
+      if (!birds && nextBirds <= 0) { birds = { x: -12, y: U.rand(8, horizon * 0.45), vx: U.rand(13, 19) }; nextBirds = U.rand(70, 160); }
+    }
+    if (birds) {
+      birds.x += birds.vx * dt;
+      const f = Math.floor(time * 5) % 2;
+      ctx.globalAlpha = 0.8;
+      for (const [ox, oy] of [[0, 0], [-7, -3], [-7, 3]]) ctx.drawImage(SP.kus[(f + (ox ? 1 : 0)) % 2], Math.round(birds.x + ox), Math.round(birds.y + oy));
+      if (birds.x > W + 12) birds = null;
+    }
+    // yılbaşı gecesi havai fişek
+    if (ev.yilbasi && ev.yilbasi.fireworks && night > 0.5) {
+      fireT -= dt;
+      if (fireT <= 0) {
+        fireT = U.rand(1.6, 3.5);
+        const x = U.rand(W * 0.15, W * 0.85), y = U.rand(6, horizon * 0.5), c = U.pick(FW_COLS);
+        for (let i = 0; i < 18; i++) { const a = (i / 18) * 6.28, v = U.rand(22, 34); emit('spark', x, y, Math.cos(a) * v, Math.sin(a) * v, U.rand(1, 1.6), c); }
+      }
+    }
+    // 14 Şubat: yerden süzülen kalpler
+    if (ev.sevgililer && Math.random() < dt * 0.4) emit('heart', U.rand(5, W - 5), groundY - 2, U.rand(-2, 2), U.rand(-10, -6), U.rand(3, 5));
+    ctx.globalAlpha = 1;
+  }
+
   // ---------- Konuşma balonu ----------
   function positionBubble() {
     if (!bubbleOn || !W) return;
@@ -1389,14 +1937,18 @@ const Scene = (() => {
     drawClouds(dt);
     ctx.drawImage(landCv, 0, landTop);
     drawFog();
+    drawDeco();
     drawFlies(dt);
     updateLilies(dt);
     drawLilies(false);
+    seasonFx(dt);
     updateLuna(dt);
     updateYarn(dt);
+    updateFriends(dt);
     drawStudyProps();
     drawFish();
     drawYarn();
+    drawFriends();
     drawLuna();
     drawLilies(true);
     drawParticles(dt);
@@ -1437,6 +1989,17 @@ const Scene = (() => {
   function hit(ev) {
     const rect = cv.getBoundingClientRect();
     const x = (ev.clientX - rect.left) / scale, y = (ev.clientY - rect.top) / scale;
+    // ziyaretçi kedilere dokunulursa zıplar
+    for (const f of friends) {
+      const g = fgeom(f);
+      if (x >= g.left - 2 && x <= g.left + g.p.w + 2 && y >= g.top - 3 && y <= groundY + 3) {
+        f.vy = -55;
+        if (f.state === 'sleep' && f.steps[0]) f.steps[0].left = Math.min(f.steps[0].left, 1);
+        hearts(f.x, g.top, 3);
+        if (onFriend) onFriend(f.kind);
+        return;
+      }
+    }
     // yumağa dokunulursa yuvarlanır (ve Luna oyuna katılır)
     if (yarn && !yarn.leave && Math.abs(x - yarn.x - 2.5) < 6 && y > groundY - 10 + yarn.y && y < groundY + 4) {
       yarn.vx = (x < yarn.x + 2.5 ? 1 : -1) * U.rand(50, 80);
@@ -1461,6 +2024,8 @@ const Scene = (() => {
       cv = canvas; wrap = canvas.parentElement; bubbleEl = bubble;
       ctx = cv.getContext('2d', { alpha: false });
       onPoke = opts.onPoke;
+      onFriend = opts.onFriend || null;
+      onFriendSeen = opts.onFriendSeen || null;
       sprites();
       updateSun();
       resize();
@@ -1493,6 +2058,10 @@ const Scene = (() => {
       weather = { kind, intensity };
       applyWeather();
     },
+    // ziyaretçi çağır: 'vesper' | 'kitten' | 'nap' | 'family' (odaklanırken yok sayılır)
+    visit(kind) { startVisit(kind); },
+    // bugünün mevsimi ve özel günleri (arayüz için)
+    today() { return { season, events: events.slice() }; },
     // hemen bir ip oyunu başlat (odaklanırken yok sayılır)
     play() { if (mode !== 'focus') { nextPlay = 0; startPlay(); } },
     // Luna'nın küçük portresi (rapor başlığı vb.)
@@ -1501,8 +2070,9 @@ const Scene = (() => {
       canvas.width = p.w; canvas.height = p.h;
       canvas.getContext('2d').drawImage(p.c[1], 0, 0);
     },
-    say(text, opts = {}) {
-      if (!bubbleEl) return;
+    say(text, opts) {
+      opts = opts || {};
+      if (!bubbleEl || !text) return;
       bubbleEl.innerHTML = (opts.love ? '<span class="love-tag">💌</span> ' : '') + U.esc(text);
       bubbleEl.classList.toggle('love', !!opts.love);
       bubbleEl.classList.remove('hidden');

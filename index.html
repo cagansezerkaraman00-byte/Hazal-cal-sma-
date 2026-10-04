@@ -126,6 +126,7 @@
                 <button class="btn primary">Yükle</button>
               </form>
               <div class="chips" id="spotify-presets"></div>
+              <div class="sp-account" id="sp-account"></div>
               <div class="spotify-frame" id="spotify-frame"></div>
               <h3 class="sub-h">🌧️ Odak sesleri</h3>
               <div class="mixer" id="mixer"></div>
@@ -230,6 +231,119 @@
 
       <!-- AYARLAR -->
       <section class="tab" id="tab-settings">
+        <div class="card guide">
+          <h2>📖 Kılavuz <span class="muted small">— Luna anlatıyor 🐾</span></h2>
+          <p class="hint">Merak ettiğin bölüme dokun. Her şey burada, sade ve kısa.</p>
+          <details>
+            <summary>🏠 Çalış ekranı</summary>
+            <ul>
+              <li><b>Pomodoro</b> 25 dk odak + 5 dk mola düzenidir (süreleri Ayarlar → Zamanlayıcı'dan değiştirebilirsin). <b>Serbest</b> ise kronometre gibi sayar; deneme çözerken idealdir.</li>
+              <li><b>🎯 Bu oturumda ne yapacağım?</b> satırına hedefini yaz; oturum bitince otomatik olarak notuna geçer.</li>
+              <li><b>Başla</b>'ya basınca sade odak ekranı açılır: sadece ben, sayaç ve hedefin. Sayaç sayfa kapansa da doğru sayar.</li>
+              <li><b>💭 Aklına başka bir şey mi geldi?</b> Yaz, Plan sekmesine kaydedeyim; sen derse dön.</li>
+              <li><b>✓</b> oturumu bitirip kaydeder, <b>↺</b> sıfırlar. Bitince neler çalıştığını, nerede zorlandığını ve verimini (1–5 ⭐) yazarsın; zorlandığın yer tekrar listesine düşer.</li>
+              <li><b>Derslerim</b> kutucuklarına dokununca sayaç o dersle başlar; altında bugün kaç dakika çalıştığın yazar.</li>
+              <li><b>Zaman çizelgesi</b> gün boyu hangi saatte hangi dersi çalıştığını renkli şeritlerle gösterir; pembe çizgi şu anki saattir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🗓️ Plan ve YKS programı</summary>
+            <ul>
+              <li>Önce <b>alanını</b> (SAY / EA / SÖZ / DİL) seç; derslerin buna göre ayarlanır.</li>
+              <li><b>Konu takibi:</b> konuya dokundukça durumu değişir: ○ başlamadım → 📖 çalışıyorum → 🔁 tekrar → ✅ tamam.</li>
+              <li><b>≈ sayılar</b> o konudan YKS'de yılda ortalama kaç soru geldiğini gösterir (2018–2025 sınavlarından derlendi; kaynaklar sayfanın altında). Yüzdeler de bu ağırlığa göre: soru getiren konuyu bitirmek daha çok sayılır.</li>
+              <li><b>Haftalık program</b> her pazartesi kendiliğinden hazırlanır ve hafta boyunca karışmaz. Konuların soru ağırlığına, işaretlediğin durumlara, denemelerdeki eksiklerine ve son günlerde hangi dersi çalışmadığına bakar. Her gün paragraf + problem rutini, pazar günleri deneme günüdür. <b>↻ Yenile</b> haftayı yeniden karar.</li>
+              <li><b>Bugünün planı</b> ana ekranda da durur. <b>Başla ▶</b> sayacı o konuyla başlatır; oturum bitince madde kendiliğinden işaretlenir.</li>
+              <li>Sınav tarihi şimdilik tahmini; ÖSYM açıklayınca Plan sekmesinden düzeltebilirsin.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📝 Deneme takibi</summary>
+            <ul>
+              <li><b>Net = Doğru − Yanlış ÷ 4</b> (4 yanlış 1 doğruyu götürür); ben hesaplarım.</li>
+              <li>Deneme eklerken TYT / AYT / Branş seç, her dersin doğru-yanlışını gir. Doğru + yanlış dersin soru sayısını geçemez.</li>
+              <li><b>Eksik çıkan konuları</b> işaretlersen, onları YKS'deki soru ağırlığıyla çarpıp <b>öncelikli konular</b> listesi yaparım; "Çalış ▶" ile hemen başlarsın, 📌 ile tekrar listesine eklersin.</li>
+              <li>Grafik netlerinin zaman içindeki gidişini, tablo her dersin son netini ve değişimini gösterir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📓 Notlar ve bilgi kartları</summary>
+            <ul>
+              <li><b>Notlar:</b> derse göre not al, ara, 📌 ile üste sabitle. <code>**kalın**</code>, <code>`kod`</code> ve satır başında "- " ile madde yazabilirsin.</li>
+              <li><b>Kartlar</b> aralıklı tekrar (Leitner) ile çalışır: ön yüze soru, arka yüze cevap. Bildiğin kart bir üst kutuya geçer ve daha seyrek gelir (1 → her gün, 2 → 1 gün, 3 → 3 gün, 4 → haftada bir, 5 → 16 günde bir). Bilemediğin kart 1. kutuya döner. Bu, bilgiyi kalıcı yapmanın en etkili yollarından biri.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📈 İlerleme ve rapor</summary>
+            <ul>
+              <li><b>Luna'nın raporu:</b> güçlü yönlerin, gelişim fırsatların ve önerilerim. Hep yol gösteren bir dille yazarım 💛</li>
+              <li><b>Saatlere göre verim:</b> çubuğun yüksekliği o saatte ne kadar çalıştığını, rengi verdiğin verim yıldızlarını gösterir. Böylece en verimli saatlerini buluruz.</li>
+              <li><b>Yıldız haritası:</b> son 16 hafta; renk koyulaştıkça çok çalışmışsın, ★ o gün hedefini tamamladın demek.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🏅 Rozetler</summary>
+            <ul>
+              <li>Çalıştıkça, seri yaptıkça, konu bitirip deneme girdikçe rozet kazanırsın. Kilitli rozetlerde hedefe ne kadar yaklaştığını çubuk gösterir.</li>
+              <li>Her rozetin içinde sana yazılmış kısa bir not var 💌 Kazanınca açılır; İlerleme → Rozetler'den dokunup tekrar okuyabilirsin.</li>
+              <li>Odaklanırken kutlama göstermem; oturum bitince sırayla açarım.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🐾 Ben, Vesper ve minik sarman</summary>
+            <ul>
+              <li>Bana dokunursan zıplarım 💕 Her odak oturumunda bir 🐟 kazanırsın; üstteki balık düğmesiyle beni besleyebilirsin.</li>
+              <li>Molada ve boştayken arada yün yumağıyla oynarım; yumağa sen de dokunabilirsin 🧶 Akşamları daha çok kıvrılıp uyurum.</li>
+              <li><b>Vesper</b> (mavi gözlü siyah kedi) ve <b>sarman yavru</b> arada bir uğrar; geceleri yanımda uyurlar. Odaklanırken seni rahatsız etmezler. Ayarlar → Kediler'den çağırabilir, yavruya isim koyabilirsin.</li>
+              <li>Dünya gerçek zamanlı: güneş ve ay bulunduğun şehre göre hareket eder, mevsimler aya göre değişir (kışın kar, ilkbaharda çiçekli ağaç, yazın ayçiçekleri, sonbaharda düşen yapraklar). Geceleri zambaklar açar, mevsimin takımyıldızı görünür. Yılbaşı, bayramlar, ulusal bayramlar ve 14 Şubat'ta sahne süslenir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🌦️ Hava durumu</summary>
+            <ul>
+              <li>Ayarlar → Konum'dan şehrini seç ya da konumunu kullan. Üstteki hava çipine dokununca bugün ve yarının özetini görürsün; yağmur, kar, sis sahnede de görünür.</li>
+              <li>Veri Open-Meteo'dan gelir (ücretsiz, anahtarsız); yarım saatte bir yenilenir. İnternet yoksa son bilinen durum gösterilir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🎧 Müzik ve Spotify</summary>
+            <ul>
+              <li>Çalış ekranındaki <b>Müzik ve odak sesleri</b> kutusuna Spotify çalma listesi bağlantısı yapıştır; müzik uygulamadan çıkmadan çalar. Tarayıcıda Spotify'a giriş yaptıysan şarkıların tamamı çalar, yapmadıysan 30 saniyelik önizlemeler gelir.</li>
+              <li><b>Kendi çalma listelerini</b> uygulamada görmek için (isteğe bağlı, bir kez yapılır):
+                <ol>
+                  <li><a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>'a Spotify hesabınla gir, <b>Create app</b> de.</li>
+                  <li><b>Redirect URI</b> olarak müzik kutusunda yazan adresi aynen ekle, <b>Web API</b>'yi seç ve kaydet.</li>
+                  <li>Uygulamanın <b>Settings → User Management</b> bölümüne kendi Spotify e-postanı ekle.</li>
+                  <li><b>Client ID</b>'yi kopyalayıp müzik kutusundaki alana yapıştır, <b>Spotify'a bağlan</b> de.</li>
+                </ol>
+                Sonra çalma listelerin müzik kutusunda listelenir; dokunduğun liste çalar.</li>
+              <li>Odak sesleri (yağmur, dalga, şömine, kütüphane…) müzikle birlikte ya da tek başına açılabilir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📱 Telefona ve tablete yükleme</summary>
+            <ul>
+              <li><b>iPhone / iPad (Safari):</b> Paylaş → <b>Ana Ekrana Ekle</b>.</li>
+              <li><b>Android (Chrome):</b> ⋮ menü → <b>Uygulamayı yükle</b>.</li>
+              <li>Yükledikten sonra uygulama gibi tam ekran açılır ve internet olmadan da çalışır.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>💾 Veriler, gizlilik ve yedek</summary>
+            <ul>
+              <li>Bütün verilerin sadece bu cihazda saklanır; kimse göremez, hesap yok.</li>
+              <li>Telefon değiştirirken Ayarlar → Veriler → <b>Dışa aktar</b>, yeni cihazda <b>İçe aktar</b>. Arada bir yedek almak iyi bir alışkanlık.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>❓ Sık sorulanlar</summary>
+            <ul>
+              <li><b>Sayfayı kapatırsam sayaç durur mu?</b> Hayır; geri geldiğinde doğru süreyi gösterir. İstersen Ayarlar → Odak → <b>sıkı mod</b> ile uygulamadan çıkınca duraklatabilirsin.</li>
+              <li><b>Bildirim gelmiyor?</b> Ayarlar → Odak → Bildirim'i aç ve izin ver. iPhone'da bildirimler için uygulamayı Ana Ekrana eklemiş olman gerekir.</li>
+              <li><b>Luna çok konuşuyor / hiç konuşmuyor?</b> Ayarlar → Odak'tan konuşma sıklığını değiştir; odaklanırken zaten sessizim.</li>
+            </ul>
+          </details>
+        </div>
         <div class="grid">
           <div class="card">
             <h2>🎨 Görünüm</h2>
@@ -265,6 +379,16 @@
             <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
             <label class="switch"><input type="checkbox" id="set-notify"> Bildirim gönder (uygulama arka plandayken)</label>
             <label class="field">Luna molada/boşta ne sıklıkla konuşsun? (dakika, 0 = hiç) <input type="number" id="set-msg" min="0" max="240"></label>
+          </div>
+          <div class="card">
+            <h2>🐈 Kediler</h2>
+            <p class="muted small">Luna ana karakter; Vesper (mavi gözlü siyah kedi) ve sarman yavru arada bir uğrar. Molada ve boştayken gelirler, odaklanırken seni rahatsız etmezler.</p>
+            <label class="field">Sarman yavrunun adı <input id="set-kitten" maxlength="20"></label>
+            <div class="row" id="call-cats">
+              <button class="btn soft" data-visit="vesper">🐈‍⬛ Vesper'ı çağır</button>
+              <button class="btn soft" data-visit="kitten">🧡 Yavruyu çağır</button>
+              <button class="btn soft" data-visit="family">🐾 Hepsi</button>
+            </div>
           </div>
           <div class="card">
             <h2>📚 Dersler</h2>
@@ -323,6 +447,7 @@
   <script src="js/deneme.js"></script>
   <script src="js/notes.js"></script>
   <script src="js/badges.js"></script>
+  <script src="js/spotify.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
