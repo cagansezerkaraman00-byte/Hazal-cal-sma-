@@ -47,6 +47,7 @@
       <button data-tab="deneme"><span>📝</span><b>Deneme</b></button>
       <button data-tab="notes"><span>📚</span><b>Kitaplık</b></button>
       <button data-tab="progress"><span>📈</span><b>İlerleme</b></button>
+      <button data-tab="asistan"><span>🎓</span><b>Asistan</b></button>
       <button data-tab="settings"><span>⚙️</span><b>Ayarlar</b></button>
     </nav>
 
@@ -231,6 +232,11 @@
       </section>
 
       <!-- AYARLAR -->
+      <!-- ASİSTAN -->
+      <section class="tab" id="tab-asistan">
+        <div id="asistan-root"></div>
+      </section>
+
       <section class="tab" id="tab-settings">
         <div class="card guide">
           <h2>📖 Kılavuz <span class="muted small">— Luna anlatıyor 🐾</span></h2>
@@ -272,6 +278,24 @@
             <ul>
               <li><b>Notlar:</b> derse göre not al, ara, 📌 ile üste sabitle. <code>**kalın**</code>, <code>`kod`</code> ve satır başında "- " ile madde yazabilirsin.</li>
               <li><b>Kartlar</b> aralıklı tekrar (Leitner) ile çalışır: ön yüze soru, arka yüze cevap. Bildiğin kart bir üst kutuya geçer ve daha seyrek gelir (1 → her gün, 2 → 1 gün, 3 → 3 gün, 4 → haftada bir, 5 → 16 günde bir). Bilemediğin kart 1. kutuya döner. Bu, bilgiyi kalıcı yapmanın en etkili yollarından biri.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🎓 Eğitim asistanı</summary>
+            <ul>
+              <li><b>Asistan</b> sekmesinde Claude ile konuşursun: konu anlattırabilir, soru fotoğrafı çözdürebilir, PDF'indeki anlamadığın yeri sorabilir, güvenilir kaynak önerisi alabilirsin. Anlatımı Ayarlar → Kişisel'deki <b>eğitim düzeyine ve bölümüne</b> göre ayarlar (ör. Tıp 1. sınıf).</li>
+              <li><b>Kaynak gösterir:</b> PDF'e dayanan cümlelerin yanında küçük numaralar çıkar; dokununca alıntıyı ve sayfa numarasını görürsün. İnternette arama açıksa dış kaynaklar bağlantısıyla listelenir. Kaynak uydurmaması ve emin olmadığında bunu söylemesi özellikle istenir.</li>
+              <li><b>Deneme analizi:</b> Deneme sekmesindeki "🎓 Asistanla analiz et" netlerini ve eksik konularını YKS soru ağırlıklarıyla birlikte gönderir; 2 haftalık plan önerir.</li>
+              <li>Cevapları <b>📓 Nota kaydet</b> ile notlarına ekleyebilir, <b>🃏 Kart üret</b> ile aralıklı tekrar kartlarına dönüştürebilirsin. Depo'da açtığın bir PDF ya da fotoğraf için görüntüleyicideki <b>🎓 Asistana sor</b> düğmesini kullan.</li>
+              <li><b>Kurulum</b> (bir kez):
+                <ol>
+                  <li><a href="https://platform.claude.com/" target="_blank" rel="noopener">platform.claude.com</a>'a (Anthropic geliştirici konsolu) gir ve hesap aç.</li>
+                  <li><b>Billing</b>'den bakiye ekle (ör. 5-10 $). Claude.ai aboneliği bu bakiyeyi kapsamaz. İstersen <b>Limits</b>'ten aylık harcama sınırı koy.</li>
+                  <li><b>API Keys → Create Key</b> ile "Luna" adında bir anahtar oluştur ve kopyala.</li>
+                  <li>Asistan → ⚙️ Asistan ayarları'na yapıştır, <b>Kaydet</b> de (anahtar ücretsiz bir istekle doğrulanır).</li>
+                </ol></li>
+              <li><b>Maliyet:</b> her cevabın altında kaç dolar tuttuğu yazar; uygulama aylık bütçeyi (varsayılan 5 $) aşınca durur. Büyük PDF'lerden önce tahmini maliyet sorulur; sadece ilgili sayfaları seçmek ucuzlatır. Aynı sohbette takip soruları önbellek sayesinde çok daha ucuzdur. Model seçimi ayarlardadır: Opus 5.5 en derin, Sonnet 5.5 daha ekonomik, Haiku 4.5 en ucuz.</li>
+              <li>API anahtarı yalnızca bu cihazda durur ve veri yedeğine girmez; sohbetler de bu cihazda saklanır. Anahtarı kimseyle paylaşma.</li>
             </ul>
           </details>
           <details>
@@ -381,6 +405,14 @@
             <h2>👤 Kişisel</h2>
             <label class="field">Adın <input id="set-name" maxlength="30"></label>
             <label class="field">Sevgilinin adı <input id="set-partner" maxlength="30" placeholder="Notlarda görünür"></label>
+            <label class="field">Eğitim düzeyi <select id="set-level">
+              <option value="yks">YKS hazırlık</option><option value="kpss">KPSS hazırlık</option><option value="uni">Üniversite</option><option value="yl">Yüksek lisans</option><option value="diger">Diğer</option>
+            </select></label>
+            <div class="row2">
+              <label class="field">Bölüm / alan <input id="set-dept" maxlength="60" placeholder="Örn: Tıp, Fizik, Hukuk"></label>
+              <label class="field">Sınıf / dönem <input id="set-year" maxlength="20" placeholder="Örn: 1. sınıf"></label>
+            </div>
+            <p class="muted small">Asistan anlatımını bu bilgilere göre ayarlar.</p>
             <label class="field">Günlük hedef (dakika) <input type="number" id="set-goal" min="10" max="900" step="10"></label>
           </div>
           <div class="card">
@@ -444,6 +476,10 @@
             <h2>💾 Veriler</h2>
             <p class="muted small">Veriler sadece bu cihazda saklanır. Arada bir yedek al; yeni cihazda <b>İçe aktar</b> ile birleştirebilir ya da tamamen yükleyebilirsin.</p>
             <p class="small backup-info" id="backup-info"></p>
+            <div class="rescue hidden" id="rescue-info">
+              <p class="small"><b>🛟 Kurtarma kopyası var.</b> Uygulama bir ara verilerini okuyamadı ve bozulmasın diye ham hâlini sakladı. İndirip <b>İçe aktar</b> ile geri yükleyebilirsin.</p>
+              <div class="row"><button class="btn soft" id="rescue-dl" type="button">Kurtarma kopyasını indir</button><button class="btn soft" id="rescue-del" type="button">Sil</button></div>
+            </div>
             <div class="row">
               <button class="btn soft" id="export">Yedek al</button>
               <label class="btn soft">İçe aktar<input type="file" id="import" accept="application/json,.json" hidden></label>
@@ -496,6 +532,7 @@
   <script src="js/depo-ui.js"></script>
   <script src="js/badges.js"></script>
   <script src="js/spotify.js"></script>
+  <script src="js/asistan.js"></script>
   <script src="js/diag.js"></script>
   <script src="js/app.js"></script>
 </body>

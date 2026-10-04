@@ -144,7 +144,7 @@ const DenemeUI = (() => {
     const root = $('#deneme-root');
     if (!root) return;
     const l = Deneme.list();
-    const head = `<div class="deneme-actions"><button class="btn primary" data-act="add">＋ Deneme ekle</button><span class="hint">Net = Doğru − Yanlış ÷ 4</span></div>`;
+    const head = `<div class="deneme-actions"><button class="btn primary" data-act="add">＋ Deneme ekle</button>${window.Asistan && l.length ? '<button class="btn soft" data-act="ai">🎓 Asistanla analiz et</button>' : ''}<span class="hint">Net = Doğru − Yanlış ÷ 4</span></div>`;
     if (!l.length) {
       root.innerHTML = head + `<div class="card empty-state"><div style="font-size:2rem">📝</div>
         <p><b>Henüz deneme yok.</b></p>
@@ -383,6 +383,7 @@ const DenemeUI = (() => {
       const b = ev.target.closest('button');
       if (!b) return;
       if (b.dataset.act === 'add') return openForm(null);
+      if (b.dataset.act === 'ai' && window.Asistan) return Asistan.askDeneme();
       if (b.dataset.type && b.closest('[data-role="table-seg"]')) { tableType = b.dataset.type; render(); return; }
       const li = b.closest('.deneme-item');
       if (li) {

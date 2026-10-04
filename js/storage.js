@@ -96,6 +96,7 @@ const Store = (() => {
       lon: 28.97,
       spotify: 'https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn',
       msgInterval: 20,
+      profile: { level: 'yks', dept: '', year: '' }, // eğitim düzeyi ve bölüm (asistan ve ileride bölüme göre plan)
     },
     subjects: [
       { id: 's1', name: 'Matematik', color: '#f7c948' },
@@ -127,6 +128,7 @@ const Store = (() => {
     badges: {},     // id -> timestamp
     tasksDone: 0,
     reviewDone: 0,
+    ai: { month: '', usd: 0, req: 0 }, // asistanın bu ayki harcaması (anahtar burada değil)
     fish: 0,
     fed: 0,
     timer: null,
@@ -135,15 +137,17 @@ const Store = (() => {
 
   function merge(def, obj) {
     if (!obj || typeof obj !== 'object') return def;
+    const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
     const out = { ...def, ...obj };
-    out.settings = { ...def.settings, ...(obj.settings || {}) };
+    out.settings = { ...def.settings, ...(isObj(obj.settings) ? obj.settings : {}) };
+    out.settings.profile = { ...def.settings.profile, ...(isObj(out.settings.profile) ? out.settings.profile : {}) };
     if (!Array.isArray(out.settings.allowedApps)) out.settings.allowedApps = def.settings.allowedApps.slice();
     if (out.settings.kittenName === 'Sarman') out.settings.kittenName = 'Güçlü'; // yavrunun yeni adı
     for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files']) {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }
-    const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
     if (!isObj(out.badges)) out.badges = {};
+    if (!isObj(out.ai)) out.ai = def.ai;
     out.yks = { ...def.yks, ...(isObj(obj.yks) ? obj.yks : {}) };
     if (!isObj(out.yks.topics)) out.yks.topics = {};
     if (!isObj(out.yks.planDone)) out.yks.planDone = {};
@@ -153,12 +157,18 @@ const Store = (() => {
     return out;
   }
 
+  // Veri okunamazsa sessizce sıfırlanmasın: ham veri kurtarma kopyasına alınır, uygulama haber verir
+  let loadError = '';
   function load() {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) return merge(defaults(), JSON.parse(raw));
-    } catch (e) { /* bozuk veri ya da gizli sekme */ }
-    return defaults();
+    let raw = null;
+    try { raw = localStorage.getItem(KEY); } catch (e) { return defaults(); } // gizli sekme
+    if (!raw) return defaults();
+    try { return merge(defaults(), JSON.parse(raw)); } catch (e) {
+      loadError = String((e && e.message) || e);
+      try { localStorage.setItem(KEY + '-kurtarma', raw); } catch (e2) { /* kota */ }
+      if (typeof ErrLog !== 'undefined') ErrLog.add('Veriler okunamadı: ' + loadError, 'storage.js');
+      return defaults();
+    }
   }
 
   // Yedeği mevcut verilerle birleştirir: hiçbir kayıt silinmez, eksikler eklenir.
@@ -214,6 +224,9 @@ const Store = (() => {
 
   return {
     get data() { return data; },
+    get loadError() { return loadError; },
+    rescueCopy() { try { return localStorage.getItem(KEY + '-kurtarma'); } catch (e) { return null; } },
+    dropRescue() { try { localStorage.removeItem(KEY + '-kurtarma'); } catch (e) { /* yok say */ } },
     save() {
       try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* kota / gizli mod */ }
     },

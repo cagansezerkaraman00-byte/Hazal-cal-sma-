@@ -97,6 +97,18 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - **Google Drive**: dosyalar Hazal'ın kendi Drive'ındaki *Luna Depo* klasöründe durur (iPad'de yer kaplamaz, telefon ve tablette aynı dosyalar). Yalnızca `drive.file` izni: uygulama sadece kendi yüklediği dosyaları görür. Giriş açılır pencere değil yönlendirme ile (iPad ana ekran uygulamasında sorunsuz); 5 MB üstü dosyalar kaldığı yerden devam edebilen yüklemeyle gider; silinen dosya Drive çöp kutusuna gider
 - Drive bağlanmadan önce dosyalar bu cihazda (IndexedDB) saklanır; **Drive'a taşı** ile tek dokunuşta Drive'a geçer, cihazda yer açılır. Drive oturumu saatte bir yenilenir; o arada eklenen dosyalar kaybolmaz
 
+**🎓 Eğitim asistanı** (Asistan sekmesi, Claude)
+- Konu anlatımı, soru fotoğrafı çözümü, PDF'teki anlaşılmayan yerin açıklanması, güvenilir kaynak önerisi; anlatım Ayarlar → Kişisel'deki **eğitim düzeyi ve bölüme** göre (YKS, KPSS, üniversite, yüksek lisans)
+- **Kaynak gösterimi:** PDF'e dayanan cümlelerde sayfa numaralı alıntılar (citations), isteğe bağlı web aramasında bağlantılı dış kaynaklar; sistem talimatı kaynak uydurmayı yasaklar, belirsizliği açıkça söyletir
+- **Deneme analizi:** netler, eksik konular ve YKS soru ağırlıkları gönderilir; 2 haftalık plan ve kanıta dayalı çalışma önerisi
+- Cevaplar tek dokunuşla **nota** ya da yapılandırılmış çıktıyla **bilgi kartlarına** dönüşür; Depo görüntüleyicisinden "Asistana sor"
+- Resmî Anthropic SDK (tarayıcı paketi uygulama içinde), Claude Opus 5.5 varsayılan (Sonnet 5.5 / Haiku 4.5 seçilebilir), akışlı yanıt, otomatik önbellek (takip soruları ucuz), güvenlik reddinde sunucu tarafı yedek model, duraklayan aramaların otomatik devamı
+- **Maliyet kontrolü:** her yanıtın maliyeti gösterilir, aylık bütçe (varsayılan 5 $) dolunca durur, büyük PDF'lerden önce jeton sayılıp tahmini maliyet sorulur, büyük PDF'lerde sayfa aralığı (yalnızca metin) seçilebilir
+- API anahtarı yalnızca cihazda (veri yedeğine girmez), sohbetler IndexedDB'de
+
+**🛡️ Veri güvenliği**
+- Kayıtlı veri bir gün okunamazsa uygulama sessizce sıfırlamaz: ham veri kurtarma kopyasına alınır, açılışta haber verilir, Ayarlar → Veriler'den indirilip geri yüklenebilir
+
 ## Nasıl açılır?
 
 ### En kolayı: GitHub Pages (telefonda da çalışır)
@@ -147,6 +159,8 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok)
 | `js/spotify.js` | İsteğe bağlı Spotify hesabı bağlama |
 | `js/depo.js`, `js/depo-ui.js` | Depo: Google Drive / cihaz depolama, yükleme, eşitleme, PDF ve fotoğraf görüntüleyici |
 | `vendor/pdfjs/` | Mozilla PDF.js 6.4 (Apache-2.0), yalnızca PDF açılınca yüklenir |
+| `js/asistan.js` | Eğitim asistanı (Claude): sohbet, belgeler, kaynak gösterimi, kart üretimi, bütçe |
+| `vendor/anthropic/` | Resmî Anthropic TypeScript SDK 0.131 (MIT), esbuild ile tek dosya tarayıcı paketi |
 | `js/diag.js` | Tanılama: bağlantı testleri, durum özeti, hata günlüğü |
 | `js/messages.js` | Luna'nın mesajları |
 | `js/audio.js` | Zil, miyav ve ortam sesleri |

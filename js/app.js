@@ -208,6 +208,7 @@
     if (name === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (name === 'notes' && window.NotesUI) NotesUI.render();
     if (name === 'settings') renderSettings();
+    if (name === 'asistan' && window.Asistan) Asistan.render();
     if (name === 'home') renderHome();
     try { localStorage.setItem('luna-tab', name); } catch (e) { /* yok say */ }
   }
@@ -1016,6 +1017,9 @@
     const s = D().settings;
     $('#set-name').value = s.name;
     $('#set-partner').value = s.partner;
+    $('#set-level').value = s.profile.level || 'yks';
+    $('#set-dept').value = s.profile.dept || '';
+    $('#set-year').value = s.profile.year || '';
     $('#set-goal').value = s.dailyGoal;
     $('#set-msg').value = s.msgInterval;
     $('#set-focus').value = s.focus;
@@ -1046,6 +1050,7 @@
   function renderBackupInfo() {
     const el = $('#backup-info');
     if (!el) return;
+    $('#rescue-info').classList.toggle('hidden', !Store.rescueCopy());
     const t = D().lastBackup;
     if (!t) { el.textContent = '🌱 Henüz yedek almadın.'; return; }
     const days = Math.floor((Date.now() - t) / 864e5);
@@ -1073,6 +1078,10 @@
     num('#set-every', 'longEvery', 2, 10);
     $('#set-name').addEventListener('change', (e) => { D().settings.name = e.target.value.trim() || 'Hazal'; save(); renderHUD(); renderFooter(); });
     $('#set-partner').addEventListener('change', (e) => { D().settings.partner = e.target.value.trim(); save(); renderHome(); });
+    const prof = (id, key, max) => $(id).addEventListener('change', (e) => { D().settings.profile[key] = e.target.value.trim().slice(0, max); save(); });
+    prof('#set-level', 'level', 10);
+    prof('#set-dept', 'dept', 60);
+    prof('#set-year', 'year', 20);
     const bool = (id, key) => $(id).addEventListener('change', (e) => { D().settings[key] = e.target.checked; save(); });
     bool('#set-autobreak', 'autoBreak');
     bool('#set-autofocus', 'autoFocus');
@@ -1182,6 +1191,19 @@
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       markBackup();
+    });
+    $('#rescue-dl').addEventListener('click', () => {
+      const raw = Store.rescueCopy();
+      if (!raw) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([raw], { type: 'application/json' }));
+      a.download = `luna-kurtarma-${U.dateKey(new Date())}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    $('#rescue-del').addEventListener('click', () => {
+      if (!confirm('Kurtarma kopyası silinsin mi? Önce indirmeni öneririm.')) return;
+      Store.dropRescue(); renderBackupInfo();
     });
     $('#import').addEventListener('change', (e) => {
       const f = e.target.files[0]; if (!f) return;
@@ -1349,6 +1371,7 @@
     if (window.DenemeUI) DenemeUI.init(App);
     if (window.NotesUI) NotesUI.init(App);
     if (window.DepoUI) DepoUI.init(App);
+    if (window.Asistan) Asistan.init(App);
     if (window.Badges) Badges.init(App);
     if (window.SpotifyLink) SpotifyLink.init(App);
     if (window.Diag) Diag.init(App);
@@ -1442,6 +1465,7 @@
     if ($('#tab-' + saved)) showTab(saved);
     greetOnOpen();
     checkBadges();
+    if (Store.loadError) setTimeout(() => toast('🛟', 'Verilerin okunamadı', 'Bozulmasın diye kopyası alındı: Ayarlar → Veriler', 9000), 1500);
 
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
