@@ -132,18 +132,36 @@ const Weather = (() => {
     try { return await Promise.race([job, timeout]); } finally { clearTimeout(timer); }
   }
 
+  // son ağ denemesi (Tanılama için): {at, ok, ms, err}
+  let net = null;
+  function why(e) {
+    const m = String((e && e.message) || e || '');
+    if (m === 'timeout') return `Zaman aşımı (${TIMEOUT / 1000} sn içinde yanıt gelmedi)`;
+    if (/^HTTP/.test(m)) return 'Sunucu yanıtı: ' + m;
+    return 'Ağ hatası: bağlantı yok ya da adres engellenmiş (' + (m || 'bilinmiyor') + ')';
+  }
   async function run(l, force) {
     const cached = usable(readCache(), l.key);
     if (!force && cached && fresh(cached)) return mark(cached, false);
-    if (typeof fetch !== 'function' || (typeof navigator !== 'undefined' && navigator.onLine === false)) return mark(cached, true);
+    if (typeof fetch !== 'function' || (typeof navigator !== 'undefined' && navigator.onLine === false)) {
+      net = { at: Date.now(), ok: false, ms: 0, err: 'Cihaz çevrimdışı görünüyor' };
+      return mark(cached, true);
+    }
+    const t0 = Date.now();
     try {
       const summary = parse(await fetchJSON(`${API}?latitude=${l.lat}&longitude=${l.lon}${QUERY}`));
+      net = { at: Date.now(), ok: !!summary, ms: Date.now() - t0, err: summary ? '' : 'Yanıt geldi ama biçimi beklenenden farklı' };
       if (!summary) return mark(cached, true);
       writeCache(l.key, summary);
       return summary;
     } catch (e) {
+      net = { at: Date.now(), ok: false, ms: Date.now() - t0, err: why(e) };
       return mark(cached, true);
     }
+  }
+  function status() {
+    const l = loc(), c = readCache();
+    return { net, loc: l ? l.key : null, cache: c ? { at: c.at, sameLoc: !!l && c.key === l.key, today: c.day === U.dateKey(Date.now()) } : null };
   }
 
   // aynı anda gelen çağrılar tek isteği paylaşır
@@ -237,7 +255,7 @@ const Weather = (() => {
     return { kind: s.kind, intensity: U.clamp(num(s.intensity) ?? 0, 0, 1) };
   }
 
-  return { load, cached, describe, message, sceneParams };
+  return { load, cached, describe, message, sceneParams, status };
 })();
 
 // app.js `window.Weather` ile kontrol ediyor; üst düzey const window'a eklenmez

@@ -46,6 +46,27 @@ const U = {
   MONTHS: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
 };
 
+// Hata günlüğü: telefonda konsol yok; son 20 hata Ayarlar → Tanılama'da görünür (yalnızca bu cihazda)
+const ErrLog = (() => {
+  const KEY = 'luna-errors';
+  const read = () => { try { const l = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } };
+  function add(m, s) {
+    try {
+      const l = read();
+      const msg = String(m || 'Bilinmeyen hata').slice(0, 300);
+      const last = l[l.length - 1];
+      if (last && last.m === msg && Date.now() - last.t < 10000) last.n = (last.n || 1) + 1; // aynı hata art arda: say
+      else l.push({ t: Date.now(), m: msg, s: String(s || '').slice(0, 120) });
+      localStorage.setItem(KEY, JSON.stringify(l.slice(-20)));
+    } catch (e) { /* kota / gizli mod */ }
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('error', (e) => add(e.message, e.filename ? `${e.filename.split('/').pop()}:${e.lineno}:${e.colno}` : ''));
+    window.addEventListener('unhandledrejection', (e) => { const r = e.reason; add('Promise: ' + ((r && (r.message || r.name)) || String(r)), ''); });
+  }
+  return { list: read, add, clear() { try { localStorage.removeItem(KEY); } catch (e) { /* yok say */ } } };
+})();
+
 const Store = (() => {
   const KEY = 'luna-study-v1';
 
@@ -198,3 +219,5 @@ const Store = (() => {
     subject(id) { return data.subjects.find((s) => s.id === id) || { id: '', name: 'Genel', color: '#c9c3e6' }; },
   };
 })();
+
+if (typeof window !== 'undefined') { window.ErrLog = ErrLog; }

@@ -944,6 +944,25 @@ button.block:hover { border-color: var(--line-strong); }
 .moods button { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; font-size: 1.4rem; padding: 4px 9px; cursor: pointer; }
 .moods button.on { border-color: var(--accent-edge); background: var(--accent-soft); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; }
+/* Tanılama */
+.diag-card summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 800; font-size: 1.05rem; }
+.diag-card summary::-webkit-details-marker { display: none; }
+.diag-card summary::after { content: '▾'; color: var(--muted); margin-left: auto; transition: transform .2s; }
+.diag-card[open] summary::after { transform: rotate(180deg); }
+.diag-root { margin-top: 12px; }
+.diag-rows { display: grid; gap: 6px; }
+.diag-row { display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 10px; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; font-size: .84rem; }
+.diag-row b { font-weight: 800; }
+.diag-row span { color: var(--muted); font-weight: 600; overflow-wrap: anywhere; }
+.diag-actions { margin: 12px 0 6px; flex-wrap: wrap; }
+.diag-pings, .diag-errors { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 5px; font-size: .84rem; }
+.diag-pings li { font-weight: 700; }
+.diag-pings li.ok { color: var(--mint-ink, #2f7d5b); }
+.diag-pings li.bad { color: var(--red, #d64545); }
+.diag-pings small, .diag-errors small { color: var(--muted); font-weight: 600; }
+.diag-errors li { padding: 6px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); overflow-wrap: anywhere; }
+.diag-report textarea { width: 100%; margin-top: 6px; font: 600 .75rem/1.45 ui-monospace, Menlo, Consolas, monospace; resize: vertical; }
+@media (max-width: 520px) { .diag-row { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
 .import-choices { display: grid; gap: 10px; margin-top: 14px; }
 .import-choices .btn { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 12px 14px; gap: 2px; }
 .import-choices .btn small { font-weight: 600; opacity: .8; font-size: .78rem; }

@@ -343,6 +343,7 @@
             <ul>
               <li><b>Sayfayı kapatırsam sayaç durur mu?</b> Hayır; geri geldiğinde doğru süreyi gösterir. İstersen Ayarlar → Odak → <b>sıkı mod</b> ile uygulamadan çıkınca duraklatabilirsin.</li>
               <li><b>Bildirim gelmiyor?</b> Ayarlar → Odak → Bildirim'i aç ve izin ver. iPhone'da bildirimler için uygulamayı Ana Ekrana eklemiş olman gerekir.</li>
+              <li><b>Bir şey çalışmıyor mu (hava durumu, Spotify…)?</b> Ayarlar → <b>Tanılama</b>'yı aç: neyin neden çalışmadığını orada yazarım. <b>Bağlantıları test et</b> ile internetin hangi servislere ulaştığını görebilir, <b>Raporu kopyala</b> ile durumu paylaşabilirsin.</li>
               <li><b>Luna çok konuşuyor / hiç konuşmuyor?</b> Ayarlar → Odak'tan konuşma sıklığını değiştir; odaklanırken zaten sessizim.</li>
             </ul>
           </details>
@@ -426,6 +427,10 @@
             </div>
             <button class="btn danger small-btn" id="reset">Her şeyi sıfırla</button>
           </div>
+          <details class="card wide-card diag-card" id="diag-card">
+            <summary><span>🔧 Tanılama</span><span class="muted small">hava, Spotify, bağlantı ve hata kayıtları</span></summary>
+            <div id="diag-root" class="diag-root"></div>
+          </details>
         </div>
         <p class="footer"></p>
       </section>
@@ -452,6 +457,7 @@
   <script src="js/notes.js"></script>
   <script src="js/badges.js"></script>
   <script src="js/spotify.js"></script>
+  <script src="js/diag.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

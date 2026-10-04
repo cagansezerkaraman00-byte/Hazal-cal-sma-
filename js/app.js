@@ -1236,6 +1236,7 @@
     applyFieldSubjects,
     bestHours,
     refresh: afterDataChange,
+    refreshWeather,
     refreshHome() { renderHome(); renderHUD(); checkBadges(); },
     showTab,
     celebrate() { Scene.celebrate(); Sound.chime(); },
@@ -1271,6 +1272,7 @@
     if (window.NotesUI) NotesUI.init(App);
     if (window.Badges) Badges.init(App);
     if (window.SpotifyLink) SpotifyLink.init(App);
+    if (window.Diag) Diag.init(App);
     renderSubjectSelects();
     Timer.init(timerHandlers);
     syncSceneMode();

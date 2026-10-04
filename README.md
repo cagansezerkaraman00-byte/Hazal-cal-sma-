@@ -94,8 +94,8 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 
 ### En kolayı: GitHub Pages (telefonda da çalışır)
 1. GitHub'da bu depoda **Settings → Pages** bölümüne git
-2. *Source*: **Deploy from a branch**, *Branch*: `main` ve `/ (root)` seç, **Save**
-3. Bir iki dakika sonra adres çıkar: `https://<kullanıcı-adı>.github.io/Hazal-cal-sma-/`
+2. *Source*: **Deploy from a branch**, *Branch*: `main` (ya da test için `claude/luna-study-app-1xt2uk`) ve `/ (root)` seç, **Save**
+3. Bir iki dakika sonra adres çıkar: `https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/`
 4. Telefonda bu adresi aç:
    - **iPhone (Safari):** Paylaş → *Ana Ekrana Ekle*
    - **Android (Chrome):** ⋮ menü → *Uygulamayı yükle*
@@ -105,7 +105,10 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 python3 -m http.server 8000
 # sonra tarayıcıda http://localhost:8000
 ```
-(`index.html`'e çift tıklamak da çalışır ama bildirim ve çevrimdışı mod için sunucu gerekir.)
+(`index.html`'e çift tıklamak da çalışır ama bildirim ve çevrimdışı mod için sunucu gerekir. Spotify hesabı bağlamayı bilgisayarda denemek için adresi `http://127.0.0.1:8000` olarak aç; Spotify `localhost`'u kabul etmiyor.)
+
+### Test ederken: Tanılama
+**Ayarlar → 🔧 Tanılama** bölümünde uygulama sürümü, cihaz, konum, hava durumu isteğinin sonucu (başarılı mı, kaç ms, başarısızsa nedeni), Spotify bağlantı durumu, veri sayıları ve son 20 hata görünür. **Bağlantıları test et** Open-Meteo, Spotify ve Google Fonts'a ulaşılıp ulaşılamadığını ölçer; **Raporu kopyala / Paylaş** tüm durumu tek metin olarak verir (notlar, oturum içerikleri ve jetonlar rapora girmez).
 
 ## Kişiselleştirme
 - **Ayarlar → Kişisel:** isim, sevgilinin adı, günlük hedef, Luna'nın mesaj sıklığı
@@ -135,6 +138,7 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok)
 | `js/badges.js` | Rozetler ve sevgi notları |
 | `js/notes.js` | Notlar ve bilgi kartları |
 | `js/spotify.js` | İsteğe bağlı Spotify hesabı bağlama |
+| `js/diag.js` | Tanılama: bağlantı testleri, durum özeti, hata günlüğü |
 | `js/messages.js` | Luna'nın mesajları |
 | `js/audio.js` | Zil, miyav ve ortam sesleri |
 | `js/app.js` | Arayüz ve her şeyi bağlayan kod |

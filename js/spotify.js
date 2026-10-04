@@ -174,6 +174,14 @@ const SpotifyLink = (() => {
       }
     },
     render,
+    // Tanılama: bağlantı durumu (jeton gibi gizli bilgiler dışarı verilmez)
+    status() {
+      return {
+        connected: !!(st.refresh || st.token), user: st.user || '', lists: st.lists.length, client: !!st.clientId,
+        lastStatus, err: st.err || '', redirect: redirectUri(), secure: secureOrigin(), listedAt: st.listedAt || 0,
+      };
+    },
+    async test() { if (st.refresh || st.token) await refreshLists(); return this.status(); },
   };
 })();
 
