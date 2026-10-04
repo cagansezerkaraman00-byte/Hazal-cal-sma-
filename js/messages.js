@@ -18,10 +18,13 @@ const Messages = (() => {
     evening: [
       'Güneş batıyor 🌇 Bugün çok şey başardın {name}.',
       'Akşam oldu, yıldızlar çıkmak üzere. Bugünün son tekrarını yapalım mı?',
+      'Zambaklar açtı 🌸 Ben de biraz kıvrılıp yanında uzanıyorum.',
+      'Akşam serinliği geldi. Kısa bir tekrar, sonra hak edilmiş bir dinlenme 💜',
     ],
     night: [
       'Yıldızlar çıktı ✨ Ama sen de dinlenmeyi hak ediyorsun.',
       'Gece çalışması güzel ama uykun da en az ders kadar önemli 🌙',
+      'Gökyüzü bu gece çok güzel. Bugün yaptıkların da öyle ⭐',
     ],
     late: [
       'Saat çok geç oldu {name}... Beyin uykuda öğrendiklerini kaydeder, hadi yatalım 😴',
@@ -73,6 +76,23 @@ const Messages = (() => {
     noFish: [
       'Balığımız kalmadı 🥺 Bir odak oturumu tamamlarsan bir balık kazanırsın!',
     ],
+    yks: [
+      "YKS'ye {days} gün var. Her gün küçük bir adım, o gün kocaman bir fark 🌟",
+      '{days} gün sonra o salondan gülümseyerek çıkacaksın {name} 💛',
+      'Bugün çalıştığın her konu, haziranda sana puan olarak dönecek ✨',
+      'Hedefe giden yol tek tek çözülen sorulardan geçiyor. Sen bunu yapıyorsun 🐾',
+    ],
+    denemeUp: [
+      'Netlerin yükseliyor! 📈 Emeğinin karşılığını görüyorsun {name}.',
+      'Bu deneme bir öncekinden daha iyi! Gurur duyuyorum 🌟',
+    ],
+    denemeAny: [
+      'Deneme kaydedildi 📝 Her deneme sana yol gösteren bir harita.',
+      'Bir deneme daha bitti! Eksik konular, bir sonraki adımın 🧭',
+    ],
+    play: [
+      'Yumağımı yakaladım! 🧶', 'Bu ip benim! Miyav 😼', 'Molada biraz oyun iyi gelir, sen de esne 🧶',
+    ],
     welcome: [
       'Merhaba {name}! Ben Luna 🤍 Bundan sonra derslerinde hep yanındayım. Hadi ilk oturumu başlatalım!',
     ],
@@ -105,7 +125,19 @@ const Messages = (() => {
   }
 
   return {
-    get(kind) { return fill(U.pick(M[kind] || M.poke)); },
+    get(kind, vars) {
+      let t = fill(U.pick(M[kind] || M.poke));
+      if (vars) for (const k of Object.keys(vars)) t = t.split('{' + k + '}').join(vars[k]);
+      return t;
+    },
+    // Gün boyunca aynı kalan seçim (her yeniden çizimde değişip göz yormasın)
+    daily(kind, vars) {
+      const arr = M[kind] || M.poke;
+      const day = Math.floor(U.dayStart(new Date()).getTime() / 864e5);
+      let t = fill(arr[day % arr.length]);
+      if (vars) for (const k of Object.keys(vars)) t = t.split('{' + k + '}').join(vars[k]);
+      return t;
+    },
     love() {
       const notes = Store.data.loveNotes.filter((x) => x.trim());
       return notes.length ? U.pick(notes) : null;

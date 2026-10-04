@@ -1,19 +1,20 @@
 # 🤍✨ Luna ile Çalış
 
-Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldızlı, pixel art bir ders çalışma uygulaması. Amaç tek: dikkati dağıtmadan derse odaklanmak. Kurulum gerektirmez, telefona uygulama gibi yüklenebilir, internet olmadan da çalışır.
+Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldızlı, pixel art bir **YKS** çalışma uygulaması. Amaç: dikkati dağıtmadan derse odaklanmak, her açılışta ne kadar yol aldığını görmek ve motive olmak. Kurulum gerektirmez, telefona uygulama gibi yüklenebilir, internet olmadan da çalışır.
 
 ## Neler var?
 
 **🌌 Canlı gökyüzü**
 - Güneş ve ay **gerçek saate ve konuma göre** hareket eder (İstanbul varsayılan; ayarlardan şehir seçilebilir veya konum kullanılabilir)
 - Sabah, gün doğumu, öğle, gün batımı ve gece renkleri; gerçek ay evresi
-- Gece yıldızlar, kayan yıldızlar, ateş böcekleri ve gizli bir **kalp takımyıldızı** 💛
+- Akşamları gökyüzü yıldızlarla dolar; kayan yıldızlar, ateş böcekleri, gizli bir **kalp takımyıldızı** 💛 ve gece açan **renkli pixel zambaklar** 🌸
+- **Günlük hava durumu** (Open-Meteo): üstteki çipe dokununca bugün/yarın; yağmur, kar, sis gibi durumlar sahnede de görünür
 - Saat, tarih ve gün doğumu/batımı saatleri
 
 **🐾 Luna** (gerçek Luna'nın fotoğrafından çizildi)
 - Bembeyaz uzun tüyler, kehribar gözler, pembe burun ve kulaklar
 - Fotoğraftaki gibi patilerini toplayıp "somun" pozunda oturur, kuyruğunu sallar, göz kırpar
-- Sen çalışırken kitabının ve fenerinin başına yatar; molada etrafta dolaşır; gece geç saatte uyur (Zzz)
+- Sen çalışırken kitabının ve fenerinin başına yatar; molada etrafta dolaşır, arada **yün yumağıyla oynar** 🧶; akşamları kıvrılıp uyur (Zzz)
 - Ona dokununca zıplar, miyavlar, kalpler çıkar
 - Her odak oturumunda 🐟 balık kazanırsın, Luna'yı besleyebilirsin
 
@@ -28,6 +29,17 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - Sayfa kapansa ya da yenilense bile doğru sayar
 - Bitince zil sesi, bildirim; çalışırken ekran kararmaz
 - Boşluk tuşu ile başlat/duraklat
+
+**🗓️ YKS Planı**
+- Alan seçimi (SAY / EA / SÖZ / DİL) ve YKS geri sayımı
+- **Konu takibi:** her dersin konuları ve her konudan YKS'de ortalama kaç soru geldiği (2018–2025 sınavlarından derlendi, kaynaklar uygulamada). İlerleme, soru ağırlığına göre hesaplanır: "YKS'de ≈ 42 soruya denk konular hazır"
+- **Haftalık program:** konuların soru ağırlığına, işaretlediğin durumlara ve denemelerdeki eksiklerine göre otomatik hazırlanır; her gün paragraf + problem rutini, Pazar deneme günü. Hafta boyunca sabit kalır, karışmaz
+- **Bugünün planı** ana ekranda; "Başla ▶" ile sayaç o konuyla başlar, bitince madde kendiliğinden işaretlenir
+
+**📝 Deneme takibi**
+- TYT / AYT / branş denemelerini doğru-yanlış olarak gir, net otomatik hesaplanır (4 yanlış 1 doğruyu götürür)
+- Net gelişim grafiği, ders ders net tablosu, en çok yükselen ders
+- Eksik çıkan konuları işaretle → YKS soru ağırlığına göre **öncelikli konular** listesi, tek dokunuşla çalışmaya başla ya da tekrar listesine ekle
 
 **📝 Oturum kaydı**
 - Her oturum sonunda: neler çalıştın, nerede zorlandın, verimin (1–5 ⭐), nasıl hissettin
@@ -44,18 +56,20 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - Uzun süredir çalışmadığın dersler, dengesiz ders dağılımı
 - Senin için ideal oturum süresi, gece çalışmasının etkisi
 - Önceki döneme göre gelişimin, yaklaşan sınavlar, geciken görevler
-- Güçlü yönler / eksikler & düzeltmeler / öneriler olarak
+- Güçlü yönler / gelişim fırsatları / öneriler olarak — hep cesaretlendiren bir dille
 
 **💌 Motivasyon**
 - Luna günün saatine göre mesaj atar (günaydın, su iç, artık uyu…)
 - **Sevgilinden notlar:** Ayarlar'a yazılan notları Luna arada söyler; günlük hedefe ulaşınca **günün gizli notu** açılır
-- 17 rozet 🏅
+- Açılışta karşılama kartı: YKS'ye kalan gün, bugün ve bu hafta çalışılan süre, seri, biten konular, son deneme neti
+- Molalarda küçük öneriler (su iç, gözlerini dinlendir…)
+- 22 rozet 🏅
 
 **🎧 Müzik** (Çalış ekranında katlanır kutu)
 - Spotify çalma listesi/albüm bağlantısı yapıştırıp uygulamanın içinden dinleme
 - Yağmur, dalga, şömine, beyaz/kahverengi gürültü ses karıştırıcısı
 
-**📝 Plan:** görevler, tekrar listesi ve sınav geri sayımı
+**🎨 Görünüm:** açık (varsayılan), koyu ya da gün batımında otomatik koyu tema
 
 ## Nasıl açılır?
 
@@ -90,6 +104,10 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok)
 | `js/scene.js` | Gökyüzü, güneş/ay hesabı ve pixel art Luna |
 | `js/timer.js` | Pomodoro / serbest zamanlayıcı |
 | `js/stats.js` | İstatistikler ve Luna'nın raporu |
+| `js/yks.js` | YKS dersleri, konular ve konu başına ortalama soru sayıları |
+| `js/plan.js` | YKS planı, haftalık program, konu takibi |
+| `js/deneme.js` | Deneme netleri, grafik ve eksik konu analizi |
+| `js/weather.js` | Günlük hava durumu (Open-Meteo, anahtarsız) |
 | `js/messages.js` | Luna'nın mesajları |
 | `js/audio.js` | Zil, miyav ve ortam sesleri |
 | `js/app.js` | Arayüz ve her şeyi bağlayan kod |

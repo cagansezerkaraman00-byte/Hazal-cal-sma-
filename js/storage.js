@@ -65,6 +65,9 @@ const Store = (() => {
       notify: false,
       focusMode: true,   // başlayınca sade odak ekranı
       quietFocus: true,  // odaklanırken Luna konuşmasın
+      theme: 'light',    // light | dark | auto (gün batımında koyu)
+      weather: true,     // günlük hava durumu
+      city: 'İstanbul',
       lat: 41.01,
       lon: 28.97,
       spotify: 'https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn',
@@ -90,7 +93,12 @@ const Store = (() => {
       'Senin azmin bana her gün ilham veriyor.',
       'Biraz daha dayan, gece seni arayıp tebrik edeceğim 🌙',
     ],
+    // YKS: alan, sınav tarihi, konu durumları (0 başlamadım, 1 çalışıyorum, 2 tekrar, 3 tamam)
+    yks: { field: null, examDate: null, topics: {}, planDone: {} },
+    denemeler: [],  // {id, date, type: TYT|AYT|BRANS, name, scores: {subjectKey: {d, y}}, eksik: [topicId], note, created}
     badges: {},     // id -> timestamp
+    tasksDone: 0,
+    reviewDone: 0,
     fish: 0,
     fed: 0,
     timer: null,
@@ -101,10 +109,14 @@ const Store = (() => {
     if (!obj || typeof obj !== 'object') return def;
     const out = { ...def, ...obj };
     out.settings = { ...def.settings, ...(obj.settings || {}) };
-    for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes']) {
+    for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler']) {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }
-    if (!out.badges || typeof out.badges !== 'object') out.badges = {};
+    const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
+    if (!isObj(out.badges)) out.badges = {};
+    out.yks = { ...def.yks, ...(isObj(obj.yks) ? obj.yks : {}) };
+    if (!isObj(out.yks.topics)) out.yks.topics = {};
+    if (!isObj(out.yks.planDone)) out.yks.planDone = {};
     return out;
   }
 

@@ -150,7 +150,7 @@ const Stats = (() => {
       if (prev > 0) {
         const ch = Math.round(((total - prev) / prev) * 100);
         if (ch >= 10) out.strengths.push(`Önceki ${days} güne göre %${ch} daha fazla çalıştın! Yükseliştesin 📈`);
-        else if (ch <= -15) out.improve.push(`Önceki ${days} güne göre %${Math.abs(ch)} daha az çalıştın. Küçük ama düzenli oturumlarla tempoyu geri kazanabilirsin.`);
+        else if (ch <= -15) out.improve.push('Bu dönem biraz daha sakin geçti, bu da normal 💛 Günde bir kısa oturumla ritmi kolayca yeniden yakalarsın.');
         else out.highlights.push({ icon: '↔️', label: 'Önceki döneme göre', value: (ch >= 0 ? '+' : '') + ch + '%' });
       }
     }
@@ -161,7 +161,7 @@ const Stats = (() => {
     const last7 = byDay(7);
     const active7 = last7.filter((d) => d.minutes > 0).length;
     if (active7 >= 5) out.strengths.push(`Son 7 günün ${active7}'inde çalıştın, çok düzenlisin.`);
-    else if (active7 <= 2) out.improve.push(`Son 7 günde sadece ${active7} gün çalıştın. Her gün 25 dakika bile olsa devamlılık çok şey değiştirir.`);
+    else if (active7 <= 2) out.improve.push('Her gün küçük bir oturum bile (25 dk) en güçlü alışkanlıktır. Yarın kısa bir tane deneyelim mi? 🐾');
     const goalDays = byDay(Math.min(span, 30)).filter((d) => d.minutes >= goal).length;
     if (goalDays) out.highlights.push({ icon: '🎯', label: 'Hedefe ulaşılan gün', value: String(goalDays) });
 
@@ -180,7 +180,7 @@ const Stats = (() => {
       }
       out.strengths.push(`En verimli saatlerin ${hr(best.from)}–${hr(best.to)} arası (${star(best.r)}). Zor konuları bu saatlere koy.`);
       if (worst && worst.r < best.r - 0.6 && worst.r <= 3.5) {
-        out.improve.push(`${hr(worst.from)}–${hr(worst.to)} arası verimin düşüyor (${star(worst.r)}). Bu saatlerde tekrar, soru çözümü ya da hafif işler daha iyi olabilir.`);
+        out.improve.push(`${hr(worst.from)}–${hr(worst.to)} arası enerjin biraz daha düşük (${star(worst.r)}). Bu saatleri tekrar ve hafif soru çözümüne ayırırsan daha rahat geçer.`);
       }
     } else {
       out.tips.push('Oturum sonlarında verimini yıldızla puanlarsan, en verimli saatlerini bulabilirim ⭐');
@@ -192,8 +192,8 @@ const Stats = (() => {
     const lateList = list.filter((s) => { const h = new Date(s.start).getHours(); return h >= 0 && h < 5; });
     if (lateList.length >= 2) {
       const lr = avgRating(lateList);
-      if (lr && ar && lr < ar - 0.3) out.improve.push(`Gece yarısından sonraki oturumlarda verimin daha düşük (${star(lr)}). Erken yatıp sabah çalışmayı dene 🌙`);
-      else out.tips.push(`${lateList.length} kez gece yarısından sonra çalışmışsın. Uykunu ihmal etme, hafıza uykuda pekişir.`);
+      if (lr && ar && lr < ar - 0.3) out.improve.push(`Gece yarısından sonra verimin biraz düşüyor (${star(lr)}). Biraz erken uyursan sabah çok daha parlak olursun 🌙`);
+      else out.tips.push('Gece geç saatlerde de çalışmışsın; öğrendiklerin uykuda pekişir, uykuna da iyi bak 💤');
     }
 
     // Oturum uzunluğu
@@ -208,7 +208,7 @@ const Stats = (() => {
       const bb = buckets.reduce((a, b) => (b.r > a.r ? b : a));
       const wb = buckets.reduce((a, b) => (b.r < a.r ? b : a));
       out.tips.push(`En iyi odaklandığın oturum süresi: ${bb.label} (${star(bb.r)}).`);
-      if (wb.label === '60 dk üstü' && wb.r < bb.r - 0.5) out.improve.push('Bir saati aşan oturumlarda odağın düşüyor. Araya kısa molalar koymayı dene.');
+      if (wb.label === '60 dk üstü' && wb.r < bb.r - 0.5) out.improve.push('Bir saati aşan oturumlarda araya kısa bir mola koyarsan odağın daha uzun süre taze kalır.');
     }
     const longNoBreak = list.filter((s) => s.minutes >= 90).length;
     if (longNoBreak >= 2) out.tips.push(`${longNoBreak} oturum 90 dakikayı geçmiş. Uzun oturumlarda her 45–50 dakikada bir 5 dakika mola beynini tazeler.`);
@@ -218,25 +218,29 @@ const Stats = (() => {
     if (subs.length) {
       const top = subs[0];
       const share = top.minutes / total;
-      if (subs.length >= 2 && share > 0.55) out.improve.push(`Zamanının %${Math.round(share * 100)}'ı ${top.subject.name} dersine gitmiş. Diğer derslere de biraz zaman ayır.`);
+      if (subs.length >= 2 && share > 0.55) out.improve.push(`${top.subject.name} dersine çok emek verdin (%${Math.round(share * 100)}) 👏 Diğer derslere de küçük bloklar eklersen denge harika olur.`);
       out.highlights.push({ icon: '📚', label: 'En çok çalışılan', value: top.subject.name });
       const ratedSubs = subs.filter((s) => s.rating && s.rcnt >= 2);
       if (ratedSubs.length >= 2) {
         const bs = ratedSubs.reduce((a, b) => (b.rating > a.rating ? b : a));
         const ws = ratedSubs.reduce((a, b) => (b.rating < a.rating ? b : a));
         if (bs.rating >= 3.8) out.strengths.push(`${bs.subject.name} oturumlarında çok verimlisin (${star(bs.rating)}).`);
-        if (ws.id !== bs.id && ws.rating <= 3.2) out.improve.push(`${ws.subject.name} oturumlarında verimin düşük (${star(ws.rating)}). Farklı bir kaynak, video ya da soru çözümüyle dene; konuyu küçük parçalara böl.`);
+        if (ws.id !== bs.id && ws.rating <= 3.2) out.improve.push(`${ws.subject.name} biraz daha zorlayıcı geliyor gibi (${star(ws.rating)}). Konuyu küçük parçalara bölmek ya da farklı bir kaynakla denemek çok iyi gelebilir.`);
       }
     }
-    // İhmal edilen dersler (tüm zamanlara bakarak)
+    // Bir süredir bakılmayan dersler (en fazla 2 tane, nazikçe)
     const now = Date.now();
+    const gaps = [];
     for (const sub of D().subjects) {
-      const ss = D().sessions.filter((s) => s.subjectId === sub.id);
-      if (!ss.length) { out.improve.push(`${sub.name} dersine henüz hiç çalışmadın.`); continue; }
-      const last = Math.max(...ss.map((s) => s.start));
+      let last = 0;
+      for (const x of D().sessions) if (x.subjectId === sub.id && x.start > last) last = x.start;
+      if (!last) continue;
       const gap = Math.floor((now - last) / 864e5);
-      if (gap >= 4) out.improve.push(`${sub.name} dersine ${gap} gündür bakmadın. Unutma eğrisi acımasızdır, kısa bir tekrar yap 📖`);
+      if (gap >= 4) gaps.push({ sub, gap });
     }
+    gaps.sort((a, b) => b.gap - a.gap).slice(0, 2).forEach(({ sub, gap }) => {
+      out.improve.push(`${sub.name} seni ${gap} gündür bekliyor 📖 Kısa bir tekrar, öğrendiklerini taze tutar.`);
+    });
 
     // Haftanın günleri
     const wd = byWeekday(list).filter((w) => w.minutes > 0);
@@ -249,20 +253,18 @@ const Stats = (() => {
     const moods = list.filter((s) => s.mood);
     if (moods.length >= 3) {
       const tired = moods.filter((s) => s.mood === '😴' || s.mood === '😣').length;
-      if (tired / moods.length > 0.4) out.improve.push('Oturumların çoğunu yorgun ya da zorlanmış hissederek bitiriyorsun. Uyku, su ve molalara dikkat et 💛');
+      if (tired / moods.length > 0.4) out.improve.push('Son zamanlarda biraz yorgun hissediyorsun gibi 💛 Uyku, su ve molalar en iyi yardımcıların; kendine nazik ol.');
       else if (moods.filter((s) => s.mood === '🤩' || s.mood === '🙂').length / moods.length > 0.6) out.strengths.push('Oturumlarını çoğunlukla iyi hissederek bitiriyorsun, bu harika!');
     }
 
     // Tekrar listesi ve görevler
     const pend = D().review.filter((r) => !r.done);
-    if (pend.length) out.improve.push(`Tekrar listende ${pend.length} konu bekliyor: ${pend.slice(0, 3).map((r) => r.text).join(', ')}${pend.length > 3 ? '…' : ''}`);
+    if (pend.length) out.improve.push(`Tekrar listende ${pend.length} konu var: ${pend.slice(0, 3).map((r) => r.text).join(', ')}${pend.length > 3 ? '…' : ''}. Her birini kapatmak bir adım daha 📌`);
     const overdue = D().tasks.filter((t) => !t.done && t.due && new Date(t.due + 'T23:59:59') < new Date());
-    if (overdue.length) out.improve.push(`${overdue.length} görevin tarihi geçmiş. Bugün birini bitirmeye ne dersin?`);
-    const soon = D().exams.map((e) => ({ ...e, days: Math.ceil((new Date(e.date + 'T09:00:00') - new Date()) / 864e5) })).filter((e) => e.days >= 0 && e.days <= 14).sort((a, b) => a.days - b.days);
-    for (const e of soon) out.tips.push(`${e.name} sınavına ${e.days === 0 ? 'bugün!' : e.days + ' gün kaldı'}. ${e.days <= 3 ? 'Yeni konu yerine tekrar ve deneme zamanı.' : 'Konuları günlere böl, her gün biraz.'}`);
+    if (overdue.length) out.improve.push(`${overdue.length} görev seni bekliyor. Bugün en kolayından biriyle başlamaya ne dersin?`);
 
     if (!out.strengths.length) out.strengths.push(`Başlamış olman bile büyük adım ${name}. Her oturum seni ileri taşıyor ⭐`);
-    if (!out.improve.length) out.improve.push('Şu an gözüme batan bir eksik yok, böyle devam! 🌟');
+    if (!out.improve.length) out.improve.push('Şu an her şey yolunda görünüyor, böyle devam! 🌟');
     return out;
   }
 

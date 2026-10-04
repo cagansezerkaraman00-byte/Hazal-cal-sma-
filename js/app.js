@@ -39,6 +39,11 @@
     { id: 'tasks10', e: '✅', n: 'Görev Ustası', d: '10 görev tamamla', test: () => (D().tasksDone || 0) >= 10 },
     { id: 'review5', e: '📌', n: 'Tekrar Kraliçesi', d: '5 tekrar konusunu bitir', test: () => (D().reviewDone || 0) >= 5 },
     { id: 'luna10', e: '🐟', n: "Luna'nın Dostu", d: "Luna'yı 10 kez besle", test: () => D().fed >= 10 },
+    { id: 'deneme1', e: '📝', n: 'İlk Deneme', d: 'İlk deneme sonucunu kaydet', test: () => D().denemeler.length >= 1 },
+    { id: 'deneme10', e: '🗂️', n: 'Deneme Kurdu', d: '10 deneme kaydet', test: () => D().denemeler.length >= 10 },
+    { id: 'netup', e: '📈', n: 'Yükselen Yıldız', d: 'Bir önceki denemeye göre 5+ net artış', test: () => !!(window.Deneme && Deneme.hasRise(5)) },
+    { id: 'topic10', e: '📗', n: 'Konu Avcısı', d: '10 konuyu tamamla', test: () => !!(window.YKS && YKS.doneCount() >= 10) },
+    { id: 'topic50', e: '📚', n: 'Konu Ustası', d: '50 konuyu tamamla', test: () => !!(window.YKS && YKS.doneCount() >= 50) },
   ];
 
   function checkBadges() {
@@ -114,9 +119,18 @@
   // ======================================================================
   // HUD (saat, tarih, güneş)
   // ======================================================================
+  // Saat: her saniye çağrılır ama DOM'a sadece dakika değişince yazar
+  let lastClock = '';
+  function renderClock() {
+    const now = new Date();
+    const hm = U.hm(now);
+    if (hm === lastClock) return;
+    lastClock = hm;
+    $('#hud-time').textContent = hm;
+    renderHUD();
+  }
   function renderHUD() {
     const now = new Date();
-    $('#hud-time').textContent = U.hm(now);
     $('#hud-date').textContent = `${now.getDate()} ${U.MONTHS[now.getMonth()]} ${U.DAYS[now.getDay()]}`;
     $('#hud-greet').textContent = Messages.greeting(now);
     const sun = Scene.sunInfo();
@@ -124,9 +138,93 @@
     $('#hud-sun').textContent = m >= sun.sunrise && m < sun.sunset
       ? `🌇 Gün batımı ${fmtDayMin(sun.sunset)}`
       : `🌅 Gün doğumu ${fmtDayMin(sun.sunrise)}`;
+    // hava durumu görünüyorsa güneş bilgisi açılır pencerede
+    $('#hud-sun').classList.toggle('hidden', !!weatherNow && D().settings.weather);
     $('#fish-count').textContent = D().fish;
-    $('#hud-streak').textContent = `🔥 ${Stats.streak()} gün`;
+    const sk = Stats.streak();
+    $('#hud-streak').textContent = `🔥 ${sk} gün`;
+    $('#hud-streak').classList.toggle('hidden', sk < 1);
+    applyTheme();
   }
+
+  // ======================================================================
+  // Tema (açık / koyu / gün batımında otomatik)
+  // ======================================================================
+  function applyTheme() {
+    const t = D().settings.theme;
+    const dark = t === 'dark' || (t === 'auto' && Scene.sunInfo().elev < -4);
+    const v = dark ? 'dark' : 'light';
+    if (document.documentElement.dataset.theme === v) return;
+    document.documentElement.dataset.theme = v;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = dark ? '#0d1236' : '#f6f1ff';
+  }
+
+  // ======================================================================
+  // Hava durumu
+  // ======================================================================
+  let weatherNow = null;
+  async function refreshWeather(force) {
+    const chip = $('#hud-weather');
+    if (!window.Weather || !D().settings.weather) {
+      weatherNow = null;
+      chip.classList.add('hidden');
+      $('#weather-pop').classList.add('hidden');
+      Scene.setWeather && Scene.setWeather(null);
+      renderHUD();
+      return;
+    }
+    const w = await Weather.load({ force });
+    if (!w || !D().settings.weather) return;
+    weatherNow = w;
+    chip.textContent = `${w.icon} ${w.temp}°`;
+    chip.title = `${w.text} · ${D().settings.city || ''}`;
+    chip.classList.remove('hidden');
+    Scene.setWeather && Scene.setWeather(Weather.sceneParams(w));
+    if (!$('#weather-pop').classList.contains('hidden')) renderWeatherPop();
+    renderHUD();
+    // günde bir kez Luna hava durumunu söyler (odaklanırken değil)
+    const today = U.dateKey(new Date());
+    if (D().lastWeatherMsg !== today && !w.stale) {
+      D().lastWeatherMsg = today;
+      save();
+      setTimeout(() => {
+        const s = Timer.state();
+        if (!(s.running && s.phase === 'focus')) { Scene.say(Weather.message(w)); lastMsgAt = Date.now(); }
+      }, 9000);
+    }
+  }
+  function renderWeatherPop() {
+    const w = weatherNow;
+    if (!w) return;
+    const sun = Scene.sunInfo();
+    const row = (ic, l, v) => `<div class="wp-row"><span>${ic}</span><span>${U.esc(l)}</span><b>${U.esc(v)}</b></div>`;
+    const day = (d) => (d ? `${d.icon} ${d.max}° / ${d.min}°${d.rainChance != null ? ` · ☔ %${d.rainChance}` : ''}` : '—');
+    $('#weather-pop').innerHTML = `
+      ${row(w.icon, `${D().settings.city || 'Şu an'}`, `${w.temp}° · ${w.text}`)}
+      ${row('🌡️', 'Hissedilen', `${w.feels}°`)}
+      ${row('📅', 'Bugün', day(w.today))}
+      ${row('🌙', 'Yarın', day(w.tomorrow))}
+      ${row('🌅', 'Gün doğumu / batımı', `${fmtDayMin(sun.sunrise)} · ${fmtDayMin(sun.sunset)}`)}
+      <div class="wp-note">${w.stale ? 'Son bilinen hava durumu (çevrimdışı)' : 'Güncellendi ' + U.hm(w.updatedAt)} · Open-Meteo</div>`;
+  }
+  function bindWeather() {
+    const chip = $('#hud-weather'), pop = $('#weather-pop');
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = pop.classList.contains('hidden');
+      if (open) renderWeatherPop();
+      pop.classList.toggle('hidden', !open);
+      chip.setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('click', (e) => {
+      if (!pop.classList.contains('hidden') && !pop.contains(e.target)) {
+        pop.classList.add('hidden');
+        chip.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
 
   // ======================================================================
   // Sekmeler
@@ -136,7 +234,8 @@
     $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + name));
     if (name === 'progress') renderProgress();
-    if (name === 'plan') { renderTasks(); renderReview(); }
+    if (name === 'plan') { if (window.PlanUI) PlanUI.render(); renderTasks(); renderReview(); }
+    if (name === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (name === 'settings') renderSettings();
     if (name === 'home') renderHome();
     try { localStorage.setItem('luna-tab', name); } catch (e) { /* yok say */ }
@@ -146,6 +245,16 @@
   // Zamanlayıcı arayüzü
   // ======================================================================
   const PHASE_NAME = { focus: 'ODAK', short: 'KISA MOLA', long: 'UZUN MOLA' };
+  // Molada sayacın altında: her molada farklı, küçük bir iyilik
+  const BREAK_TIPS = [
+    '💧 Bir bardak su iç',
+    '👀 20 saniye uzağa bak, gözlerin dinlensin',
+    '🧘 Omuzlarını gevşet, boynunu yavaşça çevir',
+    '🚶 Kalk, biraz yürü; Luna da esniyor',
+    '🌬️ 4 saniye nefes al, 4 saniye ver',
+    '🪟 Pencereyi aç, temiz hava al',
+    '🍎 Hafif bir atıştırmalık iyi gelir',
+  ];
 
   function renderTimer(s) {
     $$('#kind-seg button').forEach((b) => b.classList.toggle('active', b.dataset.kind === s.kind));
@@ -157,7 +266,7 @@
     $('#timer-time').textContent = U.fmtClock(shown);
     const subj = Store.subject(s.subjectId).name;
     $('#timer-sub').textContent = s.running
-      ? (isBreak ? 'Dinlen biraz, Luna da esniyor 💛' : `${subj} çalışılıyor…`)
+      ? (isBreak ? BREAK_TIPS[s.cycle % BREAK_TIPS.length] : `${subj} çalışılıyor…`)
       : s.fresh ? (isBreak ? 'Mola hazır' : 'Hazır olduğunda başla ✨') : 'Duraklatıldı';
     const fg = $('#ring-fg');
     fg.style.strokeDashoffset = 553 * (1 - s.progress);
@@ -218,6 +327,7 @@
       D().sessions.push(session);
       if (session.minutes >= 10) D().fish++;
       save();
+      if (window.PlanUI) PlanUI.onSession(session);
       notify('Oturum tamamlandı! 🎉', `${U.fmtMin(session.minutes)} ${Store.subject(session.subjectId).name} çalıştın. Mola zamanı!`);
       say('done');
       openSessionModal(session, { justDone: true });
@@ -387,7 +497,69 @@
     $('#modal').classList.remove('hidden');
   }
 
-  function closeModal() { $('#modal').classList.add('hidden'); }
+  function closeModal() { $('#modal').classList.add('hidden'); $('#modal-card').innerHTML = ''; }
+  // Plan'daki "Başla ▶": dersi ve hedefi seçip sayacı başlatır
+  function startStudy({ subjectId, intent, kind } = {}) {
+    const s = Timer.state();
+    if (s.running && s.phase === 'focus') { toast('⏱️', 'Zaten bir oturum sürüyor', 'Önce onu bitir ya da duraklat'); return false; }
+    if (!s.fresh || s.phase !== 'focus') {
+      if (s.phase === 'focus' && s.elapsed > 120 && !confirm('Duraklatılmış oturum kaydedilmeden sıfırlansın mı?')) return false;
+      Timer.reset();
+    }
+    if (kind && kind !== Timer.state().kind) Timer.setKind(kind);
+    if (subjectId != null && (subjectId === '' || D().subjects.some((x) => x.id === subjectId))) Timer.setSubject(subjectId);
+    if (intent) Timer.setIntent(intent);
+    showTab('home');
+    Timer.toggle();
+    return true;
+  }
+  // YKS dersi (örn. 'ayt_kim') → sayaçtaki ders
+  function subjectFor(yksKey) {
+    const list = D().subjects;
+    const hit = list.find((x) => Array.isArray(x.yks) && x.yks.includes(yksKey));
+    if (hit) return hit.id;
+    const name = window.YKS && YKS.SUBJECTS[yksKey] ? YKS.SUBJECTS[yksKey].short.toLocaleLowerCase('tr-TR') : '';
+    const byName = name && list.find((x) => x.name.toLocaleLowerCase('tr-TR') === name);
+    return byName ? byName.id : '';
+  }
+  // Alan seçilince sayaçtaki dersleri YKS derslerine göre düzenler (veri kaybetmeden)
+  function applyFieldSubjects(field) {
+    if (!window.YKS) return;
+    const target = YKS.studySubjects(field);
+    const used = new Set(D().sessions.map((x) => x.subjectId).concat(D().tasks.map((t) => t.subjectId)));
+    // dokunulmamış varsayılan dersleri (s1..s5) kullanılmıyorsa kaldır
+    let list = D().subjects.filter((x) => !(/^s[1-5]$/.test(x.id) && !used.has(x.id)));
+    const lower = (t) => t.toLocaleLowerCase('tr-TR');
+    for (const t of target) {
+      const same = list.find((x) => x.id === t.id || lower(x.name) === lower(t.name));
+      if (same) same.yks = t.yks.slice();
+      else list.push({ id: t.id, name: t.name, color: t.color, yks: t.yks.slice() });
+    }
+    D().subjects = list;
+    if (!list.some((x) => x.id === Timer.state().subjectId)) Timer.setSubject(list[0] ? list[0].id : '');
+    save();
+    renderSubjectSelects();
+    if (currentTab === 'settings') renderSubjectEdit();
+  }
+  // Son 30 günde en verimli saatler (plan önerileri için), en iyiden kötüye
+  function bestHours() {
+    return Stats.byHour(Stats.inRange(30))
+      .filter((h) => h.rating && h.count >= 2 && h.minutes >= 30)
+      .sort((a, b) => b.rating - a.rating)
+      .map((h) => h.hour);
+  }
+
+  // Modüller (Plan, Deneme) için genel pencere
+  function openModal(html, mount) {
+    // her açılışta yeni bir kutu: önceki pencerenin dinleyicileri taşınmasın
+    const old = $('#modal-card');
+    const card = old.cloneNode(false);
+    card.innerHTML = html;
+    old.replaceWith(card);
+    $('#modal').classList.remove('hidden');
+    if (mount) mount(card);
+    return card;
+  }
 
   // ======================================================================
   // Veri değişince
@@ -413,7 +585,8 @@
     renderHUD();
     renderHome();
     if (currentTab === 'progress') renderProgress();
-    if (currentTab === 'plan') { renderTasks(); renderReview(); }
+    if (currentTab === 'plan') { if (window.PlanUI) PlanUI.render(); renderTasks(); renderReview(); }
+    if (currentTab === 'deneme' && window.DenemeUI) DenemeUI.render();
   }
 
   // ======================================================================
@@ -470,11 +643,39 @@
         <div class="progress"><i style="width:${pct}%"></i></div>`;
     }
 
-    // Görevler ve sınavlar
-    const tasks = D().tasks.filter((t) => !t.done).sort(taskSort).slice(0, 5);
-    $('#home-tasks').innerHTML = tasks.length ? tasks.map(taskItem).join('') : '<li class="empty" style="display:block">Görev yok. Plan sekmesinden ekleyebilirsin.</li>';
-    const exams = upcomingExams().slice(0, 2);
-    $('#home-exams').innerHTML = exams.length ? `<h2 style="margin-top:14px">⏳ Yaklaşan sınavlar</h2>` + exams.map(examItem).join('') : '';
+    renderWelcome(mins, pct);
+    const tp = $('#today-plan');
+    if (window.PlanUI) { tp.classList.remove('hidden'); PlanUI.renderToday(tp); } else tp.classList.add('hidden');
+  }
+
+  // Açılışta başarıyı gösteren, hep olumlu karşılama kartı
+  function weekMinutes() {
+    const today = U.dayStart(new Date());
+    const from = U.addDays(today, -((today.getDay() + 6) % 7)).getTime(); // Pazartesi
+    let m = 0;
+    for (const x of D().sessions) if (x.start >= from) m += x.minutes;
+    return m;
+  }
+  function renderWelcome(todayMin, pct) {
+    const chips = [];
+    const days = window.YKS ? YKS.daysLeft() : null;
+    if (days != null && days >= 0) chips.push(['⏳', days === 0 ? 'Bugün!' : `${days} gün`, "YKS'ye", 'gold']);
+    if (todayMin > 0) chips.push(['⏱️', U.fmtMin(todayMin), 'bugün', pct >= 100 ? 'up' : '']);
+    const wm = weekMinutes();
+    if (wm > 0) chips.push(['📅', U.fmtMin(wm), 'bu hafta', '']);
+    const sk = Stats.streak();
+    if (sk >= 2) chips.push(['🔥', `${sk} gün`, 'seri', 'up']);
+    const done = window.YKS ? YKS.doneCount() : 0;
+    if (done) chips.push(['✅', String(done), 'konu tamam', '']);
+    const last = window.Deneme ? Deneme.lastSummary() : null;
+    if (last) chips.push(['📈', `${last.net} net`, `son ${last.type}${last.delta > 0 ? ' · +' + last.delta : ''}`, last.delta > 0 ? 'up' : '']);
+    const msg = pct >= 100 ? 'Bugünkü hedefini tamamladın! Kendinle gurur duy 🎉'
+      : sk >= 3 ? `${sk} gündür buradasın, bu istikrar harika 🌟`
+      : days != null && days >= 0 ? Messages.daily('yks', { days })
+      : Messages.daily(Messages.timeOfDay());
+    $('#welcome').innerHTML = `<div class="welcome-title">${U.esc(Messages.greeting())}</div>
+      <div class="welcome-msg">${U.esc(msg)}</div>
+      ${chips.length ? `<div class="stat-chips">${chips.map(([ic, v, l, cls]) => `<div class="stat-chip ${cls}"><span class="ic">${ic}</span><b class="v">${U.esc(v)}</b><small class="l">${U.esc(l)}</small></div>`).join('')}</div>` : ''}`;
   }
 
   // ======================================================================
@@ -607,26 +808,10 @@
       ${dueTxt ? `<span class="due ${late ? 'late' : ''}">${dueTxt}</span>` : ''}
       <button class="x" title="Sil">✕</button></li>`;
   }
-  function upcomingExams() {
-    return D().exams
-      .map((e) => ({ ...e, days: Math.ceil((new Date(e.date + 'T00:00:00') - U.dayStart(new Date())) / 864e5) }))
-      .filter((e) => e.days >= 0)
-      .sort((a, b) => a.days - b.days);
-  }
-  function examItem(e) {
-    return `<div class="exam ${e.days <= 7 ? 'soon' : ''}" data-id="${e.id}">
-      <div class="days">${e.days === 0 ? 'BUGÜN' : e.days}<small>${e.days === 0 ? 'başarılar!' : 'gün kaldı'}</small></div>
-      <div class="nm">${U.esc(e.name)}<div class="muted small">${new Date(e.date + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}</div></div>
-      <button class="x icon-btn" title="Sil">✕</button></div>`;
-  }
 
   function renderTasks() {
     const list = D().tasks.slice().sort(taskSort);
     $('#task-list').innerHTML = list.length ? list.map(taskItem).join('') : '<li class="empty" style="display:block">Henüz görev yok. Küçük ve net görevler yaz: "10 paragraf sorusu" gibi.</li>';
-    const exams = upcomingExams();
-    const past = D().exams.length - exams.length;
-    $('#exam-list').innerHTML = (exams.length ? exams.map(examItem).join('') : '<p class="empty">Yaklaşan sınav yok</p>')
-      + (past ? `<p class="muted small">${past} geçmiş sınav gizlendi.</p>` : '');
   }
 
   function bindTasks() {
@@ -655,30 +840,10 @@
       save(); renderTasks(); renderHome(); checkBadges();
     };
     $('#task-list').addEventListener('click', onTaskClick);
-    $('#home-tasks').addEventListener('click', onTaskClick);
     $('#clear-done').addEventListener('click', () => {
       D().tasks = D().tasks.filter((t) => !t.done);
       save(); renderTasks(); renderHome();
     });
-    $('#exam-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const name = $('#exam-name').value.trim(), date = $('#exam-date').value;
-      if (!name || !date) return;
-      D().exams.push({ id: U.uid(), name, date });
-      save();
-      $('#exam-name').value = ''; $('#exam-date').value = '';
-      renderTasks(); renderHome();
-    });
-    const onExam = (e) => {
-      if (!e.target.classList.contains('x')) return;
-      const el = e.target.closest('[data-id]');
-      if (!el || !confirm('Bu sınav silinsin mi?')) return;
-      D().exams = D().exams.filter((x) => x.id !== el.dataset.id);
-      save(); renderTasks(); renderHome();
-    };
-    $('#exam-list').addEventListener('click', onExam);
-    $('#home-exams').addEventListener('click', onExam);
-
     // tekrar listesi
     $('#review-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -781,7 +946,9 @@
     $('#set-love').value = D().loveNotes.join('\n');
     $('#set-focusmode').checked = s.focusMode;
     $('#set-quiet').checked = s.quietFocus;
-    $('#city-chips').innerHTML = CITIES.map(([n, la, lo]) => `<button class="chip ${Math.abs(la - s.lat) < 0.05 && Math.abs(lo - s.lon) < 0.05 ? 'active' : ''}" data-lat="${la}" data-lon="${lo}">${n}</button>`).join('');
+    $('#set-weather').checked = s.weather;
+    $$('#theme-seg button').forEach((b) => b.classList.toggle('active', b.dataset.theme === s.theme));
+    $('#city-chips').innerHTML = CITIES.map(([n, la, lo]) => `<button class="chip ${Math.abs(la - s.lat) < 0.05 && Math.abs(lo - s.lon) < 0.05 ? 'active' : ''}" data-lat="${la}" data-lon="${lo}" data-name="${n}">${n}</button>`).join('');
     const sun = Scene.sunInfo();
     $('#loc-text').textContent = `Şu an: ${s.lat.toFixed(2)}, ${s.lon.toFixed(2)} · Gün doğumu ${fmtDayMin(sun.sunrise)} · Gün batımı ${fmtDayMin(sun.sunset)}`;
     renderSubjectEdit();
@@ -822,17 +989,24 @@
       }
       D().settings.notify = e.target.checked; save();
     });
+    $('#theme-seg').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-theme]');
+      if (!b) return;
+      D().settings.theme = b.dataset.theme; save();
+      applyTheme(); renderSettings();
+    });
+    $('#set-weather').addEventListener('change', (e) => { D().settings.weather = e.target.checked; save(); refreshWeather(); });
     $('#city-chips').addEventListener('click', (e) => {
       const c = e.target.closest('.chip');
       if (!c) return;
-      D().settings.lat = +c.dataset.lat; D().settings.lon = +c.dataset.lon; save();
-      renderSettings(); renderHUD();
+      D().settings.lat = +c.dataset.lat; D().settings.lon = +c.dataset.lon; D().settings.city = c.dataset.name; save();
+      renderSettings(); renderHUD(); refreshWeather(true);
     });
     $('#use-location').addEventListener('click', () => {
       if (!navigator.geolocation) { toast('📍', 'Konum desteklenmiyor'); return; }
       navigator.geolocation.getCurrentPosition((p) => {
-        D().settings.lat = +p.coords.latitude.toFixed(3); D().settings.lon = +p.coords.longitude.toFixed(3); save();
-        renderSettings(); renderHUD(); toast('📍', 'Konum güncellendi');
+        D().settings.lat = +p.coords.latitude.toFixed(3); D().settings.lon = +p.coords.longitude.toFixed(3); D().settings.city = 'Konumun'; save();
+        renderSettings(); renderHUD(); refreshWeather(true); toast('📍', 'Konum güncellendi');
       }, () => toast('📍', 'Konum alınamadı'));
     });
     // dersler
@@ -938,11 +1112,36 @@
   // ======================================================================
   // Başlat
   // ======================================================================
+  // Plan ve Deneme modüllerinin kullandığı küçük arayüz
+  const App = {
+    data: D,
+    save,
+    toast,
+    esc: U.esc,
+    say(kind, vars) { Scene.say(Messages.get(kind, vars)); lastMsgAt = Date.now(); },
+    sayText(text, opts) { Scene.say(text, opts); lastMsgAt = Date.now(); },
+    openModal,
+    closeModal,
+    startStudy,
+    subjectFor,
+    applyFieldSubjects,
+    bestHours,
+    refresh: afterDataChange,
+    refreshHome() { renderHome(); renderHUD(); checkBadges(); },
+    showTab,
+    celebrate() { Scene.celebrate(); Sound.chime(); },
+    isFocusing() { const s = Timer.state(); return s.running && s.phase === 'focus'; },
+  };
+  window.App = App;
+
   function init() {
     Scene.init($('#sky'), $('#bubble'), {
       onPoke() { Sound.meow(); say('poke'); },
     });
     Scene.portrait($('#report-luna'));
+    // modüller sayaçtan önce: sayfa kapalıyken biten bir oturum açılışta işlenirken hazır olsunlar
+    if (window.PlanUI) PlanUI.init(App);
+    if (window.DenemeUI) DenemeUI.init(App);
     renderSubjectSelects();
     Timer.init(timerHandlers);
     syncSceneMode();
@@ -972,16 +1171,20 @@
     bindMusic();
     bindSettings();
     bindLuna();
+    bindWeather();
 
-    renderHUD();
+    applyTheme();
+    renderClock();
     renderHome();
     renderFooter();
-    setInterval(renderHUD, 1000);
+    setInterval(renderClock, 1000);
+    refreshWeather();
+    setInterval(() => { if (!document.hidden) refreshWeather(); }, 10 * 60000); // önbellek 30 dk, istek seyrek
     setInterval(periodic, 30000);
     let lastDay = U.dateKey(new Date());
     setInterval(() => { // gece yarısı geçince günü yenile
       const k = U.dateKey(new Date());
-      if (k !== lastDay) { lastDay = k; renderHome(); }
+      if (k !== lastDay) { lastDay = k; renderHome(); if (currentTab === 'plan' && window.PlanUI) PlanUI.render(); }
     }, 60000);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
