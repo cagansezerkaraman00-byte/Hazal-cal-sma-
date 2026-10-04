@@ -1,5 +1,5 @@
 /* Çevrimdışı çalışma: uygulama dosyalarını önbelleğe alır. Dosyaları değiştirince VERSION'ı artır. */
-const VERSION = 'luna-v11';
+const VERSION = 'luna-v12';
 const FILES = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/storage.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',

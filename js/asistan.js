@@ -460,7 +460,7 @@ Anlatım:
     let html = md(text).replace(/\u0001(\d+)\u0002/g, (m, n) => `<sup class="cite" data-cite="${n}" title="${U.esc(((sources[n - 1] || {}).quote || '').slice(0, 300))}">${n}</sup>`);
     if (searches.length) html = `<p class="ai-search">🔎 ${searches.map((q) => U.esc(q)).join(' · ')}</p>` + html;
     if (sources.length) {
-      html += `<div class="ai-sources"><b>Kaynaklar</b><ol>${sources.map((s) => `<li>${s.url ? `<a href="${U.esc(s.url)}" target="_blank" rel="noopener noreferrer">${U.esc(s.label)}</a>` : U.esc(s.label)}${s.quote ? `<small>“${U.esc(s.quote.slice(0, 220))}${s.quote.length > 220 ? '…' : ''}”</small>` : ''}</li>`).join('')}</ol></div>`;
+      html += `<div class="ai-sources"><b>Kaynaklar</b><ol>${sources.map((s) => `<li>${/^https?:\/\//i.test(s.url || '') ? `<a href="${U.esc(s.url)}" target="_blank" rel="noopener noreferrer">${U.esc(s.label)}</a>` : U.esc(s.label)}${s.quote ? `<small>“${U.esc(s.quote.slice(0, 220))}${s.quote.length > 220 ? '…' : ''}”</small>` : ''}</li>`).join('')}</ol></div>`;
     }
     return { html, text: text.replace(/\u0001\d+\u0002/g, ''), sources };
   }

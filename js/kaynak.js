@@ -28,8 +28,16 @@ const Kaynak = (() => {
     return parts.map((w) => w.split('-').map((x) => x[0].toLocaleUpperCase('tr-TR') + '.').join('-')).join(' ');
   }
   const esc = (s) => U.esc(s);
-  const it = (s, html) => (html ? `<i>${esc(s)}</i>` : s);
-  const T = (s, html) => (html ? esc(s) : s);
+  // HTML çıktısında kayıt baştan kaçışlanır (yazar adları dahil: dış kaynaklardan gelen metin güvenilmez)
+  const it = (s, html) => (html ? `<i>${s}</i>` : s);
+  const T = (s) => s;
+  const escStr = (v) => (typeof v === 'string' ? esc(v) : v);
+  const escRec = (r) => {
+    const o = {};
+    for (const k of Object.keys(r)) o[k] = escStr(r[k]);
+    o.authors = (r.authors || []).map((a) => { const x = {}; for (const k of Object.keys(a || {})) x[k] = escStr(a[k]); return x; });
+    return o;
+  };
   const dash = (p) => String(p || '').replace(/\s*[-–—]\s*/g, '–');
   const doiUrl = (d) => (d ? 'https://doi.org/' + d.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '') : '');
   const endDot = (s) => (/[.?!]$/.test(s) ? s : s + '.');
@@ -59,6 +67,7 @@ const Kaynak = (() => {
   }
   // r: {type, title, authors, year, container, volume, issue, pages, doi, url, edition, publisher, city, accessed, date}
   function format(r, style, html) {
+    if (html) r = escRec(r);
     const yr = r.year ? String(r.year) : /^\d{4}/.test(r.date || '') ? r.date.slice(0, 4) : '';
     const doi = doiUrl(r.doi);
     const link = doi || r.url || '';

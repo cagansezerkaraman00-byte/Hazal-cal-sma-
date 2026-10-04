@@ -8,9 +8,11 @@ const KaynakUI = (() => {
   const STYLES = { apa: 'APA 7', vancouver: 'Vancouver (tıp/sağlık)', ieee: 'IEEE (mühendislik)' };
   const TYPES = { article: '📄 Makale', book: '📘 Kitap', web: '🌐 Web sayfası' };
   const style = () => D().settings.citeStyle || 'apa';
+  const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : ''); // javascript: vb. adresler bağlantı olmaz
 
   function refHtml(r) {
-    const link = r.doi ? 'https://doi.org/' + r.doi : r.url || '';
+    const link = r.doi ? 'https://doi.org/' + encodeURI(r.doi) : safeUrl(r.url);
+    const oa = safeUrl(r.oaUrl);
     return `<li class="ref-item" data-id="${r.id}">
       <div class="ref-cite">${Kaynak.format(r, style(), true)}</div>
       <div class="ref-meta">
@@ -19,7 +21,7 @@ const KaynakUI = (() => {
         <span class="ref-acts">
           <button class="chip" data-kr="copy" type="button">📋 Kopyala</button>
           ${link ? `<a class="chip" href="${U.esc(link)}" target="_blank" rel="noopener noreferrer">🔗 Aç</a>` : ''}
-          ${r.oaUrl ? `<a class="chip" href="${U.esc(r.oaUrl)}" target="_blank" rel="noopener noreferrer">🔓 Açık erişim</a>` : ''}
+          ${oa ? `<a class="chip" href="${U.esc(oa)}" target="_blank" rel="noopener noreferrer">🔓 Açık erişim</a>` : ''}
           ${window.Asistan ? '<button class="chip" data-kr="ask" type="button">🎓 Özetle</button>' : ''}
           <button class="chip" data-kr="edit" type="button">✏️</button>
         </span>
