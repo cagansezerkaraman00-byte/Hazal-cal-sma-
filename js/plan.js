@@ -214,6 +214,15 @@ const PlanUI = (() => {
   }
 
   // ---------- Plan sekmesi ----------
+  // kaynak bağlantısının okunur adı: "site.com · tyt fizik konulari"
+  function srcLabel(u) {
+    try {
+      const x = new URL(u);
+      const tail = decodeURIComponent(x.pathname).split('/').filter(Boolean).pop() || '';
+      return x.hostname.replace(/^www\./, '') + (tail ? ' · ' + tail.replace(/\.(html?|php)$/, '').replace(/[-_]+/g, ' ').slice(0, 60) : '');
+    } catch (e) { return u; }
+  }
+
   function render() {
     const root = $('#plan-root');
     if (!root) return;
@@ -266,7 +275,7 @@ const PlanUI = (() => {
       <h2 class="section-title">📚 Konu takibi</h2>
       <p class="hint">Konuya dokunarak durumunu değiştir: ○ başlamadım → 📖 çalışıyorum → 🔁 tekrar → ✅ tamam. Sayılar, o konudan YKS'de ortalama kaç soru geldiğini gösterir.</p>
       ${subjectsHtml(field)}
-      ${YKS.SOURCES.length ? `<details class="sources"><summary class="hint">Soru dağılımı kaynakları</summary><ul class="small">${YKS.SOURCES.map((u) => `<li>${U.esc(u)}</li>`).join('')}</ul></details>` : ''}`;
+      ${YKS.SOURCES.length ? `<details class="sources"><summary class="hint">Soru dağılımı kaynakları (${YKS.SOURCES.length})</summary><ul class="small">${YKS.SOURCES.filter((u) => /^https:\/\//.test(u)).map((u) => `<li><a href="${U.esc(u)}" target="_blank" rel="noopener noreferrer">${U.esc(srcLabel(u))}</a></li>`).join('')}</ul></details>` : ''}`;
     renderToday(root.querySelector('.today-plan'));
   }
 

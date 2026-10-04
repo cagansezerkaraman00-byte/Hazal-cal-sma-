@@ -17,6 +17,13 @@ const SpotifyLink = (() => {
     try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { /* kota / gizli mod */ }
   }
   const redirectUri = () => location.origin + location.pathname;
+  // Spotify yalnızca https (ya da 127.0.0.1) yönlendirmesini kabul ediyor
+  const secureOrigin = () => location.protocol === 'https:' || location.hostname === '127.0.0.1';
+  const ERR = {
+    forbidden: 'Spotify izin vermedi. Spotify panelinde Settings → User Management\'a e-postanın ekli olduğundan ve uygulamayı açan hesabın Premium olduğundan emin ol.',
+    auth: 'Spotify oturumu sona ermiş. "Bağlantıyı kes" deyip yeniden bağlan.',
+    net: 'Spotify\'a şu an ulaşılamadı; internet gelince ↻ ile yenileyebilirsin.',
+  };
 
   function randomString(n) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -50,20 +57,24 @@ const SpotifyLink = (() => {
     const ok = setTokens(await post(TOKEN, { grant_type: 'refresh_token', refresh_token: st.refresh, client_id: st.clientId }));
     return ok ? st.token : '';
   }
+  let lastStatus = 0; // son API yanıtı: 403 genelde izin listesi ya da Premium eksikliği
   async function api(path) {
     const t = await token();
-    if (!t) return null;
+    if (!t) { lastStatus = 401; return null; }
     try {
       const r = await fetch('https://api.spotify.com/v1' + path, { headers: { Authorization: 'Bearer ' + t } });
+      lastStatus = r.status;
       if (r.status === 401) { st.token = ''; persist(); return null; }
       return r.ok ? await r.json() : null;
-    } catch (e) { return null; }
+    } catch (e) { lastStatus = 0; return null; }
   }
 
   async function login() {
     if (!st.clientId || !window.crypto || !crypto.subtle) { App.toast('🎧', 'Bu tarayıcı Spotify bağlantısını desteklemiyor'); return; }
+    if (!secureOrigin()) { App.toast('🎧', 'Spotify bağlantısı https adres ister', 'Uygulamayı GitHub Pages adresinden açıp dene'); return; }
     const v = randomString(64);
-    try { sessionStorage.setItem('luna-sp-verifier', v); } catch (e) { /* yok say */ }
+    // doğrulayıcı localStorage'da: iOS ana ekran uygulamasında oturum deposu yönlendirmede kaybolabiliyor
+    try { localStorage.setItem('luna-sp-verifier', JSON.stringify({ v, at: Date.now() })); } catch (e) { /* yok say */ }
     const q = new URLSearchParams({ client_id: st.clientId, response_type: 'code', redirect_uri: redirectUri(), code_challenge_method: 'S256', code_challenge: await challenge(v), scope: SCOPE });
     location.href = AUTH + '?' + q.toString();
   }
@@ -75,8 +86,12 @@ const SpotifyLink = (() => {
     history.replaceState(null, '', location.pathname + location.hash);
     if (err) { App.toast('🎧', 'Spotify bağlantısı iptal edildi'); return; }
     let v = '';
-    try { v = sessionStorage.getItem('luna-sp-verifier') || ''; sessionStorage.removeItem('luna-sp-verifier'); } catch (e) { /* yok say */ }
-    if (!v || !st.clientId) return;
+    try {
+      const x = JSON.parse(localStorage.getItem('luna-sp-verifier') || 'null');
+      localStorage.removeItem('luna-sp-verifier');
+      if (x && x.v && Date.now() - x.at < 15 * 60000) v = x.v;
+    } catch (e) { /* yok say */ }
+    if (!v || !st.clientId) { App.toast('🎧', 'Spotify girişi tamamlanamadı', 'Müzik kutusundan bir kez daha "Spotify\'a bağlan" de'); return; }
     const ok = setTokens(await post(TOKEN, { client_id: st.clientId, grant_type: 'authorization_code', code, redirect_uri: redirectUri(), code_verifier: v }));
     if (!ok) { App.toast('🎧', 'Spotify bağlanamadı', 'Redirect URI ve kullanıcı izinlerini kılavuzdaki gibi kontrol et'); return; }
     await refreshLists();
@@ -90,12 +105,13 @@ const SpotifyLink = (() => {
     render();
     const [me, pl] = await Promise.all([api('/me'), api('/me/playlists?limit=50')]);
     busy = false;
+    st.err = me || pl ? '' : lastStatus === 403 ? 'forbidden' : lastStatus === 401 ? 'auth' : 'net';
     if (me) st.user = me.display_name || me.id || '';
     if (pl && Array.isArray(pl.items)) {
       st.lists = pl.items.filter(Boolean).map((x) => ({
         id: x.id, name: x.name || 'Liste',
         img: x.images && x.images.length ? x.images[x.images.length - 1].url : '',
-        n: x.tracks ? x.tracks.total : 0,
+        n: (x.items && x.items.total) ?? (x.tracks && x.tracks.total) ?? null, // Şubat 2026: tracks -> items
       }));
     }
     persist();
@@ -110,6 +126,7 @@ const SpotifyLink = (() => {
       el.innerHTML = `<details class="sp-connect"><summary>🔗 Kendi çalma listelerini burada gör (isteğe bağlı)</summary>
         <p class="hint">Bir kez kurulur; adımlar Ayarlar → Kılavuz → Müzik ve Spotify bölümünde. Redirect URI olarak şunu ekle:</p>
         <code class="sp-uri">${U.esc(redirectUri())}</code>
+        ${secureOrigin() ? '' : '<p class="hint">⚠️ Spotify bağlantısı için uygulamayı https ile başlayan adresinden (ör. GitHub Pages) açmalısın.</p>'}
         <div class="inline-form"><input data-sp="client" placeholder="Spotify Client ID" value="${U.esc(st.clientId)}" autocomplete="off" spellcheck="false"><button class="btn primary" data-sp="login" type="button">Spotify'a bağlan</button></div>
       </details>`;
       return;
@@ -118,8 +135,8 @@ const SpotifyLink = (() => {
         <span><button class="chip" data-sp="reload" type="button">${busy ? '…' : '↻'}</button> <button class="chip" data-sp="logout" type="button">Bağlantıyı kes</button></span></div>
       ${st.lists.length ? `<div class="sp-lists">${st.lists.map((l) => `<button class="sp-item ${App.data().settings.spotify.includes(l.id) ? 'active' : ''}" data-sp="play" data-id="${U.esc(l.id)}" type="button">
           ${l.img ? `<img src="${U.esc(l.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="sp-noimg">🎵</span>'}
-          <span class="sp-name">${U.esc(l.name)}</span><small>${l.n} şarkı</small></button>`).join('')}</div>`
-        : `<p class="hint">${busy ? 'Listelerin yükleniyor…' : 'Çalma listesi bulunamadı.'}</p>`}`;
+          <span class="sp-name">${U.esc(l.name)}</span><small>${l.n != null ? l.n + ' şarkı' : 'Çalma listesi'}</small></button>`).join('')}</div>`
+        : `<p class="hint">${busy ? 'Listelerin yükleniyor…' : ERR[st.err] || 'Çalma listesi bulunamadı.'}</p>`}`;
   }
 
   function bind() {

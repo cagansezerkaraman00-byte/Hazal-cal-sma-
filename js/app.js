@@ -168,7 +168,15 @@
       ${row('📅', 'Bugün', day(w.today))}
       ${row('🌙', 'Yarın', day(w.tomorrow))}
       ${row('🌅', 'Gün doğumu / batımı', `${fmtDayMin(sun.sunrise)} · ${fmtDayMin(sun.sunset)}`)}
+      ${moonRow(row)}
       <div class="wp-note">${w.stale ? 'Son bilinen hava durumu (çevrimdışı)' : 'Güncellendi ' + U.hm(w.updatedAt)} · Open-Meteo</div>`;
+  }
+  // gerçek ay: evre, aydınlık oranı ve sıradaki doğuş/batış
+  function moonRow(row) {
+    if (!Scene.moonInfo) return '';
+    const m = Scene.moonInfo();
+    const next = m.up ? (m.set ? `batış ${U.hm(m.set)}` : 'gece boyunca gökte') : (m.rise ? `doğuş ${U.hm(m.rise)}` : '');
+    return row(m.emoji, `Ay · ${m.name}`, `%${Math.round(m.fraction * 100)}${next ? ' · ' + next : ''}`);
   }
   function bindWeather() {
     const chip = $('#hud-weather'), pop = $('#weather-pop');
@@ -882,14 +890,22 @@
     ['🎹 Sakin Piyano', 'https://open.spotify.com/playlist/37i9dQZF1DX4sWSpwq3LiO'],
     ['🧠 Derin Odak', 'https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ'],
   ];
+  // open.spotify.com/(intl-tr/)(embed/)(user/x/)playlist/ID?si=… ve spotify:playlist:ID biçimleri
+  function spotifyParts(url) {
+    const m = String(url || '').trim().match(/(?:open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?(?:user\/[^/]+\/)?|spotify:(?:user:[^:]+:)?)(playlist|album|track|artist|episode|show)[/:]([A-Za-z0-9]{10,40})/i);
+    return m ? { type: m[1].toLowerCase(), id: m[2] } : null;
+  }
   function spotifyEmbed(url) {
-    const m = String(url).match(/(?:open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?|spotify:)(playlist|album|track|artist|episode|show)[/:]([A-Za-z0-9]+)/);
-    return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator&theme=0` : null;
+    const p = spotifyParts(url);
+    return p ? `https://open.spotify.com/embed/${p.type}/${p.id}?utm_source=generator&theme=0` : null;
   }
   function loadSpotify() {
+    const p = spotifyParts(D().settings.spotify);
     const src = spotifyEmbed(D().settings.spotify);
+    // "Spotify'da aç": telefonda uygulama yüklüyse doğrudan uygulamada açılır (önizleme yerine tam şarkılar)
     $('#spotify-frame').innerHTML = src
-      ? `<iframe src="${src}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify"></iframe>`
+      ? `<iframe src="${src}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify"></iframe>
+        <a class="sp-open" href="https://open.spotify.com/${p.type}/${p.id}" target="_blank" rel="noopener">Spotify uygulamasında aç ↗</a>`
       : '<p class="empty">Geçerli bir Spotify bağlantısı yapıştır.</p>';
     $$('#spotify-presets .chip').forEach((c) => c.classList.toggle('active', c.dataset.url === D().settings.spotify));
     const preset = PRESETS.find(([, u]) => u === D().settings.spotify);
@@ -911,7 +927,11 @@
     $('#spotify-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const v = $('#spotify-input').value.trim();
-      if (!spotifyEmbed(v)) { toast('🎧', 'Bu bir Spotify bağlantısına benzemiyor', 'open.spotify.com/… ile başlayan bağlantıyı yapıştır'); return; }
+      if (!spotifyEmbed(v)) {
+        if (/spotify\.link|spotify\.app\.link/i.test(v)) toast('🎧', 'Kısa bağlantı açılamıyor', 'Bağlantıyı tarayıcıda açıp adres çubuğundaki open.spotify.com/… adresini yapıştır');
+        else toast('🎧', 'Bu bir Spotify bağlantısına benzemiyor', 'open.spotify.com/… ile başlayan bağlantıyı yapıştır');
+        return;
+      }
       D().settings.spotify = v; save(); loadSpotify();
     });
     $('#spotify-presets').addEventListener('click', (e) => {
@@ -961,6 +981,18 @@
     const sun = Scene.sunInfo();
     $('#loc-text').textContent = `Şu an: ${s.lat.toFixed(2)}, ${s.lon.toFixed(2)} · Gün doğumu ${fmtDayMin(sun.sunrise)} · Gün batımı ${fmtDayMin(sun.sunset)}`;
     renderSubjectEdit();
+    renderBackupInfo();
+  }
+
+  // son yedek ne zaman alındı (yedek, verinin tek güvencesi)
+  function markBackup() { D().lastBackup = Date.now(); save(); renderBackupInfo(); }
+  function renderBackupInfo() {
+    const el = $('#backup-info');
+    if (!el) return;
+    const t = D().lastBackup;
+    if (!t) { el.textContent = '🌱 Henüz yedek almadın.'; return; }
+    const days = Math.floor((Date.now() - t) / 864e5);
+    el.textContent = `✅ Son yedek: ${days < 1 ? 'bugün' : days === 1 ? 'dün' : days + ' gün önce'} (${new Date(t).toLocaleDateString('tr-TR')})`;
   }
 
   function renderSubjectEdit() {
@@ -1057,31 +1089,66 @@
       save(); renderHome(); toast('💌', 'Notlar kaydedildi');
     });
     // veri
-    $('#export').addEventListener('click', () => {
+    $('#export').addEventListener('click', async () => {
+      const name = `luna-yedek-${U.dateKey(new Date())}.json`;
       const blob = new Blob([JSON.stringify(D(), null, 2)], { type: 'application/json' });
+      // telefonda/tablette paylaşım menüsü: Dosyalar'a kaydet, AirDrop, Drive…
+      if (matchMedia('(pointer: coarse)').matches && navigator.canShare && window.File) {
+        const file = new File([blob], name, { type: 'application/json' });
+        if (navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: 'Luna yedeği' }); markBackup(); return; } catch (err) {
+            if (err && err.name === 'AbortError') return; // kullanıcı vazgeçti
+          }
+        }
+      }
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `luna-yedek-${U.dateKey(new Date())}.json`;
+      a.download = name;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      markBackup();
     });
     $('#import').addEventListener('change', (e) => {
       const f = e.target.files[0]; if (!f) return;
+      e.target.value = '';
       const r = new FileReader();
       r.onload = () => {
+        let obj;
         try {
-          const obj = JSON.parse(r.result);
-          if (!obj || !Array.isArray(obj.sessions)) throw new Error('format');
-          if (!confirm(`${obj.sessions.length} oturumluk yedek yüklensin mi? Mevcut veriler değişecek.`)) return;
-          Store.importJSON(obj);
-          location.reload();
-        } catch (err) { toast('⚠️', 'Dosya okunamadı', 'Luna yedeği olduğundan emin ol'); }
+          obj = JSON.parse(r.result);
+          if (!obj || typeof obj !== 'object' || !Array.isArray(obj.sessions)) throw new Error('format');
+        } catch (err) { toast('⚠️', 'Dosya okunamadı', 'Luna yedeği olduğundan emin ol'); return; }
+        const n = (k) => (Array.isArray(obj[k]) ? obj[k].length : 0);
+        openModal(`<h3>📥 Yedeği yükle</h3>
+          <p class="muted">Bu yedekte <b>${n('sessions')}</b> oturum, <b>${n('denemeler')}</b> deneme, <b>${n('notes')}</b> not ve <b>${n('cards')}</b> kart var.</p>
+          <div class="import-choices">
+            <button class="btn primary" data-imp="merge">🤝 Birleştir <small>Şimdiki verilerin kalır, yedekteki eksikler eklenir</small></button>
+            <button class="btn soft" data-imp="replace">♻️ Tamamen değiştir <small>Bu cihazdaki veriler yedektekiyle değişir</small></button>
+          </div>
+          <div class="modal-actions"><button class="btn soft" data-imp="cancel">Vazgeç</button></div>`, (card) => {
+          card.addEventListener('click', (ev) => {
+            const b = ev.target.closest('[data-imp]');
+            if (!b) return;
+            if (b.dataset.imp === 'cancel') { closeModal(); return; }
+            if (b.dataset.imp === 'replace') {
+              if (!confirm('Bu cihazdaki bütün veriler yedektekiyle değişecek. Emin misin?')) return;
+              Store.importJSON(obj);
+              location.reload();
+              return;
+            }
+            const added = Store.mergeJSON(obj);
+            closeModal();
+            // yeni dersler/alan gelmiş olabilir: her şeyi baştan çiz
+            renderSubjectSelects(); renderSettings(); applyTheme();
+            afterDataChange();
+            toast('🤝', added ? `${added} yeni kayıt eklendi` : 'Yedekteki her şey zaten burada', 'Hiçbir verin silinmedi');
+          });
+        });
       };
       r.readAsText(f);
-      e.target.value = '';
     });
     $('#reset').addEventListener('click', () => {
-      if (!confirm('Bütün oturumlar, görevler ve ayarlar silinecek. Emin misin?')) return;
+      if (!confirm('Bütün oturumlar, denemeler, notlar ve ayarlar silinecek. Önce "Yedek al" ile bir kopya saklamanı öneririm. Devam edilsin mi?')) return;
       if (!confirm('Gerçekten emin misin? Bu geri alınamaz.')) return;
       Store.reset(); location.reload();
     });
@@ -1130,11 +1197,25 @@
       setTimeout(() => { if (special === 'love') sayLove(); else say(special, { ms: 9000 }); }, 1200);
       return;
     }
+    // dolunay gecesi ve ay gökteyse günde bir kez buna dair küçük bir söz
+    const h = new Date().getHours();
+    const moon = Scene.moonInfo && (h >= 18 || h < 4) ? Scene.moonInfo() : null;
+    const fullMoon = moon && moon.up && moon.fraction > 0.97 && D().lastMoonGreet !== today;
     setTimeout(() => {
       if (!ss.length) say('welcome', { ms: 9000 });
       else if (Date.now() - ss[ss.length - 1].start > 3 * 864e5) say('comeback');
+      else if (fullMoon) { D().lastMoonGreet = today; save(); say('dolunay', { ms: 8000 }); }
       else say(Messages.timeOfDay());
     }, 1200);
+    // emek birikti ama bir aydır yedek yok: iki haftada en fazla bir kez nazik hatırlatma
+    const month = 30 * 864e5, now = Date.now();
+    if (ss.length >= 20 && now - (D().lastBackup || ss[0].start) > month && now - (D().lastBackupNudge || 0) > 14 * 864e5) {
+      setTimeout(() => {
+        if (App.isFocusing()) return;
+        D().lastBackupNudge = Date.now(); save();
+        say('backup', { ms: 9000 });
+      }, 20000);
+    }
   }
 
   // ======================================================================
@@ -1286,6 +1367,10 @@
 
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
       navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    // ana ekrana eklenmiş uygulamada tarayıcıdan verilerin kalıcı saklanmasını iste (izin penceresi çıkmaz)
+    if (navigator.storage && navigator.storage.persist && (matchMedia('(display-mode: standalone)').matches || navigator.standalone)) {
+      navigator.storage.persisted().then((p) => p || navigator.storage.persist()).catch(() => {});
     }
   }
 

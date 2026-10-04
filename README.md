@@ -6,7 +6,7 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 
 **🌌 Canlı gökyüzü**
 - Güneş ve ay **gerçek saate ve konuma göre** hareket eder (İstanbul varsayılan; ayarlardan şehir seçilebilir veya konum kullanılabilir)
-- Sabah, gün doğumu, öğle, gün batımı ve gece renkleri; gerçek ay evresi
+- Sabah, gün doğumu, öğle, gün batımı ve gece renkleri; **ay da gerçek**: evresi, gökteki yeri, doğuş ve batış saati hesaplanır (ay doğmadıysa gökte görünmez, gündüz soluk görünür); hava penceresinde ay bilgisi, dolunay gecelerinde Luna'dan küçük bir söz
 - Akşamları gökyüzü yıldızlarla dolar: Samanyolu, kayan yıldızlar, ateş böcekleri, gizli bir **kalp takımyıldızı** 💛, mevsimin gerçek takımyıldızı (Avcı, Büyük Ayı, Yaz Üçgeni, Kraliçe) ve gece açan **renkli pixel zambaklar** 🌸
 - **Gerçek zamanlı mevsimler:** kışın karlı zemin ve kar yağışı, ilkbaharda çiçek açmış ağaç ve uçuşan yapraklar, yazın ayçiçekleri ve kelebekler, sonbaharda turuncu tepeler ve düşen yapraklar; mevsime göre lale, papatya, gelincik, lavanta, çiğdem, kardelen, mantar
 - **Özel günler:** yılbaşında ışık süsleri, hediyeler, Luna'ya Noel şapkası ve 31 Aralık gecesi havai fişek; Ramazan ve Kurban Bayramı'nda fenerler; ulusal bayramlarda Türk bayrakları; 14 Şubat'ta kalpler
@@ -76,7 +76,8 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 
 **🎧 Müzik** (Çalış ekranında katlanır kutu)
 - Spotify çalma listesi/albüm bağlantısı yapıştırıp uygulamanın içinden dinleme
-- İsteğe bağlı **Spotify hesabı bağlama** (PKCE, şifresiz): kendi çalma listeleri kapaklarıyla listelenir, dokunulan liste uygulamadan çıkmadan çalar (kurulum adımları kılavuzda)
+- İsteğe bağlı **Spotify hesabı bağlama** (PKCE, şifresiz): kendi çalma listeleri kapaklarıyla listelenir, dokunulan liste uygulamadan çıkmadan çalar (kurulum adımları kılavuzda; Spotify'ın 2026 kurallarına göre: uygulamayı açan hesap Premium olmalı, en fazla 5 kullanıcı, https adresi)
+- Oynatıcının altında **Spotify uygulamasında aç**: telefonda liste doğrudan Spotify'da açılır (önizleme yerine tam şarkılar)
 - Yağmur, dalga, şömine, kütüphane, beyaz/kahverengi gürültü ses karıştırıcısı
 
 **📓 Notlar ve bilgi kartları**
@@ -112,7 +113,11 @@ python3 -m http.server 8000
 - **Ayarlar → Dersler:** ders ekle, sil, renk değiştir
 
 ## Veriler
-Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok). Telefon değiştirirken **Ayarlar → Veriler → Dışa aktar**, yeni cihazda **İçe aktar**.
+Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok).
+- **Ayarlar → Veriler → Yedek al:** telefonda paylaşım menüsü açılır (Dosyalar'a kaydet, Drive…), bilgisayarda dosya iner. Son yedeğin tarihi ayarlarda görünür; bir aydır yedek yoksa Luna nazikçe hatırlatır.
+- **İçe aktar → Birleştir:** hiçbir kayıt silinmez, yedekteki eksik oturum, deneme, not, kart ve rozetler eklenir; ayarlar bu cihazdaki gibi kalır.
+- **İçe aktar → Tamamen değiştir:** bu cihaz yedekteki hale gelir.
+- Ana ekrana eklenmiş uygulamada tarayıcıdan kalıcı depolama istenir; böylece veriler kendiliğinden silinmez.
 
 ## Dosyalar
 | Dosya | Görevi |

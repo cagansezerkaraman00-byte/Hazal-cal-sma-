@@ -70,6 +70,7 @@
   --chart-grid: #ece6f8;
   --line-tyt: #7a5cf0;
   --line-ayt: #e0588a;
+  --line-ydt: #d08a00;
   --bar-grad: linear-gradient(180deg, #ffc552, #a58bf5);
   --bar-hit: linear-gradient(180deg, #46c79a, #5eaeea);
 
@@ -167,6 +168,7 @@
   --chart-grid: rgba(255, 255, 255, .08);
   --line-tyt: #a58bff;
   --line-ayt: #ff8fb5;
+  --line-ydt: #ffc35a;
   --bar-grad: linear-gradient(180deg, #ffd84d, #9a7bff);
   --bar-hit: linear-gradient(180deg, #7ee0a1, #7ad3ff);
 
@@ -314,7 +316,7 @@ a { color: var(--lav-ink); }
 /* Hava durumu açılır penceresi (HUD'daki çipin altında) */
 .weather-pop {
   position: absolute; top: 46px; right: 12px; z-index: 4;
-  width: min(290px, calc(100% - 24px));
+  width: min(310px, calc(100% - 24px));
   max-height: calc(100% - 56px); overflow: auto;
   background: var(--surface); color: var(--text);
   border: 1px solid var(--line-strong); border-radius: 16px;
@@ -324,13 +326,13 @@ a { color: var(--lav-ink); }
   transform-origin: top right;
 }
 .wp-row {
-  display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; align-items: center;
+  display: grid; grid-template-columns: 22px minmax(6.5em, 1fr) minmax(0, max-content); gap: 8px; align-items: center;
   padding: 6px 0; font-size: .84rem; border-bottom: 1px dashed var(--line);
 }
 .wp-row:first-child { font-size: .9rem; }
 .wp-row > span:first-child { text-align: center; font-size: 1rem; }
-.wp-row > span:nth-child(2) { color: var(--muted); font-weight: 700; overflow-wrap: anywhere; }
-.wp-row b { font-weight: 800; text-align: right; }
+.wp-row > span:nth-child(2) { color: var(--muted); font-weight: 700; overflow-wrap: break-word; }
+.wp-row b { font-weight: 800; text-align: right; min-width: 0; }
 .wp-note { font-size: .72rem; color: var(--muted); margin-top: 7px; }
 
 /* ---------- Sekmeler ---------- */
@@ -709,11 +711,13 @@ button.block:hover { border-color: var(--line-strong); }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart .grid-line { stroke: var(--chart-grid); stroke-width: 1; shape-rendering: crispEdges; vector-effect: non-scaling-stroke; }
 .chart .axis-label { fill: var(--muted); font-family: var(--font); font-size: 11px; font-weight: 700; }
-.chart .line-tyt, .chart .line-ayt { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.chart .line-tyt, .chart .line-ayt, .chart .line-ydt { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .chart .line-tyt { stroke: var(--line-tyt); }
 .chart .line-ayt { stroke: var(--line-ayt); }
+.chart .line-ydt { stroke: var(--line-ydt); }
+.chart .line-ydt ~ .dot { stroke: var(--line-ydt); }
 .chart .dot { fill: var(--surface); stroke: var(--line-tyt); stroke-width: 2; vector-effect: non-scaling-stroke; }
-.chart .dot.ayt, .chart .line-ayt + .dot, .chart .dots-ayt .dot { stroke: var(--line-ayt); }
+.chart .dot.ayt, .chart .line-ayt ~ .dot, .chart .dots-ayt .dot { stroke: var(--line-ayt); }
 .chart .value-label { fill: var(--text); font-family: var(--font); font-size: 11px; font-weight: 800; }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: .78rem; font-weight: 700; color: var(--muted); }
 .chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -772,6 +776,7 @@ button.block:hover { border-color: var(--line-strong); }
 }
 .type-tag.tyt, .type-tag[data-type="TYT"] { background: var(--lav-soft); color: var(--lav-ink); }
 .type-tag.ayt, .type-tag[data-type="AYT"] { background: var(--pink-soft); color: var(--pink-ink); }
+.type-tag[data-type="YDT"] { background: var(--accent-soft); color: var(--accent-ink); }
 .type-tag.brans, .type-tag[data-type="BRANS"] { background: var(--mint-soft); color: var(--mint-ink); }
 .deneme-detail { padding: 10px 12px 12px; border-top: 1px dashed var(--line-strong); background: var(--surface); }
 .deneme-item:not(.open):not([open]) > .deneme-detail { display: none; }
@@ -890,6 +895,8 @@ button.block:hover { border-color: var(--line-strong); }
 .chip:hover { border-color: var(--accent-line); }
 .chip.active { border-color: var(--accent-edge); background: var(--accent-soft); }
 .spotify-frame iframe { width: 100%; height: 380px; border: 0; border-radius: 14px; }
+.sp-open { display: inline-block; margin: 8px 2px 0; font-size: .82rem; font-weight: 800; color: var(--accent-ink, var(--violet)); text-decoration: none; }
+.sp-open:hover { text-decoration: underline; }
 .mixer { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
 .mix { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; align-items: center; gap: 10px; }
 .mix .e { font-size: 1.5rem; }
@@ -937,6 +944,10 @@ button.block:hover { border-color: var(--line-strong); }
 .moods button { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; font-size: 1.4rem; padding: 4px 9px; cursor: pointer; }
 .moods button.on { border-color: var(--accent-edge); background: var(--accent-soft); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; }
+.import-choices { display: grid; gap: 10px; margin-top: 14px; }
+.import-choices .btn { display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 12px 14px; gap: 2px; }
+.import-choices .btn small { font-weight: 600; opacity: .8; font-size: .78rem; }
+.backup-info { margin: 4px 0 10px; color: var(--muted); font-weight: 700; }
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 
 /* ---------- Bildirimler ---------- */
@@ -974,6 +985,8 @@ button.block:hover { border-color: var(--line-strong); }
 .sources { margin: 10px 0 18px; }
 .sources summary { cursor: pointer; }
 .sources ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); overflow-wrap: anywhere; }
+.sources a { color: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 2px; }
+.sources a:hover { color: var(--text); }
 .topic-name small { font-weight: 600; font-size: .74rem; }
 .block.done { opacity: .55; text-decoration: line-through; }
 .weak-acts { display: flex; align-items: center; gap: 6px; }

@@ -111,6 +111,14 @@ const Messages = (() => {
     welcome: [
       'Merhaba {name}! Ben Luna 🤍 Bundan sonra derslerinde hep yanındayım. Hadi ilk oturumu başlatalım!',
     ],
+    dolunay: [
+      'Bu gece dolunay 🌕 Pencereden bir bak {name}, gökyüzü sana ışık tutuyor.',
+      'Dolunay çıktı 🌕 Ben de ona bakıp mırlıyorum. Bugünün emeği de en az onun kadar parlak.',
+    ],
+    backup: [
+      'Bu ay çok emek verdin {name} 🐾 Ayarlar → Veriler → Yedek al ile hepsini güvenceye alalım mı?',
+      'Küçük bir hatırlatma: verilerinin bir yedeğini almaya ne dersin? Ayarlar → Veriler 💾',
+    ],
     comeback: [
       'Seni özledim {name}! Bugün kısa bir oturumla başlamaya ne dersin?',
     ],

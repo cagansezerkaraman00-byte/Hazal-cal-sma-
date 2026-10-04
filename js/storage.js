@@ -136,6 +136,55 @@ const Store = (() => {
     return defaults();
   }
 
+  // Yedeği mevcut verilerle birleştirir: hiçbir kayıt silinmez, eksikler eklenir.
+  // id'li listeler id'ye göre, haritalar anahtara göre birleşir; ayarlar bu cihazdaki gibi kalır.
+  // Bilinmeyen (ileride eklenecek) alanlar da aynı kurallarla birleşir. Eklenen kayıt sayısını döndürür.
+  const LOCAL_ONLY = new Set(['version', 'settings', 'timer', 'lastGoalDay', 'lastWeatherMsg', 'lastSpecialGreet', 'lastBackup', 'lastBackupNudge', 'lastMoonGreet']);
+  const COUNTERS = new Set(['fish', 'fed', 'tasksDone', 'reviewDone', 'planItems', 'planFull', 'cardReviews']);
+  const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
+  const hasIds = (arr) => arr.length > 0 && arr.every((x) => isObj(x) && (typeof x.id === 'string' || typeof x.id === 'number'));
+  function mergeIn(obj) {
+    const inc = merge(defaults(), obj);
+    let added = 0;
+    const list = (a, b) => {
+      if (!Array.isArray(a)) return b;
+      if (hasIds(b) && (hasIds(a) || !a.length)) {
+        const byId = new Map(a.map((x, i) => [x.id, i]));
+        for (const x of b) {
+          if (!byId.has(x.id)) { a.push(x); added++; continue; }
+          const i = byId.get(x.id); // ikisinde de varsa daha yeni düzenlenen kalsın (notlar gibi)
+          if (+x.updated > +(a[i].updated || 0)) a[i] = x;
+        }
+        return a;
+      }
+      for (const x of b) if (!a.some((y) => JSON.stringify(y) === JSON.stringify(x))) { a.push(x); if (typeof x !== 'string') added++; }
+      return a;
+    };
+    const obj2 = (a, b, key) => {
+      for (const k of Object.keys(b)) {
+        const x = a[k], y = b[k];
+        if (x === undefined || x === null) { a[k] = y; if (key === 'badges' || key === 'topics') added++; }
+        else if (Array.isArray(x) && Array.isArray(y)) a[k] = list(x, y);
+        else if (isObj(x) && isObj(y)) obj2(x, y, k);
+        else if (typeof x === 'number' && typeof y === 'number') {
+          if (key === 'badges' || key === 'seen') a[k] = Math.min(x, y);       // ilk kazanılan / ilk görülen an
+          else if (COUNTERS.has(k) || key === 'topics') a[k] = Math.max(x, y); // sayaçlar ve konu ilerlemesi
+        } else if (typeof x === 'boolean' && typeof y === 'boolean') a[k] = x || y;
+      }
+      return a;
+    };
+    for (const k of Object.keys(inc)) {
+      if (LOCAL_ONLY.has(k)) continue;
+      const x = data[k], y = inc[k];
+      if (x === undefined || x === null) data[k] = y;
+      else if (Array.isArray(x) && Array.isArray(y)) data[k] = list(x, y);
+      else if (isObj(x) && isObj(y)) obj2(x, y, k);
+      else if (COUNTERS.has(k) && typeof x === 'number' && typeof y === 'number') data[k] = Math.max(x, y);
+    }
+    if (data.yks && data.yks.planCache) delete data.yks.planCache; // plan yeniden hesaplansın
+    return added;
+  }
+
   let data = load();
 
   return {
@@ -145,6 +194,7 @@ const Store = (() => {
     },
     reset() { data = defaults(); this.save(); },
     importJSON(obj) { data = merge(defaults(), obj); this.save(); },
+    mergeJSON(obj) { const n = mergeIn(obj); this.save(); return n; },
     subject(id) { return data.subjects.find((s) => s.id === id) || { id: '', name: 'Genel', color: '#c9c3e6' }; },
   };
 })();

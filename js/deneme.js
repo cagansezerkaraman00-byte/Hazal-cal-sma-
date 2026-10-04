@@ -24,8 +24,12 @@ const Deneme = (() => {
     for (const k of Object.keys(e.scores || {})) if (sub(k)) q += sub(k).total;
     return q;
   }
-  const label = (e) => (e.type === 'BRANS' ? (sub(e.brans) ? sub(e.brans).short : 'Branş') : e.type);
-  const sameKind = (a, b) => a.type === b.type && (a.type !== 'BRANS' || a.brans === b.brans);
+  // DİL alanının ikinci oturumu YDT'dir; kayıt 'AYT' türünde tutulur, görünen ad içeriğe göre belirlenir
+  const isYdt = (e) => e.type === 'AYT' && !!e.scores && 'ydt' in e.scores && Object.keys(e.scores).every((k) => k === 'ydt');
+  const kind = (e) => (isYdt(e) ? 'YDT' : e.type); // TYT | AYT | YDT | BRANS
+  const typeName = (t) => (t === 'AYT' && YKS.field() === 'DIL' ? 'YDT' : t);
+  const label = (e) => (e.type === 'BRANS' ? (sub(e.brans) ? sub(e.brans).short : 'Branş') : kind(e));
+  const sameKind = (a, b) => kind(a) === kind(b) && (a.type !== 'BRANS' || a.brans === b.brans);
   const byDate = (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : (a.created || 0) - (b.created || 0));
 
   function list() { return D().denemeler.slice().sort(byDate); }
@@ -69,8 +73,8 @@ const Deneme = (() => {
     const out = [];
     const l = list();
     if (!l.length) return out;
-    for (const type of ['TYT', 'AYT']) {
-      const t = l.filter((e) => e.type === type);
+    for (const type of ['TYT', 'AYT', 'YDT']) {
+      const t = l.filter((e) => kind(e) === type);
       if (t.length >= 2) {
         const diff = r2(total(t[t.length - 1]) - total(t[0]));
         if (diff > 0) out.push(`İlk ${type} denemenden bu yana +${fmt(diff)} net kazandın 📈`);
@@ -105,7 +109,7 @@ const Deneme = (() => {
   // Hafif SVG çizgi grafik (kütüphanesiz)
   // width: kutunun piksel genişliği (yazılar büyüyüp küçülmesin diye viewBox = gerçek boyut)
   function chart(type, width = 600) {
-    const t = list().filter((e) => e.type === type);
+    const t = list().filter((e) => kind(e) === type);
     if (!t.length) return '';
     const W = Math.max(280, Math.round(width)), H = 190, P = { l: 34, r: 14, t: 12, b: 26 };
     const maxY = Math.max(...t.map(maxQ), 1);
@@ -126,7 +130,7 @@ const Deneme = (() => {
     return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${type} net gelişimi">${g}<polyline class="line-${type.toLowerCase()}" fill="none" points="${pts}"/>${dots}</svg>`;
   }
 
-  return { net, fmt, total, maxQ, rowKeys, label, list, previous, lastSummary, hasRise, eksikCounts, weakTopics, insights, chart };
+  return { net, fmt, total, maxQ, rowKeys, label, kind, typeName, list, previous, lastSummary, hasRise, eksikCounts, weakTopics, insights, chart };
 })();
 
 const DenemeUI = (() => {
@@ -147,21 +151,23 @@ const DenemeUI = (() => {
         <p class="muted">Deneme çözdükten sonra doğru ve yanlışlarını gir; eksik çıkan konuları işaretle. Luna netlerini çizer, hangi konulara öncelik vermen gerektiğini YKS'deki soru ağırlıklarına göre sıralar.</p></div>`;
       return;
     }
-    const lastOf = (type) => l.filter((e) => e.type === type).pop();
+    const KINDS = ['TYT', 'AYT', 'YDT'];
+    const lastOf = (type) => l.filter((e) => Deneme.kind(e) === type).pop();
     const tile = (ic, v, lab, extra = '') => `<div class="tile"><div class="ic">${ic}</div><div class="v">${v}${extra}</div><div class="l">${lab}</div></div>`;
     const deltaTxt = (e) => { const p = e && Deneme.previous(e); if (!p) return ''; const d = Deneme.total(e) - Deneme.total(p); return d > 0 ? ` <small class="pos">+${Deneme.fmt(d)}</small>` : ''; };
-    const tTyt = lastOf('TYT'), tAyt = lastOf('AYT');
+    const tTyt = lastOf('TYT'), tAyt = lastOf('AYT'), tYdt = lastOf('YDT');
     const bestTyt = l.filter((e) => e.type === 'TYT').reduce((a, b) => (!a || Deneme.total(b) > Deneme.total(a) ? b : a), null);
     let tiles = '';
     if (tTyt) tiles += tile('📘', Deneme.fmt(Deneme.total(tTyt)), 'Son TYT neti', deltaTxt(tTyt));
     if (tAyt) tiles += tile('📗', Deneme.fmt(Deneme.total(tAyt)), 'Son AYT neti', deltaTxt(tAyt));
+    if (tYdt) tiles += tile('📙', Deneme.fmt(Deneme.total(tYdt)), 'Son YDT neti', deltaTxt(tYdt));
     if (bestTyt) tiles += tile('🏆', Deneme.fmt(Deneme.total(bestTyt)), 'En iyi TYT');
     tiles += tile('🗂️', String(l.length), 'Deneme sayısı');
 
     const cw = Math.min(1100, (root.clientWidth || 600) - 40);
-    const charts = ['TYT', 'AYT'].map((t) => { const c = Deneme.chart(t, cw); return c ? `<div class="chart-card"><h3 class="sub-h">${t} netlerin</h3><div class="chart">${c}</div></div>` : ''; }).join('');
+    const charts = KINDS.map((t) => { const c = Deneme.chart(t, cw); return c ? `<div class="chart-card"><h3 class="sub-h">${t} netlerin</h3><div class="chart">${c}</div></div>` : ''; }).join('');
     const weak = Deneme.weakTopics();
-    const types = ['TYT', 'AYT'].filter((t) => lastOf(t));
+    const types = KINDS.filter((t) => lastOf(t));
     if (!types.includes(tableType)) tableType = types[0] || 'TYT';
 
     root.innerHTML = head + `
@@ -195,7 +201,7 @@ const DenemeUI = (() => {
   }
 
   function subjectTable(type) {
-    const t = Deneme.list().filter((e) => e.type === type);
+    const t = Deneme.list().filter((e) => Deneme.kind(e) === type);
     const last = t[t.length - 1];
     if (!last) return '';
     const prev = Deneme.previous(last);
@@ -219,7 +225,7 @@ const DenemeUI = (() => {
     return `<li><details class="deneme-item" data-id="${e.id}">
         <summary>
           <span class="d-date">${e.date.split('-').reverse().join('.')}</span>
-          <span class="type-tag" data-type="${e.type}">${U.esc(Deneme.label(e))}</span>
+          <span class="type-tag" data-type="${Deneme.kind(e)}">${U.esc(Deneme.label(e))}</span>
           <span class="d-name">${U.esc(e.name || 'Deneme')}</span>
           <span class="d-net">${Deneme.fmt(Deneme.total(e))} <small>net</small></span>${d > 0 ? `<small class="pos">+${Deneme.fmt(d)}</small>` : ''}
           <span class="chev">▾</span>
@@ -243,7 +249,7 @@ const DenemeUI = (() => {
     const card = App.openModal(`
       <h3>${existing ? '✏️ Denemeyi düzenle' : '📝 Deneme ekle'}</h3>
       <p class="sub">Doğru ve yanlış sayılarını gir; netin otomatik hesaplanır.</p>
-      <div class="seg" data-role="type">${['TYT', 'AYT', 'BRANS'].map((t) => `<button type="button" data-type="${t}">${t === 'BRANS' ? 'Branş' : t}</button>`).join('')}</div>
+      <div class="seg" data-role="type">${['TYT', 'AYT', 'BRANS'].map((t) => `<button type="button" data-type="${t}">${t === 'BRANS' ? 'Branş' : Deneme.typeName(t)}</button>`).join('')}</div>
       <div class="form-row two">
         <div><label>Tarih</label><input type="date" data-f="date" value="${e.date}"></div>
         <div><label>Adı / yayın</label><input data-f="name" maxlength="40" placeholder="Örn: 3D Türkiye geneli" value="${U.esc(e.name)}"></div>

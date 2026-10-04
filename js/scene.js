@@ -699,17 +699,78 @@ const Scene = (() => {
     return { elev, mins, sunrise: noon - 4 * H0, sunset: noon + 4 * H0, noon, noonElev };
   }
 
-  function moonPhase(date) {
-    const ref = Date.UTC(2000, 0, 6, 18, 14);
-    const syn = 29.530588853;
-    const p = (((date - ref) / 864e5) % syn + syn) % syn;
-    return p / syn; // 0 yeni ay, 0.5 dolunay
+  // ---------- Ay hesabı (Meeus'un düşük hassasiyetli formülleri; dakikalar içinde doğru) ----------
+  const RAD = Math.PI / 180, OBL = RAD * 23.4397;
+  const jdays = (date) => date / 864e5 - 0.5 + 2440588 - 2451545; // J2000'den beri gün
+  const ra = (l, b) => Math.atan2(Math.sin(l) * Math.cos(OBL) - Math.tan(b) * Math.sin(OBL), Math.cos(l));
+  const dec = (l, b) => Math.asin(Math.sin(b) * Math.cos(OBL) + Math.cos(b) * Math.sin(OBL) * Math.sin(l));
+  function moonCoords(d) {
+    const L = RAD * (218.316 + 13.176396 * d), M = RAD * (134.963 + 13.064993 * d), F = RAD * (93.272 + 13.22935 * d);
+    const l = L + RAD * 6.289 * Math.sin(M), b = RAD * 5.128 * Math.sin(F);
+    return { ra: ra(l, b), dec: dec(l, b), dist: 385001 - 20905 * Math.cos(M) };
   }
+  function sunCoords(d) {
+    const M = RAD * (357.5291 + 0.98560028 * d);
+    const C = RAD * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+    const L = M + C + RAD * 102.9372 + Math.PI;
+    return { ra: ra(L, 0), dec: dec(L, 0) };
+  }
+  // ufuk koordinatları: yükseklik (derece) ve güneyden batıya doğru azimut (derece, -180..180)
+  function moonSky(date) {
+    const { lat, lon } = Store.data.settings;
+    const d = jdays(date), c = moonCoords(d), phi = RAD * lat;
+    const H = RAD * (280.16 + 360.9856235 * d) + RAD * lon - c.ra;
+    let h = Math.asin(Math.sin(phi) * Math.sin(c.dec) + Math.cos(phi) * Math.cos(c.dec) * Math.cos(H));
+    const hr = Math.max(h, 0);
+    h += 0.0002967 / Math.tan(hr + 0.00312536 / (hr + 0.08901179)); // kırılma
+    const az = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(c.dec) * Math.cos(phi));
+    return { alt: h / RAD, az: az / RAD };
+  }
+  // evre: 0 yeni ay, 0.25 ilk dördün, 0.5 dolunay, 0.75 son dördün; fraction = aydınlık oranı
+  function moonIllum(date) {
+    const d = jdays(date), sc = sunCoords(d), mc = moonCoords(d), sd = 149598000;
+    const phi = Math.acos(U.clamp(Math.sin(sc.dec) * Math.sin(mc.dec) + Math.cos(sc.dec) * Math.cos(mc.dec) * Math.cos(sc.ra - mc.ra), -1, 1));
+    const inc = Math.atan2(sd * Math.sin(phi), mc.dist - sd * Math.cos(phi));
+    const ang = Math.atan2(Math.cos(sc.dec) * Math.sin(sc.ra - mc.ra), Math.sin(sc.dec) * Math.cos(mc.dec) - Math.cos(sc.dec) * Math.sin(mc.dec) * Math.cos(sc.ra - mc.ra));
+    return { fraction: (1 + Math.cos(inc)) / 2, phase: 0.5 + (0.5 * inc * (ang < 0 ? -1 : 1)) / Math.PI };
+  }
+  // önümüzdeki 24 saatte ilk doğuş ve batış (10 dakikalık adımlar + doğrusal ara değer)
+  function moonTimes(date) {
+    let rise = null, set = null, t0 = +date, a0 = moonSky(date).alt;
+    for (let i = 1; i <= 144 && !(rise && set); i++) {
+      const t1 = +date + i * 6e5, a1 = moonSky(new Date(t1)).alt;
+      if (a0 <= 0 && a1 > 0 && !rise) rise = new Date(t0 + (t1 - t0) * (-a0 / (a1 - a0)));
+      if (a0 > 0 && a1 <= 0 && !set) set = new Date(t0 + (t1 - t0) * (a0 / (a0 - a1)));
+      t0 = t1; a0 = a1;
+    }
+    return { rise, set };
+  }
+  const MOON_NAMES = [
+    [0.033, '🌑', 'Yeni ay'], [0.216, '🌒', 'Hilal'], [0.284, '🌓', 'İlk dördün'], [0.466, '🌔', 'Şişkin ay'],
+    [0.534, '🌕', 'Dolunay'], [0.716, '🌖', 'Şişkin ay'], [0.784, '🌗', 'Son dördün'], [0.967, '🌘', 'Hilal'], [1.01, '🌑', 'Yeni ay'],
+  ];
+  let moonVis = 1; // ay ufkun hemen altındayken yumuşak doğuş/batış
+  let moonIllumNow = moonIllum(new Date()).fraction;
 
   function arcPos(frac, peak) {
     const x = W * (0.06 + 0.88 * frac);
     const y = horizon + 4 - Math.sin(frac * Math.PI) * (horizon - 10) * peak;
     return [Math.round(x), Math.round(y)];
+  }
+
+  // sol üstteki saat kutusunun tuval koordinatlarındaki yeri
+  function hudBox() {
+    const el = wrap && wrap.querySelector('.hud-left');
+    if (!el || !scale || !cv) return null;
+    const r = el.getBoundingClientRect(), c = cv.getBoundingClientRect();
+    if (!r.width || !c.width) return null;
+    const k = W / c.width;
+    return { x0: (r.left - c.left) * k, y0: (r.top - c.top) * k, x1: (r.right - c.left) * k, y1: (r.bottom - c.top) * k };
+  }
+  function clearOf(pos, rad, b) {
+    if (!pos || !b) return pos;
+    const hidden = pos[0] + rad > b.x0 && pos[0] - rad < b.x1 && pos[1] + rad > b.y0 && pos[1] - rad < b.y1;
+    return hidden ? [Math.round(b.x1 + rad + 3), pos[1]] : pos;
   }
 
   // Saniyede bir: güneş, gece katsayısı, güneş/ay konumu; gökyüzü belirgin değiştiyse arka planı yenile
@@ -735,11 +796,16 @@ const Scene = (() => {
     const { mins, sunrise, sunset } = sun;
     sunPos = mins >= sunrise - 25 && mins <= sunset + 25
       ? arcPos((mins - sunrise) / (sunset - sunrise), U.clamp(sun.noonElev / 70, 0.45, 1)) : null;
-    const nightLen = 1440 - (sunset - sunrise);
-    let frac = null;
-    if (mins > sunset - 20) frac = (mins - sunset) / nightLen;
-    else if (mins < sunrise + 20) frac = (mins + 1440 - sunset) / nightLen;
-    moonPos = frac === null ? null : arcPos(U.clamp(frac, -0.05, 1.05), 0.8);
+    // gerçek ay: azimut sahnede soldan (doğu) sağa (batı), yükseklik güneşle aynı ölçekte
+    const m = moonSky(date);
+    moonVis = U.clamp((m.alt + 1.5) / 3, 0, 1);
+    moonPos = moonVis > 0 && moonIllumNow > 0.02
+      ? [Math.round(W * (0.5 + 0.44 * U.clamp(m.az / 120, -1, 1))), Math.round(horizon + 4 - U.clamp(m.alt / 70, -0.05, 1) * (horizon - 10))]
+      : null;
+    // saat kutusunun arkasında kalmasınlar: yükseklik aynı, kutunun hemen sağına
+    const box = hudBox();
+    sunPos = clearOf(sunPos, 8, box);
+    moonPos = clearOf(moonPos, 6, box);
     const d = Math.abs(sun.elev - bgElev);
     if (d > 0.5 || (time - bgAt > 45 && d > 0.02 && !(sun.elev < -20 && bgElev < -20))) bgDirty = true;
   }
@@ -1191,7 +1257,9 @@ const Scene = (() => {
     g.globalAlpha = 0.05;
     for (let k = 11; k > 6; k -= 2) disc(g, 12, 12, k, '#dfe6ff');
     // evre: ay diskindeki her piksel, gölge diskinin içindeyse karanlık
-    const ph = moonPhase(new Date());
+    const il = moonIllum(new Date());
+    moonIllumNow = il.fraction;
+    const ph = il.phase;
     const d = (ph < 0.5 ? ph : 1 - ph) * 2 * (r * 2 + 1);
     const sx = ph < 0.5 ? -d : d;
     const craters = { '-2,-1': 1, '-1,-1': 1, '-2,0': 1, '-1,0': 1, '1,2': 1, '2,-2': 1 };
@@ -1256,7 +1324,9 @@ const Scene = (() => {
 
   function drawSunMoon() {
     if (moonPos) {
-      ctx.globalAlpha = 1 - 0.6 * fx.cover * (fx.k ? wk : 0);
+      // gündüz gökyüzünde soluk, gece parlak; bulut örttükçe silikleşir
+      const day = 1 - U.clamp((light - 0.15) / 0.6, 0, 1) * 0.6;
+      ctx.globalAlpha = moonVis * day * (1 - 0.6 * fx.cover * (fx.k ? wk : 0));
       ctx.drawImage(moonCv, moonPos[0] - 12, moonPos[1] - 12);
     }
     if (sunPos) {
@@ -2092,5 +2162,11 @@ const Scene = (() => {
     },
     celebrate() { sparkles(L.x, groundY - 16, 30); hearts(L.x, groundY - 20, 6); L.vy = -80; },
     sunInfo() { return sun || solar(new Date()); },
+    // ayın evresi ve şu an gökyüzünde olup olmadığı (hava penceresi için)
+    moonInfo(date = new Date()) {
+      const il = moonIllum(date), m = moonSky(date);
+      const row = MOON_NAMES.find((x) => il.phase < x[0]) || MOON_NAMES[0];
+      return { phase: il.phase, fraction: il.fraction, emoji: row[1], name: row[2], up: m.alt > 0, alt: m.alt, az: m.az, ...moonTimes(date) };
+    },
   };
 })();

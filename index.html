@@ -309,14 +309,15 @@
             <summary>🎧 Müzik ve Spotify</summary>
             <ul>
               <li>Çalış ekranındaki <b>Müzik ve odak sesleri</b> kutusuna Spotify çalma listesi bağlantısı yapıştır; müzik uygulamadan çıkmadan çalar. Tarayıcıda Spotify'a giriş yaptıysan şarkıların tamamı çalar, yapmadıysan 30 saniyelik önizlemeler gelir.</li>
+              <li>Önizleme yerine tam şarkı istersen oynatıcının altındaki <b>Spotify uygulamasında aç</b>'a dokun; liste telefonundaki Spotify'da açılır.</li>
               <li><b>Kendi çalma listelerini</b> uygulamada görmek için (isteğe bağlı, bir kez yapılır):
                 <ol>
-                  <li><a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>'a Spotify hesabınla gir, <b>Create app</b> de.</li>
-                  <li><b>Redirect URI</b> olarak müzik kutusunda yazan adresi aynen ekle, <b>Web API</b>'yi seç ve kaydet.</li>
-                  <li>Uygulamanın <b>Settings → User Management</b> bölümüne kendi Spotify e-postanı ekle.</li>
+                  <li><a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>'a Spotify hesabıyla gir, <b>Create app</b> de. Spotify 2026'dan beri bu paneli açan hesabın <b>Premium</b> olmasını istiyor.</li>
+                  <li><b>Redirect URI</b> olarak müzik kutusunda yazan adresi aynen ekle (https ile başlamalı), <b>Web API</b>'yi seç ve kaydet.</li>
+                  <li>Uygulamanın <b>Settings → User Management</b> bölümüne kendi Spotify e-postanı ekle (en fazla 5 kişi eklenebilir).</li>
                   <li><b>Client ID</b>'yi kopyalayıp müzik kutusundaki alana yapıştır, <b>Spotify'a bağlan</b> de.</li>
                 </ol>
-                Sonra çalma listelerin müzik kutusunda listelenir; dokunduğun liste çalar.</li>
+                Sonra çalma listelerin müzik kutusunda listelenir; dokunduğun liste çalar. Bu adım şart değil: bağlantı yapıştırmak her zaman çalışır.</li>
               <li>Odak sesleri (yağmur, dalga, şömine, kütüphane…) müzikle birlikte ya da tek başına açılabilir.</li>
             </ul>
           </details>
@@ -332,7 +333,9 @@
             <summary>💾 Veriler, gizlilik ve yedek</summary>
             <ul>
               <li>Bütün verilerin sadece bu cihazda saklanır; kimse göremez, hesap yok.</li>
-              <li>Telefon değiştirirken Ayarlar → Veriler → <b>Dışa aktar</b>, yeni cihazda <b>İçe aktar</b>. Arada bir yedek almak iyi bir alışkanlık.</li>
+              <li>Ayarlar → Veriler → <b>Yedek al</b> ile verilerini bir dosyaya kaydet (telefonda paylaşım menüsü açılır: Dosyalar'a kaydet, Drive…). Ayda bir yedek almak iyi bir alışkanlık; bir aydır yedek yoksa sana nazikçe hatırlatırım.</li>
+              <li>Yeni cihazda <b>İçe aktar</b> de: <b>Birleştir</b> şimdiki verilerini korur ve yedekteki eksikleri ekler; <b>Tamamen değiştir</b> bu cihazı yedekteki hale getirir.</li>
+              <li>Uygulamayı Ana Ekrana eklemek verilerini de korur: tarayıcı sekmesinde uzun süre açılmayan sitelerin verilerini bazı tarayıcılar temizleyebilir.</li>
             </ul>
           </details>
           <details>
@@ -415,10 +418,11 @@
           </div>
           <div class="card">
             <h2>💾 Veriler</h2>
-            <p class="muted small">Veriler sadece bu cihazda saklanır. Telefon değiştirirken dışa aktar → içe aktar.</p>
+            <p class="muted small">Veriler sadece bu cihazda saklanır. Arada bir yedek al; yeni cihazda <b>İçe aktar</b> ile birleştirebilir ya da tamamen yükleyebilirsin.</p>
+            <p class="small backup-info" id="backup-info"></p>
             <div class="row">
-              <button class="btn soft" id="export">Dışa aktar</button>
-              <label class="btn soft">İçe aktar<input type="file" id="import" accept="application/json" hidden></label>
+              <button class="btn soft" id="export">Yedek al</button>
+              <label class="btn soft">İçe aktar<input type="file" id="import" accept="application/json,.json" hidden></label>
             </div>
             <button class="btn danger small-btn" id="reset">Her şeyi sıfırla</button>
           </div>

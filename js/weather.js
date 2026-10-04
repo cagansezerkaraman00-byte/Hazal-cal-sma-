@@ -202,7 +202,7 @@ const Weather = (() => {
     ],
     night: [
       'Gökyüzü açık, yıldızlar seninle ✨ Sakin bir gece tekrarı için harika.',
-      'Ay ve yıldızlar bu gece senin için parlıyor {name} 🌙',
+      'Gece gökyüzü bu akşam senin için parlıyor {name} ✨',
     ],
     cloudy: [
       'Hava bulutlu ☁️ Göz yormayan yumuşak bir ışık, odaklanmak için birebir.',
