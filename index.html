@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Luna ile Çalış</title>
+  <meta name="description" content="Kedi Luna ile yıldızlı bir ders çalışma uygulaması">
+  <meta name="theme-color" content="#0d1236">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Luna">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Sahne -->
+    <header class="scene">
+      <canvas id="sky" aria-label="Luna ve gökyüzü"></canvas>
+      <div class="hud">
+        <div class="hud-left">
+          <div id="hud-time" class="hud-time">--:--</div>
+          <div id="hud-date" class="hud-date"></div>
+          <div id="hud-greet" class="hud-greet"></div>
+        </div>
+        <div class="hud-right">
+          <div id="hud-sun" class="hud-chip"></div>
+          <button id="feed-btn" class="hud-chip btn-chip" title="Luna'ya balık ver">🐟 <span id="fish-count">0</span></button>
+          <div id="hud-streak" class="hud-chip" title="Çalışma serisi">🔥 0</div>
+        </div>
+      </div>
+      <div id="mini-timer" class="mini-timer hidden"></div>
+      <div id="bubble" class="bubble hidden"></div>
+    </header>
+
+    <!-- Sekmeler -->
+    <nav class="tabs" id="tabs">
+      <button data-tab="home" class="active"><span>🏠</span><b>Çalış</b></button>
+      <button data-tab="stats"><span>📊</span><b>İstatistik</b></button>
+      <button data-tab="report"><span>🔭</span><b>Rapor</b></button>
+      <button data-tab="tasks"><span>📝</span><b>Görevler</b></button>
+      <button data-tab="music"><span>🎧</span><b>Müzik</b></button>
+      <button data-tab="settings"><span>⚙️</span><b>Ayarlar</b></button>
+    </nav>
+
+    <main>
+      <!-- ÇALIŞ -->
+      <section class="tab active" id="tab-home">
+        <div class="grid">
+          <div class="card timer-card">
+            <div class="seg" id="kind-seg">
+              <button data-kind="pomodoro">🍅 Pomodoro</button>
+              <button data-kind="free">⏱️ Serbest</button>
+            </div>
+            <div class="phase" id="phase-label">Odak</div>
+            <div class="ring-wrap">
+              <svg viewBox="0 0 200 200" class="ring">
+                <circle cx="100" cy="100" r="88" class="ring-bg"/>
+                <circle cx="100" cy="100" r="88" class="ring-fg" id="ring-fg"/>
+              </svg>
+              <div class="ring-inner">
+                <div id="timer-time" class="timer-time">25:00</div>
+                <div id="timer-sub" class="timer-sub"></div>
+              </div>
+            </div>
+            <div class="dots" id="cycle-dots"></div>
+            <div class="subject-row">
+              <select id="subject-select" aria-label="Ders"></select>
+              <button class="icon-btn" id="add-subject-quick" title="Yeni ders">＋</button>
+            </div>
+            <div class="controls">
+              <button class="btn ghost" id="btn-reset" title="Sıfırla">↺</button>
+              <button class="btn primary big" id="btn-toggle">Başla</button>
+              <button class="btn ghost" id="btn-finish" title="Bitir ve kaydet">✓</button>
+            </div>
+          </div>
+
+          <div class="card today-card">
+            <h2>Bugün</h2>
+            <div class="goal">
+              <div class="goal-ring" id="goal-ring"><span id="goal-pct">0%</span></div>
+              <div>
+                <div class="big-num" id="today-min">0 dk</div>
+                <div class="muted" id="goal-text">Hedef: 3 sa</div>
+                <div class="muted small" id="today-sessions-count"></div>
+              </div>
+            </div>
+            <ul class="session-list" id="today-list"></ul>
+            <button class="btn soft wide" id="btn-manual">＋ Çalışmamı elle ekle</button>
+          </div>
+
+          <div class="card love-card" id="love-card"></div>
+
+          <div class="card quick-card">
+            <h2>Sıradaki görevler</h2>
+            <ul class="task-list compact" id="home-tasks"></ul>
+            <div id="home-exams"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- İSTATİSTİK -->
+      <section class="tab" id="tab-stats">
+        <div class="seg period" data-period-for="stats">
+          <button data-days="7" class="active">7 gün</button>
+          <button data-days="30">30 gün</button>
+          <button data-days="0">Tümü</button>
+        </div>
+        <div class="tiles" id="stat-tiles"></div>
+        <div class="grid">
+          <div class="card wide-card">
+            <h2>Günlük çalışma</h2>
+            <div class="bars" id="day-bars"></div>
+          </div>
+          <div class="card wide-card">
+            <h2>Saatlere göre verim <span class="muted small">(yükseklik: süre · renk: verim)</span></h2>
+            <div class="hours" id="hour-chart"></div>
+            <div class="legend"><span><i style="background:var(--r1)"></i>düşük</span><span><i style="background:var(--r3)"></i>orta</span><span><i style="background:var(--r5)"></i>yüksek</span><span><i style="background:var(--unrated)"></i>puansız</span></div>
+          </div>
+          <div class="card">
+            <h2>Dersler</h2>
+            <div id="subject-bars"></div>
+          </div>
+          <div class="card">
+            <h2>Haftanın günleri</h2>
+            <div class="bars small-bars" id="weekday-bars"></div>
+          </div>
+          <div class="card wide-card">
+            <h2>Yıldız haritan <span class="muted small">(son 16 hafta)</span></h2>
+            <div class="calendar" id="calendar"></div>
+          </div>
+          <div class="card wide-card">
+            <h2>Oturum geçmişi</h2>
+            <ul class="session-list history" id="history"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- RAPOR -->
+      <section class="tab" id="tab-report">
+        <div class="report-head card">
+          <div class="report-luna">🐈‍⬛</div>
+          <div>
+            <h2>Luna'nın Raporu</h2>
+            <p class="muted" id="report-intro"></p>
+          </div>
+        </div>
+        <div class="seg period" data-period-for="report">
+          <button data-days="7" class="active">Bu hafta</button>
+          <button data-days="30">30 gün</button>
+          <button data-days="0">Tümü</button>
+        </div>
+        <div class="tiles" id="report-highlights"></div>
+        <div class="grid">
+          <div class="card good"><h2>⭐ Güçlü yönlerin</h2><ul class="insights" id="rep-strengths"></ul></div>
+          <div class="card warn"><h2>🔧 Eksikler & düzeltmeler</h2><ul class="insights" id="rep-improve"></ul></div>
+          <div class="card tip"><h2>💡 Öneriler</h2><ul class="insights" id="rep-tips"></ul></div>
+          <div class="card">
+            <h2>📌 Tekrar listesi</h2>
+            <p class="muted small">Oturum sonunda "zorlandığım yerler" kısmına yazdıkların buraya düşer.</p>
+            <form class="inline-form" id="review-form">
+              <input id="review-input" placeholder="Tekrar edilecek konu…" maxlength="120">
+              <button class="btn primary">Ekle</button>
+            </form>
+            <ul class="task-list" id="review-list"></ul>
+          </div>
+          <div class="card wide-card">
+            <h2>🏅 Rozetler</h2>
+            <div class="badges" id="badges"></div>
+          </div>
+          <div class="card wide-card">
+            <h2>📓 Notların</h2>
+            <p class="muted small">Oturumlarda neler çalıştığını yazdıkların.</p>
+            <ul class="notes" id="notes-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- GÖREVLER -->
+      <section class="tab" id="tab-tasks">
+        <div class="grid">
+          <div class="card">
+            <h2>📝 Görevler</h2>
+            <form class="task-form" id="task-form">
+              <input id="task-input" placeholder="Örn: 20 türev sorusu çöz" maxlength="140" required>
+              <div class="row">
+                <select id="task-subject"></select>
+                <input type="date" id="task-due">
+                <button class="btn primary">Ekle</button>
+              </div>
+            </form>
+            <ul class="task-list" id="task-list"></ul>
+            <button class="btn soft small-btn" id="clear-done">Tamamlananları temizle</button>
+          </div>
+          <div class="card">
+            <h2>⏳ Sınav geri sayımı</h2>
+            <form class="task-form" id="exam-form">
+              <div class="row">
+                <input id="exam-name" placeholder="Sınav adı" maxlength="60" required>
+                <input type="date" id="exam-date" required>
+                <button class="btn primary">Ekle</button>
+              </div>
+            </form>
+            <div id="exam-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MÜZİK -->
+      <section class="tab" id="tab-music">
+        <div class="grid">
+          <div class="card wide-card">
+            <h2>🎧 Spotify</h2>
+            <p class="muted small">Spotify'da bir çalma listesi/albüm/şarkı açıp <b>Paylaş → Bağlantıyı kopyala</b> de, buraya yapıştır. Tarayıcıda Spotify hesabına giriş yaptıysan şarkıların tamamı çalar.</p>
+            <form class="inline-form" id="spotify-form">
+              <input id="spotify-input" placeholder="https://open.spotify.com/playlist/…">
+              <button class="btn primary">Yükle</button>
+            </form>
+            <div class="chips" id="spotify-presets"></div>
+            <div class="spotify-frame" id="spotify-frame"></div>
+          </div>
+          <div class="card wide-card">
+            <h2>🌧️ Odak sesleri</h2>
+            <p class="muted small">Müzikle birlikte ya da tek başına açabilirsin.</p>
+            <div class="mixer" id="mixer"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AYARLAR -->
+      <section class="tab" id="tab-settings">
+        <div class="grid">
+          <div class="card">
+            <h2>👤 Kişisel</h2>
+            <label class="field">Adın <input id="set-name" maxlength="30"></label>
+            <label class="field">Sevgilinin adı <input id="set-partner" maxlength="30" placeholder="Notlarda görünür"></label>
+            <label class="field">Günlük hedef (dakika) <input type="number" id="set-goal" min="10" max="900" step="10"></label>
+            <label class="field">Luna ne sıklıkla mesaj atsın? (dakika, 0 = kapalı) <input type="number" id="set-msg" min="0" max="240"></label>
+          </div>
+          <div class="card">
+            <h2>🍅 Zamanlayıcı</h2>
+            <div class="row3">
+              <label class="field">Odak <input type="number" id="set-focus" min="1" max="180"></label>
+              <label class="field">Kısa mola <input type="number" id="set-short" min="1" max="60"></label>
+              <label class="field">Uzun mola <input type="number" id="set-long" min="1" max="90"></label>
+            </div>
+            <label class="field">Kaç odakta bir uzun mola? <input type="number" id="set-every" min="2" max="10"></label>
+            <label class="switch"><input type="checkbox" id="set-autobreak"> Odak bitince mola otomatik başlasın</label>
+            <label class="switch"><input type="checkbox" id="set-autofocus"> Mola bitince odak otomatik başlasın</label>
+            <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
+            <label class="switch"><input type="checkbox" id="set-notify"> Bildirim gönder (sekme arka plandayken)</label>
+          </div>
+          <div class="card">
+            <h2>🐈 Luna</h2>
+            <p class="muted small">Luna'nın rengi</p>
+            <div class="swatches" id="luna-colors"></div>
+            <p class="muted small">Konum (güneşin doğuş/batış saati için)</p>
+            <div class="chips" id="city-chips"></div>
+            <button class="btn soft small-btn" id="use-location">📍 Konumumu kullan</button>
+            <p class="muted small" id="loc-text"></p>
+          </div>
+          <div class="card">
+            <h2>📚 Dersler</h2>
+            <ul class="subject-edit" id="subject-edit"></ul>
+            <form class="inline-form" id="subject-form">
+              <input id="subject-name" placeholder="Yeni ders adı" maxlength="30" required>
+              <input type="color" id="subject-color" value="#ffd84d">
+              <button class="btn primary">Ekle</button>
+            </form>
+          </div>
+          <div class="card wide-card">
+            <h2>💌 Sevgilinden notlar</h2>
+            <p class="muted small">Her satır bir not. Luna arada bunları söyler; günlük hedefe ulaşınca da günün gizli notu açılır.</p>
+            <textarea id="set-love" rows="7"></textarea>
+            <button class="btn primary" id="save-love">Notları kaydet</button>
+          </div>
+          <div class="card">
+            <h2>💾 Veriler</h2>
+            <p class="muted small">Veriler sadece bu cihazda saklanır. Telefon değiştirirken dışa aktar → içe aktar.</p>
+            <div class="row">
+              <button class="btn soft" id="export">Dışa aktar</button>
+              <label class="btn soft">İçe aktar<input type="file" id="import" accept="application/json" hidden></label>
+            </div>
+            <button class="btn danger small-btn" id="reset">Her şeyi sıfırla</button>
+          </div>
+        </div>
+        <p class="footer">Hazal için sevgiyle yapıldı ✨🐾</p>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal hidden" id="modal" role="dialog" aria-modal="true">
+    <div class="modal-card" id="modal-card"></div>
+  </div>
+  <div class="toasts" id="toasts"></div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/messages.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,982 @@
+/* Luna ile Çalış — arayüz ve her şeyi birbirine bağlayan kod. */
+
+(() => {
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const D = () => Store.data;
+  const save = () => Store.save();
+
+  let statsDays = 7, reportDays = 7;
+  let lastMsgAt = Date.now();
+  let wakeLock = null;
+  let currentTab = 'home';
+  let spotifyLoaded = false;
+
+  // ======================================================================
+  // Rozetler
+  // ======================================================================
+  const total = () => D().sessions.reduce((a, s) => a + s.minutes, 0);
+  const BADGES = [
+    { id: 'first', e: '🌱', n: 'İlk Adım', d: 'İlk oturumunu tamamla', test: () => D().sessions.length >= 1 },
+    { id: 'focus50', e: '🎯', n: 'Derin Odak', d: 'Tek oturumda 50+ dakika', test: () => D().sessions.some((s) => s.minutes >= 50) },
+    { id: 'goal', e: '🏆', n: 'Hedef Avcısı', d: 'Günlük hedefe ulaş', test: () => Stats.byDay(400).some((d) => d.minutes >= D().settings.dailyGoal) },
+    { id: 'streak3', e: '🔥', n: 'Isınıyoruz', d: '3 günlük seri', test: () => Stats.bestStreak() >= 3 },
+    { id: 'streak7', e: '☄️', n: 'Kuyruklu Yıldız', d: '7 günlük seri', test: () => Stats.bestStreak() >= 7 },
+    { id: 'streak30', e: '🌌', n: 'Galaksi', d: '30 günlük seri', test: () => Stats.bestStreak() >= 30 },
+    { id: 'early', e: '🌅', n: 'Erken Kuş', d: "08:00'den önce başla", test: () => D().sessions.some((s) => { const h = new Date(s.start).getHours(); return h >= 4 && h < 8; }) },
+    { id: 'owl', e: '🦉', n: 'Gece Kuşu', d: "23:00'ten sonra çalış", test: () => D().sessions.some((s) => { const h = new Date(s.start).getHours(); return h >= 23 || h < 4; }) },
+    { id: 'h10', e: '⭐', n: '10 Saat', d: 'Toplam 10 saat çalış', test: () => total() >= 600 },
+    { id: 'h50', e: '🌟', n: '50 Saat', d: 'Toplam 50 saat çalış', test: () => total() >= 3000 },
+    { id: 'h100', e: '💫', n: '100 Saat', d: 'Toplam 100 saat çalış', test: () => total() >= 6000 },
+    { id: 'pomo25', e: '🍅', n: 'Domates Bahçesi', d: '25 pomodoro tamamla', test: () => D().sessions.filter((s) => s.kind === 'pomodoro').length >= 25 },
+    { id: 'variety', e: '🌈', n: 'Çok Yönlü', d: 'Bir günde 3 farklı ders', test: () => {
+      const m = {};
+      for (const s of D().sessions) { const k = U.dateKey(s.start); (m[k] = m[k] || new Set()).add(s.subjectId); }
+      return Object.values(m).some((x) => x.size >= 3);
+    } },
+    { id: 'shine', e: '✨', n: 'Parlayan Yıldız', d: '5 oturumu 5⭐ verimle bitir', test: () => D().sessions.filter((s) => s.rating === 5).length >= 5 },
+    { id: 'tasks10', e: '✅', n: 'Görev Ustası', d: '10 görev tamamla', test: () => (D().tasksDone || 0) >= 10 },
+    { id: 'review5', e: '📌', n: 'Tekrar Kraliçesi', d: '5 tekrar konusunu bitir', test: () => (D().reviewDone || 0) >= 5 },
+    { id: 'luna10', e: '🐟', n: "Luna'nın Dostu", d: "Luna'yı 10 kez besle", test: () => D().fed >= 10 },
+  ];
+
+  function checkBadges() {
+    const fresh = BADGES.filter((b) => !D().badges[b.id] && b.test());
+    if (!fresh.length) return;
+    fresh.forEach((b) => { D().badges[b.id] = Date.now(); });
+    if (fresh.length <= 2) fresh.forEach((b) => toast(b.e, `Yeni rozet: ${b.n}`, b.d));
+    else toast('🏅', `${fresh.length} yeni rozet kazandın!`, fresh.map((b) => b.e).join(' ') + ' · Rapor sekmesinde');
+    Scene.celebrate();
+    save();
+    renderBadges();
+  }
+
+  // ======================================================================
+  // Genel yardımcılar
+  // ======================================================================
+  function toast(icon, title, sub = '', ms = 4200) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `<span class="e">${icon}</span><div>${U.esc(title)}${sub ? `<small>${U.esc(sub)}</small>` : ''}</div>`;
+    $('#toasts').appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, ms);
+  }
+
+  function say(kind, opts) {
+    Scene.say(Messages.get(kind), opts);
+    lastMsgAt = Date.now();
+  }
+  function sayLove() {
+    const n = Messages.love();
+    if (!n) return false;
+    const p = D().settings.partner;
+    Scene.say(p ? `${n} — ${p}` : n, { love: true });
+    lastMsgAt = Date.now();
+    return true;
+  }
+
+  async function notify(title, body) {
+    if (!D().settings.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!document.hidden) return;
+    try {
+      const reg = navigator.serviceWorker && (await navigator.serviceWorker.getRegistration());
+      if (reg) reg.showNotification(title, { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png' });
+      else new Notification(title, { body, icon: 'icons/icon-192.png' });
+    } catch (e) { /* bazı tarayıcılar desteklemez */ }
+  }
+
+  async function lockScreen(on) {
+    try {
+      if (on && 'wakeLock' in navigator && !wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      } else if (!on && wakeLock) {
+        await wakeLock.release();
+        wakeLock = null;
+      }
+    } catch (e) { wakeLock = null; }
+  }
+
+  const fmtDayMin = (m) => `${U.pad(Math.floor(((m % 1440) + 1440) % 1440 / 60))}:${U.pad(Math.floor(((m % 60) + 60) % 60))}`;
+
+  function subjectOptions(sel) {
+    return D().subjects.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')
+      + `<option value="" ${!sel ? 'selected' : ''}>Genel</option>`;
+  }
+
+  function ratingColor(r) {
+    if (!r) return 'var(--unrated)';
+    const i = U.clamp(Math.round(r), 1, 5);
+    return `var(--r${i})`;
+  }
+
+  // ======================================================================
+  // HUD (saat, tarih, güneş)
+  // ======================================================================
+  function renderHUD() {
+    const now = new Date();
+    $('#hud-time').textContent = U.hm(now);
+    $('#hud-date').textContent = `${now.getDate()} ${U.MONTHS[now.getMonth()]} ${U.DAYS[now.getDay()]}`;
+    $('#hud-greet').textContent = Messages.greeting(now);
+    const sun = Scene.sunInfo();
+    const m = now.getHours() * 60 + now.getMinutes();
+    $('#hud-sun').textContent = m >= sun.sunrise && m < sun.sunset
+      ? `🌇 Gün batımı ${fmtDayMin(sun.sunset)}`
+      : `🌅 Gün doğumu ${fmtDayMin(sun.sunrise)}`;
+    $('#fish-count').textContent = D().fish;
+    $('#hud-streak').textContent = `🔥 ${Stats.streak()} gün`;
+  }
+
+  // ======================================================================
+  // Sekmeler
+  // ======================================================================
+  function showTab(name) {
+    currentTab = name;
+    $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+    $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + name));
+    if (name === 'stats') renderStats();
+    if (name === 'report') renderReport();
+    if (name === 'tasks') renderTasks();
+    if (name === 'music') renderMusic();
+    if (name === 'settings') renderSettings();
+    if (name === 'home') renderHome();
+    try { localStorage.setItem('luna-tab', name); } catch (e) { /* yok say */ }
+  }
+
+  // ======================================================================
+  // Zamanlayıcı arayüzü
+  // ======================================================================
+  const PHASE_NAME = { focus: 'ODAK', short: 'KISA MOLA', long: 'UZUN MOLA' };
+
+  function renderTimer(s) {
+    $$('#kind-seg button').forEach((b) => b.classList.toggle('active', b.dataset.kind === s.kind));
+    const isBreak = s.phase !== 'focus';
+    const label = s.kind === 'free' && !isBreak ? 'SERBEST ODAK' : PHASE_NAME[s.phase];
+    $('#phase-label').textContent = label;
+    $('#phase-label').classList.toggle('break', isBreak);
+    const shown = s.countdown ? s.remaining : s.elapsed;
+    $('#timer-time').textContent = U.fmtClock(shown);
+    const subj = Store.subject(s.subjectId).name;
+    $('#timer-sub').textContent = s.running
+      ? (isBreak ? 'Dinlen biraz, Luna da esniyor 💛' : `${subj} çalışılıyor…`)
+      : s.fresh ? (isBreak ? 'Mola hazır' : 'Hazır olduğunda başla ✨') : 'Duraklatıldı';
+    const fg = $('#ring-fg');
+    fg.style.strokeDashoffset = 553 * (1 - s.progress);
+    fg.classList.toggle('break', isBreak);
+    // pomodoro noktaları
+    const every = D().settings.longEvery;
+    const done = s.phase === 'long' ? every : s.cycle % every;
+    $('#cycle-dots').innerHTML = s.kind === 'pomodoro' ? Array.from({ length: every }, (_, i) => `<i class="${i < done ? 'on' : ''}"></i>`).join('') : '';
+    $('#btn-toggle').textContent = s.running ? 'Duraklat' : s.fresh ? (isBreak ? 'Molayı başlat' : 'Başla') : 'Devam';
+    $('#btn-finish').title = isBreak ? 'Molayı bitir' : 'Bitir ve kaydet';
+    $('#btn-finish').disabled = s.fresh && !isBreak;
+    $('#btn-finish').style.opacity = s.fresh && !isBreak ? 0.4 : 1;
+    if ($('#subject-select').value !== s.subjectId) $('#subject-select').value = s.subjectId;
+    // mini sayaç ve sekme başlığı
+    const mini = $('#mini-timer');
+    if (!s.fresh) {
+      mini.classList.remove('hidden');
+      mini.textContent = `${isBreak ? '☕' : '📖'} ${U.fmtClock(shown)}${s.running ? '' : ' ⏸'}`;
+      document.title = `${U.fmtClock(shown)} · ${isBreak ? 'Mola' : subj} — Luna`;
+    } else {
+      mini.classList.add('hidden');
+      document.title = 'Luna ile Çalış';
+    }
+  }
+
+  function syncSceneMode() {
+    const s = Timer.state();
+    Scene.setMode(s.running ? (s.phase === 'focus' ? 'focus' : 'break') : 'idle');
+  }
+
+  const timerHandlers = {
+    onTick: renderTimer,
+    onStart(phase, resumed) {
+      syncSceneMode();
+      if (phase === 'focus') {
+        lockScreen(true);
+        if (!resumed) { say('start'); Sound.soft(); }
+      } else if (!resumed) say('breakStart');
+    },
+    onPause() { syncSceneMode(); lockScreen(false); },
+    onReset() { syncSceneMode(); lockScreen(false); },
+    onTooShort() { toast('⏱️', '1 dakikadan kısa oturumlar kaydedilmez'); },
+    onFocusDone(session) {
+      lockScreen(false);
+      Sound.chime();
+      session.id = U.uid();
+      session.note = ''; session.hard = ''; session.rating = null; session.mood = '';
+      D().sessions.push(session);
+      if (session.minutes >= 10) D().fish++;
+      save();
+      notify('Oturum tamamlandı! 🎉', `${U.fmtMin(session.minutes)} ${Store.subject(session.subjectId).name} çalıştın. Mola zamanı!`);
+      say('done');
+      openSessionModal(session, { justDone: true });
+      afterDataChange();
+      syncSceneMode();
+    },
+    onBreakStart(running) {
+      syncSceneMode();
+      if (running) setTimeout(() => say('breakStart'), 7000);
+    },
+    onBreakDone(running) {
+      Sound.chime();
+      notify('Mola bitti 🐾', 'Hazırsan yeni bir odak oturumuna başlayalım!');
+      say('breakEnd');
+      syncSceneMode();
+      if (running) lockScreen(true);
+    },
+  };
+
+  function bindTimer() {
+    $('#btn-toggle').addEventListener('click', () => Timer.toggle());
+    $('#btn-finish').addEventListener('click', () => Timer.finish());
+    $('#btn-reset').addEventListener('click', () => {
+      const s = Timer.state();
+      if (s.fresh) return;
+      if (s.phase === 'focus' && s.elapsed > 120 && !confirm('Bu oturum kaydedilmeden sıfırlansın mı?')) return;
+      Timer.reset();
+    });
+    $$('#kind-seg button').forEach((b) => b.addEventListener('click', () => {
+      const s = Timer.state();
+      if (s.kind === b.dataset.kind) return;
+      if (!s.fresh && !confirm('Mevcut sayaç sıfırlanacak. Devam edilsin mi?')) return;
+      Timer.setKind(b.dataset.kind);
+      syncSceneMode();
+    }));
+    $('#subject-select').addEventListener('change', (e) => Timer.setSubject(e.target.value));
+    $('#add-subject-quick').addEventListener('click', () => {
+      const name = prompt('Yeni ders adı:');
+      if (!name || !name.trim()) return;
+      const colors = ['#f7c948', '#7ad3ff', '#b48bff', '#7ee0a1', '#ff9eb5', '#ffab6b', '#6fe3d6'];
+      const s = { id: U.uid(), name: name.trim().slice(0, 30), color: colors[D().subjects.length % colors.length] };
+      D().subjects.push(s);
+      save();
+      renderSubjectSelects();
+      Timer.setSubject(s.id);
+      $('#subject-select').value = s.id;
+    });
+    // klavye: boşluk = başlat/duraklat
+    document.addEventListener('keydown', (e) => {
+      if (e.code !== 'Space' || currentTab !== 'home' || !$('#modal').classList.contains('hidden')) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) return;
+      e.preventDefault();
+      Timer.toggle();
+    });
+  }
+
+  function renderSubjectSelects() {
+    const cur = (D().timer && D().timer.subjectId) || '';
+    $('#subject-select').innerHTML = subjectOptions(cur);
+    $('#task-subject').innerHTML = subjectOptions('');
+  }
+
+  // ======================================================================
+  // Oturum penceresi (bitince not + verim, ya da elle ekleme / düzenleme)
+  // ======================================================================
+  function openSessionModal(session, opts = {}) {
+    const manual = !session;
+    const now = new Date();
+    const s = session || { start: now.getTime() - 3600000, minutes: 60, subjectId: Timer.state().subjectId, note: '', hard: '', rating: null, mood: '' };
+    const startD = new Date(s.start);
+    const title = opts.justDone ? '🎉 Oturum tamamlandı!' : manual ? '✍️ Çalışmamı ekle' : '✏️ Oturumu düzenle';
+    const sub = opts.justDone
+      ? `${U.fmtMin(s.minutes)} çalıştın, harikasın ${U.esc(D().settings.name)}! ${s.minutes >= 10 ? 'Luna sana bir balık verdi 🐟' : ''}`
+      : manual ? 'Uygulama dışında çalıştıysan buraya ekleyebilirsin.' : `${startD.toLocaleDateString('tr-TR')} ${U.hm(startD)}`;
+    let rating = s.rating || 0, mood = s.mood || '';
+
+    $('#modal-card').innerHTML = `
+      <h3>${title}</h3>
+      <p class="sub">${sub}</p>
+      <label>Ders</label>
+      <select id="m-subject">${subjectOptions(s.subjectId)}</select>
+      ${manual || !opts.justDone ? `
+        <div class="two">
+          <div><label>Tarih</label><input type="date" id="m-date" value="${U.dateKey(startD)}"></div>
+          <div><label>Başlangıç</label><input type="time" id="m-time" value="${U.hm(startD)}"></div>
+        </div>` : ''}
+      <label>Süre (dakika)</label>
+      <input type="number" id="m-min" min="1" max="720" value="${s.minutes}">
+      <label>Neler çalıştın? Önemli noktalar</label>
+      <textarea id="m-note" rows="3" placeholder="Örn: Türev kuralları, zincir kuralı, 30 soru çözdüm">${U.esc(s.note)}</textarea>
+      <label>Zorlandığın / tekrar etmen gereken yer <span class="muted small">(tekrar listesine eklenir)</span></label>
+      <input id="m-hard" placeholder="Örn: Trigonometrik türevler" value="${U.esc(s.hard)}">
+      <label>Verimin nasıldı?</label>
+      <div class="stars" id="m-stars">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-v="${i}">⭐</button>`).join('')}</div>
+      <label>Nasıl hissediyorsun?</label>
+      <div class="moods" id="m-moods">${['🤩', '🙂', '😐', '😴', '😣'].map((m) => `<button type="button" data-v="${m}">${m}</button>`).join('')}</div>
+      <div class="modal-actions">
+        ${!manual && !opts.justDone ? '<button class="btn danger" id="m-del">Sil</button><span style="flex:1"></span>' : ''}
+        <button class="btn soft" id="m-cancel">${opts.justDone ? 'Sonra' : 'Vazgeç'}</button>
+        <button class="btn primary" id="m-save">Kaydet</button>
+      </div>`;
+    const paint = () => {
+      $$('#m-stars button').forEach((b) => b.classList.toggle('on', +b.dataset.v <= rating));
+      $$('#m-moods button').forEach((b) => b.classList.toggle('on', b.dataset.v === mood));
+    };
+    paint();
+    $$('#m-stars button').forEach((b) => b.addEventListener('click', () => { rating = +b.dataset.v; paint(); }));
+    $$('#m-moods button').forEach((b) => b.addEventListener('click', () => { mood = mood === b.dataset.v ? '' : b.dataset.v; paint(); }));
+    $('#m-cancel').addEventListener('click', closeModal);
+    $('#m-del') && $('#m-del').addEventListener('click', () => {
+      if (!confirm('Bu oturum silinsin mi?')) return;
+      D().sessions = D().sessions.filter((x) => x.id !== s.id);
+      save(); closeModal(); afterDataChange();
+    });
+    $('#m-save').addEventListener('click', () => {
+      const minutes = U.clamp(parseInt($('#m-min').value, 10) || s.minutes, 1, 720);
+      let start = s.start;
+      if ($('#m-date')) {
+        const [y, mo, d] = $('#m-date').value.split('-').map(Number);
+        const [hh, mm] = ($('#m-time').value || '00:00').split(':').map(Number);
+        if (y) start = new Date(y, mo - 1, d, hh, mm).getTime();
+      }
+      const hardBefore = s.hard;
+      const target = manual ? { id: U.uid(), kind: 'manual' } : D().sessions.find((x) => x.id === s.id) || s;
+      Object.assign(target, {
+        subjectId: $('#m-subject').value,
+        start,
+        end: opts.justDone ? s.end : start + minutes * 60000,
+        minutes,
+        note: $('#m-note').value.trim(),
+        hard: $('#m-hard').value.trim(),
+        rating: rating || null,
+        mood,
+      });
+      if (manual) D().sessions.push(target);
+      D().sessions.sort((a, b) => a.start - b.start);
+      if (target.hard && target.hard !== hardBefore) {
+        D().review.unshift({ id: U.uid(), text: target.hard, subjectId: target.subjectId, created: Date.now(), done: false });
+      }
+      save();
+      closeModal();
+      if (opts.justDone && rating) {
+        if (rating >= 4) Scene.say(rating === 5 ? 'Beş yıldız! Muhteşemsin ✨' : 'Çok verimli bir oturumdu, bravo! ⭐');
+        else if (rating <= 2) Scene.say('Bazı oturumlar zor geçer, sorun değil. Kısa bir mola ver, sonra daha iyi olacak 💛');
+      } else if (manual) toast('📝', 'Çalışman eklendi', `${U.fmtMin(minutes)} · ${Store.subject(target.subjectId).name}`);
+      afterDataChange();
+    });
+    $('#modal').classList.remove('hidden');
+  }
+
+  function closeModal() { $('#modal').classList.add('hidden'); }
+
+  // ======================================================================
+  // Veri değişince
+  // ======================================================================
+  function checkGoal() {
+    const today = U.dateKey(new Date());
+    if (D().lastGoalDay === today) return;
+    if (Stats.minutesOn(new Date()) >= D().settings.dailyGoal) {
+      D().lastGoalDay = today;
+      save();
+      setTimeout(() => {
+        say('goal', { ms: 8000 });
+        Scene.celebrate();
+        Sound.chime();
+        toast('💌', 'Günün gizli notu açıldı!', 'Çalış sekmesinde seni bekliyor');
+      }, 2500);
+    }
+  }
+
+  function afterDataChange() {
+    checkGoal();
+    checkBadges();
+    renderHUD();
+    renderHome();
+    if (currentTab === 'stats') renderStats();
+    if (currentTab === 'report') renderReport();
+  }
+
+  // ======================================================================
+  // Ana sayfa
+  // ======================================================================
+  function sessionItem(s, withDate) {
+    const sub = Store.subject(s.subjectId);
+    const st = new Date(s.start), en = new Date(s.end || s.start + s.minutes * 60000);
+    return `<li data-id="${s.id}" style="cursor:pointer">
+      <span class="dot" style="background:${sub.color}"></span>
+      <div>
+        <div><b>${U.esc(sub.name)}</b> <span class="meta">${withDate ? `${st.getDate()} ${U.MONTHS[st.getMonth()].slice(0, 3)} · ` : ''}${U.hm(st)}–${U.hm(en)}</span></div>
+        ${s.note ? `<div class="note">${U.esc(s.note)}</div>` : ''}
+      </div>
+      <div class="right">${U.fmtMin(s.minutes)}<div class="meta">${s.rating ? '⭐'.repeat(s.rating) : ''} ${s.mood || ''}</div></div>
+    </li>`;
+  }
+
+  function loveNoteOfDay() {
+    const notes = D().loveNotes.filter((x) => x.trim());
+    if (!notes.length) return null;
+    const dayNum = Math.floor(U.dayStart(new Date()).getTime() / 864e5);
+    return notes[dayNum % notes.length];
+  }
+
+  function renderHome() {
+    const goal = D().settings.dailyGoal;
+    const mins = Stats.minutesOn(new Date());
+    const pct = Math.min(100, Math.round((mins / goal) * 100));
+    $('#goal-ring').style.setProperty('--p', pct);
+    $('#goal-ring').classList.toggle('done', pct >= 100);
+    $('#goal-pct').textContent = pct >= 100 ? '★' : pct + '%';
+    $('#today-min').textContent = U.fmtMin(mins);
+    $('#goal-text').textContent = pct >= 100 ? `Hedef (${U.fmtMin(goal)}) tamam! 🎉` : `Hedefe ${U.fmtMin(goal - mins)} kaldı`;
+    const todayKey = U.dateKey(new Date());
+    const today = D().sessions.filter((s) => U.dateKey(s.start) === todayKey).sort((a, b) => b.start - a.start);
+    $('#today-sessions-count').textContent = today.length ? `${today.length} oturum` : '';
+    $('#today-list').innerHTML = today.length ? today.map((s) => sessionItem(s)).join('') : '<li class="empty" style="display:block">Bugün henüz oturum yok. Luna seni bekliyor 🐾</li>';
+
+    // Gizli not
+    const note = loveNoteOfDay();
+    const partner = D().settings.partner;
+    const from = partner ? `${U.esc(partner)} sana` : 'Sevgilin sana';
+    if (!note) {
+      $('#love-card').innerHTML = `<h2>💌 Günün notu</h2><p class="muted">Ayarlar → Sevgilinden notlar kısmına not eklenince burada görünecek.</p>`;
+    } else if (pct >= 100) {
+      $('#love-card').innerHTML = `<h2>💌 Günün notu${partner ? ' · ' + U.esc(partner) : ''}</h2><div class="note-box">${U.esc(note)}</div>
+        <button class="btn soft small-btn" id="love-more">Bir not daha 💗</button>`;
+      $('#love-more').addEventListener('click', sayLove);
+    } else {
+      $('#love-card').innerHTML = `<h2>💌 Günün gizli notu</h2>
+        <div class="lock"><span>🔒</span><div><b>${from} bir not bıraktı!</b><div class="muted small">Günlük hedefine ulaşınca açılacak.</div></div></div>
+        <div class="progress"><i style="width:${pct}%"></i></div>`;
+    }
+
+    // Görevler ve sınavlar
+    const tasks = D().tasks.filter((t) => !t.done).sort(taskSort).slice(0, 5);
+    $('#home-tasks').innerHTML = tasks.length ? tasks.map(taskItem).join('') : '<li class="empty" style="display:block">Görev yok. Görevler sekmesinden ekleyebilirsin.</li>';
+    const exams = upcomingExams().slice(0, 2);
+    $('#home-exams').innerHTML = exams.length ? `<h2 style="margin-top:14px">⏳ Yaklaşan sınavlar</h2>` + exams.map(examItem).join('') : '';
+  }
+
+  // ======================================================================
+  // İstatistik
+  // ======================================================================
+  function renderStats() {
+    const sm = Stats.summary(statsDays);
+    const tiles = [
+      ['⏱️', 'Toplam', U.fmtMin(sm.total)],
+      ['📅', 'Günlük ortalama', U.fmtMin(sm.perDay)],
+      ['🍅', 'Oturum', sm.count],
+      ['⭐', 'Ortalama verim', sm.rating ? sm.rating.toFixed(1) + ' / 5' : '—'],
+      ['🔥', 'Seri / en iyi', `${sm.streak} / ${sm.bestStreak} gün`],
+      ['🌙', 'Çalışılan gün', sm.activeDays],
+    ];
+    $('#stat-tiles').innerHTML = tiles.map(([i, l, v]) => `<div class="tile"><div class="ic">${i}</div><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+
+    // günlük çubuklar
+    const n = statsDays === 7 ? 7 : 30;
+    const days = Stats.byDay(n);
+    const goal = D().settings.dailyGoal;
+    const max = Math.max(goal, ...days.map((d) => d.minutes), 1);
+    $('#day-bars').innerHTML = days.map((d, i) => {
+      const lbl = n === 7 ? U.DAYS_SHORT[d.date.getDay()] : (i % 5 === 0 || i === n - 1 ? d.date.getDate() : '');
+      return `<div class="b" title="${d.date.toLocaleDateString('tr-TR')} · ${U.fmtMin(d.minutes)}">
+        ${d.minutes && n === 7 ? `<em>${U.fmtMin(d.minutes)}</em>` : ''}
+        <i class="${d.minutes >= goal ? 'goal-hit' : ''}" style="height:${(d.minutes / max) * 100}%"></i><span>${lbl}</span></div>`;
+    }).join('');
+
+    // saatler
+    const hours = Stats.byHour(sm.list);
+    const hmax = Math.max(...hours.map((h) => h.minutes), 1);
+    $('#hour-chart').innerHTML = hours.map((h) => `<div class="h" title="${U.pad(h.hour)}:00 · ${U.fmtMin(h.minutes)}${h.rating ? ' · ' + h.rating.toFixed(1) + '⭐' : ''}">
+      <i style="height:${(h.minutes / hmax) * 100}%;background:${h.minutes ? ratingColor(h.rating) : '#ffffff10'}"></i>
+      <span>${h.hour % 3 === 0 ? h.hour : ''}</span></div>`).join('');
+
+    // dersler
+    const subs = Stats.bySubject(sm.list);
+    const smax = Math.max(...subs.map((s) => s.minutes), 1);
+    $('#subject-bars').innerHTML = subs.length ? subs.map((s) => `<div class="sbar">
+      <div class="top"><span>${U.esc(s.subject.name)}</span><span>${U.fmtMin(s.minutes)}${s.rating ? ' · ' + s.rating.toFixed(1) + '⭐' : ''}</span></div>
+      <div class="track"><i style="width:${(s.minutes / smax) * 100}%;background:${s.subject.color}"></i></div></div>`).join('') : '<p class="empty">Henüz veri yok</p>';
+
+    // haftanın günleri (Pzt'den başla)
+    const wd = Stats.byWeekday(sm.list);
+    const order = [1, 2, 3, 4, 5, 6, 0];
+    const wmax = Math.max(...wd.map((w) => w.avg), 1);
+    $('#weekday-bars').innerHTML = order.map((i) => {
+      const w = wd[i];
+      return `<div class="b" title="${U.DAYS[i]} · ortalama ${U.fmtMin(w.avg)}"><i style="height:${(w.avg / wmax) * 100}%;${w.rating ? 'background:' + ratingColor(w.rating) : ''}"></i><span>${U.DAYS_SHORT[i]}</span></div>`;
+    }).join('');
+
+    renderCalendar();
+
+    const hist = sm.list.slice().sort((a, b) => b.start - a.start).slice(0, 200);
+    $('#history').innerHTML = hist.length ? hist.map((s) => sessionItem(s, true)).join('') : '<li class="empty" style="display:block">Bu dönemde oturum yok</li>';
+  }
+
+  function renderCalendar() {
+    const goal = D().settings.dailyGoal;
+    const map = {};
+    for (const s of D().sessions) { const k = U.dateKey(s.start); map[k] = (map[k] || 0) + s.minutes; }
+    const today = U.dayStart(new Date());
+    const dow = (today.getDay() + 6) % 7; // Pzt = 0
+    const start = U.addDays(today, -dow - 15 * 7);
+    let html = '';
+    for (let i = 0; i < 16 * 7; i++) {
+      const d = U.addDays(start, i);
+      const k = U.dateKey(d);
+      const m = map[k] || 0;
+      const r = m / goal;
+      const lv = !m ? '' : r < 0.25 ? 'l1' : r < 0.6 ? 'l2' : r < 1 ? 'l3' : 'l4';
+      const cls = [lv, k === U.dateKey(today) ? 'today' : '', d > today ? 'future' : ''].join(' ');
+      html += `<div class="c ${cls}" title="${d.toLocaleDateString('tr-TR')} · ${U.fmtMin(m)}"></div>`;
+    }
+    $('#calendar').innerHTML = html;
+  }
+
+  // ======================================================================
+  // Rapor
+  // ======================================================================
+  function renderReport() {
+    const r = Stats.report(reportDays);
+    const name = D().settings.name || 'canım';
+    const period = reportDays === 7 ? 'bu haftaki' : reportDays === 30 ? 'son 30 günlük' : 'tüm';
+    $('#report-intro').textContent = `${name}, ${period} çalışmalarını inceledim. İşte gözlemlerim 🐾`;
+    $('#report-highlights').innerHTML = r.highlights.map((h) => `<div class="tile"><div class="ic">${h.icon}</div><div class="v">${U.esc(h.value)}</div><div class="l">${U.esc(h.label)}</div></div>`).join('');
+    const li = (arr) => arr.map((x) => `<li>${U.esc(x)}</li>`).join('') || '<li class="muted">—</li>';
+    $('#rep-strengths').innerHTML = li(r.strengths);
+    $('#rep-improve').innerHTML = li(r.improve);
+    $('#rep-tips').innerHTML = li(r.tips);
+    renderReview();
+    renderBadges();
+    const notes = Stats.inRange(reportDays).filter((s) => s.note || s.hard).sort((a, b) => b.start - a.start).slice(0, 100);
+    $('#notes-list').innerHTML = notes.length ? notes.map((s) => {
+      const d = new Date(s.start);
+      return `<li><div class="meta">${d.getDate()} ${U.MONTHS[d.getMonth()]} · ${U.hm(d)} · <b style="color:${Store.subject(s.subjectId).color}">${U.esc(Store.subject(s.subjectId).name)}</b> · ${U.fmtMin(s.minutes)} ${s.rating ? '· ' + s.rating + '⭐' : ''}</div>
+        ${s.note ? `<div>${U.esc(s.note)}</div>` : ''}${s.hard ? `<div class="hard">⚠️ ${U.esc(s.hard)}</div>` : ''}</li>`;
+    }).join('') : '<li class="empty">Oturum sonunda not yazdıkça burada birikecek.</li>';
+  }
+
+  function renderReview() {
+    const list = D().review.slice().sort((a, b) => a.done - b.done || b.created - a.created);
+    $('#review-list').innerHTML = list.length ? list.map((r) => {
+      const sub = Store.subject(r.subjectId);
+      return `<li class="${r.done ? 'done' : ''}" data-id="${r.id}">
+        <input type="checkbox" class="check" ${r.done ? 'checked' : ''}>
+        <span class="t">${U.esc(r.text)}</span>
+        ${r.subjectId ? `<span class="tag" style="background:${sub.color}">${U.esc(sub.name)}</span>` : ''}
+        <button class="x" title="Sil">✕</button></li>`;
+    }).join('') : '<li class="empty" style="display:block">Tekrar listesi boş ✨</li>';
+  }
+
+  function renderBadges() {
+    $('#badges').innerHTML = BADGES.map((b) => {
+      const on = D().badges[b.id];
+      return `<div class="badge ${on ? 'on' : ''}" title="${on ? new Date(on).toLocaleDateString('tr-TR') + ' tarihinde kazanıldı' : 'Henüz kazanılmadı'}">
+        <div class="e">${b.e}</div><div class="n">${b.n}</div><div class="d">${b.d}</div></div>`;
+    }).join('');
+  }
+
+  // ======================================================================
+  // Görevler & sınavlar
+  // ======================================================================
+  function taskSort(a, b) {
+    if (a.done !== b.done) return a.done - b.done;
+    if (a.due && b.due) return a.due.localeCompare(b.due);
+    if (a.due) return -1;
+    if (b.due) return 1;
+    return b.created - a.created;
+  }
+  function taskItem(t) {
+    const sub = Store.subject(t.subjectId);
+    const late = !t.done && t.due && t.due < U.dateKey(new Date());
+    const dueTxt = t.due ? (t.due === U.dateKey(new Date()) ? 'Bugün' : new Date(t.due + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })) : '';
+    return `<li class="${t.done ? 'done' : ''}" data-id="${t.id}">
+      <input type="checkbox" class="check" ${t.done ? 'checked' : ''}>
+      <span class="t">${U.esc(t.text)}</span>
+      ${t.subjectId ? `<span class="tag" style="background:${sub.color}">${U.esc(sub.name)}</span>` : ''}
+      ${dueTxt ? `<span class="due ${late ? 'late' : ''}">${dueTxt}</span>` : ''}
+      <button class="x" title="Sil">✕</button></li>`;
+  }
+  function upcomingExams() {
+    return D().exams
+      .map((e) => ({ ...e, days: Math.ceil((new Date(e.date + 'T00:00:00') - U.dayStart(new Date())) / 864e5) }))
+      .filter((e) => e.days >= 0)
+      .sort((a, b) => a.days - b.days);
+  }
+  function examItem(e) {
+    return `<div class="exam ${e.days <= 7 ? 'soon' : ''}" data-id="${e.id}">
+      <div class="days">${e.days === 0 ? 'BUGÜN' : e.days}<small>${e.days === 0 ? 'başarılar!' : 'gün kaldı'}</small></div>
+      <div class="nm">${U.esc(e.name)}<div class="muted small">${new Date(e.date + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })}</div></div>
+      <button class="x icon-btn" title="Sil">✕</button></div>`;
+  }
+
+  function renderTasks() {
+    const list = D().tasks.slice().sort(taskSort);
+    $('#task-list').innerHTML = list.length ? list.map(taskItem).join('') : '<li class="empty" style="display:block">Henüz görev yok. Küçük ve net görevler yaz: "10 paragraf sorusu" gibi.</li>';
+    const exams = upcomingExams();
+    const past = D().exams.length - exams.length;
+    $('#exam-list').innerHTML = (exams.length ? exams.map(examItem).join('') : '<p class="empty">Yaklaşan sınav yok</p>')
+      + (past ? `<p class="muted small">${past} geçmiş sınav gizlendi.</p>` : '');
+  }
+
+  function bindTasks() {
+    $('#task-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = $('#task-input').value.trim();
+      if (!text) return;
+      D().tasks.push({ id: U.uid(), text, subjectId: $('#task-subject').value, due: $('#task-due').value || '', done: false, created: Date.now() });
+      save();
+      $('#task-input').value = '';
+      renderTasks(); renderHome();
+    });
+    const onTaskClick = (e) => {
+      const li = e.target.closest('li[data-id]');
+      if (!li) return;
+      const t = D().tasks.find((x) => x.id === li.dataset.id);
+      if (!t) return;
+      if (e.target.classList.contains('x')) {
+        D().tasks = D().tasks.filter((x) => x.id !== t.id);
+      } else if (e.target.classList.contains('check')) {
+        t.done = e.target.checked;
+        t.doneAt = t.done ? Date.now() : null;
+        D().tasksDone = Math.max(0, (D().tasksDone || 0) + (t.done ? 1 : -1));
+        if (t.done) { Sound.soft(); Scene.say(U.pick(['Bir görev daha bitti! ✅', 'Tik! Harikasın 🐾', 'Listeden bir tane eksildi, süper!'])); }
+      } else return;
+      save(); renderTasks(); renderHome(); checkBadges();
+    };
+    $('#task-list').addEventListener('click', onTaskClick);
+    $('#home-tasks').addEventListener('click', onTaskClick);
+    $('#clear-done').addEventListener('click', () => {
+      D().tasks = D().tasks.filter((t) => !t.done);
+      save(); renderTasks(); renderHome();
+    });
+    $('#exam-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('#exam-name').value.trim(), date = $('#exam-date').value;
+      if (!name || !date) return;
+      D().exams.push({ id: U.uid(), name, date });
+      save();
+      $('#exam-name').value = ''; $('#exam-date').value = '';
+      renderTasks(); renderHome();
+    });
+    const onExam = (e) => {
+      if (!e.target.classList.contains('x')) return;
+      const el = e.target.closest('[data-id]');
+      if (!el || !confirm('Bu sınav silinsin mi?')) return;
+      D().exams = D().exams.filter((x) => x.id !== el.dataset.id);
+      save(); renderTasks(); renderHome();
+    };
+    $('#exam-list').addEventListener('click', onExam);
+    $('#home-exams').addEventListener('click', onExam);
+
+    // tekrar listesi
+    $('#review-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = $('#review-input').value.trim();
+      if (!text) return;
+      D().review.unshift({ id: U.uid(), text, subjectId: '', created: Date.now(), done: false });
+      save(); $('#review-input').value = ''; renderReview();
+    });
+    $('#review-list').addEventListener('click', (e) => {
+      const li = e.target.closest('li[data-id]');
+      if (!li) return;
+      const r = D().review.find((x) => x.id === li.dataset.id);
+      if (!r) return;
+      if (e.target.classList.contains('x')) D().review = D().review.filter((x) => x.id !== r.id);
+      else if (e.target.classList.contains('check')) {
+        r.done = e.target.checked;
+        D().reviewDone = Math.max(0, (D().reviewDone || 0) + (r.done ? 1 : -1));
+        if (r.done) Scene.say('Bir eksik daha kapandı! 📌✨');
+      } else return;
+      save(); renderReview(); checkBadges();
+    });
+  }
+
+  // ======================================================================
+  // Müzik
+  // ======================================================================
+  const PRESETS = [
+    ['☕ Lofi', 'https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn'],
+    ['🎹 Sakin Piyano', 'https://open.spotify.com/playlist/37i9dQZF1DX4sWSpwq3LiO'],
+    ['🧠 Derin Odak', 'https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ'],
+  ];
+  function spotifyEmbed(url) {
+    const m = String(url).match(/(?:open\.spotify\.com\/(?:intl-[a-z-]+\/)?(?:embed\/)?|spotify:)(playlist|album|track|artist|episode|show)[/:]([A-Za-z0-9]+)/);
+    return m ? `https://open.spotify.com/embed/${m[1]}/${m[2]}?utm_source=generator&theme=0` : null;
+  }
+  function loadSpotify() {
+    const src = spotifyEmbed(D().settings.spotify);
+    $('#spotify-frame').innerHTML = src
+      ? `<iframe src="${src}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify"></iframe>`
+      : '<p class="empty">Geçerli bir Spotify bağlantısı yapıştır.</p>';
+    $$('#spotify-presets .chip').forEach((c) => c.classList.toggle('active', c.dataset.url === D().settings.spotify));
+    spotifyLoaded = true;
+  }
+  function renderMusic() {
+    if (!$('#spotify-presets').children.length) {
+      $('#spotify-presets').innerHTML = PRESETS.map(([n, u]) => `<button class="chip" data-url="${u}">${n}</button>`).join('');
+      $('#mixer').innerHTML = [
+        ['yagmur', '🌧️', 'Yağmur'], ['dalga', '🌊', 'Dalgalar'], ['somine', '🔥', 'Şömine'],
+        ['kahverengi', '🟤', 'Kahverengi gürültü'], ['beyaz', '⚪', 'Beyaz gürültü'],
+      ].map(([k, e, n]) => `<div class="mix"><span class="e">${e}</span><div><div class="n">${n}</div><input type="range" min="0" max="100" value="0" data-kind="${k}" aria-label="${n}"></div></div>`).join('');
+    }
+    $('#spotify-input').value = D().settings.spotify;
+    if (!spotifyLoaded) loadSpotify();
+  }
+  function bindMusic() {
+    $('#spotify-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const v = $('#spotify-input').value.trim();
+      if (!spotifyEmbed(v)) { toast('🎧', 'Bu bir Spotify bağlantısına benzemiyor', 'open.spotify.com/… ile başlayan bağlantıyı yapıştır'); return; }
+      D().settings.spotify = v; save(); loadSpotify();
+    });
+    $('#spotify-presets').addEventListener('click', (e) => {
+      const c = e.target.closest('.chip');
+      if (!c) return;
+      D().settings.spotify = c.dataset.url; save();
+      $('#spotify-input').value = c.dataset.url;
+      loadSpotify();
+    });
+    $('#mixer').addEventListener('input', (e) => {
+      if (e.target.dataset.kind) Sound.setAmbient(e.target.dataset.kind, e.target.value / 100);
+    });
+  }
+
+  // ======================================================================
+  // Ayarlar
+  // ======================================================================
+  const CITIES = [
+    ['İstanbul', 41.01, 28.97], ['Ankara', 39.93, 32.86], ['İzmir', 38.42, 27.14], ['Bursa', 40.19, 29.06],
+    ['Antalya', 36.9, 30.7], ['Eskişehir', 39.78, 30.52], ['Konya', 37.87, 32.48], ['Trabzon', 41.0, 39.72],
+  ];
+  const COLOR_NAMES = { gece: 'Siyah', gri: 'Gri', turuncu: 'Turuncu', beyaz: 'Beyaz', krem: 'Krem' };
+
+  function renderSettings() {
+    const s = D().settings;
+    $('#set-name').value = s.name;
+    $('#set-partner').value = s.partner;
+    $('#set-goal').value = s.dailyGoal;
+    $('#set-msg').value = s.msgInterval;
+    $('#set-focus').value = s.focus;
+    $('#set-short').value = s.short;
+    $('#set-long').value = s.long;
+    $('#set-every').value = s.longEvery;
+    $('#set-autobreak').checked = s.autoBreak;
+    $('#set-autofocus').checked = s.autoFocus;
+    $('#set-sound').checked = s.sound;
+    $('#set-notify').checked = s.notify && 'Notification' in window && Notification.permission === 'granted';
+    $('#set-love').value = D().loveNotes.join('\n');
+    $('#luna-colors').innerHTML = Scene.palettes.map((p) => `<button class="swatch ${p === s.lunaColor ? 'active' : ''}" data-p="${p}" style="background:${Scene.paletteColor(p)}" title="${COLOR_NAMES[p] || p}">${COLOR_NAMES[p] || p}</button>`).join('');
+    $('#city-chips').innerHTML = CITIES.map(([n, la, lo]) => `<button class="chip ${Math.abs(la - s.lat) < 0.05 && Math.abs(lo - s.lon) < 0.05 ? 'active' : ''}" data-lat="${la}" data-lon="${lo}">${n}</button>`).join('');
+    const sun = Scene.sunInfo();
+    $('#loc-text').textContent = `Şu an: ${s.lat.toFixed(2)}, ${s.lon.toFixed(2)} · Gün doğumu ${fmtDayMin(sun.sunrise)} · Gün batımı ${fmtDayMin(sun.sunset)}`;
+    renderSubjectEdit();
+  }
+
+  function renderSubjectEdit() {
+    $('#subject-edit').innerHTML = D().subjects.map((s) => `<li data-id="${s.id}">
+      <input type="color" value="${s.color}" data-f="color">
+      <input value="${U.esc(s.name)}" data-f="name" maxlength="30">
+      <button class="icon-btn" data-f="del" title="Sil">🗑️</button></li>`).join('');
+  }
+
+  function bindSettings() {
+    const num = (id, key, min, max) => $(id).addEventListener('change', (e) => {
+      const v = U.clamp(parseInt(e.target.value, 10) || D().settings[key], min, max);
+      D().settings[key] = v; e.target.value = v; save();
+      renderHome(); Timer.state(); // sayaç yeni süreyi bir sonraki tick'te gösterir
+    });
+    num('#set-goal', 'dailyGoal', 10, 900);
+    num('#set-msg', 'msgInterval', 0, 240);
+    num('#set-focus', 'focus', 1, 180);
+    num('#set-short', 'short', 1, 60);
+    num('#set-long', 'long', 1, 90);
+    num('#set-every', 'longEvery', 2, 10);
+    $('#set-name').addEventListener('change', (e) => { D().settings.name = e.target.value.trim() || 'Hazal'; save(); renderHUD(); renderFooter(); });
+    $('#set-partner').addEventListener('change', (e) => { D().settings.partner = e.target.value.trim(); save(); renderHome(); });
+    const bool = (id, key) => $(id).addEventListener('change', (e) => { D().settings[key] = e.target.checked; save(); });
+    bool('#set-autobreak', 'autoBreak');
+    bool('#set-autofocus', 'autoFocus');
+    bool('#set-sound', 'sound');
+    $('#set-notify').addEventListener('change', async (e) => {
+      if (e.target.checked) {
+        if (!('Notification' in window)) { toast('🔕', 'Bu tarayıcı bildirimleri desteklemiyor'); e.target.checked = false; return; }
+        const p = await Notification.requestPermission();
+        if (p !== 'granted') { toast('🔕', 'Bildirim izni verilmedi'); e.target.checked = false; D().settings.notify = false; save(); return; }
+      }
+      D().settings.notify = e.target.checked; save();
+    });
+    $('#luna-colors').addEventListener('click', (e) => {
+      const b = e.target.closest('.swatch');
+      if (!b) return;
+      D().settings.lunaColor = b.dataset.p; save();
+      Scene.setPalette(b.dataset.p);
+      renderSettings();
+      Scene.say('Yeni rengimi beğendin mi? 😸');
+    });
+    $('#city-chips').addEventListener('click', (e) => {
+      const c = e.target.closest('.chip');
+      if (!c) return;
+      D().settings.lat = +c.dataset.lat; D().settings.lon = +c.dataset.lon; save();
+      renderSettings(); renderHUD();
+    });
+    $('#use-location').addEventListener('click', () => {
+      if (!navigator.geolocation) { toast('📍', 'Konum desteklenmiyor'); return; }
+      navigator.geolocation.getCurrentPosition((p) => {
+        D().settings.lat = +p.coords.latitude.toFixed(3); D().settings.lon = +p.coords.longitude.toFixed(3); save();
+        renderSettings(); renderHUD(); toast('📍', 'Konum güncellendi');
+      }, () => toast('📍', 'Konum alınamadı'));
+    });
+    // dersler
+    $('#subject-edit').addEventListener('change', (e) => {
+      const li = e.target.closest('li'); if (!li) return;
+      const s = D().subjects.find((x) => x.id === li.dataset.id); if (!s) return;
+      if (e.target.dataset.f === 'name' && e.target.value.trim()) s.name = e.target.value.trim();
+      if (e.target.dataset.f === 'color') s.color = e.target.value;
+      save(); renderSubjectSelects();
+    });
+    $('#subject-edit').addEventListener('click', (e) => {
+      if (e.target.dataset.f !== 'del') return;
+      const li = e.target.closest('li');
+      const s = D().subjects.find((x) => x.id === li.dataset.id);
+      if (!s || !confirm(`"${s.name}" dersi silinsin mi? (Geçmiş oturumlar "Genel" olarak kalır)`)) return;
+      D().subjects = D().subjects.filter((x) => x.id !== s.id);
+      if (Timer.state().subjectId === s.id) Timer.setSubject(D().subjects[0] ? D().subjects[0].id : '');
+      save(); renderSubjectEdit(); renderSubjectSelects();
+    });
+    $('#subject-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = $('#subject-name').value.trim();
+      if (!name) return;
+      D().subjects.push({ id: U.uid(), name, color: $('#subject-color').value });
+      save(); $('#subject-name').value = '';
+      renderSubjectEdit(); renderSubjectSelects();
+    });
+    $('#save-love').addEventListener('click', () => {
+      D().loveNotes = $('#set-love').value.split('\n').map((x) => x.trim()).filter(Boolean);
+      save(); renderHome(); toast('💌', 'Notlar kaydedildi');
+    });
+    // veri
+    $('#export').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(D(), null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `luna-yedek-${U.dateKey(new Date())}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    $('#import').addEventListener('change', (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const obj = JSON.parse(r.result);
+          if (!obj || !Array.isArray(obj.sessions)) throw new Error('format');
+          if (!confirm(`${obj.sessions.length} oturumluk yedek yüklensin mi? Mevcut veriler değişecek.`)) return;
+          Store.importJSON(obj);
+          location.reload();
+        } catch (err) { toast('⚠️', 'Dosya okunamadı', 'Luna yedeği olduğundan emin ol'); }
+      };
+      r.readAsText(f);
+      e.target.value = '';
+    });
+    $('#reset').addEventListener('click', () => {
+      if (!confirm('Bütün oturumlar, görevler ve ayarlar silinecek. Emin misin?')) return;
+      if (!confirm('Gerçekten emin misin? Bu geri alınamaz.')) return;
+      Store.reset(); location.reload();
+    });
+  }
+
+  function renderFooter() {
+    $('.footer').textContent = `${D().settings.name || 'Sana'} için sevgiyle yapıldı ✨🐾`;
+  }
+
+  // ======================================================================
+  // Luna etkileşimleri ve periyodik mesajlar
+  // ======================================================================
+  function bindLuna() {
+    $('#feed-btn').addEventListener('click', () => {
+      if (D().fish <= 0) { say('noFish'); return; }
+      D().fish--; D().fed++; save();
+      Scene.feed();
+      renderHUD();
+      setTimeout(() => { say('fed'); Sound.meow(); }, 1800);
+      checkBadges();
+    });
+  }
+
+  function periodic() {
+    const iv = D().settings.msgInterval;
+    if (!iv || document.hidden || !$('#modal').classList.contains('hidden')) return;
+    if (Date.now() - lastMsgAt < iv * 60000) return;
+    const s = Timer.state();
+    if (Math.random() < 0.3 && sayLove()) return;
+    if (s.running && s.phase === 'focus') say('during');
+    else if (s.running) say('breakStart');
+    else say(Messages.timeOfDay());
+  }
+
+  function greetOnOpen() {
+    const ss = D().sessions;
+    setTimeout(() => {
+      if (!ss.length) say('welcome', { ms: 9000 });
+      else if (Date.now() - ss[ss.length - 1].start > 3 * 864e5) say('comeback');
+      else say(Messages.timeOfDay());
+    }, 1200);
+  }
+
+  // ======================================================================
+  // Başlat
+  // ======================================================================
+  function init() {
+    Scene.init($('#sky'), $('#bubble'), {
+      onPoke() { Sound.meow(); say('poke'); },
+    });
+    renderSubjectSelects();
+    Timer.init(timerHandlers);
+    syncSceneMode();
+    if (Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
+
+    $$('#tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+    $$('.seg.period').forEach((seg) => seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      $$('button', seg).forEach((x) => x.classList.toggle('active', x === b));
+      if (seg.dataset.periodFor === 'stats') { statsDays = +b.dataset.days; renderStats(); }
+      else { reportDays = +b.dataset.days; renderReport(); }
+    }));
+    $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+    const openSession = (e) => {
+      const li = e.target.closest('li[data-id]');
+      if (!li) return;
+      const s = D().sessions.find((x) => x.id === li.dataset.id);
+      if (s) openSessionModal(s);
+    };
+    $('#today-list').addEventListener('click', openSession);
+    $('#history').addEventListener('click', openSession);
+    $('#btn-manual').addEventListener('click', () => openSessionModal(null));
+
+    bindTimer();
+    bindTasks();
+    bindMusic();
+    bindSettings();
+    bindLuna();
+
+    renderHUD();
+    renderHome();
+    renderFooter();
+    setInterval(renderHUD, 1000);
+    setInterval(periodic, 30000);
+    let lastDay = U.dateKey(new Date());
+    setInterval(() => { // gece yarısı geçince günü yenile
+      const k = U.dateKey(new Date());
+      if (k !== lastDay) { lastDay = k; renderHome(); }
+    }, 60000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
+    });
+
+    let saved = 'home';
+    try { saved = localStorage.getItem('luna-tab') || 'home'; } catch (e) { /* yok say */ }
+    if ($('#tab-' + saved)) showTab(saved);
+    greetOnOpen();
+    checkBadges();
+
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
