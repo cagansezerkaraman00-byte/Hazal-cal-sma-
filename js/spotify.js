@@ -76,6 +76,7 @@ const SpotifyLink = (() => {
     // doğrulayıcı localStorage'da: iOS ana ekran uygulamasında oturum deposu yönlendirmede kaybolabiliyor
     try { localStorage.setItem('luna-sp-verifier', JSON.stringify({ v, at: Date.now() })); } catch (e) { /* yok say */ }
     const q = new URLSearchParams({ client_id: st.clientId, response_type: 'code', redirect_uri: redirectUri(), code_challenge_method: 'S256', code_challenge: await challenge(v), scope: SCOPE });
+    if (App.allowExit) App.allowExit('spotifyLogin'); // giriş sayfasına gidiş tam odakta sayacı durdurmasın
     location.href = AUTH + '?' + q.toString();
   }
   // Spotify'dan dönüşte (?code=…) jetonu al ve adres çubuğunu temizle

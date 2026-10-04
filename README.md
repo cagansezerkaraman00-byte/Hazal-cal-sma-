@@ -90,6 +90,13 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 
 **🎨 Görünüm:** açık (varsayılan), koyu ya da gün batımında otomatik koyu tema; iPhone, Android ve tablete uygun (çentik payı, rahat dokunma alanları, yatay mod)
 
+**🗂️ Depo** (Kitaplık → Depo)
+- Ders fotoğrafları, PDF'ler, çalışma kağıtları, ödevler ders ders ve türüne göre (ders notu, çalışma kağıdı, proje/ödev, kitap/makale, fotoğraf, hata defteri) saklanır; arama ve filtre
+- **📷 Fotoğraf çek** ile tahta/kağıt doğrudan derse kaydedilir; fotoğraflar okunaklı kalacak şekilde küçültülür
+- PDF'ler uygulamanın içinde tam ekran açılır (PDF.js, sayfa sayacı, yakınlaştırma; taranmış PDF'ler dahil); fotoğraflar yakınlaştırılabilir
+- **Google Drive**: dosyalar Hazal'ın kendi Drive'ındaki *Luna Depo* klasöründe durur (iPad'de yer kaplamaz, telefon ve tablette aynı dosyalar). Yalnızca `drive.file` izni: uygulama sadece kendi yüklediği dosyaları görür. Giriş açılır pencere değil yönlendirme ile (iPad ana ekran uygulamasında sorunsuz); 5 MB üstü dosyalar kaldığı yerden devam edebilen yüklemeyle gider; silinen dosya Drive çöp kutusuna gider
+- Drive bağlanmadan önce dosyalar bu cihazda (IndexedDB) saklanır; **Drive'a taşı** ile tek dokunuşta Drive'a geçer, cihazda yer açılır. Drive oturumu saatte bir yenilenir; o arada eklenen dosyalar kaybolmaz
+
 ## Nasıl açılır?
 
 ### En kolayı: GitHub Pages (telefonda da çalışır)
@@ -138,6 +145,8 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok)
 | `js/badges.js` | Rozetler ve sevgi notları |
 | `js/notes.js` | Notlar ve bilgi kartları |
 | `js/spotify.js` | İsteğe bağlı Spotify hesabı bağlama |
+| `js/depo.js`, `js/depo-ui.js` | Depo: Google Drive / cihaz depolama, yükleme, eşitleme, PDF ve fotoğraf görüntüleyici |
+| `vendor/pdfjs/` | Mozilla PDF.js 6.4 (Apache-2.0), yalnızca PDF açılınca yüklenir |
 | `js/diag.js` | Tanılama: bağlantı testleri, durum özeti, hata günlüğü |
 | `js/messages.js` | Luna'nın mesajları |
 | `js/audio.js` | Zil, miyav ve ortam sesleri |

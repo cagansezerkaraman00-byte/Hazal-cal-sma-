@@ -121,6 +121,7 @@ const Store = (() => {
     yks: { field: null, examDate: null, topics: {}, planDone: {} },
     denemeler: [],  // {id, date, type: TYT|AYT|BRANS, name, scores: {subjectKey: {d, y}}, eksik: [topicId], note, created}
     notes: [],      // {id, subjectId, title, body, created, updated, pinned}
+    files: [],      // depo: {id, src: drive|local, rid, name, mime, size, subjectId, kind, note, created}
     cards: [],      // bilgi kartları: {id, subjectId, front, back, box (1-5), due (YYYY-AA-GG), created}
     stats: { planItems: 0, planFull: 0, planFullDates: [], cardReviews: 0, friendsMet: false, seen: {} },
     badges: {},     // id -> timestamp
@@ -138,7 +139,7 @@ const Store = (() => {
     out.settings = { ...def.settings, ...(obj.settings || {}) };
     if (!Array.isArray(out.settings.allowedApps)) out.settings.allowedApps = def.settings.allowedApps.slice();
     if (out.settings.kittenName === 'Sarman') out.settings.kittenName = 'Güçlü'; // yavrunun yeni adı
-    for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards']) {
+    for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files']) {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }
     const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);

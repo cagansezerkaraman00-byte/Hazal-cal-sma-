@@ -1072,6 +1072,55 @@ details.pick-group .chips { margin-top: 8px; }
 .notes-seg { margin-bottom: 14px; }
 .pill-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; background: var(--pink); color: #fff; font-size: .7rem; font-weight: 900; margin-left: 4px; }
 .notes-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+/* ---------- Depo ---------- */
+.depo-head { margin-bottom: 12px; }
+.depo-status { display: flex; flex-direction: column; gap: 8px; }
+.depo-status p { margin: 4px 0 0; }
+.depo-status .row { flex-wrap: wrap; }
+.drive-setup summary { cursor: pointer; font-weight: 800; color: var(--accent-ink); }
+.drive-setup .inline-form { margin-top: 8px; }
+.depo-progress { position: relative; margin-top: 10px; height: 26px; border-radius: 10px; background: var(--surface-3); overflow: hidden; font-size: .78rem; font-weight: 800; }
+.depo-progress span { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 10px; z-index: 1; }
+.depo-progress i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent-soft); border-right: 2px solid var(--accent-edge); transition: width .2s; }
+.depo-bar label.btn { cursor: pointer; }
+.depo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.depo-tile {
+  display: flex; flex-direction: column; gap: 6px; text-align: left; padding: 8px; border-radius: 14px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--c, var(--line)); color: var(--text); font: inherit; min-width: 0;
+}
+.depo-tile:hover { border-color: var(--accent-line); }
+.dt-thumb { aspect-ratio: 4 / 3; border-radius: 10px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.dt-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.dt-icon { font-size: 2.2rem; }
+.dt-name { font-weight: 800; font-size: .85rem; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.dt-meta { font-size: .72rem; color: var(--muted); font-weight: 700; display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.dt-meta .tag { font-size: .68rem; }
+
+/* tam ekran görüntüleyici */
+body.viewer-open { overflow: hidden; }
+.viewer { position: fixed; inset: 0; z-index: 45; background: #14122a; color: #f4f1ff; display: flex; flex-direction: column; }
+.vw-bar {
+  display: flex; align-items: center; gap: 10px; padding: calc(8px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) 8px calc(10px + env(safe-area-inset-left));
+  background: rgba(20, 18, 42, .96); border-bottom: 1px solid rgba(255, 255, 255, .1); flex-wrap: wrap;
+}
+.vw-bar .icon-btn { color: #f4f1ff; background: rgba(255, 255, 255, .08); border-radius: 10px; min-width: 38px; min-height: 38px; }
+.vw-title { flex: 1 1 160px; min-width: 0; font-weight: 800; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vw-title small { display: block; font-weight: 600; font-size: .72rem; opacity: .7; overflow: hidden; text-overflow: ellipsis; }
+.vw-pageno { font-weight: 800; font-size: .8rem; opacity: .8; }
+.vw-tools { display: flex; align-items: center; gap: 6px; }
+.vw-zoom { display: inline-flex; align-items: center; gap: 4px; }
+.vw-zoom-val { background: none; border: 0; color: #f4f1ff; font-weight: 800; font-size: .78rem; min-width: 46px; cursor: pointer; }
+.vw-ask { padding: 7px 12px; }
+.vw-body { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); }
+.vw-pages { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.vw-page { position: relative; background: #fff; box-shadow: 0 6px 24px rgba(0, 0, 0, .45); max-width: none; }
+.vw-page canvas { display: block; }
+.vw-pn { position: absolute; right: 6px; bottom: 4px; font-size: .68rem; color: #555; background: rgba(255, 255, 255, .8); border-radius: 6px; padding: 0 5px; }
+.vw-img { display: flex; justify-content: center; min-height: 100%; }
+.vw-img img { max-width: 100%; height: auto; align-self: flex-start; border-radius: 6px; }
+.vw-msg { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; margin: 12vh auto; max-width: 420px; font-weight: 700; }
+@media (max-width: 520px) { .vw-tools { width: 100%; justify-content: flex-end; } .vw-page-sm { display: none; } }
+
 .notes-bar input { flex: 1 1 200px; }
 .note-grid { columns: 3 260px; column-gap: 14px; }
 .note-card { break-inside: avoid; margin: 0 0 14px; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: var(--radius); padding: 14px; cursor: pointer; box-shadow: var(--shadow); transition: transform .12s; }

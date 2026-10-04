@@ -207,7 +207,6 @@
     if (name === 'plan') { if (window.PlanUI) PlanUI.render(); renderTasks(); renderReview(); }
     if (name === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (name === 'notes' && window.NotesUI) NotesUI.render();
-    if (name === 'notes' && window.NotesUI) NotesUI.render();
     if (name === 'settings') renderSettings();
     if (name === 'home') renderHome();
     try { localStorage.setItem('luna-tab', name); } catch (e) { /* yok say */ }
@@ -242,6 +241,9 @@
     spotify: { e: '🎧', n: 'Spotify', url: 'https://open.spotify.com/' },
   };
   let allowExit = null; // {app, at}: izinli düğmeye dokunulduğu an
+  // uygulamanın kendi yönlendirmeleri (Google Drive, Spotify girişi) de sayacı durdurmaz
+  const EXITS = { google: { e: '☁️', n: 'Google' }, spotifyLogin: { e: '🎧', n: 'Spotify' } };
+  const exitInfo = (k) => APPS[k] || EXITS[k] || { e: '🐾', n: 'Uygulama' };
   const allowedApps = () => (D().settings.allowedApps || []).filter((k) => APPS[k]);
   function appUrl(k) {
     if (k === 'spotify') { const p = spotifyParts(D().settings.spotify); if (p) return `https://open.spotify.com/${p.type}/${p.id}`; }
@@ -274,7 +276,7 @@
     const m = Math.round((Date.now() - a.at) / 60000);
     let text = '';
     if (a.paused) text = `Hoş geldin! Uygulamadan çıkınca sayaç durdu ⏸ Hazır olduğunda "Devam"a bas, kaldığımız yerden sürdürelim 🐾`;
-    else if (a.app && m >= 1) text = `${APPS[a.app].n}'dan hoş geldin ${APPS[a.app].e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
+    else if (a.app && m >= 1) text = `${exitInfo(a.app).n}'dan hoş geldin ${exitInfo(a.app).e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
     else if (!a.app && m >= 1 && !D().settings.pauseOnLeave) text = `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`;
     if (text) { Scene.say(text); lastMsgAt = Date.now(); }
   }
@@ -1310,6 +1312,9 @@
     bestHours,
     refresh: afterDataChange,
     refreshWeather,
+    checkBadges,
+    allowExit(key) { allowExit = { app: key, at: Date.now() }; },
+    dismissFocus() { focusDismissed = true; renderTimer(Timer.state()); }, // odak sürerken diğer ekranı göster
     refreshHome() { renderHome(); renderHUD(); checkBadges(); },
     showTab,
     celebrate() { Scene.celebrate(); Sound.chime(); },
@@ -1343,6 +1348,7 @@
     if (window.PlanUI) PlanUI.init(App);
     if (window.DenemeUI) DenemeUI.init(App);
     if (window.NotesUI) NotesUI.init(App);
+    if (window.DepoUI) DepoUI.init(App);
     if (window.Badges) Badges.init(App);
     if (window.SpotifyLink) SpotifyLink.init(App);
     if (window.Diag) Diag.init(App);

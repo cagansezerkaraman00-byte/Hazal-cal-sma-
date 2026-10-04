@@ -50,6 +50,7 @@ const Diag = (() => {
     ['🎧 Spotify oynatıcı', 'https://open.spotify.com/'],
     ['🔑 Spotify giriş', 'https://accounts.spotify.com/'],
     ['🔤 Google Fonts (yazı tipi)', 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'],
+    ['☁️ Google Drive', 'https://www.googleapis.com/drive/v3/about'],
   ];
   async function ping(url) {
     const t0 = performance.now();
@@ -79,6 +80,11 @@ const Diag = (() => {
     return `${link} · hesap bağlı (${s.user || 'kullanıcı'}) · ${s.lists} çalma listesi · durum: ${st}${s.lastStatus ? ' · son API kodu ' + s.lastStatus : ''}`;
   }
 
+  function depoText(d) {
+    const where = d.drive ? `Google Drive bağlı (${d.token ? 'oturum açık' : 'bağlantı yenilenmeli'})` : d.client ? 'Client ID girilmiş, Drive bağlı değil' : 'Drive bağlı değil';
+    return `${where} · ${d.files} dosya${d.local ? ` (${d.local} tanesi bu cihazda, ${Depo.fmtSize(d.localBytes)})` : ''}${d.err ? ' · son hata: ' + d.err : ''}`;
+  }
+
   async function collect() {
     const a = await appInfo();
     const s = D().settings;
@@ -95,6 +101,7 @@ const Diag = (() => {
         ['📍 Konum', `${s.city || '—'} (${(+s.lat).toFixed(2)}, ${(+s.lon).toFixed(2)}) · gün doğumu ${fmt(sun.sunrise)} · batımı ${fmt(sun.sunset)}${moon ? ` · ay: ${moon.name} %${Math.round(moon.fraction * 100)}${moon.up ? ' (gökte)' : ''}` : ''}`],
         ['🌦️ Hava', window.Weather ? weatherText(Weather.status()) : 'modül yüklenmedi'],
         ['🎧 Spotify', spotifyText(window.SpotifyLink && SpotifyLink.status ? SpotifyLink.status() : null)],
+        ['🗂️ Depo', window.Depo ? depoText(Depo.status()) : 'modül yüklenmedi'],
         ['💾 Veri', `${D().sessions.length} oturum · ${D().denemeler.length} deneme · ${D().notes.length} not · ${D().cards.length} kart · ${dataKB} KB${a.usage ? ` (tarayıcıda toplam ${Math.round(a.usage / 1024)} KB)` : ''} · son yedek: ${D().lastBackup ? ago(D().lastBackup) : 'yok'}`],
       ],
       errors: window.ErrLog ? ErrLog.list() : [],

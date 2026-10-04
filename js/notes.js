@@ -3,7 +3,7 @@
 
 const NotesUI = (() => {
   let App = null;
-  let view = 'notes';      // notes | cards
+  let view = 'notes';      // notes | cards | depo
   let filterSubject = '';
   let search = '';
   const $ = (s, el = document) => el.querySelector(s);
@@ -50,8 +50,10 @@ const NotesUI = (() => {
       <div class="seg notes-seg">
         <button data-view="notes" class="${view === 'notes' ? 'active' : ''}">📓 Notlar</button>
         <button data-view="cards" class="${view === 'cards' ? 'active' : ''}">🃏 Kartlar${due ? ` <span class="pill-count">${due}</span>` : ''}</button>
+        ${window.DepoUI ? `<button data-view="depo" class="${view === 'depo' ? 'active' : ''}">🗂️ Depo</button>` : ''}
       </div>
-      ${view === 'notes' ? notesHtml() : cardsHtml(due)}`;
+      ${view === 'depo' ? '<div id="depo-root"></div>' : view === 'notes' ? notesHtml() : cardsHtml(due)}`;
+    if (view === 'depo') DepoUI.render();
   }
 
   function notesHtml() {
@@ -202,6 +204,7 @@ const NotesUI = (() => {
   function bind() {
     const root = $('#notes-root');
     root.addEventListener('click', (e) => {
+      if (e.target.closest('#depo-root')) return; // depo kendi olaylarını yönetir
       const b = e.target.closest('button, .note-card, .card-list li');
       if (!b) return;
       if (b.dataset.view) { view = b.dataset.view; filterSubject = ''; render(); return; }
@@ -215,7 +218,7 @@ const NotesUI = (() => {
       if (li) editCard(D().cards.find((c) => c.id === li.dataset.id));
     });
     root.addEventListener('input', (e) => {
-      if (e.target.dataset.f !== 'search') return;
+      if (e.target.closest('#depo-root') || e.target.dataset.f !== 'search') return;
       search = e.target.value;
       const pos = e.target.selectionStart;
       render();
@@ -228,6 +231,7 @@ const NotesUI = (() => {
   return {
     init(app) { App = app; bind(); },
     render,
+    setView(v) { view = v; filterSubject = ''; render(); },
     dueCount: () => dueCards().length,
   };
 })();
