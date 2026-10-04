@@ -282,7 +282,12 @@
     if (text) { Scene.say(text); lastMsgAt = Date.now(); }
   }
 
+  let timerKey = '';
   function renderTimer(s) {
+    // sayaç saniyede 4 kez sorar; ekran yalnızca görünen bir şey değişince güncellenir
+    const key = [Math.floor(s.countdown ? s.remaining : s.elapsed), s.running, s.phase, s.kind, s.fresh, s.cycle, s.subjectId, s.intent, focusDismissed, D().settings.focusMode, D().settings.pauseOnLeave, (D().settings.allowedApps || []).length, D().settings.longEvery].join('|');
+    if (key === timerKey) return;
+    timerKey = key;
     $$('#kind-seg button').forEach((b) => b.classList.toggle('active', b.dataset.kind === s.kind));
     const isBreak = s.phase !== 'focus';
     const label = s.kind === 'free' && !isBreak ? 'SERBEST ODAK' : PHASE_NAME[s.phase];
@@ -1476,13 +1481,39 @@
     checkBadges();
     if (Store.loadError) setTimeout(() => toast('🛟', 'Verilerin okunamadı', 'Bozulmasın diye kopyası alındı: Ayarlar → Veriler', 9000), 1500);
 
-    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) setupUpdates();
     // ana ekrana eklenmiş uygulamada tarayıcıdan verilerin kalıcı saklanmasını iste (izin penceresi çıkmaz)
     if (navigator.storage && navigator.storage.persist && (matchMedia('(display-mode: standalone)').matches || navigator.standalone)) {
       navigator.storage.persisted().then((p) => p || navigator.storage.persist()).catch(() => {});
     }
+  }
+
+  // Güncellemeler: yeni sürüm arka planda iner; sayfa güvenli bir anda (uygulamadan çıkılınca,
+  // sayaç çalışmıyorken) yenilenir. Kullanıcının elindeki iş asla yarıda kesilmez.
+  function setupUpdates() {
+    const hadController = !!navigator.serviceWorker.controller;
+    let pending = false, reloading = false;
+    navigator.serviceWorker.register('sw.js').then((reg) => {
+      const check = () => reg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+      setInterval(check, 60 * 60000);
+    }).catch(() => {});
+    const busy = () => {
+      const s = Timer.state();
+      return s.running || !$('#modal').classList.contains('hidden') || !$('#viewer').classList.contains('hidden') || !!document.querySelector('#asistan-root .ai-msg.live');
+    };
+    const tryReload = () => {
+      if (!pending || reloading || busy()) return;
+      reloading = true;
+      location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController) return; // ilk kurulum: yenilemeye gerek yok
+      pending = true;
+      if (document.hidden) tryReload();
+      else toast('✨', 'Yeni sürüm hazır', 'Uygulamadan çıkıp dönünce kendiliğinden yüklenecek');
+    });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) tryReload(); });
   }
 
   document.addEventListener('DOMContentLoaded', init);

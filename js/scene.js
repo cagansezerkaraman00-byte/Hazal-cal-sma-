@@ -2038,11 +2038,16 @@ const Scene = (() => {
     const dt = Math.min(0.1, (now - lastT) / 1000);
     lastT = now;
     acc += dt;
-    if (acc < 0.028) return; // ~30 fps yeterli, pil dostu
+    // ~30 fps yeterli; odakta sahne sakin, 20 fps; hareket azaltma tercihinde 12 fps (pil dostu)
+    if (acc < (reducedMotion ? 0.083 : mode === 'focus' ? 0.05 : 0.028)) return;
     const step = Math.min(acc, 0.1);
     acc = 0;
     render(step);
   }
+
+  const rmq = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+  let reducedMotion = !!(rmq && rmq.matches);
+  if (rmq && rmq.addEventListener) rmq.addEventListener('change', (e) => { reducedMotion = e.matches; });
 
   // Sahne görünmüyorsa (sekme gizli / kaydırılmış) döngüyü tamamen durdur
   function wake() {

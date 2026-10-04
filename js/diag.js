@@ -37,7 +37,7 @@ const Diag = (() => {
 
   async function appInfo() {
     let ver = '—', persisted = null, usage = null;
-    try { if (window.caches) ver = (await caches.keys()).filter((k) => /^luna-/.test(k)).sort().pop() || 'önbellek yok'; } catch (e) { /* yok say */ }
+    try { if (window.caches) ver = (await caches.keys()).filter((k) => /^luna-v\d+$/.test(k)).sort().pop() || 'önbellek yok'; } catch (e) { /* yok say */ }
     try { if (navigator.storage && navigator.storage.persisted) persisted = await navigator.storage.persisted(); } catch (e) { /* yok say */ }
     try { if (navigator.storage && navigator.storage.estimate) usage = (await navigator.storage.estimate()).usage; } catch (e) { /* yok say */ }
     const sw = !('serviceWorker' in navigator) ? 'desteklenmiyor' : navigator.serviceWorker.controller ? 'aktif' : 'henüz değil (bir kez yenile)';
