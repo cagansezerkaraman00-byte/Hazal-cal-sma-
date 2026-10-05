@@ -51,11 +51,13 @@ const SpotifyLink = (() => {
     persist();
     return true;
   }
+  // aynı anda gelen istekler tek yenilemeyi paylaşır (Spotify yenileme anahtarını her seferinde değiştirir)
+  let refreshing = null;
   async function token() {
     if (st.token && Date.now() < st.exp - 60000) return st.token;
     if (!st.refresh || !st.clientId) return '';
-    const ok = setTokens(await post(TOKEN, { grant_type: 'refresh_token', refresh_token: st.refresh, client_id: st.clientId }));
-    return ok ? st.token : '';
+    if (!refreshing) refreshing = post(TOKEN, { grant_type: 'refresh_token', refresh_token: st.refresh, client_id: st.clientId }).then(setTokens).finally(() => { refreshing = null; });
+    return (await refreshing) ? st.token : '';
   }
   let lastStatus = 0; // son API yanıtı: 403 genelde izin listesi ya da Premium eksikliği
   async function api(path) {

@@ -15,7 +15,7 @@ const Timer = (() => {
       resumedAt: null,
       firstStart: null,
       cycle: keep.cycle || 0,
-      subjectId: keep.subjectId || (Store.data.subjects[0] && Store.data.subjects[0].id) || '',
+      subjectId: keep.subjectId != null ? keep.subjectId : ((Store.data.subjects[0] && Store.data.subjects[0].id) || ''), // '' = Genel, bilerek seçilebilir
       intent: keep.intent || '',  // "bu oturumda ne yapacağım?"
     };
   }
@@ -37,6 +37,7 @@ const Timer = (() => {
     const x = st();
     x.running = true;
     x.resumedAt = at;
+    x.pausedAt = null;
     if (!x.firstStart) x.firstStart = at;
     persist();
   }
@@ -67,7 +68,10 @@ const Timer = (() => {
   function finishBreak(endTime) {
     const x = st();
     Store.data.timer = fresh(x.kind, { cycle: x.phase === 'long' ? 0 : x.cycle, subjectId: x.subjectId });
-    if (S().autoFocus) startPhase(endTime);
+    // uygulama kapalıyken/arka plandayken odak kendiliğinden başlamasın: yoksa geri dönünce
+    // hiç çalışılmamış oturumlar art arda kaydedilir. Sayaç yeni odakta bekler.
+    const away = typeof document !== 'undefined' && document.hidden;
+    if (S().autoFocus && !away && Date.now() - endTime < 60000) startPhase(endTime);
     persist();
     h.onBreakDone && h.onBreakDone(st().running);
   }
@@ -110,6 +114,7 @@ const Timer = (() => {
         x.accum += Date.now() - x.resumedAt;
         x.running = false;
         x.resumedAt = null;
+        x.pausedAt = Date.now();
         persist();
         h.onPause && h.onPause();
       } else {
@@ -129,6 +134,7 @@ const Timer = (() => {
       x.accum += run;
       x.running = false;
       x.resumedAt = null;
+      x.pausedAt = t;
       persist();
       h.onPause && h.onPause();
       tick();
@@ -140,7 +146,8 @@ const Timer = (() => {
       if (x.phase === 'focus') {
         const sec = elapsed();
         if (sec < 60) { h.onTooShort && h.onTooShort(); api.reset(); return; }
-        finishFocus(sec, Date.now());
+        // duraklatılmış oturum duraklatıldığı anda biter (bekleme süresi oturuma eklenmez)
+        finishFocus(sec, x.running ? Date.now() : (x.pausedAt || Date.now()));
       } else {
         finishBreak(Date.now());
       }

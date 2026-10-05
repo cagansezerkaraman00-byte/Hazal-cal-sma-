@@ -212,6 +212,7 @@ const Depo = (() => {
   // ---------- Kaydetme / silme ----------
   async function addFiles(files, meta, onProgress) {
     const added = [];
+    added.fellBack = 0; // Drive'a yüklenemeyip bu cihaza kaydedilenler
     for (let i = 0; i < files.length; i++) {
       const f = await shrink(files[i]);
       const item = {
@@ -221,9 +222,16 @@ const Depo = (() => {
       };
       if (isImg(item.mime)) saveThumb(item, await makeThumb(f));
       if (item.src === 'drive') {
-        const res = await driveUpload(f, { name: item.name, kind: item.kind, subjectName: Store.subject(item.subjectId).name }, (p) => onProgress && onProgress(i, files.length, p));
-        item.rid = res.id;
-      } else {
+        try {
+          const res = await driveUpload(f, { name: item.name, kind: item.kind, subjectName: Store.subject(item.subjectId).name }, (p) => onProgress && onProgress(i, files.length, p));
+          item.rid = res.id;
+        } catch (e) {
+          // bağlantı koptu / oturum düştü: dosya kaybolmasın, bu cihaza kaydedilir ("Drive'a taşı" ile sonra gider)
+          item.src = 'local';
+          added.fellBack++;
+        }
+      }
+      if (item.src === 'local') {
         await IDB.put('f:' + item.id, f);
         onProgress && onProgress(i, files.length, 1);
       }
@@ -242,7 +250,12 @@ const Depo = (() => {
     App.save();
   }
   // bu cihazdaki dosyaları Drive'a taşı (iPad'de yer açılır)
-  async function moveToDrive(onProgress) {
+  let moving = null; // iki kez dokunulursa aynı dosyalar iki kez yüklenmesin
+  function moveToDrive(onProgress) {
+    if (!moving) moving = moveAll(onProgress).finally(() => { moving = null; });
+    return moving;
+  }
+  async function moveAll(onProgress) {
     const list = D().files.filter((x) => x.src === 'local');
     let moved = 0;
     for (const item of list) {

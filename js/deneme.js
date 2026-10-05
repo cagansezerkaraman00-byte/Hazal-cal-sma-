@@ -224,7 +224,7 @@ const DenemeUI = (() => {
     const eks = (e.eksik || []).map((id) => YKS.topic(id)).filter(Boolean);
     return `<li><details class="deneme-item" data-id="${e.id}">
         <summary>
-          <span class="d-date">${e.date.split('-').reverse().join('.')}</span>
+          <span class="d-date">${U.esc(e.date.split('-').reverse().join('.'))}</span>
           <span class="type-tag" data-type="${Deneme.kind(e)}">${U.esc(Deneme.label(e))}</span>
           <span class="d-name">${U.esc(e.name || 'Deneme')}</span>
           <span class="d-net">${Deneme.fmt(Deneme.total(e))} <small>net</small></span>${d > 0 ? `<small class="pos">+${Deneme.fmt(d)}</small>` : ''}
@@ -251,7 +251,7 @@ const DenemeUI = (() => {
       <p class="sub">Doğru ve yanlış sayılarını gir; netin otomatik hesaplanır.</p>
       <div class="seg" data-role="type">${['TYT', 'AYT', 'BRANS'].map((t) => `<button type="button" data-type="${t}">${t === 'BRANS' ? 'Branş' : Deneme.typeName(t)}</button>`).join('')}</div>
       <div class="form-row two">
-        <div><label>Tarih</label><input type="date" data-f="date" value="${e.date}"></div>
+        <div><label>Tarih</label><input type="date" data-f="date" value="${U.esc(e.date)}"></div>
         <div><label>Adı / yayın</label><input data-f="name" maxlength="40" placeholder="Örn: 3D Türkiye geneli" value="${U.esc(e.name)}"></div>
       </div>
       <div data-role="brans-row" class="form-row"><label>Ders</label><select data-f="brans">${allKeys.map((k) => `<option value="${k}" ${k === brans ? 'selected' : ''}>${U.esc(YKS.SUBJECTS[k].name)}</option>`).join('')}</select></div>
@@ -266,7 +266,13 @@ const DenemeUI = (() => {
       <div class="modal-actions"><button class="btn soft" data-act="cancel">Vazgeç</button><button class="btn primary" data-act="save">Kaydet</button></div>`);
 
     const q = (s) => card.querySelector(s);
-    const keys = () => Deneme.rowKeys(type, field(), brans);
+    // düzenlenen kaydın başka alandan (ör. eski AYT alanı) gelen dersleri de satır olarak kalsın, kaybolmasın
+    const extra = existing && existing.type !== 'BRANS' ? Object.keys(existing.scores || {}).filter((k) => YKS.SUBJECTS[k]) : [];
+    const keys = () => {
+      const ks = Deneme.rowKeys(type, field(), brans);
+      if (existing && type === existing.type) for (const k of extra) if (!ks.includes(k)) ks.push(k);
+      return ks;
+    };
 
     function drawRows() {
       card.querySelectorAll('[data-role="type"] button').forEach((b) => b.classList.toggle('active', b.dataset.type === type));

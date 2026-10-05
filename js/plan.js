@@ -148,6 +148,13 @@ const PlanUI = (() => {
     if (!force && c && c.week === wk && c.field === field && c.goal === goal && Array.isArray(c.days)) return c.days;
     const salt = force ? ((c && c.salt) || 0) + 1 : 0;
     const days = generateWeek(field, wk, salt);
+    // aynı hafta yeniden hazırlanırsa işaretli günler olduğu gibi kalır; "yapıldı"lar başka maddeye kaymasın
+    if (c && c.week === wk && c.field === field && Array.isArray(c.days)) {
+      days.forEach((d, i) => {
+        const old = c.days.find((x) => x.date === d.date);
+        if (old && (Y().planDone[d.date] || []).length) days[i] = old;
+      });
+    }
     Y().planCache = { week: wk, field, goal, salt, days };
     // eski "yapıldı" kayıtlarını temizle (sınırsız büyümesin)
     const cut = U.dateKey(U.addDays(new Date(), -21));
@@ -254,7 +261,7 @@ const PlanUI = (() => {
           ${!Y().examDate && YKS.DATE_NOTE ? `<p class="hint">${U.esc(YKS.DATE_NOTE)}</p>` : ''}
           ${ph ? `<p class="phase-note"><b>${ph.name}:</b> ${ph.text}</p>` : ''}
           <div class="overall"><div class="track"><i style="width:${Math.round(prog.pct * 100)}%"></i></div>
-            <span class="small">Konuların <b>%${Math.round(prog.pct * 100)}</b>'i hazır · YKS'de ≈ <b>${prog.questionsCovered}</b>/${prog.questions} soruya denk</span></div>
+            <span class="small">Konular <b>%${Math.round(prog.pct * 100)}</b> hazır · YKS'de ≈ <b>${prog.questionsCovered}</b>/${prog.questions} soruya denk</span></div>
         </div>
       </div>
 
@@ -333,7 +340,7 @@ const PlanUI = (() => {
   function onSession(session) {
     if (!Y().field || !session.intent) return;
     const items = todayItems() || [];
-    const it = items.find((x) => x.title === session.intent);
+    const it = items.find((x) => x.title.slice(0, 80) === session.intent); // hedef 80 karakterde kesilir
     if (it) toggleDone(U.dateKey(new Date()), it.key, true);
   }
 
@@ -398,7 +405,7 @@ const PlanUI = (() => {
         const ov = root.querySelector('.overall');
         if (ov) {
           ov.querySelector('.track i').style.width = Math.round(pr.pct * 100) + '%';
-          ov.querySelector('span').innerHTML = `Konuların <b>%${Math.round(pr.pct * 100)}</b>'i hazır · YKS'de ≈ <b>${pr.questionsCovered}</b>/${pr.questions} soruya denk`;
+          ov.querySelector('span').innerHTML = `Konular <b>%${Math.round(pr.pct * 100)}</b> hazır · YKS'de ≈ <b>${pr.questionsCovered}</b>/${pr.questions} soruya denk`;
         }
         if (next === 3) App.sayText(U.pick([`${YKS.topic(id).name} tamam! ✅`, 'Bir konu daha bitti, harikasın 🌟', 'Konu listesi kısalıyor, sen büyüyorsun 💪']));
         App.refreshHome();

@@ -107,7 +107,9 @@ const NotesUI = (() => {
   }
 
   function subjectSelect(sel) {
-    return `<select data-f="subject">${D().subjects.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')}<option value="" ${!sel ? 'selected' : ''}>Genel</option></select>`;
+    // listede olmayan (mod değişince başka listeye geçmiş) ders seçili kalsın; yoksa kaydedince "Genel"e düşerdi
+    const lost = sel && !D().subjects.some((s) => s.id === sel) ? `<option value="${U.esc(sel)}" selected>${U.esc(Store.subject(sel).name)}</option>` : '';
+    return `<select data-f="subject">${D().subjects.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')}${lost}<option value="" ${!sel ? 'selected' : ''}>Genel</option></select>`;
   }
 
   // ---------- Not düzenleme ----------
@@ -188,7 +190,7 @@ const NotesUI = (() => {
     }
     function finish() {
       box.innerHTML = `<div class="badge-pop"><div class="bp-emoji">🧠</div><h3>Tekrar bitti!</h3>
-        <p class="bp-msg">${list.length} kartın ${known} tanesini bildin. ${known === list.length ? 'Kusursuz! 🌟' : 'Bilemediklerin yarın yine gelecek; her tekrar hafızanı güçlendirir 💪'}</p>
+        <p class="bp-msg">${list.length} kartın ${known} tanesini bildin. ${known === list.length ? 'Kusursuz! 🌟' : 'Bilemediklerin bugün yeniden karşına çıkacak; her tekrar hafızanı güçlendirir 💪'}</p>
         <button class="btn primary" data-act="close">Harika 💛</button></div>`;
       App.refreshHome();
     }

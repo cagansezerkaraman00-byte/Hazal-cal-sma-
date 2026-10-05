@@ -163,7 +163,26 @@ const Store = (() => {
     out.stats = { ...def.stats, ...(isObj(obj.stats) ? obj.stats : {}) };
     if (!Array.isArray(out.stats.planFullDates)) out.stats.planFullDates = [];
     if (!isObj(out.stats.seen)) out.stats.seen = {};
+    tidy(out);
     return out;
+  }
+  // Dışarıdan gelen yedek sayfaya kod sokamasın: kimlikler, renkler, tarih ve ruh hâli yalnızca beklenen biçimde kalır
+  const MOODS = new Set(['🤩', '🙂', '😐', '😴', '😣']);
+  function tidy(out) {
+    const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
+    const rec = (x) => {
+      if (!isObj(x)) return;
+      for (const k of ['id', 'subjectId', 'courseId', 'fileId']) {
+        if (typeof x[k] === 'string' && /[^\w:.-]/.test(x[k])) x[k] = x[k].replace(/[^\w:.-]/g, '');
+      }
+      if ('color' in x && !/^#[0-9a-f]{3,8}$/i.test(String(x.color))) x.color = '#c9c3e6';
+    };
+    const each = (a) => { if (Array.isArray(a)) a.forEach(rec); };
+    for (const k of Object.keys(out)) each(out[k]);
+    for (const k of Object.keys(out.subjectSets)) each(out.subjectSets[k]);
+    for (const k of ['courses', 'events', 'calendar']) each(out.uni[k]);
+    for (const e of out.denemeler) if (isObj(e) && !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) e.date = U.dateKey(new Date());
+    for (const x of out.sessions) if (isObj(x) && x.mood && !MOODS.has(x.mood)) x.mood = '';
   }
 
   // Veri okunamazsa sessizce sıfırlanmasın: ham veri kurtarma kopyasına alınır, uygulama haber verir
@@ -190,6 +209,15 @@ const Store = (() => {
   function mergeIn(obj) {
     const inc = merge(defaults(), obj);
     let added = 0;
+    // yedek başka moddaysa (YKS / üniversite) aktif listeler yer değiştirir: dersler kendi modunun listesine gider
+    const setOf = (lvl) => ((lvl || 'yks') === 'yks' ? 'yks' : 'program');
+    const mine = setOf(data.settings.profile.level), theirs = setOf(inc.settings.profile.level);
+    if (mine !== theirs) {
+      const active = inc.subjects;
+      inc.subjects = Array.isArray(inc.subjectSets[mine]) ? inc.subjectSets[mine] : [];
+      inc.subjectSets = { ...inc.subjectSets, [theirs]: active };
+      delete inc.subjectSets[mine];
+    }
     const list = (a, b) => {
       if (!Array.isArray(a)) return b;
       if (hasIds(b) && (hasIds(a) || !a.length)) {
@@ -236,21 +264,39 @@ const Store = (() => {
         for (const x of moved) if (!prog.some((y) => y.id === x.id)) prog.push(x);
       }
     }
+    data.sessions.sort((a, b) => (+a.start || 0) - (+b.start || 0)); // eklenen oturumlar tarih sırasına girsin
     return added;
   }
 
   let data = load();
+  let saveWarned = false;
+  // başka sekmede kaydedilen veri bu sekmeye de geçer; yoksa eski kopya yenisinin üstüne yazılırdı
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', (e) => {
+      if (e.key !== KEY || !e.newValue) return;
+      try { data = merge(defaults(), JSON.parse(e.newValue)); } catch (err) { return; }
+      window.dispatchEvent(new Event('luna-data-changed'));
+    });
+  }
 
   return {
     get data() { return data; },
     get loadError() { return loadError; },
     rescueCopy() { try { return localStorage.getItem(KEY + '-kurtarma'); } catch (e) { return null; } },
     dropRescue() { try { localStorage.removeItem(KEY + '-kurtarma'); } catch (e) { /* yok say */ } },
+    // kaydedilemezse (depolama dolu / gizli mod) sessiz kalmaz: bir kez uyarı olayı yollanır
     save() {
-      try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* kota / gizli mod */ }
+      try { localStorage.setItem(KEY, JSON.stringify(data)); saveWarned = false; return true; } catch (e) {
+        if (!saveWarned) {
+          saveWarned = true;
+          ErrLog.add('Kaydedilemedi: ' + ((e && e.name) || e), 'storage.js');
+          if (typeof window !== 'undefined') window.dispatchEvent(new Event('luna-save-failed'));
+        }
+        return false;
+      }
     },
     reset() { data = defaults(); this.save(); },
-    importJSON(obj) { data = merge(defaults(), obj); this.save(); },
+    importJSON(obj) { data = merge(defaults(), { ...obj, timer: null }); return this.save(); }, // başka cihazın sayacı buraya taşınmasın
     mergeJSON(obj) { const n = mergeIn(obj); this.save(); return n; },
     // aktif listede yoksa diğer modların listelerine de bakılır (geçmiş oturumların ders adı kaybolmasın)
     subject(id) {

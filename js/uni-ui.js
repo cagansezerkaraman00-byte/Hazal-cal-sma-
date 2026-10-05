@@ -26,7 +26,7 @@ const UniUI = (() => {
         <p class="muted small">${sub}</p></div>
         <div class="row"><button class="btn soft small-btn" data-u="ics" type="button" ${x.courses.length || x.events.length ? '' : 'disabled'}>📅 Telefon takvimine aktar</button></div></div>
       ${wk && wk <= weeks + 3 ? `<div class="term-bar" title="Dönem ilerlemesi"><i style="width:${Math.min(100, Math.round((wk / weeks) * 100))}%"></i><span>Dönemin ${Math.min(wk, weeks)}. haftası / ${weeks}</span></div>` : ''}
-      ${nc ? `<p class="uni-next">${(Uni.CAL_KINDS[nc.kind] || Uni.CAL_KINDS.diger)[0]} <b>${esc(nc.title)}</b> ${ncLeft > 0 ? `· <span class="cd ${urg(ncLeft)}">${Uni.leftText(ncLeft)} kaldı</span>` : '· şu an'}</p>` : ''}
+      ${nc ? `<p class="uni-next">${(Uni.CAL_KINDS[nc.kind] || Uni.CAL_KINDS.diger)[0]} <b>${esc(nc.title)}</b> ${ncLeft > 0 ? `· <span class="cd ${urg(ncLeft)}">${ncLeft === 1 ? 'yarın' : Uni.leftText(ncLeft) + ' kaldı'}</span>` : '· şu an'}</p>` : ''}
     </div>`;
   }
   function onboardHtml() {
@@ -77,7 +77,7 @@ const UniUI = (() => {
         const live = nowMin >= Uni.mins(s.start) && nowMin < Uni.mins(s.end), past = nowMin >= Uni.mins(s.end);
         const absToday = c.absences.some((a) => a.date === U.dateKey(now) && a.slot === s.start);
         return `<li class="${live ? 'live' : past ? 'past' : ''}" style="--c:${c.color}"><span class="cls-time">${esc(s.start)}–${esc(s.end)}</span><div><b>${esc(c.name)}</b><small>${esc([s.room || c.room, c.instructor].filter(Boolean).join(' · '))}${live ? ' · şu an' : ''}</small></div>
-          ${Uni.isSchool() ? `<button class="chip ${absToday ? 'active' : ''}" data-u="absent" data-c="${c.id}" data-s="${esc(s.start)}" type="button">${absToday ? 'Gelmedim ✓' : 'Gelmedim'}</button>` : ''}</li>`;
+          ${Uni.isSchool() ? `<button class="chip ${absToday ? 'active' : ''}" data-u="absent" data-c="${c.id}" data-d="${+s.day}" data-s="${esc(s.start)}" type="button">${absToday ? 'Gelmedim ✓' : 'Gelmedim'}</button>` : ''}</li>`;
       }).join('')}</ul>` : u().courses.some((c) => c.slots.length) ? '<p class="muted small">Bugün dersin yok 🌿</p>' : ''}
       ${planHtml(plan, now)}
     </div>`;
@@ -142,7 +142,7 @@ const UniUI = (() => {
       <details class="hint"><summary>Geçmiş dönemler ve harf tablosu</summary>
         <p>GANO için önceki dönemlerin kredisini ve ortalamasını ekle:</p>
         <ul class="past-list">${(u().pastTerms || []).map((p, i) => `<li>${esc(p.term || 'Dönem')} · ${esc(p.credits)} kredi · ${esc(p.gpa)} <button class="icon-btn" data-u="del-past" data-i="${i}" type="button">✕</button></li>`).join('')}</ul>
-        <div class="inline-form"><input data-u="past-term" placeholder="Dönem (ör. 2025 Güz)"><input data-u="past-cr" type="number" step="0.5" placeholder="Kredi"><input data-u="past-gpa" type="number" step="0.01" placeholder="Ortalama"><button class="btn soft small-btn" data-u="add-past" type="button">Ekle</button></div>
+        <div class="inline-form"><input data-u="past-term" placeholder="Dönem (ör. 2025 Güz)"><input data-u="past-cr" inputmode="decimal" placeholder="Kredi"><input data-u="past-gpa" inputmode="decimal" placeholder="Ortalama (ör. 3,25)"><button class="btn soft small-btn" data-u="add-past" type="button">Ekle</button></div>
         <p>Kullanılan tablo (en yaygın): ${Uni.LETTERS.map((l) => `${l[0]} ≥${l[1]} (${l[2]})`).join(', ')}. Okulun bağıl değerlendirme ya da farklı tablo kullanıyorsa dersin düzenleme ekranından harf notunu elle seçebilirsin.</p>
       </details>
     </div>`;
@@ -202,11 +202,12 @@ const UniUI = (() => {
       <details ${school ? '' : 'open'}><summary><b>📖 ${school ? 'Haftalık konular' : 'Konular'}</b></summary><div data-list="topics">${c.topics.map(tRow).join('')}</div><button class="btn soft small-btn" data-add="topics" type="button">＋ Konu</button></details>
       <div class="modal-actions">${isNew ? '' : '<button class="btn danger" data-act="del" type="button">Sil</button><span style="flex:1"></span>'}<button class="btn soft" data-act="cancel" type="button">Vazgeç</button><button class="btn primary" data-act="save" type="button">Kaydet</button></div>`);
     const rows = { slots: slotRow, weights: wRow, topics: tRow };
+    let clearAbs = false; // "Sıfırla" ancak Kaydet'e basılınca uygulanır
     card.addEventListener('click', (e) => {
       const add = e.target.closest('[data-add]');
       if (add) { card.querySelector(`[data-list="${add.dataset.add}"]`).insertAdjacentHTML('beforeend', rows[add.dataset.add]()); return; }
       if (e.target.closest('[data-x="row"]')) { e.target.closest('.slot-row, .w-row, .t-row').remove(); return; }
-      if (e.target.closest('[data-x="clear-abs"]')) { c.absences = []; e.target.closest('p').textContent = 'Kayıtlı devamsızlık: yok'; return; }
+      if (e.target.closest('[data-x="clear-abs"]')) { clearAbs = true; e.target.closest('p').textContent = 'Kayıtlı devamsızlık: yok (kaydedince silinir)'; return; }
       const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
       if (act === 'cancel') App.closeModal();
       if (act === 'del' && confirm(`"${c.name}" dersi silinsin mi? Sınav ve ödev kayıtları da silinir; geçmiş çalışma oturumların kalır.`)) { Uni.removeCourse(c.id); App.closeModal(); refresh(); }
@@ -222,6 +223,7 @@ const UniUI = (() => {
         weights: read('weights', (q) => ({ name: q('name').value.trim(), w: +q('w').value || 0, score: q('score').value === '' ? null : U.clamp(+q('score').value, 0, 100) })).filter((w) => w.name && w.w > 0),
         topics: read('topics', (q) => ({ week: +q('week').value || '', title: q('title').value.trim(), done: q('done').checked })).filter((t) => t.title),
       };
+      if (clearAbs) data.absences = [];
       if (isNew) Uni.addCourse(data);
       else { Object.assign(c, data); Uni.syncSubjects(); }
       App.save(); App.closeModal(); refresh();
@@ -274,7 +276,14 @@ const UniUI = (() => {
         e.grade = g === '' ? '' : U.clamp(+g, 0, 100);
         // vize/final notu dersin değerlendirmesine de yazılır
         const c = Uni.course(e.courseId);
-        if (c && e.grade !== '' && Uni.EXAM.has(kind)) { const w = c.weights.find((x) => x.name.toLocaleLowerCase('tr-TR').startsWith(K[kind][1].toLocaleLowerCase('tr-TR'))); if (w) w.score = e.grade; }
+        if (c && e.grade !== '' && Uni.EXAM.has(kind)) {
+          // birden çok aynı tür bileşen varsa (Vize 1, Vize 2) sınavlar tarih sırasıyla eşleşir
+          const pre = K[kind][1].toLocaleLowerCase('tr-TR');
+          const ws = c.weights.filter((x) => x.name.toLocaleLowerCase('tr-TR').startsWith(pre));
+          const order = u().events.filter((x) => x.courseId === c.id && x.kind === kind).sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')));
+          const w = c.weights.find((x) => x.name === e.weight) || ws[Math.min(Math.max(0, order.indexOf(e)), ws.length - 1)];
+          if (w) { w.score = e.grade; e.weight = w.name; }
+        }
         if (e.grade !== '' && !e.done) e.done = true;
       }
       if (isNew) { e.id = U.uid(); u().events.push(e); }
@@ -418,12 +427,12 @@ const UniUI = (() => {
     else if (act === 'find-cal') findCal();
     else if (act === 'ics') shareIcs();
     else if (act === 'absent') {
-      const c = Uni.course(b.dataset.c), slot = c && c.slots.find((s) => s.start === b.dataset.s);
+      const c = Uni.course(b.dataset.c), slot = c && c.slots.find((s) => +s.day === +b.dataset.d && s.start === b.dataset.s);
       if (!c || !slot) return;
       const day = U.dateKey(new Date());
       const i = c.absences.findIndex((a) => a.date === day && a.slot === slot.start);
       if (i >= 0) c.absences.splice(i, 1);
-      else c.absences.push({ date: day, slot: slot.start, hours: Math.max(1, Math.round((Uni.mins(slot.end) - Uni.mins(slot.start)) / 50)) });
+      else c.absences.push({ date: day, slot: slot.start, hours: Uni.slotHours(slot) });
       App.save(); refresh();
       const at = Uni.attendance(c);
       if (i < 0) App.toast('🚶', `${c.name}: devamsızlık ${at.used}/${at.limit} saat`, at.left <= 2 ? 'Sınıra çok yaklaştın, dikkat 💛' : `${at.left} saat hakkın kaldı`);
@@ -431,8 +440,9 @@ const UniUI = (() => {
     else if (act === 'plan-start') startItem(b.dataset.id, b.dataset.date);
     else if (act === 'ask-course') askCourse(Uni.course(b.dataset.c));
     else if (act === 'add-past') {
-      const cr = +$('#uni-root [data-u="past-cr"]').value, g = +$('#uni-root [data-u="past-gpa"]').value;
-      if (!cr || !(g >= 0 && g <= 4)) { App.toast('🎯', 'Kredi ve 0-4 arası ortalama gir'); return; }
+      const num = (k) => { const t = $(`#uni-root [data-u="${k}"]`).value.trim().replace(',', '.'); return t === '' ? NaN : Number(t); };
+      const cr = num('past-cr'), g = num('past-gpa');
+      if (!(cr > 0) || !(g >= 0 && g <= 4)) { App.toast('🎯', 'Kredi ve 0-4 arası ortalama gir'); return; }
       u().pastTerms.push({ term: $('#uni-root [data-u="past-term"]').value.trim(), credits: cr, gpa: g });
       App.save(); render();
     } else if (act === 'del-past') { u().pastTerms.splice(+b.dataset.i, 1); App.save(); render(); }

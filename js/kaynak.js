@@ -23,9 +23,11 @@ const Kaynak = (() => {
   }
   // ilk harfler: "Jean-Paul C." → APA "J.-P. C.", Vancouver "JPC"
   function initials(given, style) {
-    const parts = String(given || '').replace(/\./g, ' ').trim().split(/\s+/).filter(Boolean);
-    if (style === 'vancouver') return parts.map((w) => w.split('-').map((x) => x[0]).join('')).join('').toLocaleUpperCase('tr-TR');
-    return parts.map((w) => w.split('-').map((x) => x[0].toLocaleUpperCase('tr-TR') + '.').join('-')).join(' ');
+    const parts = String(given || '').replace(/\./g, ' ').replace(/\s*-\s*/g, '-').trim().split(/\s+/).filter(Boolean);
+    // "J.-P." noktalar atılınca "J -P" olur: boş parçalar ayıklanmazsa ''[0] çöker
+    const bits = (w) => w.split('-').filter(Boolean);
+    if (style === 'vancouver') return parts.map((w) => bits(w).map((x) => x[0]).join('')).join('').toLocaleUpperCase('tr-TR');
+    return parts.map((w) => bits(w).map((x) => x[0].toLocaleUpperCase('tr-TR') + '.').join('-')).filter(Boolean).join(' ');
   }
   const esc = (s) => U.esc(s);
   // HTML çıktısında kayıt baştan kaçışlanır (yazar adları dahil: dış kaynaklardan gelen metin güvenilmez)
@@ -76,13 +78,14 @@ const Kaynak = (() => {
       const a = vanAuthors(r.authors || []);
       if (r.type === 'book') return `${a ? a + '. ' : ''}${T(endDot(r.title), html)} ${ed ? ed + '. bs. ' : ''}${r.city ? T(r.city, html) + ': ' : ''}${T(r.publisher || '', html)}${r.publisher ? '; ' : ''}${yr}.`;
       if (r.type === 'web') return `${a ? a + '. ' : ''}${T(r.title, html)} [Internet]. ${r.container ? T(r.container, html) + '; ' : ''}${yr || 't.y.'} [erişim tarihi: ${trDate(r.accessed) || trDate(U.dateKey(new Date()))}]. Erişim adresi: ${T(r.url || '', html)}`;
-      return `${a ? a + '. ' : ''}${T(endDot(r.title), html)} ${T(r.container || '', html)}. ${yr}${r.volume ? ';' + r.volume : ''}${r.issue ? '(' + r.issue + ')' : ''}${r.pages ? ':' + String(r.pages).replace(/\s*[–—]\s*/g, '-') : ''}.${r.doi ? ' doi:' + r.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '') : ''}`;
+      return `${a ? a + '. ' : ''}${T(endDot(r.title), html)} ${r.container ? T(r.container, html) + '. ' : ''}${yr}${r.volume ? ';' + r.volume : ''}${r.issue ? '(' + r.issue + ')' : ''}${r.pages ? ':' + String(r.pages).replace(/\s*[–—]\s*/g, '-') : ''}.${r.doi ? ' doi:' + r.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '') : ''}`;
     }
     if (style === 'ieee') {
       const a = ieeeAuthors(r.authors || []);
       if (r.type === 'book') return `${a ? a + ', ' : ''}${it(r.title, html)}${ed ? ', ' + ed + '. bs.' : ''} ${r.city ? T(r.city, html) + ': ' : ''}${T(r.publisher || '', html)}, ${yr}.`;
       if (r.type === 'web') return `${a ? a + ', ' : ''}"${T(r.title, html)}," ${r.container ? T(r.container, html) + '. ' : ''}[Online]. Available: ${T(r.url || '', html)} (erişim: ${trDate(r.accessed) || trDate(U.dateKey(new Date()))}).`;
-      return `${a ? a + ', ' : ''}"${T(r.title, html)}," ${it(r.container || '', html)}${r.volume ? ', vol. ' + r.volume : ''}${r.issue ? ', no. ' + r.issue : ''}${r.pages ? ', pp. ' + dash(r.pages) : ''}, ${yr}${r.doi ? ', doi: ' + r.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '') : ''}.`;
+      const bits = [r.container ? it(r.container, html) : '', r.volume ? 'vol. ' + r.volume : '', r.issue ? 'no. ' + r.issue : '', r.pages ? 'pp. ' + dash(r.pages) : '', yr].filter(Boolean).join(', ');
+      return `${a ? a + ', ' : ''}"${T(r.title, html)}," ${bits}${r.doi ? ', doi: ' + r.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '') : ''}.`;
     }
     // APA 7
     const a = apaAuthors(r.authors || []);
@@ -96,7 +99,8 @@ const Kaynak = (() => {
     }
     if (r.type === 'web') return `${lead ? lead + ' ' : ''}${it(r.title, html)}.${lead ? '' : ' ' + when + '.'} ${r.container ? T(r.container, html) + '. ' : ''}${T(r.url || '', html)}`;
     const vol = r.volume ? `, ${it(r.volume, html)}${r.issue ? '(' + T(r.issue, html) + ')' : ''}` : '';
-    return `${lead ? lead + ' ' : ''}${T(endDot(r.title), html)}${lead ? '' : ' ' + when + '.'} ${it(r.container || '', html)}${vol}${r.pages ? ', ' + dash(r.pages) : ''}.${link ? ' ' + T(link, html) : ''}`;
+    const box = r.container ? ` ${it(r.container, html)}${vol}${r.pages ? ', ' + dash(r.pages) : ''}.` : ''; // dergisiz kayıtta ". ." kalmasın
+    return `${lead ? lead + ' ' : ''}${T(endDot(r.title), html)}${lead ? '' : ' ' + when + '.'}${box}${link ? ' ' + T(link, html) : ''}`;
   }
   // metin içi atıf (APA): (Guyton & Hall, 2020) / (Kaya vd., 2021)
   function inText(r) {
@@ -137,7 +141,7 @@ const Kaynak = (() => {
     if (abs) { const pos = []; for (const [word, idx] of Object.entries(abs)) for (const i of idx) pos[i] = word; abstract = pos.filter(Boolean).join(' '); }
     const b = w.biblio || {};
     const src = (w.primary_location && w.primary_location.source) || {};
-    const type = /book/.test(w.type || '') ? 'book' : 'article';
+    const type = w.type === 'book' ? 'book' : 'article'; // kitap bölümü: kitabın adı "kaynak" olarak kalır
     return {
       type, title: (w.display_name || w.title || '').replace(/<[^>]+>/g, ''),
       authors: (w.authorships || []).map((a) => splitName(a.author && a.author.display_name)).filter(Boolean),
@@ -149,7 +153,7 @@ const Kaynak = (() => {
   }
   function fromCrossref(m) {
     const dp = (m.issued && m.issued['date-parts'] && m.issued['date-parts'][0]) || (m.published && m.published['date-parts'] && m.published['date-parts'][0]) || [];
-    const type = /book/.test(m.type || '') && !/chapter/.test(m.type) ? 'book' : 'article';
+    const type = /^(book|edited-book|monograph|reference-book|book-set)$/.test(m.type || '') ? 'book' : 'article'; // bölümler (book-chapter/part/section) kitap adıyla
     return {
       type, title: ((m.title && m.title[0]) || '').replace(/<[^>]+>/g, ''),
       authors: (m.author || []).map((a) => (a.family ? { family: a.family, given: a.given || '' } : a.name ? { literal: a.name } : null)).filter(Boolean),

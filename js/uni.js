@@ -122,9 +122,10 @@ const Uni = (() => {
     }
     return n;
   }
+  // bir ders bloğu kaç ders saati: 50 dk ders + 10 dk teneffüs (09.00-10.50 → 2 saat)
+  function slotHours(s) { return Math.max(1, Math.round((mins(s.end) - mins(s.start) + 10) / 60)); }
   function weeklyHours(c) {
-    const fromSlots = c.slots.reduce((a, s) => a + Math.max(0, mins(s.end) - mins(s.start)), 0) / 50; // ders saati 50 dk
-    return c.slots.length ? Math.round(fromSlots) : +c.weeklyHours || 0;
+    return c.slots.length ? c.slots.reduce((a, s) => a + slotHours(s), 0) : +c.weeklyHours || 0;
   }
   // devamsızlık: dönem haftası × haftalık saat × sınır yüzdesi
   function attendance(c) {
@@ -337,7 +338,7 @@ const Uni = (() => {
 
   return {
     DAY_NAMES, DAY_SHORT, EVENT_KINDS, CAL_KINDS, LETTERS, COLORS, EXAM,
-    isProgramMode, isSchool, evName, evLeft, addKpss, setMode, syncSubjects, addCourse, removeCourse, course, weeklyHours, attendance,
+    isProgramMode, isSchool, evName, evLeft, addKpss, setMode, syncSubjects, addCourse, removeCourse, course, weeklyHours, slotHours, attendance,
     letterOf, courseScore, needForFinal, coefOf, gpa, upcoming, classesOn, weekOfTerm, nextCalendar,
     planFor, toggleDone, daysLeft, leftText, isoDay, ics, findCalendar, scanTimetable, parseSyllabus, validDate, validTime, mins,
   };

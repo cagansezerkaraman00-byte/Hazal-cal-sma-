@@ -40,9 +40,11 @@ const DepoUI = (() => {
       </div>`;
   }
 
+  // bağlantı kapalıyken Drive kayıtları gizlenir (silinmez: yeniden bağlanınca aynı kimlikle döner, hata defteri bağları kopmaz)
+  const visible = () => D().files.filter((x) => x.src !== 'drive' || Depo.driveReady());
   function list() {
     const q = search.toLocaleLowerCase('tr-TR');
-    return D().files
+    return visible()
       .filter((x) => !filterSubject || x.subjectId === filterSubject)
       .filter((x) => !filterKind || x.kind === filterKind)
       .filter((x) => !q || (x.name + ' ' + (x.note || '') + ' ' + subjName(x.subjectId)).toLocaleLowerCase('tr-TR').includes(q))
@@ -52,8 +54,8 @@ const DepoUI = (() => {
   function render() {
     const root = $('#depo-root');
     if (!root) return;
-    const used = new Set(D().files.map((x) => x.subjectId));
-    const kinds = new Set(D().files.map((x) => x.kind));
+    const used = new Set(visible().map((x) => x.subjectId));
+    const kinds = new Set(visible().map((x) => x.kind));
     const subjChips = D().subjects.filter((s) => used.has(s.id));
     const items = list();
     root.innerHTML = `
@@ -72,7 +74,7 @@ const DepoUI = (() => {
           <span class="dt-name">${U.esc(it.name)}</span>
           <span class="dt-meta"><span class="tag">${U.esc(subjName(it.subjectId))}</span> ${it.src === 'drive' ? '☁️' : '📱'} ${dateTxt(it.created)}</span>
         </button>`).join('')}</div>`
-        : `<div class="card empty-state"><div style="font-size:2rem">🗂️</div><p><b>${D().files.length ? 'Aramana uyan dosya yok.' : 'Depon boş.'}</b></p><p class="muted">Ders fotoğrafları, PDF'ler, çalışma kağıtları ve ödevler ders ders burada. Galeride aramana gerek kalmaz; PDF'ler uygulamanın içinde açılır.</p></div>`}`;
+        : `<div class="card empty-state"><div style="font-size:2rem">🗂️</div><p><b>${visible().length ? 'Aramana uyan dosya yok.' : 'Depon boş.'}</b></p><p class="muted">Ders fotoğrafları, PDF'ler, çalışma kağıtları ve ödevler ders ders burada. Galeride aramana gerek kalmaz; PDF'ler uygulamanın içinde açılır.</p></div>`}`;
     // önizlemeler (IndexedDB'den, ekrana çizildikten sonra)
     for (const it of items.slice(0, 120)) {
       Depo.thumbUrl(it).then((u) => {
@@ -118,7 +120,8 @@ const DepoUI = (() => {
     render();
     try {
       const added = await Depo.addFiles(files, meta, (i, n, p) => { progress = { i, n, p, label: 'Kaydediliyor' }; render(); });
-      App.toast('🗂️', added.length === 1 ? 'Dosya depoya eklendi' : `${added.length} dosya depoya eklendi`, added[0].src === 'drive' ? 'Google Drive · Luna Depo' : 'Bu cihazda');
+      if (added.fellBack) App.toast('☁️', added.fellBack === added.length ? 'Drive’a yüklenemedi, bu cihaza kaydedildi' : `${added.fellBack} dosya Drive’a yüklenemedi, bu cihaza kaydedildi`, 'Bağlantı düzelince "Drive’a taşı"ya dokunman yeter; hiçbir dosya kaybolmadı');
+      else App.toast('🗂️', added.length === 1 ? 'Dosya depoya eklendi' : `${added.length} dosya depoya eklendi`, added[0].src === 'drive' ? 'Google Drive · Luna Depo' : 'Bu cihazda');
       if (App.checkBadges) App.checkBadges();
     } catch (e) {
       App.toast('⚠️', e instanceof Depo.NeedAuth ? 'Drive bağlantısı yenilenmeli' : 'Dosya kaydedilemedi', e instanceof Depo.NeedAuth ? 'Depo’daki "Drive bağlantısını yenile"ye dokun' : e.message);
@@ -175,7 +178,7 @@ const DepoUI = (() => {
   }
   function applyZoom() {
     const img = $('#vw-body .vw-img img');
-    if (img) img.style.width = V.zoom === 1 ? '' : Math.round(V.zoom * 100) + '%';
+    if (img) { img.style.width = V.zoom === 1 ? '' : Math.round(V.zoom * 100) + '%'; img.style.maxWidth = V.zoom > 1 ? 'none' : ''; }
     $('#vw-zoom-val').textContent = Math.round(V.zoom * 100) + '%';
   }
   async function renderPdf(blob, my) {
@@ -198,6 +201,7 @@ const DepoUI = (() => {
       const n = +p.dataset.n;
       if (p.dataset.r === String(V.zoom) || my !== V.token) return;
       p.dataset.r = String(V.zoom);
+      const seq = (p._seq = (p._seq || 0) + 1); // bu sayfadaki en yeni çizim hangisi
       const page = n === 1 ? first : await pdf.getPage(n);
       const w = p.clientWidth;
       const vp0 = page.getViewport({ scale: 1 });
@@ -205,9 +209,16 @@ const DepoUI = (() => {
       const vp = page.getViewport({ scale: (w / vp0.width) * dpr });
       p.style.height = Math.round(vp.height / dpr) + 'px';
       const cv = p.querySelector('canvas');
+      // aynı tuvale ikinci çizim başlamadan önceki iptal edilir (hızlı yakınlaştırma / iPad'i döndürme)
+      if (p._task) { p._task.cancel(); await p._task.promise.catch(() => {}); }
+      if (my !== V.token || seq !== p._seq) return;
       cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
       cv.style.width = '100%'; cv.style.height = '100%';
-      await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise.catch(() => {});
+      p._task = page.render({ canvasContext: cv.getContext('2d'), viewport: vp });
+      const ok = await p._task.promise.then(() => true, () => false);
+      if (seq !== p._seq) return; // daha yeni bir çizim devraldı
+      p._task = null;
+      if (!ok) { p.dataset.r = ''; return; } // yarıda kaldıysa sonraki görünüşte yeniden çizilsin
       rendered.add(p);
       // ilk sayfa: depo için küçük önizleme
       if (n === 1 && V.item && !(await Depo.thumbUrl(V.item))) Depo.saveThumb(V.item, await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.7))).then(() => render());
@@ -312,11 +323,11 @@ const DepoUI = (() => {
         Object.assign(Depo.cfg(), { connected: false, folderId: '' });
         Depo.saveCfg();
         GAuth.forget();
-        D().files = D().files.filter((x) => x.src !== 'drive');
-        App.save(); render();
+        render();
       } else if (act === 'sync') {
         await syncNow(true);
       } else if (act === 'move') {
+        if (progress) return; // taşıma sürüyor
         progress = { i: 0, n: 1, p: 0, label: 'Drive’a taşınıyor' };
         render();
         try {
@@ -363,7 +374,12 @@ const DepoUI = (() => {
   }
 
   async function syncNow(manual) {
-    if (!Depo.driveReady() || !Depo.hasToken()) return;
+    if (!Depo.driveReady()) return;
+    if (!Depo.hasToken()) { // oturum ekran çizildikten sonra dolmuş olabilir: sessizce hiçbir şey yapmasın
+      if (manual) App.toast('☁️', 'Drive bağlantısı yenilenmeli', 'Depo’daki "Drive bağlantısını yenile"ye dokun');
+      render();
+      return;
+    }
     try {
       const r = await Depo.syncDrive();
       if (manual || r.added || r.removed) App.toast('☁️', 'Drive eşitlendi', r.added || r.removed ? `${r.added} yeni, ${r.removed} silinmiş dosya` : 'Her şey güncel');

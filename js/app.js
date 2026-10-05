@@ -394,7 +394,9 @@
       if (window.UniUI) UniUI.onSession(session);
       notify('Oturum tamamlandı! 🎉', `${U.fmtMin(session.minutes)} ${Store.subject(session.subjectId).name} çalıştın. Mola zamanı!`);
       say('done');
-      openSessionModal(session, { justDone: true });
+      // başka bir pencere açıksa (yarım not, kart, deneme…) üstüne yazma: kapanınca göster
+      if ($('#modal').classList.contains('hidden')) openSessionModal(session, { justDone: true });
+      else { pendingDone = session; toast('🎉', 'Oturum kaydedildi', U.fmtMin(session.minutes)); }
       afterDataChange();
       syncSceneMode();
     },
@@ -564,7 +566,15 @@
     $('#modal').classList.remove('hidden');
   }
 
-  function closeModal() { $('#modal').classList.add('hidden'); $('#modal-card').innerHTML = ''; }
+  let pendingDone = null; // açık bir pencere yüzünden bekleyen "oturum tamamlandı" penceresi
+  function closeModal() {
+    $('#modal').classList.add('hidden'); $('#modal-card').innerHTML = '';
+    if (pendingDone) {
+      const s = pendingDone;
+      pendingDone = null;
+      setTimeout(() => { if ($('#modal').classList.contains('hidden')) openSessionModal(s, { justDone: true }); else pendingDone = s; }, 300);
+    }
+  }
   // Plan'daki "Başla ▶": dersi ve hedefi seçip sayacı başlatır
   function startStudy({ subjectId, intent, kind } = {}) {
     const s = Timer.state();
@@ -593,7 +603,7 @@
   function applyFieldSubjects(field) {
     if (!window.YKS) return;
     const target = YKS.studySubjects(field);
-    const used = new Set(D().sessions.map((x) => x.subjectId).concat(D().tasks.map((t) => t.subjectId)));
+    const used = new Set([...D().sessions, ...D().tasks, ...D().notes, ...D().cards, ...D().review].map((x) => x.subjectId));
     // dokunulmamış varsayılan dersleri (s1..s5) kullanılmıyorsa kaldır
     let list = D().subjects.filter((x) => !(/^s[1-5]$/.test(x.id) && !used.has(x.id)));
     const lower = (t) => t.toLocaleLowerCase('tr-TR');
@@ -649,6 +659,9 @@
   function afterDataChange() {
     checkGoal();
     checkBadges();
+    repaint();
+  }
+  function repaint() {
     renderHUD();
     renderHome();
     if (currentTab === 'progress') renderProgress();
@@ -670,7 +683,7 @@
         ${s.note ? `<div class="note">${U.esc(s.note)}</div>` : ''}
         ${s.hard ? `<div class="note hard">⚠️ ${U.esc(s.hard)}</div>` : ''}
       </div>
-      <div class="right">${U.fmtMin(s.minutes)}<div class="meta">${s.rating ? '⭐'.repeat(s.rating) : ''} ${s.mood || ''}</div></div>
+      <div class="right">${U.fmtMin(s.minutes)}<div class="meta">${s.rating ? '⭐'.repeat(Math.min(5, +s.rating || 0)) : ''} ${U.esc(s.mood || '')}</div></div>
     </li>`;
   }
 
@@ -684,7 +697,7 @@
   function renderHome() {
     const goal = D().settings.dailyGoal;
     const mins = Stats.minutesOn(new Date());
-    const pct = Math.min(100, Math.round((mins / goal) * 100));
+    const pct = Math.min(100, Math.floor((mins / goal) * 100)); // %100 ancak hedef gerçekten dolunca
     $('#goal-ring').style.setProperty('--p', pct);
     $('#goal-ring').classList.toggle('done', pct >= 100);
     $('#goal-pct').textContent = pct >= 100 ? '★' : pct + '%';
@@ -1127,6 +1140,8 @@
       : old === 'yks' ? `${({ uni: 'Üniversite', kpss: 'KPSS', yl: 'Yüksek lisans' })[lvl] || 'Yeni'} moduna geçilsin mi? YKS konuların, denemelerin ve oturumların silinmez; istediğin an geri dönebilirsin.` : null;
     if (msg && !confirm(msg)) { renderEdu(); return; }
     Uni.setMode(lvl);
+    // sayaçtaki ders eski modun listesinde kaldıysa yeni listenin ilk dersine geç
+    if (!D().subjects.some((x) => x.id === Timer.state().subjectId)) Timer.setSubject(D().subjects[0] ? D().subjects[0].id : '');
     applyMode(); renderEdu(); renderSubjectEdit(); renderSubjectSelects(); renderHome();
     if (lvl !== 'yks' && old === 'yks') {
       toast('🎓', lvl === 'kpss' ? 'KPSS modu açık' : 'Yeni dönem, yeni sayfa!', lvl === 'kpss' ? 'Plan sekmesinden derslerini ekleyebilirsin' : 'Okulunu ve dönem tarihlerini yaz, sonra Dönem sekmesinden derslerini ekle', 7000);
@@ -1155,7 +1170,8 @@
 
   function bindSettings() {
     const num = (id, key, min, max) => $(id).addEventListener('change', (e) => {
-      const v = U.clamp(parseInt(e.target.value, 10) || D().settings[key], min, max);
+      const n = parseInt(e.target.value, 10); // 0 geçerli bir değer olabilir (ör. Luna'nın mesajları: 0 = hiç)
+      const v = U.clamp(Number.isNaN(n) ? D().settings[key] : n, min, max);
       D().settings[key] = v; e.target.value = v; save();
       renderHome(); Timer.state(); // sayaç yeni süreyi bir sonraki tick'te gösterir
     });
@@ -1328,7 +1344,7 @@
             if (b.dataset.imp === 'cancel') { closeModal(); return; }
             if (b.dataset.imp === 'replace') {
               if (!confirm('Bu cihazdaki bütün veriler yedektekiyle değişecek. Emin misin?')) return;
-              Store.importJSON(obj);
+              if (!Store.importJSON(obj)) { toast('⚠️', 'Yedek bu cihaza yazılamadı', 'Depolama dolu olabilir; Depo’dan yer açıp tekrar dene', 8000); return; }
               location.reload();
               return;
             }
@@ -1498,7 +1514,11 @@
       progressDays = +b.dataset.days;
       renderProgress();
     });
-    $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+    // yalnızca boşlukta başlayan dokunuş kapatır: kartta metin seçip dışarıda bırakmak yazılanı silmesin
+    const modalEl = $('#modal');
+    let downInCard = false;
+    modalEl.addEventListener('pointerdown', (e) => { downInCard = e.target !== modalEl; });
+    modalEl.addEventListener('click', (e) => { if (e.target === modalEl && !downInCard) closeModal(); downInCard = false; });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
     const openSession = (e) => {
       const li = e.target.closest('li[data-id]');
@@ -1544,6 +1564,8 @@
     renderClock();
     renderHome();
     renderFooter();
+    window.addEventListener('luna-save-failed', () => toast('⚠️', 'Değişiklikler kaydedilemiyor', 'Cihazın depolama alanı dolmuş olabilir. Hemen Ayarlar → "Yedek al" ile bir kopya sakla', 12000));
+    window.addEventListener('luna-data-changed', () => { renderSubjectSelects(); repaint(); }); // başka sekmede kaydedildi
     setInterval(renderClock, 1000);
     refreshWeather();
     setInterval(() => { if (!document.hidden) refreshWeather(); }, 10 * 60000); // önbellek 30 dk, istek seyrek
