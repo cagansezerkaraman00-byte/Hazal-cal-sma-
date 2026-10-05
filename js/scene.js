@@ -620,7 +620,8 @@ const Scene = (() => {
   const splashes = Array.from({ length: 14 }, () => ({ x: 0, y: 0, t: 1 }));
   let weather = { kind: 'clear', intensity: 0 }, fx = null, wk = 0, starVis = 1, nextFlash = 12, flashT = 0;
   let fishItem = null, yarn = null, play = null, nextPlay = U.rand(90, 240);
-  let bubbleUntil = 0, bubbleOn = false, bubbleW = 0, bubbleL = -1, bubbleB = -1, bubbleA = -1;
+  let bubbleUntil = 0, bubbleOn = false, bubbleW = 0, bubbleH = 0, bubbleL = -1, bubbleB = -1, bubbleA = -1;
+  let wrapH = 0, hudR = null; // saat kutusunun sağ alt köşesi (balon onun üstüne binmesin)
 
   const L = { x: 60, y: 0, vy: 0, dir: 1, state: 'walk', ft: 0, target: 80, wait: 0, blinkIn: 3, blink: 0, eatT: 0, nap: false, awake: 0, speed: 16 };
   // mevsim / özel gün / dünya ayrıntıları
@@ -982,7 +983,8 @@ const Scene = (() => {
     const rect = wrap.getBoundingClientRect();
     if (!rect.width || !rect.height) return; // gizliyken bekle
     wrapW = wrap.clientWidth;
-    if (bubbleOn) { bubbleW = bubbleEl.offsetWidth; bubbleL = -1; }
+    wrapH = wrap.clientHeight;
+    if (bubbleOn) { bubbleW = bubbleEl.offsetWidth; bubbleH = bubbleEl.offsetHeight; bubbleL = -1; measureHud(); }
     const sc = rect.width < 520 ? 3 : 4;
     const w = Math.ceil(rect.width / sc), h = Math.ceil(rect.height / sc);
     if (w === W && h === H && sc === scale) return;
@@ -1980,12 +1982,20 @@ const Scene = (() => {
   }
 
   // ---------- Konuşma balonu ----------
+  function measureHud() {
+    const el = wrap && wrap.querySelector('.hud-left');
+    if (!el) { hudR = null; return; }
+    const r = el.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+    hudR = r.width ? { right: r.right - w.left, bottom: r.bottom - w.top } : null;
+  }
   function positionBubble() {
     if (!bubbleOn || !W) return;
     const g = lunaGeom();
     const cx = L.x * scale;
-    const left = Math.round(U.clamp(cx - bubbleW / 2, 8, wrapW - bubbleW - 8));
+    let left = Math.round(U.clamp(cx - bubbleW / 2, 8, wrapW - bubbleW - 8));
     const bottom = Math.round((H - (g.top - 1)) * scale + 10);
+    // telefonda saat kutusunun üstüne biniyorsa balonu kutunun sağına kaydır (sığarsa)
+    if (hudR && wrapH - bottom - bubbleH < hudR.bottom && left < hudR.right && hudR.right + 8 + bubbleW <= wrapW - 6) left = Math.round(hudR.right + 8);
     const arrow = Math.round(U.clamp(cx - left, 14, bubbleW - 14));
     // yalnızca değişince yaz (her karede stil/düzen hesabı olmasın)
     if (left !== bubbleL) { bubbleEl.style.left = left + 'px'; bubbleL = left; }
@@ -2153,6 +2163,9 @@ const Scene = (() => {
       bubbleEl.classList.remove('hidden');
       bubbleEl.classList.remove('pop'); void bubbleEl.offsetWidth; bubbleEl.classList.add('pop');
       bubbleW = bubbleEl.offsetWidth;
+      bubbleH = bubbleEl.offsetHeight;
+      if (!wrapH) wrapH = wrap.clientHeight;
+      measureHud();
       bubbleOn = true;
       bubbleL = bubbleB = bubbleA = -1;
       bubbleUntil = performance.now() + (opts.ms || Math.max(5000, text.length * 85));

@@ -191,7 +191,7 @@ const PlanUI = (() => {
       <div><div class="plan-text">${U.esc(it.title)}</div><div class="plan-sub">${U.esc(it.sub || (sub ? sub.name : ''))}${it.minutes ? ` · ~${it.minutes} dk` : ''}</div></div>
       <span class="plan-acts">
         <input type="checkbox" class="check" ${done ? 'checked' : ''} aria-label="Yapıldı">
-        ${done ? '' : '<button class="plan-go" data-act="go">Başla ▶</button>'}
+        ${done ? '' : '<button class="plan-go" data-act="go" aria-label="Başla"><span class="pg-t">Başla </span>▶</button>'}
       </span>
     </li>`;
   }

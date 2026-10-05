@@ -276,6 +276,14 @@ a { color: var(--lav-ink); }
 .hud-time { font-family: var(--pixel); font-size: clamp(22px, 5vw, 34px); letter-spacing: 2px; }
 .hud-date { font-weight: 800; font-size: .9rem; margin-top: 6px; }
 .hud-greet { font-size: .85rem; margin-top: 2px; font-weight: 600; }
+.hud-date, .hud-greet { white-space: nowrap; }
+@media (max-width: 520px) {
+  .hud { padding: 12px 12px; }
+  .hud-left { padding: 6px 10px 7px; }
+  .hud-time { font-size: 22px; letter-spacing: 1px; }
+  .hud-date { font-size: .76rem; margin-top: 4px; }
+  .hud-greet { font-size: .72rem; }
+}
 .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }
 .hud-chip {
   background: var(--hud-bg-strong); color: var(--hud-text);
@@ -573,6 +581,12 @@ body.focusing #app { padding-bottom: 24px; }
 .plan-item.done .plan-dot::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 900; line-height: 1; }
 .plan-item.done .plan-go { background: var(--surface-3); color: var(--muted); box-shadow: none; }
 .plan-empty { color: var(--muted); text-align: center; font-size: .9rem; padding: 14px 8px; }
+@media (max-width: 420px) {
+  .plan-item { gap: 8px; padding: 9px 8px 9px 10px; }
+  .plan-go { padding: 6px 10px; }
+  .plan-go .pg-t { display: none; }
+}
+.love-card { align-self: start; }
 
 /* ---------- Not kartı ---------- */
 .love-card { background: var(--love-bg); border-color: var(--love-line); }
@@ -885,6 +899,14 @@ button.block:hover { border-color: var(--line-strong); }
 .badge .d { font-size: .72rem; color: var(--muted); }
 .badge.on { border-color: var(--accent-line); background: var(--accent-soft); }
 .badge.on .e { filter: none; }
+.badge { cursor: pointer; font: inherit; color: inherit; }
+@media (max-width: 520px) {
+  .badges { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .badge { padding: 10px 4px 8px; }
+  .badge .e { font-size: 1.6rem; }
+  .badge .n { font-size: .74rem; line-height: 1.2; }
+  .badge .d { display: none; } /* açıklama dokununca açılan pencerede */
+}
 .notes { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow: auto; }
 .notes li { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: .9rem; }
 .notes .meta { font-size: .76rem; color: var(--muted); margin-bottom: 3px; }
@@ -1273,6 +1295,9 @@ body.viewer-open { overflow: hidden; }
 .guide details:first-of-type { border-top: 0; }
 .guide summary { cursor: pointer; list-style: none; padding: 12px 2px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .guide summary::-webkit-details-marker { display: none; }
+.guide-all > summary { padding: 0; }
+.guide-all > summary h2 { margin: 0; }
+.guide-all[open] > summary { margin-bottom: 4px; }
 .guide summary::after { content: '▾'; color: var(--muted); transition: transform .2s; }
 .guide details[open] > summary::after { transform: rotate(180deg); }
 .guide ul, .guide ol { margin: 0 0 12px; padding-left: 20px; line-height: 1.55; font-size: .92rem; }
