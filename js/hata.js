@@ -128,7 +128,7 @@ const HataUI = (() => {
       const item = D().files.find((f) => f.id === m.fileId);
       const r = REASONS[m.reason] || REASONS.bilgi;
       box.innerHTML = `<div class="review-top"><span class="muted small">${i + 1}/${list.length} · ${U.esc(m.subjectId ? Store.subject(m.subjectId).name : 'Genel')} · ${U.esc(m.topic || '')}</span><button class="icon-btn" data-act="close" type="button" title="Kapat">✕</button></div>
-        <div class="ht-img">${url ? `<img src="${url}" alt="Soru">` : item ? '<div class="vw-msg">Soru yükleniyor…</div>' : '<div class="vw-msg">📱 Bu sorunun fotoğrafı diğer cihazında duruyor. O cihazda Depo → "Drive’a taşı" dersen burada da görünür.</div>'}</div>
+        <div class="ht-img">${url ? `<img src="${url}" alt="Soru">` : item ? '<div class="vw-msg">Soru yükleniyor…</div>' : '<div class="vw-msg">📷 Bu sorunun fotoğrafı bu cihazda bulunamadı (yedekten geldiyse fotoğraflar yedeğe dahil değildir). Notun ve tekrar sırası duruyor.</div>'}</div>
         <p class="hint">Önce kendin çöz, sonra kontrol et. Geçen sefer: ${r[0]} ${r[1]}</p>
         ${reveal ? `<div class="flash-back">${m.note ? U.esc(m.note).replace(/\n/g, '<br>') : '<span class="muted">Not eklememişsin.</span>'}</div>` : ''}
         <div class="review-actions">${reveal

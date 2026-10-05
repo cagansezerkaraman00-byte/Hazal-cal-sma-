@@ -240,7 +240,6 @@ const Store = (() => {
   }
 
   let data = load();
-  const hooks = []; // kayıttan sonra haber alanlar (hesap eşitleme)
 
   return {
     get data() { return data; },
@@ -249,10 +248,7 @@ const Store = (() => {
     dropRescue() { try { localStorage.removeItem(KEY + '-kurtarma'); } catch (e) { /* yok say */ } },
     save() {
       try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* kota / gizli mod */ }
-      for (const f of hooks) { try { f(); } catch (e) { /* bir dinleyicinin hatası kaydı bozmasın */ } }
     },
-    onSave(f) { hooks.push(f); },
-    defaults,
     reset() { data = defaults(); this.save(); },
     importJSON(obj) { data = merge(defaults(), obj); this.save(); },
     mergeJSON(obj) { const n = mergeIn(obj); this.save(); return n; },

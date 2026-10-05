@@ -2,12 +2,12 @@
    Uygulama kabuğu (HTML, CSS, JS, simgeler) sürüme bağlı önbellekten gelir: zayıf internette de anında açılır
    ve dosyalar hep aynı sürümden olur. Dosyaları değiştirince VERSION'ı artır: yeni sürüm arka planda iner,
    sayfa güvenli bir anda (uygulamadan çıkılınca, sayaç çalışmıyorken) yenilenir. */
-const VERSION = 'luna-v16';
+const VERSION = 'luna-v17';
 const VENDOR = 'luna-vendor-1'; // büyük ve değişmeyen kütüphaneler (PDF.js, Anthropic SDK), yazı tipleri
 const FILES = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
-  'js/config.js', 'js/storage.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
-  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/giris.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify.js', 'js/asistan.js', 'js/uni.js', 'js/uni-ui.js', 'js/sync.js', 'js/diag.js', 'js/app.js',
+  'js/storage.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
+  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/giris.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify.js', 'js/asistan.js', 'js/uni.js', 'js/uni-ui.js', 'js/diag.js', 'js/app.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 const SHELL = new Set(FILES.map((f) => new URL(f, self.registration.scope).href));

@@ -1095,7 +1095,6 @@
     renderSubjectEdit();
     renderBackupInfo();
     renderAllowApps();
-    if (window.Sync) Sync.renderCard();
   }
 
   const LEVEL_HINT = {
@@ -1328,8 +1327,7 @@
             if (!b) return;
             if (b.dataset.imp === 'cancel') { closeModal(); return; }
             if (b.dataset.imp === 'replace') {
-              const acct = window.Sync && Sync.enabled() ? '\n\nHesaba bağlısın: bu değişiklik bağlı diğer cihazlarına da geçer (yedekte olmayan kayıtlar oralarda da silinir).' : '';
-              if (!confirm('Bu cihazdaki bütün veriler yedektekiyle değişecek. Emin misin?' + acct)) return;
+              if (!confirm('Bu cihazdaki bütün veriler yedektekiyle değişecek. Emin misin?')) return;
               Store.importJSON(obj);
               location.reload();
               return;
@@ -1345,11 +1343,9 @@
       };
       r.readAsText(f);
     });
-    $('#reset').addEventListener('click', async () => {
-      const acct = window.Sync && Sync.enabled();
-      if (!confirm('Bütün oturumlar, denemeler, notlar ve ayarlar silinecek. Önce "Yedek al" ile bir kopya saklamanı öneririm. Devam edilsin mi?' + (acct ? '\n\nHesaba bağlısın: önce bu cihazda hesaptan çıkılır, veriler yalnızca bu cihazdan silinir; diğer cihazların ve hesabındaki veriler olduğu gibi kalır.' : ''))) return;
+    $('#reset').addEventListener('click', () => {
+      if (!confirm('Bütün oturumlar, denemeler, notlar ve ayarlar silinecek. Önce "Yedek al" ile bir kopya saklamanı öneririm. Devam edilsin mi?')) return;
       if (!confirm('Gerçekten emin misin? Bu geri alınamaz.')) return;
-      if (acct) await Sync.signOut(); // silme diğer cihazlara yayılmasın
       Store.reset(); location.reload();
     });
   }
@@ -1421,22 +1417,6 @@
     }
   }
 
-  // Hesap girişinin süresi dolmuşsa açılışta sessizce yenile (Google oturumu açıksa yarım saniyelik bir gidip gelme).
-  // İnternet gerçekten varsa ve o an bir şeyle meşgul değilse; yoksa eşitleme sonraki açılışa kalır.
-  function renewSoon() {
-    if (!Sync.wantRenew()) return;
-    const ctl = new AbortController();
-    const to = setTimeout(() => ctl.abort(), 3000);
-    fetch('https://www.google.com/generate_204', { mode: 'no-cors', cache: 'no-store', signal: ctl.signal })
-      .then(() => {
-        clearTimeout(to);
-        const m = $('#modal'), a = document.activeElement;
-        const busy = (m && !m.classList.contains('hidden')) || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || App.isFocusing() || document.hidden;
-        if (!busy && Sync.wantRenew()) GAuth.authorize('renew', true);
-      })
-      .catch(() => clearTimeout(to));
-  }
-
   // ======================================================================
   // Başlat
   // ======================================================================
@@ -1461,13 +1441,6 @@
     dismissFocus() { focusDismissed = true; renderTimer(Timer.state()); }, // odak sürerken diğer ekranı göster
     refreshHome() { renderHome(); renderHUD(); checkBadges(); },
     refreshSubjects() { renderSubjectSelects(); },
-    currentTab: () => currentTab,
-    // başka cihazdan gelen değişiklikler uygulandı: her şeyi yeniden çiz
-    syncApplied() {
-      applyMode(); renderSubjectSelects(); renderHUD(); renderFooter();
-      afterDataChange();
-      if (currentTab === 'settings') renderSettings();
-    },
     showTab,
     celebrate() { Scene.celebrate(); Sound.chime(); },
     isFocusing() { const s = Timer.state(); return s.running && s.phase === 'focus'; },
@@ -1482,6 +1455,8 @@
 
   function init() {
     if (window.GAuth) GAuth.handleRedirect(); // Google dönüşü: modüller sonucu GAuth.lastReturn() ile okur
+    // kaldırılan hesap eşitlemesinden kalmış olabilecek boş kayıtları bir kez temizle
+    try { if (!localStorage.getItem('luna-temizlik-1')) { localStorage.removeItem('luna-sync-on'); if (window.indexedDB) indexedDB.deleteDatabase('luna-sync'); localStorage.setItem('luna-temizlik-1', '1'); } } catch (e) { /* yok say */ }
     Scene.init($('#sky'), $('#bubble'), {
       onPoke() { Sound.meow(); say('poke'); },
       onFriend(kind) { Sound.meow(); say(kind === 'vesper' ? 'vesper' : 'kitten'); },
@@ -1509,7 +1484,6 @@
     if (window.Badges) Badges.init(App);
     if (window.SpotifyLink) SpotifyLink.init(App);
     if (window.Diag) Diag.init(App);
-    if (window.Sync) { Sync.init(App); renewSoon(); }
     renderSubjectSelects();
     Timer.init(timerHandlers);
     renderAllowApps();
