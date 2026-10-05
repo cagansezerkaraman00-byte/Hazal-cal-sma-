@@ -21,4 +21,11 @@ jobs:
       - name: Pages yayını iste
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh api -X POST "repos/${{ github.repository }}/pages/builds"
+        run: |
+          if out=$(gh api -X POST "repos/${{ github.repository }}/pages/builds" 2>&1); then
+            echo "$out"
+          elif echo "$out" | grep -q "does not have a GitHub Pages site"; then
+            echo "::notice::GitHub Pages kapalı. Settings → Pages → Deploy from a branch → claude/luna-study-app-1xt2uk, / (root) seçilince her güncellemede yayın yenilenir."
+          else
+            echo "$out"; exit 1
+          fi
