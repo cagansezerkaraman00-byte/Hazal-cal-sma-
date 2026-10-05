@@ -42,61 +42,24 @@ const Depo = (() => {
     };
   })();
 
-  // ---------- Google Drive (OAuth yönlendirme akışı; açılır pencere yok, iPad ana ekran uygulamasında da çalışır) ----------
-  const SCOPE = 'https://www.googleapis.com/auth/drive.file';
+  // ---------- Google Drive (giriş ve erişim anahtarı GAuth'ta: hesap eşitlemeyle aynı Google girişi) ----------
   const API = 'https://www.googleapis.com/drive/v3/files';
   const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
   const FIELDS = 'id,name,mimeType,size,createdTime,webViewLink,appProperties';
   const CKEY = 'luna-drive';
-  let cfg = { clientId: '', token: '', exp: 0, folderId: '', connected: false, lastErr: '' };
-  class NeedAuth extends Error {}
+  let cfg = { folderId: '', connected: false };
+  const NeedAuth = GAuth.NeedAuth;
 
-  function loadCfg() { try { cfg = { ...cfg, ...(JSON.parse(localStorage.getItem(CKEY) || '{}') || {}) }; } catch (e) { /* yok say */ } }
+  function loadCfg() {
+    try { const c = JSON.parse(localStorage.getItem(CKEY) || '{}') || {}; cfg = { folderId: c.folderId || '', connected: !!c.connected }; } catch (e) { /* yok say */ }
+  }
   function saveCfg() { try { localStorage.setItem(CKEY, JSON.stringify(cfg)); } catch (e) { /* yok say */ } }
-  const redirectUri = () => location.origin + location.pathname.replace(/index\.html$/, '');
-  const hasToken = () => !!cfg.token && Date.now() < cfg.exp - 60000;
-  const driveReady = () => !!cfg.clientId && cfg.connected;
-
-  function authorize() {
-    if (!cfg.clientId) return;
-    const state = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join('');
-    try { localStorage.setItem('luna-drive-state', JSON.stringify({ state, at: Date.now() })); } catch (e) { /* yok say */ }
-    if (App.allowExit) App.allowExit('google'); // giriş sayfasına gidiş tam odakta sayacı durdurmasın
-    location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
-      client_id: cfg.clientId, redirect_uri: redirectUri(), response_type: 'token', scope: SCOPE,
-      include_granted_scopes: 'true', state,
-    }).toString();
-  }
-  // Google'dan dönüş: #access_token=…&expires_in=…&state=…
-  function handleRedirect() {
-    if (!/^#.*(access_token|error)=/.test(location.hash)) return null;
-    const q = new URLSearchParams(location.hash.slice(1));
-    let saved = null;
-    try { saved = JSON.parse(localStorage.getItem('luna-drive-state') || 'null'); localStorage.removeItem('luna-drive-state'); } catch (e) { /* yok say */ }
-    history.replaceState(null, '', location.pathname + location.search);
-    if (!saved || saved.state !== q.get('state') || Date.now() - saved.at > 15 * 60000) return 'state';
-    if (q.get('error')) { cfg.lastErr = q.get('error'); saveCfg(); return 'denied'; }
-    cfg.token = q.get('access_token') || '';
-    cfg.exp = Date.now() + (parseInt(q.get('expires_in'), 10) || 3600) * 1000;
-    cfg.connected = !!cfg.token;
-    cfg.lastErr = '';
-    saveCfg();
-    return cfg.token ? 'ok' : 'state';
-  }
-
-  async function gapi(url, opts = {}) {
-    if (!hasToken()) throw new NeedAuth();
-    let r;
-    try { r = await fetch(url, { ...opts, headers: { ...(opts.headers || {}), Authorization: 'Bearer ' + cfg.token } }); } catch (e) { throw new Error('Drive’a ulaşılamadı (internet?)'); }
-    if (r.status === 401) { cfg.token = ''; saveCfg(); throw new NeedAuth(); }
-    if (!r.ok) {
-      let msg = 'HTTP ' + r.status;
-      try { const j = await r.json(); if (j.error && j.error.message) msg += ': ' + j.error.message; } catch (e) { /* yok say */ }
-      const err = new Error('Drive hatası (' + msg + ')');
-      err.status = r.status;
-      throw err;
-    }
-    return r;
+  const hasToken = () => GAuth.canFiles();
+  const driveReady = () => !!GAuth.clientId() && cfg.connected;
+  const authorize = () => GAuth.authorize('depo');
+  function gapi(url, opts) {
+    if (!hasToken()) return Promise.reject(new NeedAuth());
+    return GAuth.api(url, opts);
   }
   async function ensureFolder() {
     if (cfg.folderId) return cfg.folderId;
@@ -118,7 +81,7 @@ const Depo = (() => {
       for (const k of Object.keys(headers)) x.setRequestHeader(k, headers[k]);
       if (onProgress && x.upload) x.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
       x.onload = () => {
-        if (x.status === 401) { cfg.token = ''; saveCfg(); rej(new NeedAuth()); return; }
+        if (x.status === 401) { GAuth.dropToken(); rej(new NeedAuth()); return; }
         if (x.status < 200 || x.status >= 300) { const err = new Error('Drive yükleme hatası (HTTP ' + x.status + ')'); err.status = x.status; rej(err); return; }
         try { res(JSON.parse(x.responseText)); } catch (e) { res({}); }
       };
@@ -135,7 +98,7 @@ const Depo = (() => {
       // başka cihazda bağlanınca ders/tür bilgisi geri gelsin (anahtar+değer en fazla 124 bayt)
       appProperties: { luna: '1', kind: meta.kind, subject: String(meta.subjectName || '').slice(0, 40) },
     };
-    const auth = { Authorization: 'Bearer ' + cfg.token };
+    const auth = { Authorization: 'Bearer ' + GAuth.token() };
     try {
       if (blob.size <= 5 * 1048576) {
         const boundary = 'luna' + Math.random().toString(36).slice(2);
@@ -319,14 +282,15 @@ const Depo = (() => {
 
   return {
     KINDS, isImg, isPdf, fmtSize, IDB, NeedAuth,
-    loadCfg, cfg: () => cfg, saveCfg, redirectUri, authorize, handleRedirect, hasToken, driveReady,
+    loadCfg, cfg: () => cfg, saveCfg, redirectUri: GAuth.redirectUri, authorize, hasToken, driveReady,
+    connect() { cfg.connected = true; saveCfg(); },
     getBlob, openPdf, addFiles, remove, moveToDrive, syncDrive, thumbUrl, saveThumb, makeThumb,
     setApp(a) { App = a; },
     // Tanılama için durum
     status() {
       const local = D().files.filter((x) => x.src === 'local');
       return {
-        drive: driveReady(), token: hasToken(), client: !!cfg.clientId, err: cfg.lastErr || '',
+        drive: driveReady(), token: hasToken(), client: !!GAuth.clientId(), err: GAuth.lastErr() || '',
         files: D().files.length, local: local.length, localBytes: local.reduce((a, x) => a + (x.size || 0), 0),
       };
     },

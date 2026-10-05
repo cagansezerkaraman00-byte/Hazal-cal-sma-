@@ -332,20 +332,33 @@
             </ul>
           </details>
           <details>
-            <summary>🗂️ Depo ve Google Drive</summary>
+            <summary>👤 Hesap, cihazlar ve Google Drive</summary>
+            <ul>
+              <li><b>WhatsApp gibi:</b> telefonunda ve iPad'inde Ayarlar → <b>Hesap ve cihazlar</b> → <b>Google ile giriş yap</b>. Aynı hesapla giriş yapılan cihazlarda oturumlar, plan, notlar, kartlar, denemeler, hata defteri, kaynaklar, dersler ve Depo dosyaları aynı olur.</li>
+              <li>Bir cihazda yaptığın değişiklik birkaç saniye içinde gönderilir; diğer cihaz açıldığında, uygulamaya döndüğünde ve açıkken iki dakikada bir yenilerini alır. İnternet yokken de her şey çalışır; bağlanınca eşitlenir.</li>
+              <li>İki cihazda aynı anda farklı şeyler eklersen ikisi de kalır; aynı şeyi iki yerde değiştirirsen en son yaptığın geçerli olur. Sildiğin bir şey diğer cihazdan geri gelmez. Balıklar ve sayaçlar iki cihazda kazanılanların toplamıdır.</li>
+              <li>Her cihazda ayrı kalanlar: çalışan sayaç, tema, bildirim izni, Asistan anahtarı ve sohbetleri.</li>
+              <li><b>Bağlı cihazlar</b> listesinde her cihazın en son ne zaman eşitlendiğini görürsün. Kaybolan ya da artık kullanmadığın bir cihazı <b>Çıkış yaptır</b> ile hesaptan çıkarabilirsin.</li>
+              <li>Veriler senin Drive'ında yalnızca bu uygulamanın görebildiği gizli bir klasörde durur (Drive → Ayarlar → Uygulamaları yönet'te "Luna" olarak görünür). Arada sunucu yok, başka kimse göremez.</li>
+              <li>Google girişi güvenlik için saatte bir yenilenir; uygulamayı açtığında bu kendiliğinden olur (ekran bir an yenilenebilir).</li>
+              <li><b>İlk kurulum (bir kez, uygulamayı yayınlayan kişi yapar):</b>
+                <ol>
+                  <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a>'a Google hesabınla gir, yeni bir proje aç (ör. "Luna").</li>
+                  <li><b>APIs &amp; Services → Library</b>'den <b>Google Drive API</b>'yi bul ve <b>Enable</b> de.</li>
+                  <li><b>Google Auth Platform</b> (OAuth izin ekranı) → <b>Get started</b>: uygulama adı "Luna", kitle <b>External</b>. <b>Data access</b>'te <code>drive.file</code> ve <code>drive.appdata</code> izinlerini ekle. <b>Audience</b>'ta uygulamayı <b>In production</b>'a al (bu iki izin için Google doğrulama istemez); "Testing"te kalırsa giriş 7 günde bir yeniden istenir.</li>
+                  <li><b>Clients → Create client → Web application</b>. <b>Authorized JavaScript origins</b>: <code>https://cagansezerkaraman00-byte.github.io</code>, <b>Authorized redirect URIs</b>: <code>https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/</code></li>
+                  <li>Çıkan <b>Client ID</b>'yi <code>js/config.js</code> dosyasına yaz (o zaman cihazlarda hiçbir şey girilmez) ya da her cihazda Hesap ve cihazlar'daki alana bir kez yapıştır. "Google bu uygulamayı doğrulamadı" uyarısı çıkarsa bu senin kendi uygulaman; <b>Devam</b> diyebilirsin.</li>
+                </ol></li>
+            </ul>
+          </details>
+          <details>
+            <summary>🗂️ Depo</summary>
             <ul>
               <li>Kitaplık → <b>Depo</b>'da ders fotoğraflarını, PDF'leri, çalışma kağıtlarını ve ödevleri ders ders saklarsın. <b>📷 Fotoğraf çek</b> ile tahtayı ya da kağıdı çekip doğrudan derse koyabilirsin; galeride aramana gerek kalmaz.</li>
               <li>PDF'ler ve fotoğraflar uygulamanın içinde tam ekran açılır (yakınlaştırma, sayfa sayısı). Word, PowerPoint gibi dosyalar Drive'da açılır.</li>
               <li>Fotoğraflar okunaklı kalacak şekilde küçültülür; böylece hem hızlı açılır hem az yer tutar.</li>
-              <li><b>Google Drive'ı bağlarsan</b> dosyalar senin Drive'ındaki <b>Luna Depo</b> klasöründe durur: iPad'inde yer kaplamaz, telefonda da aynı dosyaları görürsün (Depo → ↻ Eşitle). Uygulama sadece kendi yüklediği dosyaları görebilir; Drive'ının geri kalanına dokunamaz.
-                <ol>
-                  <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a>'a Google hesabınla gir, yeni bir proje aç (ör. "Luna").</li>
-                  <li><b>APIs &amp; Services → Library</b>'den <b>Google Drive API</b>'yi bul ve <b>Enable</b> de.</li>
-                  <li><b>Google Auth Platform</b> (OAuth izin ekranı) → <b>Get started</b>: uygulama adı "Luna", kitle <b>External</b>. Sonra <b>Audience → Test users</b>'a Hazal'ın Gmail adresini ekle.</li>
-                  <li><b>Clients → Create client → Web application</b>. <b>Authorized JavaScript origins</b>: <code>https://cagansezerkaraman00-byte.github.io</code>, <b>Authorized redirect URIs</b>: Depo'da yazan adres (sonunda <code>/</code> ile).</li>
-                  <li>Çıkan <b>Client ID</b>'yi Depo'daki alana yapıştır, <b>Bağlan</b> de, Google hesabını seç ve izin ver. "Google bu uygulamayı doğrulamadı" uyarısı çıkarsa bu senin kendi uygulaman; <b>Devam</b> diyebilirsin.</li>
-                </ol></li>
-              <li>Güvenlik için Google bağlantıyı saatte bir yeniler; Depo'da "Drive bağlantısını yenile"ye dokunman yeter. O arada eklediğin dosyalar bu cihaza kaydedilir, sonra <b>Drive'a taşı</b> ile tek dokunuşla Drive'a geçer.</li>
+              <li><b>Google ile giriş yaptıysan</b> (Ayarlar → Hesap ve cihazlar) dosyalar senin Drive'ındaki <b>Luna Depo</b> klasöründe durur: iPad'inde yer kaplamaz, telefonda da aynı dosyaları görürsün. Uygulama sadece kendi yüklediği dosyaları görebilir; Drive'ının geri kalanına dokunamaz.</li>
+              <li>Girişten önce eklediğin dosyalar bu cihazda kalır; <b>Drive'a taşı</b> ile tek dokunuşla Drive'a geçer ve diğer cihazında da görünür.</li>
               <li>Silinen dosya Drive çöp kutusuna gider; 30 gün içinde oradan geri alabilirsin.</li>
             </ul>
           </details>
@@ -425,6 +438,7 @@
           </details>
         </div>
         <div class="grid">
+          <div class="card account-card wide-card" id="account-card"></div>
           <div class="card">
             <h2>🎨 Görünüm</h2>
             <div class="seg" id="theme-seg">
@@ -572,6 +586,7 @@
   </div>
   <div class="toasts" id="toasts"></div>
 
+  <script src="js/config.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/messages.js"></script>
   <script src="js/audio.js"></script>
@@ -584,6 +599,7 @@
   <script src="js/plan.js"></script>
   <script src="js/deneme.js"></script>
   <script src="js/notes.js"></script>
+  <script src="js/giris.js"></script>
   <script src="js/depo.js"></script>
   <script src="js/depo-ui.js"></script>
   <script src="js/hata.js"></script>
@@ -594,6 +610,7 @@
   <script src="js/asistan.js"></script>
   <script src="js/uni.js"></script>
   <script src="js/uni-ui.js"></script>
+  <script src="js/sync.js"></script>
   <script src="js/diag.js"></script>
   <script src="js/app.js"></script>
 </body>

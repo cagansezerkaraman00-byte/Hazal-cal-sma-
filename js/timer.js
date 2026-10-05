@@ -3,7 +3,7 @@
 const Timer = (() => {
   let h = {};
 
-  const st = () => Store.data.timer;
+  const st = () => Store.data.timer || (Store.data.timer = fresh()); // sıfırlama/içe aktarma sonrası boş kalmasın
   const S = () => Store.data.settings;
 
   function fresh(kind = 'pomodoro', keep = {}) {

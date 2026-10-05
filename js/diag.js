@@ -106,6 +106,7 @@ const Diag = (() => {
         ['📍 Konum', `${s.city || '—'} (${(+s.lat).toFixed(2)}, ${(+s.lon).toFixed(2)}) · gün doğumu ${fmt(sun.sunrise)} · batımı ${fmt(sun.sunset)}${moon ? ` · ay: ${moon.name} %${Math.round(moon.fraction * 100)}${moon.up ? ' (gökte)' : ''}` : ''}`],
         ['🌦️ Hava', window.Weather ? weatherText(Weather.status()) : 'modül yüklenmedi'],
         ['🎧 Spotify', spotifyText(window.SpotifyLink && SpotifyLink.status ? SpotifyLink.status() : null)],
+        ['👤 Hesap', window.Sync ? syncText(Sync.status()) : 'modül yüklenmedi'],
         ['🗂️ Depo', window.Depo ? depoText(Depo.status()) : 'modül yüklenmedi'],
         ['🎓 Asistan', window.Asistan ? aiText(Asistan.status()) : 'modül yüklenmedi'],
         ['💾 Veri', `${D().sessions.length} oturum · ${D().denemeler.length} deneme · ${D().notes.length} not · ${D().cards.length} kart · ${dataKB} KB${a.usage ? ` (tarayıcıda toplam ${Math.round(a.usage / 1024)} KB)` : ''} · son yedek: ${D().lastBackup ? ago(D().lastBackup) : 'yok'}`],
@@ -114,6 +115,11 @@ const Diag = (() => {
     };
   }
 
+  function syncText(x) {
+    if (!x.on) return window.GAuth && GAuth.clientId() ? 'giriş yapılmadı (Client ID hazır)' : 'giriş yapılmadı · Client ID yok';
+    const st = { ok: 'eşitlendi', busy: 'eşitleniyor', renew: 'giriş yenilenmeli', scope: 'eşitleme izni eksik', err: 'hata', offline: 'çevrimdışı' }[x.state] || 'bekliyor';
+    return `${x.email || 'Google hesabı'} · bu cihaz: ${x.dev} · ${x.devices} bağlı cihaz · ${st}${x.last ? ' · son eşitleme ' + ago(x.last) : ''}${x.err ? ' · son hata: ' + x.err : ''}`;
+  }
   function reportText(c) {
     const lines = [`Luna tanılama raporu · ${U.dateKey(new Date())} ${U.hm(new Date())}`];
     for (const [k, v] of c.rows) lines.push(`${k.replace(/^\S+\s/, '')}: ${v}`);

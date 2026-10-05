@@ -14,18 +14,18 @@ const DepoUI = (() => {
   const dateTxt = (t) => new Date(t).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: new Date(t).getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
 
   function statusHtml() {
-    const c = Depo.cfg(), st = Depo.status();
+    const st = Depo.status(), cid = GAuth.clientId(), err = GAuth.lastErr();
     const localTxt = st.local ? `${st.local} dosya bu cihazda (${Depo.fmtSize(st.localBytes)})` : '';
-    if (!c.clientId || !c.connected) {
+    if (!Depo.driveReady()) {
       return `<div class="depo-status local">
           <div><b>📱 Dosyaların şimdilik bu cihazda saklanıyor.</b> <span class="muted small">${localTxt || 'Henüz dosya yok.'}</span>
-          <p class="muted small">Google Drive'ı bağlarsan dosyalar senin Drive'ındaki <b>Luna Depo</b> klasöründe durur: iPad'inde yer kaplamaz, telefonda da açılır.</p></div>
-          <details class="drive-setup" ${c.clientId ? 'open' : ''}><summary>☁️ Google Drive'ı bağla</summary>
-            <p class="hint">Bir kez yapılır (adımlar Ayarlar → Kılavuz → <b>Depo ve Google Drive</b>). Google Cloud'da "Authorized redirect URI" olarak şunu ekle:</p>
-            <code class="sp-uri">${U.esc(Depo.redirectUri())}</code>
-            <div class="inline-form"><input data-dp="client" placeholder="Client ID (…apps.googleusercontent.com)" value="${U.esc(c.clientId)}" autocomplete="off" spellcheck="false"><button class="btn primary" data-dp="connect" type="button">Bağlan</button></div>
-            ${c.lastErr ? `<p class="hint" style="color:var(--red)">Son deneme: ${U.esc(c.lastErr === 'access_denied' ? 'izin verilmedi' : c.lastErr)}</p>` : ''}
-          </details>
+          <p class="muted small">Google ile giriş yaparsan dosyalar senin Drive'ındaki <b>Luna Depo</b> klasöründe durur: iPad'inde yer kaplamaz, telefonda da açılır. Aynı giriş, verilerini cihazların arasında da eşitler.</p></div>
+          ${cid ? '<button class="btn primary" data-dp="connect" type="button">☁️ Google ile giriş yap</button>' : `<details class="drive-setup"><summary>☁️ Google ile giriş yap</summary>
+            <p class="hint">Bir kez yapılır (adımlar Ayarlar → Kılavuz → <b>Hesap, cihazlar ve Google Drive</b>). Google Cloud'da "Authorized redirect URI" olarak şunu ekle:</p>
+            <code class="sp-uri">${U.esc(GAuth.redirectUri())}</code>
+            <div class="inline-form"><input data-dp="client" placeholder="Client ID (…apps.googleusercontent.com)" autocomplete="off" spellcheck="false"><button class="btn primary" data-dp="connect" type="button">Bağlan</button></div>
+          </details>`}
+          ${err ? `<p class="hint" style="color:var(--red)">Son deneme: ${U.esc(err === 'access_denied' ? 'izin verilmedi' : err)}</p>` : ''}
         </div>`;
     }
     const renew = !Depo.hasToken();
@@ -34,9 +34,9 @@ const DepoUI = (() => {
         <div class="row">
           ${renew ? '<button class="btn primary" data-dp="connect" type="button">🔄 Drive bağlantısını yenile</button>' : '<button class="btn soft" data-dp="sync" type="button">↻ Eşitle</button>'}
           ${st.local && !renew ? `<button class="btn soft" data-dp="move" type="button">☁️ Bu cihazdakileri Drive'a taşı (${st.local})</button>` : ''}
-          <button class="btn soft" data-dp="disconnect" type="button">Bağlantıyı kes</button>
+          ${window.Sync && Sync.enabled() ? '' : '<button class="btn soft" data-dp="disconnect" type="button">Bağlantıyı kes</button>'}
         </div>
-        ${renew ? '<p class="hint">Güvenlik için Google bağlantıyı saatte bir yeniler; bir dokunuş yeter. Dosya eklemeye devam edebilirsin, şimdilik bu cihaza kaydedilir.</p>' : ''}
+        ${renew ? '<p class="hint">Güvenlik için Google girişi saatte bir yeniler; uygulamayı açınca kendiliğinden yenilenir, olmazsa bir dokunuş yeter. Dosya eklemeye devam edebilirsin, şimdilik bu cihaza kaydedilir.</p>' : ''}
       </div>`;
   }
 
@@ -303,15 +303,15 @@ const DepoUI = (() => {
         const inp = $('#depo-root [data-dp="client"]');
         if (inp) {
           const id = inp.value.trim();
-          if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(id)) { App.toast('☁️', 'Client ID biçimi tanınmadı', '…apps.googleusercontent.com ile biten kodu yapıştır'); return; }
-          Depo.cfg().clientId = id; Depo.saveCfg();
+          if (!GAuth.validClient(id)) { App.toast('☁️', 'Client ID biçimi tanınmadı', '…apps.googleusercontent.com ile biten kodu yapıştır'); return; }
+          GAuth.setClientId(id);
         }
         Depo.authorize();
       } else if (act === 'disconnect') {
         if (!confirm('Drive bağlantısı bu cihazda kapatılsın mı? Drive’daki dosyaların silinmez; yeniden bağlanınca geri gelir.')) return;
-        const c = Depo.cfg();
-        Object.assign(c, { token: '', exp: 0, connected: false, folderId: '' });
+        Object.assign(Depo.cfg(), { connected: false, folderId: '' });
         Depo.saveCfg();
+        if (!(window.Sync && Sync.enabled())) GAuth.forget();
         D().files = D().files.filter((x) => x.src !== 'drive');
         App.save(); render();
       } else if (act === 'sync') {
@@ -379,17 +379,19 @@ const DepoUI = (() => {
       Depo.setApp(app);
       Depo.loadCfg();
       bind();
-      // Google'dan dönüş
-      const r = Depo.handleRedirect();
-      if (r === 'ok') {
-        App.toast('☁️', 'Google Drive bağlandı', 'Dosyaların artık Drive’daki Luna Depo klasöründe');
-        if (window.NotesUI) NotesUI.setView('depo');
-        App.showTab('notes');
-        setTimeout(() => App.dismissFocus && App.dismissFocus(), 0); // odak sürüyorsa da Depo görünsün
-        syncNow(false);
-      } else if (r === 'denied') App.toast('☁️', 'Drive izni verilmedi', 'İstersen Depo’dan yeniden deneyebilirsin');
-      else if (r === 'state') App.toast('☁️', 'Drive bağlantısı tamamlanamadı', 'Depo’dan bir kez daha "Bağlan" de');
-      else if (Depo.driveReady() && Depo.hasToken()) setTimeout(() => syncNow(false), 4000);
+      // Google'dan dönüş (App.init GAuth.handleRedirect'i modüllerden önce çağırır)
+      const r = GAuth.lastReturn();
+      if (r && r.result === 'ok' && !r.silent && GAuth.canFiles()) Depo.connect(); // tek giriş: hesapla birlikte Depo da Drive'a geçer
+      if (r && r.purpose === 'depo' && !r.silent) {
+        if (r.result === 'ok') {
+          App.toast('☁️', 'Google Drive bağlandı', 'Dosyaların artık Drive’daki Luna Depo klasöründe');
+          if (window.NotesUI) NotesUI.setView('depo');
+          App.showTab('notes');
+          setTimeout(() => App.dismissFocus && App.dismissFocus(), 0); // odak sürüyorsa da Depo görünsün
+          syncNow(false);
+        } else if (r.result === 'denied') App.toast('☁️', 'Drive izni verilmedi', 'İstersen Depo’dan yeniden deneyebilirsin');
+        else if (r.result === 'state') App.toast('☁️', 'Drive bağlantısı tamamlanamadı', 'Depo’dan bir kez daha "Bağlan" de');
+      } else if (Depo.driveReady() && Depo.hasToken()) setTimeout(() => syncNow(false), 4000);
     },
     render,
     open: openViewer,

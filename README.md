@@ -102,11 +102,20 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 
 **🎨 Görünüm:** açık (varsayılan), koyu ya da gün batımında otomatik koyu tema; iPhone, Android ve tablete uygun (çentik payı, rahat dokunma alanları, yatay mod)
 
+**👤 Hesap ve cihazlar** (Ayarlar → Hesap ve cihazlar) — WhatsApp gibi tek hesap, birden çok cihaz
+- Telefonda ve iPad'de **aynı Google hesabıyla giriş**: oturumlar, plan, notlar, kartlar, denemeler, hata defteri, kaynaklar, dersler ve Depo dosyaları iki cihazda da aynı olur. Sunucu yok: veriler Hazal'ın Drive'ında, yalnızca bu uygulamanın görebildiği gizli uygulama klasöründe (`drive.appdata`)
+- Her cihaz yalnızca **kendi eşitleme dosyasına** yazar (sıkıştırılmış JSON); okurken bütün cihazların dosyaları birleşir. İki cihaz aynı anda eşitlese bile birbirinin üstüne yazamaz
+- **Kayıt kayıt birleştirme:** farklı cihazlarda eklenenlerin hepsi kalır; aynı kayıt iki yerde değiştiyse en son değişiklik kazanır (saat + mantıksal saat); silinenler işaretlenir, geri gelmez; balık ve sayaçlar cihaz başına tutulup toplanır. İlk girişte iki cihazın verileri birleşir, hiçbiri silinmez
+- Değişiklik birkaç saniyede gönderilir; açılışta, uygulamaya dönüşte ve açıkken iki dakikada bir yenileri alınır; bir pencere açıkken gelen değişiklik pencere kapanınca uygulanır (yarım düzenleme bozulmaz)
+- **Bağlı cihazlar** listesi (son eşitleme zamanı, cihaz adı) ve başka cihazdan **çıkış yaptırma**; bu cihazda çıkışta veriler cihazda kalır. "Her şeyi sil" hesaba bağlıyken önce bu cihazda çıkış yapar, diğer cihazları etkilemez
+- Google'ın 1 saatlik girişi açılışta sessizce yenilenir (`prompt=none`); başarısız olursa tekrar tekrar denenmez, Ayarlar'da tek dokunuşla yenilenir
+- Cihaza özgü kalanlar: çalışan sayaç, tema, bildirim izni, Asistan anahtarı ve sohbetleri, bu cihazdaki (Drive'a taşınmamış) dosyalar
+
 **🗂️ Depo** (Kitaplık → Depo)
 - Ders fotoğrafları, PDF'ler, çalışma kağıtları, ödevler ders ders ve türüne göre (ders notu, çalışma kağıdı, proje/ödev, kitap/makale, fotoğraf, hata defteri) saklanır; arama ve filtre
 - **📷 Fotoğraf çek** ile tahta/kağıt doğrudan derse kaydedilir; fotoğraflar okunaklı kalacak şekilde küçültülür
 - PDF'ler uygulamanın içinde tam ekran açılır (PDF.js, sayfa sayacı, yakınlaştırma; taranmış PDF'ler dahil); fotoğraflar yakınlaştırılabilir
-- **Google Drive**: dosyalar Hazal'ın kendi Drive'ındaki *Luna Depo* klasöründe durur (iPad'de yer kaplamaz, telefon ve tablette aynı dosyalar). Yalnızca `drive.file` izni: uygulama sadece kendi yüklediği dosyaları görür. Giriş açılır pencere değil yönlendirme ile (iPad ana ekran uygulamasında sorunsuz); 5 MB üstü dosyalar kaldığı yerden devam edebilen yüklemeyle gider; silinen dosya Drive çöp kutusuna gider
+- **Google Drive** (hesapla aynı giriş): dosyalar Hazal'ın kendi Drive'ındaki *Luna Depo* klasöründe durur (iPad'de yer kaplamaz, telefon ve tablette aynı dosyalar). `drive.file` izni: uygulama sadece kendi yüklediği dosyaları görür. Giriş açılır pencere değil yönlendirme ile (iPad ana ekran uygulamasında sorunsuz); 5 MB üstü dosyalar kaldığı yerden devam edebilen yüklemeyle gider; silinen dosya Drive çöp kutusuna gider
 - Drive bağlanmadan önce dosyalar bu cihazda (IndexedDB) saklanır; **Drive'a taşı** ile tek dokunuşta Drive'a geçer, cihazda yer açılır. Drive oturumu saatte bir yenilenir; o arada eklenen dosyalar kaybolmaz
 
 **🎓 Eğitim asistanı** (Asistan sekmesi, Claude)
@@ -159,11 +168,17 @@ python3 -m http.server 8000
 - **Ayarlar → Dersler:** ders ekle, sil, renk değiştir
 
 ## Veriler
-Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok).
+Veriler kullanılan cihazın tarayıcısında saklanır (sunucu yok). Google ile giriş yapıldıysa ayrıca Hazal'ın kendi Drive'ındaki gizli uygulama klasöründe, cihazlar arasında eşitlenerek durur.
 - **Ayarlar → Veriler → Yedek al:** telefonda paylaşım menüsü açılır (Dosyalar'a kaydet, Drive…), bilgisayarda dosya iner. Son yedeğin tarihi ayarlarda görünür; bir aydır yedek yoksa Luna nazikçe hatırlatır.
 - **İçe aktar → Birleştir:** hiçbir kayıt silinmez, yedekteki eksik oturum, deneme, not, kart ve rozetler eklenir; ayarlar bu cihazdaki gibi kalır.
 - **İçe aktar → Tamamen değiştir:** bu cihaz yedekteki hale gelir.
 - Ana ekrana eklenmiş uygulamada tarayıcıdan kalıcı depolama istenir; böylece veriler kendiliğinden silinmez.
+
+## Google hesabı kurulumu (bir kez)
+1. [console.cloud.google.com](https://console.cloud.google.com/)'da yeni proje aç, **Google Drive API**'yi etkinleştir.
+2. **Google Auth Platform**: uygulama adı "Luna", kitle **External**; **Data access**'e `drive.file` ve `drive.appdata` izinlerini ekle; **Audience**'ta **In production**'a al (bu iki izin doğrulama gerektirmez; "Testing"te kalırsa giriş 7 günde bir yeniden istenir).
+3. **Clients → Web application**: JavaScript origin `https://cagansezerkaraman00-byte.github.io`, redirect URI `https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/`.
+4. Client ID'yi `js/config.js` içindeki `googleClientId`'ye yaz ve `sw.js`'deki `VERSION`'ı artır. Cihazlarda hiçbir şey girmeden "Google ile giriş yap" çalışır. (Yazılmazsa her cihazda Ayarlar → Hesap ve cihazlar'dan bir kez girilebilir.)
 
 ## Dosyalar
 | Dosya | Görevi |
@@ -181,6 +196,9 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok)
 | `js/badges.js` | Rozetler ve sevgi notları |
 | `js/notes.js` | Notlar ve bilgi kartları |
 | `js/spotify.js` | İsteğe bağlı Spotify hesabı bağlama |
+| `js/config.js` | Yayınlayanın ayarları (Google Client ID) |
+| `js/giris.js` | Tek Google girişi (yönlendirme akışı, sessiz yenileme), hesap ve Depo ortak kullanır |
+| `js/sync.js` | Hesap ve cihazlar: cihaz başına eşitleme dosyası, kayıt kayıt birleştirme, bağlı cihazlar |
 | `js/depo.js`, `js/depo-ui.js` | Depo: Google Drive / cihaz depolama, yükleme, eşitleme, PDF ve fotoğraf görüntüleyici |
 | `vendor/pdfjs/` | Mozilla PDF.js 6.4 (Apache-2.0), yalnızca PDF açılınca yüklenir |
 | `js/asistan.js` | Eğitim asistanı (Claude): sohbet, belgeler, kaynak gösterimi, kart üretimi, bütçe |
