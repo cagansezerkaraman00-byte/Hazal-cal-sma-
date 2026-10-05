@@ -1,0 +1,24 @@
+# Uygulamaya gelen her güncellemede GitHub Pages yayınını yeniler
+# (Pages "Deploy from a branch" ile bu daldan yayınlanıyor; bot gönderimleri yayını kendiliğinden başlatmıyor).
+name: Yayını yenile
+
+on:
+  push:
+    branches: [claude/luna-study-app-1xt2uk]
+  workflow_dispatch:
+
+permissions:
+  pages: write
+
+concurrency:
+  group: pages-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pages yayını iste
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds"
