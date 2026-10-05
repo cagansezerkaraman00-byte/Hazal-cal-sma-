@@ -2,7 +2,7 @@
    Uygulama kabuğu (HTML, CSS, JS, simgeler) sürüme bağlı önbellekten gelir: zayıf internette de anında açılır
    ve dosyalar hep aynı sürümden olur. Dosyaları değiştirince VERSION'ı artır: yeni sürüm arka planda iner,
    sayfa güvenli bir anda (uygulamadan çıkılınca, sayaç çalışmıyorken) yenilenir. */
-const VERSION = 'luna-v15';
+const VERSION = 'luna-v16';
 const VENDOR = 'luna-vendor-1'; // büyük ve değişmeyen kütüphaneler (PDF.js, Anthropic SDK), yazı tipleri
 const FILES = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
