@@ -222,6 +222,7 @@ const HataUI = (() => {
     init(app) { App = app; bind(); },
     render,
     dueCount: () => due().length,
+    REASONS,
   };
 })();
 

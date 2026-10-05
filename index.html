@@ -315,12 +315,14 @@
             </ul>
           </details>
           <details>
-            <summary>🎓 Eğitim asistanı</summary>
+            <summary>🎓 Bilimsel çalışma asistanı</summary>
             <ul>
-              <li><b>Asistan</b> sekmesinde Claude ile konuşursun: konu anlattırabilir, soru fotoğrafı çözdürebilir, PDF'indeki anlamadığın yeri sorabilir, güvenilir kaynak önerisi alabilirsin. Anlatımı Ayarlar → Kişisel'deki <b>eğitim düzeyine ve bölümüne</b> göre ayarlar (ör. Tıp 1. sınıf).</li>
-              <li><b>Kaynak gösterir:</b> PDF'e dayanan cümlelerin yanında küçük numaralar çıkar; dokununca alıntıyı ve sayfa numarasını görürsün. İnternette arama açıksa dış kaynaklar bağlantısıyla listelenir. Kaynak uydurmaması ve emin olmadığında bunu söylemesi özellikle istenir.</li>
-              <li><b>Deneme analizi:</b> Deneme sekmesindeki "🎓 Asistanla analiz et" netlerini ve eksik konularını YKS soru ağırlıklarıyla birlikte gönderir; 2 haftalık plan önerir.</li>
-              <li>Cevapları <b>📓 Nota kaydet</b> ile notlarına ekleyebilir, <b>🃏 Kart üret</b> ile aralıklı tekrar kartlarına dönüştürebilirsin. Depo'da açtığın bir PDF ya da fotoğraf için görüntüleyicideki <b>🎓 Asistana sor</b> düğmesini kullan.</li>
+              <li><b>Asistan</b> yalnızca dört iş yapar: <b>soru ve test inceleme</b> (adım adım çözüm, konu, hata nedeni, benzer sorular), <b>akademik kaynak inceleme</b> (PDF, not, makale; sayfa göstererek), <b>deneme kontrolü ve eksik analizi</b>, <b>çalışma programı kontrolü</b>. Bunların dışındaki istekleri nazikçe geri çevirir.</li>
+              <li><b>Verilerine kendisi bakar:</b> oturumların, haftalık programın, konu durumların, denemelerin, hata defterin, Depo dosyaların ve notların. Bunları yalnızca okur; hiçbir şeyi değiştiremez. Hangi verilere baktığı cevabın üstünde küçük etiketlerle görünür.</li>
+              <li><b>📝 Deneme karnemi oku:</b> karnenin ya da sonuç sayfasının fotoğrafını gösterirsen ders ders doğru-yanlışları çıkarır, netleri doğrular, önceki denemelerinle karşılaştırıp yorumlar ve <b>💾 Denemelere kaydet</b> kartı çıkarır; kaydı sen onaylarsın.</li>
+              <li><b>Kaynak gösterir:</b> PDF'e dayanan cümlelerin yanında küçük numaralar çıkar; dokununca alıntıyı ve sayfa numarasını görürsün. Akademik aramada ve internet aramasında kaynaklar bağlantısıyla listelenir; kaynak uydurmaz, emin olmadığında bunu söyler.</li>
+              <li>Hazır düğmeler: <b>Denemelerimi analiz et</b>, <b>Programımı kontrol et</b>, <b>Hatalarımı analiz et</b>; Çalış ekranındaki "Haftamı asistanla değerlendir", Deneme sekmesindeki "Asistanla analiz et" de aynı asistana gider. Anlatımı Ayarlar → Eğitim modu'ndaki düzeyine ve bölümüne göre ayarlar.</li>
+              <li>Cevapları <b>📓 Nota kaydet</b> ile notlarına ekleyebilir, <b>🃏 Kart üret</b> ile aralıklı tekrar kartlarına dönüştürebilirsin.</li>
               <li><b>Kurulum</b> (bir kez):
                 <ol>
                   <li><a href="https://platform.claude.com/" target="_blank" rel="noopener">platform.claude.com</a>'a (Anthropic geliştirici konsolu) gir ve hesap aç.</li>
@@ -594,6 +596,7 @@
   <script src="js/kaynak-ui.js"></script>
   <script src="js/badges.js"></script>
   <script src="js/spotify.js"></script>
+  <script src="js/asistan-araclar.js"></script>
   <script src="js/asistan.js"></script>
   <script src="js/uni.js"></script>
   <script src="js/uni-ui.js"></script>

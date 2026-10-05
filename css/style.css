@@ -1480,6 +1480,15 @@ details.hint ol a { color: var(--lav-ink); overflow-wrap: anywhere; }
 .edu-card:not(.is-school) .school-only { display: none; }
 @media (min-width: 1101px) { .edu-seg { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 
+.ai-tools { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; }
+.ai-tools span { font-size: .72rem; font-weight: 700; color: var(--muted); background: var(--surface-3); border-radius: 99px; padding: 2px 8px; }
+.ai-prop { margin: 10px 0 4px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); border: 1px solid var(--accent-line); display: flex; flex-direction: column; gap: 4px; }
+.ai-prop-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.ai-prop-net { font-weight: 800; color: var(--accent-ink); }
+.ai-prop small { color: var(--muted); overflow-wrap: anywhere; }
+.ai-prop .small-btn { align-self: flex-start; margin-top: 6px; }
+.ai-prop-done { font-weight: 800; color: var(--mint-ink); font-size: .85rem; margin-top: 4px; }
+
 /* ---------- Mobil ---------- */
 @media (max-width: 760px) {
   :root { --tabs-h: 64px; }

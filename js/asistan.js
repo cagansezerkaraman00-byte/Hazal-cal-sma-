@@ -1,9 +1,12 @@
-/* Eğitim asistanı (Claude). Hazal'ın kendi Anthropic API anahtarıyla doğrudan tarayıcıdan çalışır;
+/* Bilimsel çalışma asistanı (Claude). Hazal'ın kendi Anthropic API anahtarıyla doğrudan tarayıcıdan çalışır;
    anahtar yalnızca bu cihazda (veri yedeğine girmez). Sohbetler IndexedDB'de.
+   Görev alanı kesin olarak sınırlı: soru/test inceleme, akademik kaynak inceleme, deneme kontrolü ve eksik analizi,
+   çalışma programı kontrolü. Bunların dışındaki istekleri nazikçe geri çevirir.
+   - Uygulamadaki verilere yalnızca okuma araçlarıyla (asistan-araclar.js) kendisi bakar; hiçbir şeyi değiştirmez
    - PDF ve fotoğraflar Depo'dan ya da doğrudan eklenir; PDF'lerde sayfa numaralı kaynak gösterimi (citations)
    - İsteğe bağlı web araması: dış kaynaklar bağlantısıyla gösterilir, uydurma kaynak yok
-   - Deneme analizi, konu anlatımı, soru çözümü, bilgi kartı üretimi, cevabı nota kaydetme
-   - Aylık bütçe: her yanıtın maliyeti hesaplanır, bütçe dolunca durur */
+   - Deneme karnesi okunursa kaydetme önerisi kartı (kaydı Hazal onaylar)
+   - Aylık bütçe: her adımın maliyeti hesaplanır, bütçe dolunca durur */
 
 const Asistan = (() => {
   let App = null;
@@ -79,30 +82,71 @@ const Asistan = (() => {
     };
   })();
 
-  // ---------- Sistem talimatı (sabit tutulur: önbelleğe alınır) ----------
+  // ---------- Sistem talimatı (sabit tutulur: önbelleğe alınır; günlük veriler araçlardan gelir) ----------
   const LEVELS = { yks: 'YKS hazırlığı yapan bir lise öğrencisi', kpss: 'KPSS hazırlığı yapan bir aday', uni: 'bir üniversite öğrencisi', yl: 'bir yüksek lisans öğrencisi', diger: 'bir öğrenci' };
   function systemPrompt() {
     const s = D().settings, p = s.profile || {};
     const who = `${LEVELS[p.level] || LEVELS.yks}${p.dept ? ` (bölüm/alan: ${p.dept}${p.year ? ', ' + p.year : ''})` : ''}`;
     const field = D().yks && D().yks.field && (p.level || 'yks') === 'yks' ? ` YKS alanı: ${(YKS.FIELDS[D().yks.field] || {}).name || D().yks.field}.` : '';
-    return `Sen ${s.name || 'öğrencinin'} kişisel eğitim asistanısın. Karşındaki kişi ${who}.${field}
-Görevin öğrenmesine yardım etmek: konuları anlaşılır anlatmak, sorularını çözmek, belgelerindeki anlamadığı yerleri açıklamak ve güvenilir kaynaklara yönlendirmek.
+    return `Sen ${s.name || 'öğrencinin'} bilimsel çalışma asistanısın: ders çalışmasına her an eşlik eden, verilerine bakarak inceleyen ve yorumlayan kişisel bir eğitmen. Karşındaki kişi ${who}.${field}
 
-Bilimsel doğruluk:
-- Yalnızca doğruluğundan emin olduğun bilgiyi kesin dille söyle. Emin olmadığında ya da kaynaklar ayrıştığında bunu açıkça belirt.
-- Kaynak, yazar, kitap baskısı, sayfa numarası, DOI ya da bağlantı asla uydurma. Bir kaynağı ancak gerçekten biliyorsan ya da web aramasında bulduysan ver.
-- Belge (PDF, fotoğraf) verildiğinde açıklamanı belgeye dayandır; belgede olmayan bir şey eklediğinde bunun belgenin dışından geldiğini söyle.
-- Web araması varsa güncel ya da doğrulanması gereken bilgiler için kullan; hakemli makaleler, ders kitapları, resmî kılavuzlar (ör. WHO, NIH, MEB, ÖSYM) ve üniversite kaynaklarını tercih et; forum ve içerik çiftliklerinden kaçın.
-- Tıp ve sağlık konularında anlatımın eğitim amaçlıdır; gerçek bir hasta için tanı ya da tedavi önerisi olmadığını gerektiğinde hatırlat.
+## Görev alanın (kesin sınır)
+Yalnızca şu dört işi yaparsın:
+1. Soru ve test inceleme: paylaştığı soruları ve testleri ayrıntılı çözmek ve açıklamak, konusunu ve hata nedenini bulmak, benzer sorular ve kısa mini testler hazırlamak, verdiği cevapları kontrol etmek.
+2. Akademik kaynak inceleme: verdiği PDF, not, makale ve ders materyallerini kaynağa sadık kalarak açıklamak; güvenilir akademik kaynak bulmak ve atıfları doğrulamak.
+3. Deneme kontrolü: netleri hesaplamak ve doğrulamak, gelişimi yorumlamak, eksik konuları sınav ağırlığına göre önceliklendirmek, hata türlerini çıkarmak.
+4. Çalışma programı kontrolü: oturumlarına, planına ve konu ilerlemesine bakıp plana uyumu, ders dağılımını, düzeni ve verimi yorumlamak; uygulanabilir düzeltmeler önermek.
+Bu dört işin dışındaki her istek (sohbet, gündem, eğlence, kişisel ya da ilişki konuları, tarif, alışveriş, dersleriyle ilgisi olmayan teknoloji ya da kod yardımı, teslim edilecek ödev/proje/makaleyi onun yerine yazmak vb.) kapsam dışıdır: tek cümleyle, sıcak bir dille geri çevir ve yapabileceğin bir işi öner. Örnek: "Ben yalnızca derslerin, soruların, denemelerin ve çalışma programın için buradayım 🐾 İstersen son denemene birlikte bakalım." Israr edilse de kapsam dışına çıkma. Ödev ve projelerde onun yazdığını inceleyip geri bildirim verirsin ama yerine yazmazsın.
+Stresli, yorgun ya da üzgün olduğunu söylerse bunu geri çevirme: kısa ve şefkatli karşılık ver, mola, uyku ya da daha hafif bir plan öner; ciddi bir sıkıntı sezersen ailesiyle ya da rehber öğretmeniyle konuşmasını nazikçe öner; sonra çalışmaya yumuşakça dön.
 
-Anlatım:
-- Türkçe yaz (soru başka dilde sorulursa o dilde). Sıcak, cesaretlendirici ve sakin bir ton kullan; asla küçümseme ya da moral bozma.
-- Önce kısa ve net bir cevap ver, sonra adım adım açıkla. Gerekirse benzetme, çözümlü örnek ve sık yapılan hatalar ekle.
-- Test sorularında çözüm yolunu ve neden diğer şıkların yanlış olduğunu göster. Öğrenci "ipucu" isterse çözümü verme, yönlendir.
-- YKS konularında konunun sınavdaki ağırlığını ve hangi soru tiplerinin çıktığını gözet; çalışma önerilerini aktif hatırlama, aralıklı tekrar ve karma çalışma gibi kanıta dayalı tekniklere dayandır.
-- Matematik ve fen ifadelerini LaTeX kullanmadan, düz metin ve Unicode ile yaz (x², √x, ∫, Σ, Δ, →, ≤, ·).
-- Biçim: kısa başlıklar, maddeler ve gerektiğinde küçük tablolar (Markdown). Gereksiz uzatma.
-- Uygunsa yanıtı, öğrencinin kendini sınayabileceği tek bir kısa soruyla ya da sıradaki adım önerisiyle bitir.`;
+## Verilerle çalış
+- Araçların öğrencinin uygulamadaki verilerini okur: genel durum, çalışma oturumları, program, konular, denemeler, hata defteri, kitaplık, Depo dosyaları ve notlar. Öğrenciyle ilgili her yorumdan önce gereken araçları kendin çağır; sayı uydurma, tahmin yürütme. Veri yoksa ya da azsa bunu açıkça söyle.
+- Bugünün tarihini ogrenci_durumu aracından öğren.
+- Araçlar yalnızca okur; hiçbir şeyi değiştiremezsin. "Kaydettim, ekledim, işaretledim" deme. Paylaştığı bir deneme sonucunu kaydetmesi için deneme_kaydi_oner ile öneri kartı göster.
+
+## Soru ve test incelerken
+- Açıkça çözüm istemediyse ve kendi denemesini paylaşmadıysa önce kısa bir ipucu ver ve çözümü görmek isteyip istemediğini sor. "Çöz" dediyse ya da yanlış yaptığı soruyu getirdiyse tam çözümü ver.
+- Adım adım çöz, her adımın nedenini söyle; sonucu ikinci bir yolla doğrula (yerine koyma, birim, şık eleme). Cevap anahtarı yanlış görünüyorsa açıkça söyle; çözümü anahtara uydurma.
+- Soruyu sınıflandır: ders → konu (uygulamadaki konu adlarıyla) → zorluk ve soru tipi (paragraf, grafik/tablo, problem, öncüllü, şekilli).
+- Yanlışı teşhis et: hangi şıkkı neden işaretlediğini sor ya da çıkar; o çeldiricinin neden çekici olduğunu açıkla. Hata türünü belirt: bilgi eksiği, hiç çalışılmamış konu, unutma, kavram yanılgısı, soruyu yanlış yorumlama, dikkat/okuma, işlem, süre yetmedi, strateji/turlama, iki şık arasında kalma. Kavram yanılgısında yanlış fikirle doğrusunu açıkça karşılaştır.
+- Hata defterine yazılacak tek cümlelik bir kural ve gerekiyorsa formülü ver; 2-3 benzer soru öner ve 1 gün, 1 hafta sonra tekrar çözmesini söyle.
+- Süreyi yorumla (TYT'de soru başına ≈1,4 dk, AYT'de ≈1,1 dk); varsa daha hızlı yolu ve soruyu atlayıp dönmenin (turlama) ne zaman akıllıca olduğunu göster.
+- Fotoğraf bulanıksa, şekil kesikse ya da şıklar eksikse neyin okunmadığını söyle ve daha net fotoğraf iste; sayı ya da şık uydurma.
+
+## Deneme kontrol ederken
+- Önce doğrula: her derste doğru + yanlış + boş soru sayısını aşamaz (TYT: Türkçe 40, Sosyal 20, Temel Matematik 40, Fen 20; AYT 160 soru). Tutarsız kayıtta analize başlamadan düzeltmesini iste.
+- Net = Doğru − Yanlış/4 (boş net düşürmez; KPSS'de de aynı kural). Yanlışların götürdüğü neti de göster. Kör tahminin beklenen değeri sıfırdır, bir şık elenince pozitife döner; "hepsini işaretle" ya da "boş bırak" gibi toptan öneriler verme.
+- Gelişimi aynı türdeki bir önceki denemeyle ve son 3 denemenin ortalamasıyla karşılaştır; yayınlar arası zorluk farkı yüzünden tek bir dalgalanmayı abartma.
+- Ders ders en güçlü, en zayıf ve en çok değişen dersi söyle; kazanılabilir neti (doğru yapılamayan soruları) göster.
+- Eksik konuları (konunun sınavdaki ortalama soru sayısı) × (son denemelerde eksik çıkma sıklığı) ile önceliklendir; iki ya da daha fazla denemede tekrar eden eksik, tek seferlikten önce gelir.
+- Hata türlerini çıkar ve çaresini eşle: bilgi eksiği ya da çalışılmamış konu → konu çalışması; unutma → aralıklı tekrar; işlem ve dikkat → kontrol alışkanlığı; süre ve strateji → süreli setler ve turlama; yorum → soru kökünü kendi cümlesiyle söyleme ve paragraf pratiği. Boşları ayrıca yorumla (bilmiyordum, süre yetmedi, riskten kaçındım).
+- Biçim: 1-2 gerçek, sürece dayalı güçlü yönle başla; sonra en fazla 3 öncelikli ve somut eylem ver (ör. "Bu hafta: Problemler, yaş ve yüzde, 3×15 karışık soru, süre tutarak") ve bunları çalışma programına bağla. "Kötü", "başarısız" gibi etiketleri asla kullanma.
+
+## Çalışma programını kontrol ederken
+- Plana uyum: planlanan ve tamamlanan madde ya da dakika; yapılanlardan başla. Uyum iki hafta boyunca %60'ın altındaysa daha hafif ve gerçekçi bir plan öner; daha çok irade isteme.
+- Ders dağılımını sınav ağırlığıyla karşılaştır (TYT'de Türkçe ve Temel Matematik ≈%33'er, Sosyal ve Fen ≈%17'şer; alanın AYT dersleri eklenir) ve konu eksikleriyle düzelt; kazanılabilir neti yüksek ama payı düşük dersleri göster.
+- Aktif çalışmayı (soru, deneme, kart, hatırlamaya çalışma) pasif çalışmadan (tekrar okuma, altını çizme, video) ayır; konu öğrenildikten sonra zamanın çoğu aktif olmalı.
+- Aralıklı tekrarı ve karma çalışmayı kontrol et; bekleyen kartları ve hata sorularını nazikçe hatırlat.
+- Düzen: haftada aktif gün, seri, günlük dakikaların dalgalanması. Düzenli 5-6 gün, ara sıra maraton yapmaktan iyidir; kaçan günü başarısızlık sayma.
+- Verimli saatleri yalnızca kendi verisinden çıkar; en zor dersi en verimli dilime koymayı, sınav sabah olduğu için bazı denemeleri sabah çözmeyi öner.
+- Gece yarısını geçen oturumlar sıksa uykunun öğrenmenin parçası olduğunu nazikçe hatırlat. Tükenmişlik işaretlerinde (iki haftadan uzun düşen dakikalar, artan saate rağmen yerinde sayan netler, moral bozucu notlar) daha hafif bir plan ve dinlenme günü öner; tanı koyma.
+- Üniversite ve KPSS modunda aynı ilkeleri o dersin değerlendirmesine ve sınav takvimine uyarla.
+
+## Akademik kaynak incelerken
+- Her söylediğini belgeye dayandır ve yerini göster (sayfa ya da bölüm); önemli tanım ve formülleri kısa alıntıyla aynen ver.
+- "Kaynakta yazan" ile "ek bilgi (kaynakta yok)" ayrımını açıkça yap. Kaynak, yazar, sayfa, DOI ya da bağlantı asla uydurma; doğrulayamadığını söyle.
+- Okunamayan ya da eksik sayfayı belirt; boşluğu hafızandan kaynağa aitmiş gibi doldurma.
+- İçeriği sınav konularına bağla; kaynaktaki hatayı (yanlış formül, anahtar hatası, eski bilgi) gerekçesiyle kibarca göster.
+- Kaynağı aktif hatırlamaya çevir: 5-10 sınav tarzı soru ve kısa hatırlama soruları öner.
+- Akademik makalede amaç, yöntem, örneklem, ana bulgular ve sınırlılıkları ver; korelasyonu nedensellikten ayır ve kanıt düzeyini söyle (meta-analiz > randomize kontrollü çalışma > korelasyonel > görüş).
+- Web araması ya da akademik arama kullanırken hakemli makaleleri, ders kitaplarını, resmî kurumları (ÖSYM, MEB, WHO, NIH) ve üniversite kaynaklarını tercih et; forum ve içerik çiftliklerinden kaçın.
+
+## Üslup
+- Türkçe yaz. Sıcak, sakin ve cesaretlendirici ol; çabayı ve stratejiyi öv, yeteneği değil; asla küçümseme, başkalarıyla kıyaslama ya da moral bozma.
+- Önce kısa ve net sonuç, sonra gerekçe. Kısa başlıklar, maddeler ve gerektiğinde küçük tablolar (Markdown). Gereksiz uzatma.
+- Matematik ve fen ifadelerini LaTeX kullanmadan düz metin ve Unicode ile yaz (x², √x, ∫, Σ, Δ, →, ≤, ·).
+- Sağlık ve tıp konularında anlatım eğitim amaçlıdır; gerçek bir kişi için tanı ya da tedavi önerme.
+- Yanıtı 1-3 net sonraki adımla ya da kendini sınayabileceği tek bir kısa soruyla bitir.`;
   }
 
   // ---------- Ekler: Depo dosyası ya da doğrudan eklenen fotoğraf/PDF ----------
@@ -189,20 +233,24 @@ Anlatım:
   }
 
   // ---------- İstek ----------
+  // extra.chat: sohbet (okuma araçları açık); call() ve kart üretimi araçsız çalışır
   function requestParams(messages, extra = {}) {
     const M = MODELS[cfg.model];
+    const { chat: withTools, noTools, forceWeb, ...rest } = extra;
     const p = {
       model: cfg.model,
       max_tokens: 64000,
       system: systemPrompt(),
       cache_control: { type: 'ephemeral' }, // konuşmanın önceki kısmı önbelleğe alınır (takip soruları ucuzlar)
       messages,
-      ...extra,
+      ...rest,
     };
     if (M.effort) p.output_config = { ...(p.output_config || {}), effort: cfg.effort === 'medium' ? 'medium' : 'high' };
     if (M.fb) { p.betas = ['server-side-fallback-2026-07-01']; p.fallbacks = 'default'; } // güvenlik reddinde önerilen modele devret
-    if ((cfg.web || extra.forceWeb) && !extra.noTools) p.tools = [{ type: M.ws, name: 'web_search', max_uses: 5 }];
-    delete p.noTools; delete p.forceWeb;
+    // araç listesi her istekte aynı sırada: önbellek bozulmaz
+    const tools = withTools ? AsistanTools.DEFS.slice() : [];
+    if ((cfg.web || forceWeb) && !noTools) tools.push({ type: M.ws, name: 'web_search', max_uses: 5 });
+    if (tools.length) p.tools = tools;
     return p;
   }
   function errText(e, Anthropic) {
@@ -227,8 +275,9 @@ Anlatım:
   let chats = [];        // özet listesi
   let chat = null;       // açık sohbet
   let pending = [];      // gönderilecek ekler
-  let live = null;       // {stream, text, status}
+  let live = null;       // {stream, text, status, tools, abort}
   let loaded = false;
+  const MAX_TOOL_ROUNDS = 8; // bir soruda en fazla bu kadar araç turu; sonra araçsız son yanıt
 
   async function loadChats() {
     try { chats = (await DB.all()).sort((a, b) => b.updated - a.updated); } catch (e) { chats = []; }
@@ -254,56 +303,103 @@ Anlatım:
     text = String(text || '').trim();
     if (!text && !pending.length) return;
     if (!chat) newChat();
-    const content = [...pending.map((r) => ({ type: 'luna_att', ...r })), { type: 'text', text: text || 'Bu dosyayı açıkla.' }];
+    const content = [...pending.map((r) => ({ type: 'luna_att', ...r })), { type: 'text', text: text || 'Bu dosyayı incele.' }];
     // büyük belge: göndermeden önce tahmini maliyeti göster
     if (pending.length && !opts.confirmed) {
       const est = await estimate([...chat.messages, { role: 'user', content }]).catch(() => null);
       if (est && est.usd > 0.25 && !confirm(`Bu istek yaklaşık ${Math.round(est.tokens / 1000)} bin jeton ≈ ${usd(est.usd)} tutacak (takip soruları önbellek sayesinde çok daha ucuz). Gönderilsin mi?\n\nİpucu: Büyük PDF'lerde yalnızca ilgili sayfaları seçmek maliyeti düşürür.`)) return;
     }
     if (chat.messages.length === 0 && chat.title === 'Yeni sohbet') chat.title = (text || pending[0].name).slice(0, 60);
+    const turnStart = chat.messages.length;
     chat.messages.push({ role: 'user', content, at: Date.now() });
     pending = [];
     await saveChat();
-    await run();
+    await run(turnStart);
   }
   async function estimate(msgs) {
     const { client } = await sdk();
-    const r = await client.messages.countTokens({ model: cfg.model, system: systemPrompt(), messages: await apiMessages(msgs) });
+    const tools = AsistanTools.DEFS.map(({ eager_input_streaming, ...t }) => t);
+    const r = await client.messages.countTokens({ model: cfg.model, system: systemPrompt(), tools, messages: await apiMessages(msgs) });
     const M = MODELS[cfg.model];
     return { tokens: r.input_tokens, usd: (r.input_tokens * M.cw) / 1e6 };
   }
-  async function run() {
-    let Anthropic = null;
-    live = { text: '', status: 'Düşünüyor…', searches: [] };
+
+  // Bir soru = bir "tur": model gerektikçe okuma araçlarını çağırır, sonuçları görür ve devam eder.
+  // Geçmiş yalnızca sona eklenir (düşünme blokları korunur); hata ya da durdurmada turun tamamı geri alınır.
+  class Stopped extends Error {}
+  async function run(turnStart) {
+    let Anthropic = null, total = 0, rounds = 0, pauses = 0, jsonRetries = 0, lastModel = cfg.model, finalStop = null, noTools = false;
+    live = { text: '', status: 'Düşünüyor…', tools: [], abort: false, stream: null, newRound: false };
     render();
     try {
       const s = await sdk();
       Anthropic = s.Anthropic;
-      let messages = await apiMessages(chat.messages);
-      let final = null, total = 0;
-      // web araması uzun sürerse model duraklayabilir (pause_turn): kaldığı yerden devam ettir
-      for (let round = 0; round < 4; round++) {
-        const stream = s.client.beta.messages.stream(requestParams(messages));
-        live.stream = stream;
-        stream.on('text', (d) => { live.text += d; live.status = ''; paintLive(); });
-        stream.on('streamEvent', (ev) => {
-          if (ev.type === 'content_block_start' && ev.content_block && ev.content_block.type === 'server_tool_use') { live.status = '🔎 Kaynak aranıyor…'; paintLive(); }
-        });
-        const msg = await stream.finalMessage();
-        total += costOf(msg.usage, msg.model || cfg.model);
-        if (msg.stop_reason === 'refusal') {
-          final = { ...msg, content: [{ type: 'text', text: 'Bu isteğe yanıt veremedim. Soruyu farklı bir şekilde sormayı deneyebilirsin.' }] };
+      for (;;) {
+        if (live.abort) throw new Stopped();
+        if (rounds > 0 && spend().usd + total >= cfg.budget) {
+          chat.messages.push({ role: 'assistant', content: [{ type: 'text', text: '⚠️ Bu ayın asistan bütçesi bu yanıtın ortasında doldu; incelemeyi burada bırakıyorum. Ayarlardan bütçeyi artırırsan kaldığımız yerden devam edebiliriz.' }], at: Date.now(), model: lastModel, cost: 0, stop: 'budget' });
           break;
         }
-        if (final && final._paused) final = { ...msg, content: [...final.content, ...msg.content] };
-        else final = msg;
-        if (msg.stop_reason !== 'pause_turn') break;
-        messages = [...messages, { role: 'assistant', content: msg.content }];
-        final._paused = true;
+        const params = requestParams(await apiMessages(chat.messages), { chat: true });
+        if (noTools) params.tool_choice = { type: 'none' };
+        const stream = s.client.beta.messages.stream(params);
+        live.stream = stream; live.newRound = true;
+        stream.on('text', (d) => {
+          if (live.newRound && live.text) live.text += '\n\n';
+          live.newRound = false;
+          live.text += d; live.status = ''; paintLive();
+        });
+        stream.on('streamEvent', (ev) => {
+          if (ev.type !== 'content_block_start' || !ev.content_block) return;
+          if (ev.content_block.type === 'server_tool_use') { live.status = '🔎 İnternette kaynak arıyor…'; paintLive(); }
+          if (ev.content_block.type === 'tool_use') { const l = AsistanTools.label(ev.content_block.name); live.status = `${l[0]} ${l[1]}`; paintLive(); }
+        });
+        let msg;
+        try {
+          msg = await stream.finalMessage();
+          jsonRetries = 0;
+        } catch (err) {
+          if (live.abort) throw new Stopped();
+          // akışlı araç girdisi hiç ayrıştırılamadıysa turu bir-iki kez yeniden iste; API hataları aynen yukarı
+          if (err instanceof Anthropic.APIError || jsonRetries++ >= 2) throw err;
+          continue;
+        }
+        const cost = costOf(msg.usage, msg.model || cfg.model);
+        total += cost; lastModel = msg.model || cfg.model;
+        if (msg.stop_reason === 'refusal') { // reddedilen turun araçları asla çalıştırılmaz
+          chat.messages.push({ role: 'assistant', content: [{ type: 'text', text: 'Bu isteğe yanıt veremedim. Ders çalışmanla ilgili farklı bir şekilde sormayı deneyebilirsin.' }], at: Date.now(), model: lastModel, cost, stop: 'refusal' });
+          break;
+        }
+        // düz JSON: akıştan gelen bloklardaki hesaplanan alanlar kalıcı veriye dönüşsün
+        const content = JSON.parse(JSON.stringify(msg.content));
+        const am = { role: 'assistant', content, at: Date.now(), model: lastModel, cost, stop: msg.stop_reason };
+        chat.messages.push(am);
+        if (msg.stop_reason === 'pause_turn') { // sunucudaki web araması uzun sürdü: kaldığı yerden devam
+          if (++pauses > 4) { finalStop = 'pause'; break; }
+          continue;
+        }
+        const uses = content.filter((b) => b.type === 'tool_use');
+        if (uses.length) {
+          const results = [];
+          for (const tu of uses) {
+            if (live.abort) throw new Stopped();
+            const l = AsistanTools.label(tu.name);
+            live.status = `${l[0]} ${l[1]}`; live.tools.push(tu.name); paintLive();
+            // yanıt sınırında kesilmiş bir araç girdisi eksik olabilir: çalıştırma, modele söyle
+            const r = msg.stop_reason === 'max_tokens'
+              ? { content: 'Araç girdisi yanıt sınırında kesildi; daha kısa bir istekle yeniden dene.', isError: true }
+              : await AsistanTools.run(tu.name, tu.input, { toB64, prepImage });
+            results.push({ type: 'tool_result', tool_use_id: tu.id, content: r.content, ...(r.isError ? { is_error: true } : {}) });
+            if (r.proposal) (am.proposals || (am.proposals = [])).push(r.proposal);
+          }
+          chat.messages.push({ role: 'user', content: results, at: Date.now() });
+          if (++rounds >= MAX_TOOL_ROUNDS) noTools = true; // son tur: araçsız toparlayıcı yanıt
+          live.status = 'Düşünüyor…'; paintLive();
+          continue;
+        }
+        finalStop = msg.stop_reason;
+        break;
       }
-      delete final._paused;
-      // düz JSON: akıştan gelen bloklardaki hesaplanan alanlar (araç girdisi) kalıcı veriye dönüşsün
-      chat.messages.push({ role: 'assistant', content: JSON.parse(JSON.stringify(final.content)), at: Date.now(), model: final.model || cfg.model, cost: total, stop: final.stop_reason });
       chat.cost = (chat.cost || 0) + total;
       const sp = spend();
       sp.usd += total; sp.req++;
@@ -312,20 +408,21 @@ Anlatım:
       if (App.checkBadges) App.checkBadges();
       cfg.lastErr = ''; saveCfg();
       await saveChat();
-      if (final.stop_reason === 'max_tokens') App.toast('🎓', 'Yanıt çok uzadığı için kesildi', '"Devam et" yazabilirsin');
+      if (finalStop === 'max_tokens') App.toast('🎓', 'Yanıt çok uzadığı için kesildi', '"Devam et" yazabilirsin');
     } catch (e) {
-      const msg = errText(e, Anthropic);
-      const aborted = Anthropic && e instanceof Anthropic.APIUserAbortError;
+      if (total) { spend().usd += total; App.save(); } // harcanan kısım bütçeden düşülür
+      const aborted = live.abort || e instanceof Stopped || (Anthropic && e instanceof Anthropic.APIUserAbortError);
+      const msg = aborted ? 'Durduruldu.' : errText(e, Anthropic);
       if (!aborted) { cfg.lastErr = msg; saveCfg(); }
-      // yanıtsız kalan son soruyu geri al (geçmiş tutarlı kalsın), metni yazma kutusuna geri koy
-      const last = chat.messages[chat.messages.length - 1];
-      if (last && last.role === 'user') {
-        chat.messages.pop();
-        pending = last.content.filter((b) => b.type === 'luna_att').map(({ type, ...r }) => r);
-        const t = last.content.find((b) => b.type === 'text');
+      // turun tamamını geri al (geçmiş tutarlı kalsın), soruyu ve ekleri yazma kutusuna geri koy
+      const q = chat.messages[turnStart];
+      chat.messages.length = turnStart;
+      if (q && q.role === 'user') {
+        pending = q.content.filter((b) => b.type === 'luna_att').map(({ type, ...r }) => r);
+        const t = q.content.find((b) => b.type === 'text');
         restoreText = t ? t.text : '';
-        await saveChat();
       }
+      await saveChat();
       if (!aborted) App.toast('⚠️', 'Asistan yanıt veremedi', msg);
     }
     live = null;
@@ -514,26 +611,8 @@ Anlatım:
     return { html, text: text.replace(/\u0001\d+\u0002/g, ''), sources };
   }
 
-  // ---------- Bağlamdan hazır istekler ----------
-  function denemeContext() {
-    const list = Deneme.list().slice(-8);
-    if (!list.length) return '';
-    const rows = list.map((e) => {
-      const subs = Object.keys(e.scores || {}).filter((k) => YKS.SUBJECTS[k]).map((k) => `${YKS.SUBJECTS[k].short} ${Deneme.fmt(Deneme.net(e.scores[k].d, e.scores[k].y))} (D${e.scores[k].d || 0} Y${e.scores[k].y || 0}/${YKS.SUBJECTS[k].total})`).join(', ');
-      return `- ${e.date} ${Deneme.label(e)}${e.name ? ' "' + e.name + '"' : ''}: toplam ${Deneme.fmt(Deneme.total(e))} net. ${subs}`;
-    }).join('\n');
-    const weak = Deneme.weakTopics(6, 10).map((w) => `- ${w.topic.name} (${YKS.SUBJECTS[w.topic.subjectKey].short}): son denemelerde ${w.count} kez eksik; YKS'de yılda ortalama ${w.topic.avg} soru`).join('\n');
-    const days = YKS.daysLeft ? YKS.daysLeft() : null;
-    return `Deneme sonuçlarım (eskiden yeniye):\n${rows}\n\nEksik çıkan konular:\n${weak || '- (işaretlenmemiş)'}\n\n${days != null ? `Sınava ${days} gün var. ` : ''}Günlük hedefim ${D().settings.dailyGoal} dakika.`;
-  }
-  function askDeneme() {
-    const ctx = denemeContext();
-    if (!ctx) { App.toast('📝', 'Önce bir deneme ekle', 'Deneme sekmesinden'); return; }
-    App.showTab('asistan');
-    newChat('Deneme analizi');
-    send(`${ctx}\n\nLütfen:\n1) Güçlü yanlarımı ve en çok net kazanabileceğim dersleri/konuları somut sayılarla çıkar.\n2) Önümüzdeki 2 hafta için günlük, uygulanabilir bir çalışma planı öner; YKS soru ağırlıklarını ve eksik konularımı gözet.\n3) Her öncelikli konu için nasıl çalışmam gerektiğini (hangi tür kaynak, kaç soru, hangi kanıta dayalı teknik) kısaca söyle.\nKısa ve net ol; beni motive eden ama gerçekçi bir dil kullan.`, { confirmed: true });
-  }
-  // başka modüllerden hazır bir istekle yeni sohbet (kaynak özeti, hata sorusu…)
+  // ---------- Hazır istekler (veriyi asistan araçlarıyla kendisi okur) ----------
+  // başka modüllerden hazır bir istekle yeni sohbet (kaynak özeti, hata sorusu, ders hazırlığı…)
   function ask(text, title, atts) {
     App.showTab('asistan');
     if (live) return;
@@ -541,28 +620,20 @@ Anlatım:
     pending = (atts || []).slice();
     send(text, { confirmed: !pending.length });
   }
-  // haftalık değerlendirme: son 7 günün özeti
+  function askDeneme() {
+    if (!(window.Deneme && Deneme.list().length)) { App.toast('📝', 'Önce bir deneme ekle', 'Deneme sekmesinden ya da karnenin fotoğrafını Asistan’a göstererek'); return; }
+    ask('Denemelerimi kontrol et ve yorumla: netlerimi doğrula, gelişimimi önceki denemelerle karşılaştır, eksik konularımı sınav ağırlığına göre önceliklendir, hata türlerimi ve boşlarımı yorumla. Sonra bu hafta için en fazla 3 somut eylem öner ve bunları çalışma programıma bağla.', '📊 Deneme analizi');
+  }
+  function askProgram() {
+    ask('Çalışma programımı kontrol et: son 14 günkü oturumlarıma, bu haftaki planıma ve konu ilerlememe bak. Plana uyumumu, ders dağılımımı sınav ağırlığına göre, düzenimi ve verimli saatlerimi yorumla; 2-3 küçük ve uygulanabilir düzeltme öner.', '🗓️ Program kontrolü');
+  }
   function askWeek() {
-    const days = Stats.byDay(7);
-    const list = Stats.inRange(7);
-    if (!list.length) { App.toast('📈', 'Bu hafta henüz oturum yok', 'Birkaç oturumdan sonra birlikte değerlendirelim'); return; }
-    const subj = Stats.bySubject(list).map((x) => `${Store.subject(x.id).name}: ${U.fmtMin(x.minutes)} (${x.count} oturum${x.rcnt ? ', ort. verim ' + (x.rsum / x.rcnt).toFixed(1) + '/5' : ''})`).join('; ');
-    const best = App.bestHours ? App.bestHours().slice(0, 3) : [];
-    const goal = D().settings.dailyGoal;
-    const hit = days.filter((d) => d.minutes >= goal).length;
-    const moods = list.filter((s) => s.mood).map((s) => s.mood).join(' ');
-    const wk = U.dateKey(U.addDays(new Date(), -6));
-    const den = Deneme.list().filter((e) => e.date >= wk).map((e) => `${e.date} ${Deneme.label(e)} ${Deneme.fmt(Deneme.total(e))} net`).join('; ');
-    const ctx = `Son 7 günüm:
-- Günlük dakikalar: ${days.map((d) => `${U.DAYS_SHORT[d.date.getDay()]} ${d.minutes}`).join(', ')} (hedef ${goal} dk; ${hit}/7 gün tuttu)
-- Dersler: ${subj}
-${best.length ? `- En verimli saatlerim: ${best.map((h) => U.pad(h) + ':00').join(', ')}
-` : ''}${moods ? `- Oturum sonu ruh hâlim: ${moods}
-` : ''}${den ? `- Bu haftaki denemeler: ${den}
-` : ''}- Bu hafta tekrar edilen kart: ${D().stats.cardReviews || 0} (toplam), hata defterinde bekleyen soru: ${window.HataUI ? HataUI.dueCount() : 0}`;
-    ask(`${ctx}
-
-Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle, verimimi artıracak 2-3 küçük ve uygulanabilir değişiklik öner (zamanlama, ders dağılımı, teknik), ve gelecek hafta için 3 net hedef koy. Kısa, sıcak ve gerçekçi ol.`, '📈 Haftalık değerlendirme');
+    if (!Stats.inRange(7).length) { App.toast('📈', 'Bu hafta henüz oturum yok', 'Birkaç oturumdan sonra birlikte değerlendirelim'); return; }
+    ask('Son 7 günümü değerlendir: oturumlarıma, planıma ve bu haftaki denemelerime bak. Neleri iyi yaptığımı somut olarak söyle, verimimi artıracak 2-3 küçük değişiklik öner (zamanlama, ders dağılımı, teknik) ve gelecek hafta için 3 net hedef koy.', '📈 Haftalık değerlendirme');
+  }
+  function askMistakes() {
+    if (!D().mistakes.length) { App.toast('❌', 'Hata defterin boş', 'Yanlış yaptığın soruları Kitaplık → Hatalar’a ekleyebilirsin'); return; }
+    ask('Hata defterimi analiz et: en çok hangi nedenle ve hangi konularda yanlış yapıyorum, tekrar düzenim nasıl gidiyor? Hata türlerine göre çare öner ve bu hafta için kısa bir tekrar planı çıkar.', '❌ Hata analizi');
   }
   function askAboutFile(item) {
     App.showTab('asistan');
@@ -570,7 +641,7 @@ Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle
     pending = [{ src: 'depo', id: item.id, name: item.name, mime: item.mime }];
     if (item.mime === 'application/pdf') choosePdfRange(pending[0]);
     render();
-    setTimeout(() => { const t = $('#ai-input'); if (t) { t.value = t.value || 'Bu belgenin ana fikirlerini açıkla. Anlamadığım yerleri soracağım.'; t.focus(); } }, 50);
+    setTimeout(() => { const t = $('#ai-input'); if (t) { t.value = t.value || 'Bu kaynağı incele: ana fikirleri, önemli tanım ve formülleri sayfa göstererek çıkar, sınav konularıyla ilişkisini söyle ve kendimi sınamam için sorular hazırla.'; t.focus(); } }, 50);
   }
   // büyük PDF: tümü (şekillerle) ya da sayfa aralığı (yalnızca metin, ucuz)
   async function choosePdfRange(ref) {
@@ -612,50 +683,95 @@ Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle
       <p class="muted small">Bu ay: ${sp.req} istek · ${usd(sp.usd)}. Sohbetler bu cihazda saklanır. ${ready() ? '<button class="btn danger small-btn" data-ai="forget" type="button">Anahtarı sil</button>' : ''}</p>
     </details>`;
   }
-  function msgHtml(m, i) {
-    if (m.role === 'user') {
-      const atts = m.content.filter((b) => b.type === 'luna_att');
-      const t = (m.content.find((b) => b.type === 'text') || {}).text || '';
-      const nl = (x) => U.esc(x).replace(/\n/g, '<br>');
-      // uzun mesajlar (ör. deneme verileri) katlanır
-      const body = t.length > 420 ? `${nl(t.slice(0, 260))}… <details class="ai-more"><summary>Tamamını göster</summary>${nl(t)}</details>` : nl(t);
-      return `<div class="ai-msg user">${atts.length ? `<div class="ai-atts">${atts.map((a) => `<span class="ai-att">${a.mime === 'application/pdf' ? '📕' : '🖼️'} ${U.esc(a.name)}${a.range ? ` · s. ${a.range}` : ''}</span>`).join('')}</div>` : ''}<div class="ai-text">${body}</div></div>`;
+  // sohbet "turlara" ayrılır: kullanıcının sorusu + asistanın o soru için yaptığı her şey (araç adımları gizli)
+  const isToolResults = (m) => m.role === 'user' && Array.isArray(m.content) && m.content.length > 0 && m.content.every((b) => b.type === 'tool_result');
+  function turns(msgs) {
+    const out = [];
+    msgs.forEach((m, i) => {
+      if (m.role === 'user' && !isToolResults(m)) out.push({ i, user: m, bot: [] });
+      else if (out.length) out[out.length - 1].bot.push({ m, i });
+    });
+    return out;
+  }
+  // bir turun asistan blokları tek içerik olarak (adımlar arası paragraf boşluğuyla)
+  function turnContent(t) {
+    const out = [];
+    for (const { m } of t.bot) {
+      if (m.role !== 'assistant') continue;
+      if (out.length) out.push({ type: 'text', text: '\n\n' });
+      out.push(...(m.content || []));
     }
-    const r = renderAnswer(m.content);
-    const fb = (m.content || []).some((b) => b.type === 'fallback');
-    return `<div class="ai-msg bot" data-i="${i}"><div class="ai-text">${r.html}</div>
-      <div class="ai-foot"><span class="muted small">${MODELS[m.model] ? MODELS[m.model].n : U.esc(m.model || '')}${fb ? ' (yedek model)' : ''} · ${usd(m.cost || 0)}</span>
-        <span class="ai-acts"><button class="chip" data-ai="note" data-i="${i}" type="button">📓 Nota kaydet</button><button class="chip" data-ai="cards" data-i="${i}" type="button">🃏 Kart üret</button><button class="chip" data-ai="copy" data-i="${i}" type="button">📋</button></span></div></div>`;
+    return out;
+  }
+  const toolsLine = (names) => {
+    const seen = [...new Set(names)];
+    return seen.length ? `<p class="ai-tools">${seen.map((n) => { const l = AsistanTools.label(n); return `<span>${l[0]} ${U.esc(l[2])}</span>`; }).join('')}</p>` : '';
+  };
+  function proposalHtml(p, mi, k) {
+    const rows = Object.keys(p.scores).filter((x) => YKS.SUBJECTS[x]).map((x) => `${U.esc(YKS.SUBJECTS[x].short)} ${p.scores[x].d}D ${p.scores[x].y}Y`).join(' · ');
+    const net = Deneme.fmt(Deneme.total({ scores: p.scores }));
+    const kind = p.type === 'BRANS' ? (YKS.SUBJECTS[p.brans] ? YKS.SUBJECTS[p.brans].short : 'Branş') : p.type;
+    const eks = (p.eksik || []).map((id) => YKS.topic(id)).filter(Boolean).map((t) => t.name);
+    return `<div class="ai-prop"><div class="ai-prop-head"><b>📝 ${U.esc(kind)} · ${U.esc(p.date)}${p.name ? ' · ' + U.esc(p.name) : ''}</b><span class="ai-prop-net">${net} net</span></div>
+      <small>${rows}</small>${eks.length ? `<small>Eksik: ${eks.map(U.esc).join(', ')}</small>` : ''}${p.note ? `<small>Not: ${U.esc(p.note)}</small>` : ''}
+      ${p.saved ? '<span class="ai-prop-done">✓ Denemelere kaydedildi</span>' : `<button class="btn primary small-btn" data-ai="save-prop" data-m="${mi}" data-p="${k}" type="button">💾 Denemelere kaydet</button>`}</div>`;
+  }
+  function userHtml(m) {
+    const atts = m.content.filter((b) => b.type === 'luna_att');
+    const t = (m.content.find((b) => b.type === 'text') || {}).text || '';
+    const nl = (x) => U.esc(x).replace(/\n/g, '<br>');
+    // uzun mesajlar katlanır
+    const body = t.length > 420 ? `${nl(t.slice(0, 260))}… <details class="ai-more"><summary>Tamamını göster</summary>${nl(t)}</details>` : nl(t);
+    return `<div class="ai-msg user">${atts.length ? `<div class="ai-atts">${atts.map((a) => `<span class="ai-att">${a.mime === 'application/pdf' ? '📕' : '🖼️'} ${U.esc(a.name)}${a.range ? ` · s. ${a.range}` : ''}</span>`).join('')}</div>` : ''}<div class="ai-text">${body}</div></div>`;
+  }
+  function botHtml(t) {
+    const asst = t.bot.filter((x) => x.m.role === 'assistant');
+    if (!asst.length) return '';
+    const r = renderAnswer(turnContent(t));
+    const names = asst.flatMap(({ m }) => (m.content || []).filter((b) => b.type === 'tool_use').map((b) => b.name));
+    const props = asst.flatMap(({ m, i }) => (m.proposals || []).map((p, k) => proposalHtml(p, i, k))).join('');
+    const last = asst[asst.length - 1].m;
+    const cost = asst.reduce((a, { m }) => a + (m.cost || 0), 0);
+    const fb = asst.some(({ m }) => (m.content || []).some((b) => b.type === 'fallback'));
+    return `<div class="ai-msg bot" data-t="${t.i}">${toolsLine(names)}<div class="ai-text">${r.html}</div>${props}
+      <div class="ai-foot"><span class="muted small">${MODELS[last.model] ? MODELS[last.model].n : U.esc(last.model || '')}${fb ? ' (yedek model)' : ''} · ${usd(cost)}</span>
+        <span class="ai-acts"><button class="chip" data-ai="note" data-t="${t.i}" type="button">📓 Nota kaydet</button><button class="chip" data-ai="cards" data-t="${t.i}" type="button">🃏 Kart üret</button><button class="chip" data-ai="copy" data-t="${t.i}" type="button">📋</button></span></div></div>`;
   }
   function render() {
     const root = $('#asistan-root');
     if (!root) return;
     if (!loaded) { loadChats().then(render); return; }
     const hasDeneme = window.Deneme && Deneme.list().length > 0;
-    const msgs = chat ? chat.messages : [];
+    const hasHata = D().mistakes.length > 0;
+    const ts = chat ? turns(chat.messages) : [];
+    // canlı turun soru balonu zaten geçmişte; yanıt kısmı canlı balonda çizilir
+    const liveIdx = live && ts.length ? ts.length - 1 : -1;
+    const hist = ts.map((t, k) => userHtml(t.user) + (k === liveIdx ? '' : botHtml(t))).join('');
     root.innerHTML = `
       ${setupHtml()}
       <div class="card ai-card">
         <div class="ai-top">
           <select data-ai="chat" aria-label="Sohbetler"><option value="">＋ Yeni sohbet</option>${chats.map((c) => `<option value="${c.id}" ${chat && chat.id === c.id ? 'selected' : ''}>${U.esc(c.title)}</option>`).join('')}</select>
-          ${chat && chat.messages.length ? '<button class="icon-btn" data-ai="del-chat" type="button" title="Sohbeti sil">🗑️</button>' : ''}
+          ${chat && chat.messages.length ? '<button class="icon-btn" data-ai="del-chat" type="button" title="Sohbeti sil" aria-label="Sohbeti sil">🗑️</button>' : ''}
         </div>
-        ${msgs.length || live ? '' : `<div class="ai-empty">
+        ${ts.length || live ? '' : `<div class="ai-empty">
           <div style="font-size:2.2rem">🎓</div>
-          <p><b>Ne çalışıyoruz?</b> Konu anlatayım, sorunu çözeyim, PDF'indeki anlamadığın yeri açıklayayım ya da kaynak bulayım.</p>
+          <p><b>Bilimsel çalışma asistanın</b><br>Sorularını ve testlerini ayrıntılı incelerim, denemelerini kontrol edip eksiklerini çıkarırım, çalışma programını yorumlarım, akademik kaynaklarını kaynak göstererek açıklarım. Verilerine kendim bakarım; bunların dışında bir işe karışmam.</p>
           <div class="chips ai-quick">
             ${hasDeneme ? '<button class="chip" data-ai="q-deneme" type="button">📊 Denemelerimi analiz et</button>' : ''}
-            <button class="chip" data-ai="q-file" type="button">🗂️ Depodan dosya sor</button>
-            <button class="chip" data-ai="q-photo" type="button">📷 Soru fotoğrafı çöz</button>
-            <button class="chip" data-ai="q-topic" type="button">💡 Konu anlat</button>
-            <button class="chip" data-ai="q-src" type="button">🔎 Kaynak öner</button>
+            <button class="chip" data-ai="q-program" type="button">🗓️ Programımı kontrol et</button>
+            <button class="chip" data-ai="q-karne" type="button">📝 Deneme karnemi oku</button>
+            <button class="chip" data-ai="q-photo" type="button">📷 Soru / test incele</button>
+            ${hasHata ? '<button class="chip" data-ai="q-hata" type="button">❌ Hatalarımı analiz et</button>' : ''}
+            <button class="chip" data-ai="q-file" type="button">📕 Kaynağımı incele</button>
+            <button class="chip" data-ai="q-src" type="button">🔎 Akademik kaynak bul</button>
           </div></div>`}
-        <div class="ai-msgs" id="ai-msgs">${msgs.map(msgHtml).join('')}${live ? `<div class="ai-msg bot live"><div class="ai-text" id="ai-live">${live.text ? md(live.text) : ''}</div><div class="ai-status" id="ai-status">${U.esc(live.status || '')}</div></div>` : ''}</div>
+        <div class="ai-msgs" id="ai-msgs">${hist}${live ? `<div class="ai-msg bot live"><div id="ai-live-tools">${toolsLine(live.tools)}</div><div class="ai-text" id="ai-live">${live.text ? md(live.text) : ''}</div><div class="ai-status" id="ai-status">${U.esc(live.status || '')}</div></div>` : ''}</div>
         <div class="ai-compose">
-          ${pending.length ? `<div class="ai-atts">${pending.map((a, i) => `<span class="ai-att">${a.mime === 'application/pdf' ? '📕' : '🖼️'} ${U.esc(a.name)}${a.range ? ` · s. ${a.range}` : a.pages ? ` · ${a.pages} sayfa` : ''}<button type="button" data-ai="unatt" data-i="${i}" title="Kaldır">✕</button></span>`).join('')}</div>` : ''}
+          ${pending.length ? `<div class="ai-atts">${pending.map((a, i) => `<span class="ai-att">${a.mime === 'application/pdf' ? '📕' : '🖼️'} ${U.esc(a.name)}${a.range ? ` · s. ${a.range}` : a.pages ? ` · ${a.pages} sayfa` : ''}<button type="button" data-ai="unatt" data-i="${i}" title="Kaldır" aria-label="Eki kaldır">✕</button></span>`).join('')}</div>` : ''}
           <div class="ai-row">
-            <label class="icon-btn ai-clip" title="Fotoğraf ya da PDF ekle">📎<input type="file" accept="image/*,application/pdf" hidden data-ai="file"></label>
-            <textarea id="ai-input" rows="2" placeholder="${ready() ? 'Sorunu yaz… (Enter gönderir, Shift+Enter yeni satır)' : 'Önce yukarıdan API anahtarını gir'}" ${ready() ? '' : 'disabled'}></textarea>
+            <label class="icon-btn ai-clip" title="Fotoğraf ya da PDF ekle" aria-label="Fotoğraf ya da PDF ekle">📎<input type="file" accept="image/*,application/pdf" hidden data-ai="file"></label>
+            <textarea id="ai-input" rows="2" placeholder="${ready() ? 'Sorunu, denemeni ya da programını yaz… (Enter gönderir, Shift+Enter yeni satır)' : 'Önce yukarıdan API anahtarını gir'}" ${ready() ? '' : 'disabled'}></textarea>
             ${live ? '<button class="btn soft" data-ai="stop" type="button">■ Durdur</button>' : `<button class="btn primary" data-ai="send" type="button" ${ready() ? '' : 'disabled'}>Gönder</button>`}
           </div>
         </div>
@@ -669,13 +785,30 @@ Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle
     if (paintT) return;
     paintT = requestAnimationFrame(() => {
       paintT = 0;
-      const el = $('#ai-live'), st = $('#ai-status');
+      const el = $('#ai-live'), st = $('#ai-status'), tl = $('#ai-live-tools');
       if (!el || !live) return;
       el.innerHTML = md(live.text);
       if (st) st.textContent = live.status || '';
+      if (tl) tl.innerHTML = toolsLine(live.tools);
       const box = $('#ai-msgs');
       if (box && box.scrollHeight - box.scrollTop - box.clientHeight < 160) box.scrollTop = box.scrollHeight;
     });
+  }
+  // öneri kartındaki denemeyi kaydet (Hazal'ın onayıyla)
+  function saveProposal(mi, k) {
+    const m = chat && chat.messages[mi];
+    const p = m && m.proposals && m.proposals[k];
+    if (!p || p.saved) return;
+    const rec = { id: U.uid(), date: p.date, type: p.type, brans: p.type === 'BRANS' ? p.brans : undefined, name: p.name || '', scores: JSON.parse(JSON.stringify(p.scores)), eksik: (p.eksik || []).slice(), note: p.note || '', created: Date.now() };
+    D().denemeler.push(rec);
+    p.saved = true;
+    App.save();
+    saveChat();
+    const prev = Deneme.previous(rec);
+    if (prev && Deneme.total(rec) > Deneme.total(prev)) { App.say('denemeUp'); App.celebrate(); } else App.say('denemeAny');
+    App.refresh();
+    render();
+    App.toast('📝', 'Deneme kaydedildi', 'Deneme sekmesinde görebilir, düzenleyebilirsin');
   }
 
   function pickFromDepo() {
@@ -693,6 +826,7 @@ Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle
     });
   }
 
+  let fileMode = ''; // 'karne' | 'soru': bir sonraki dosya seçiminin amacı
   function bind() {
     const root = $('#asistan-root');
     root.addEventListener('click', async (e) => {
@@ -718,7 +852,8 @@ Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle
         if (!confirm('API anahtarı bu cihazdan silinsin mi?')) return;
         cfg.apiKey = ''; saveCfg(); client = null; render();
       } else if (act === 'send') send($('#ai-input').value);
-      else if (act === 'stop') { if (live && live.stream) live.stream.abort(); }
+      else if (act === 'stop') { if (live) { live.abort = true; if (live.stream) live.stream.abort(); } }
+      else if (act === 'save-prop') saveProposal(+b.dataset.m, +b.dataset.p);
       else if (act === 'unatt') { pending.splice(+b.dataset.i, 1); render(); }
       else if (act === 'del-chat') {
         if (!chat || !confirm('Bu sohbet silinsin mi?')) return;
@@ -726,16 +861,22 @@ Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle
         for (const m of chat.messages) for (const c of m.content || []) if (c.type === 'luna_att' && c.src === 'att') DB.delAtt(c.id).catch(() => {});
         chats = chats.filter((c) => c.id !== chat.id); chat = null; render();
       } else if (act === 'q-deneme') askDeneme();
+      else if (act === 'q-program') askProgram();
+      else if (act === 'q-hata') askMistakes();
       else if (act === 'q-file') pickFromDepo();
-      else if (act === 'q-photo') { const inp = $('#asistan-root [data-ai="file"]'); inp.setAttribute('capture', 'environment'); inp.accept = 'image/*'; inp.click(); setTimeout(() => { inp.removeAttribute('capture'); inp.accept = 'image/*,application/pdf'; }, 1000); }
-      else if (act === 'q-topic') { const t = $('#ai-input'); t.value = 'Şu konuyu bana baştan, örneklerle anlat: '; t.focus(); }
-      else if (act === 'q-src') { const t = $('#ai-input'); t.value = 'Şu konuyu derinlemesine çalışmak için güvenilir kaynaklar öner (ders kitabı bölümleri, derleme makaleler, resmî kılavuzlar), her biri için neden faydalı olduğunu yaz: '; t.focus(); }
+      else if (act === 'q-photo' || act === 'q-karne') {
+        fileMode = act === 'q-karne' ? 'karne' : 'soru';
+        const inp = $('#asistan-root [data-ai="file"]');
+        if (act === 'q-photo') { inp.setAttribute('capture', 'environment'); inp.accept = 'image/*'; }
+        inp.click();
+        setTimeout(() => { inp.removeAttribute('capture'); inp.accept = 'image/*,application/pdf'; }, 1000);
+      } else if (act === 'q-src') { const t = $('#ai-input'); t.value = 'Şu konu için güvenilir akademik kaynaklar bul (ders kitabı bölümleri, derleme makaleler, resmî kılavuzlar); her birinin neden faydalı olduğunu ve künyesini yaz: '; t.focus(); }
       else if (act === 'note' || act === 'cards' || act === 'copy') {
-        const m = chat && chat.messages[+b.dataset.i];
-        if (!m) return;
-        const r = renderAnswer(m.content);
-        const q = chat.messages[+b.dataset.i - 1];
-        const qText = q ? ((q.content.find((x) => x.type === 'text') || {}).text || '') : '';
+        const t = chat && turns(chat.messages).find((x) => x.i === +b.dataset.t);
+        if (!t) return;
+        const r = renderAnswer(turnContent(t));
+        const q = t.user;
+        const qText = (q.content.find((x) => x.type === 'text') || {}).text || '';
         if (act === 'copy') {
           try { await navigator.clipboard.writeText(r.text); App.toast('📋', 'Kopyalandı'); } catch (err) { App.toast('⚠️', 'Kopyalanamadı'); }
         } else if (act === 'note') {
@@ -771,7 +912,11 @@ Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle
         if (f.type === 'application/pdf') choosePdfRange(ref);
         render();
         const ta = $('#ai-input');
-        if (ta && !ta.value) ta.value = /^image\//.test(f.type) ? 'Bu soruyu adım adım çöz ve hangi konuya ait olduğunu söyle.' : 'Bu belgeyi açıkla.';
+        if (ta && !ta.value) {
+          ta.value = fileMode === 'karne' ? 'Bu deneme karnemi oku: ders ders doğru ve yanlış sayılarını çıkar, netleri hesaplayıp doğrula, önceki denemelerimle karşılaştırıp yorumla, eksiklerimi önceliklendir ve kaydetmemi öner.'
+            : /^image\//.test(f.type) ? 'Bu soruyu/testi incele: adım adım çöz, konusunu ve muhtemel hata nedenimi söyle, benzer 2 soru öner.' : 'Bu kaynağı incele: ana fikirleri sayfa göstererek çıkar ve sınav konularıyla ilişkisini söyle.';
+        }
+        fileMode = '';
       }
     });
     root.addEventListener('keydown', (e) => {
@@ -788,6 +933,8 @@ Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle
     init(app) { App = app; loadCfg(); bind(); },
     render,
     askDeneme,
+    askProgram,
+    askMistakes,
     call,
     ready,
     askAboutFile,
@@ -796,7 +943,7 @@ Haftamı birlikte değerlendirelim: neleri iyi yaptığımı somut olarak söyle
     makeCards,
     status() { const sp = spend(); return { ready: ready(), model: MODELS[cfg.model].n, usd: sp.usd, budget: cfg.budget, req: sp.req, web: cfg.web, err: cfg.lastErr || '' }; },
     // testler ve diğer modüller için
-    _md: md, _renderAnswer: renderAnswer, _params: (m) => requestParams(m),
+    _md: md, _renderAnswer: renderAnswer, _params: (m) => requestParams(m, { chat: true }), _system: systemPrompt,
   };
 })();
 
