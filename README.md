@@ -109,14 +109,15 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - **Google Drive** (isteğe bağlı): dosyalar Hazal'ın kendi Drive'ındaki *Luna Depo* klasöründe durur (iPad'de yer kaplamaz, telefon ve tablette aynı dosyalar). `drive.file` izni: uygulama sadece kendi yüklediği dosyaları görür. Giriş açılır pencere değil yönlendirme ile (iPad ana ekran uygulamasında sorunsuz); 5 MB üstü dosyalar kaldığı yerden devam edebilen yüklemeyle gider; silinen dosya Drive çöp kutusuna gider
 - Drive bağlanmadan önce dosyalar bu cihazda (IndexedDB) saklanır; **Drive'a taşı** ile tek dokunuşta Drive'a geçer, cihazda yer açılır. Drive oturumu saatte bir yenilenir; o arada eklenen dosyalar kaybolmaz
 
-**🎓 Eğitim asistanı** (Asistan sekmesi, Claude)
-- Konu anlatımı, soru fotoğrafı çözümü, PDF'teki anlaşılmayan yerin açıklanması, güvenilir kaynak önerisi; anlatım Ayarlar → Kişisel'deki **eğitim düzeyi ve bölüme** göre (YKS, KPSS, üniversite, yüksek lisans)
-- **Kaynak gösterimi:** PDF'e dayanan cümlelerde sayfa numaralı alıntılar (citations), isteğe bağlı web aramasında bağlantılı dış kaynaklar; sistem talimatı kaynak uydurmayı yasaklar, belirsizliği açıkça söyletir
-- **Deneme analizi:** netler, eksik konular ve YKS soru ağırlıkları gönderilir; 2 haftalık plan ve kanıta dayalı çalışma önerisi
-- Cevaplar tek dokunuşla **nota** ya da yapılandırılmış çıktıyla **bilgi kartlarına** dönüşür; Depo görüntüleyicisinden "Asistana sor"
-- Resmî Anthropic SDK (tarayıcı paketi uygulama içinde), Claude Opus 5.5 varsayılan (Sonnet 5.5 / Haiku 4.5 seçilebilir), akışlı yanıt, otomatik önbellek (takip soruları ucuz), güvenlik reddinde sunucu tarafı yedek model, duraklayan aramaların otomatik devamı
-- **Maliyet kontrolü:** her yanıtın maliyeti gösterilir, aylık bütçe (varsayılan 5 $) dolunca durur, büyük PDF'lerden önce jeton sayılıp tahmini maliyet sorulur, büyük PDF'lerde sayfa aralığı (yalnızca metin) seçilebilir
-- API anahtarı yalnızca cihazda (veri yedeğine girmez), sohbetler IndexedDB'de
+**🎓 Bilimsel çalışma asistanı** (Asistan sekmesi, Claude)
+- Sorbil'in Billy'si gibi **yalnızca dört iş** yapar: soru ve testleri ayrıntılı inceleme (önce ipucu, sonra çözüm, benzer sorular ve mini testler), akademik kaynak inceleme (PDF, not, makale; kaynağa sadık açıklama, güvenilir kaynak bulma ve atıf doğrulama), **deneme kontrolü** (netleri 4 yanlış 1 doğru kuralıyla doğrulama, gelişimi yorumlama, eksik konuları sınav ağırlığı × kaçırma sıklığıyla önceliklendirme) ve **çalışma programı kontrolü** (plana uyum, ders dağılımı, aralıklı tekrar, uyku ve yorgunluk işaretleri). Bunların dışındaki istekleri tek cümleyle nazikçe geri çevirir
+- **Verilerini kendisi okur:** çalışma oturumları, program, konu durumları, denemeler, hata defteri, kitaplık, Depo dosyaları (PDF ve fotoğraflar dahil) ve notlar salt okunur araçlarla incelenir; sayı uydurmaz, veri azsa söyler. OpenAlex/Crossref ile akademik kaynak arar
+- **Karne/deneme sonucu fotoğrafı:** okuduğu sonucu bir **öneri kartı** olarak gösterir; deneme ancak "Kaydet"e basınca eklenir (asistan hiçbir veriyi kendisi değiştirmez)
+- Hızlı başlangıç çipleri: *Denemelerimi analiz et*, *Programımı kontrol et*, *Deneme karnemi oku*, *Soru / test incele*, *Hatalarımı analiz et*, *Kaynağımı incele*, *Akademik kaynak bul*
+- Cevaplar tek dokunuşla **nota** ya da **bilgi kartlarına** dönüşür; Depo görüntüleyicisinden ve hata defterinden "Asistana sor"
+- Resmî Anthropic SDK (tarayıcı paketi uygulama içinde), Claude Opus 5.5 varsayılan (Sonnet 5.5 / Haiku 4.5 seçilebilir), akışlı yanıt, otomatik önbellek, güvenlik reddinde sunucu tarafı yedek model
+- **Maliyet kontrolü:** her yanıtın maliyeti gösterilir, aylık bütçe (varsayılan 5 $) dolunca durur, büyük PDF'lerden önce tahmini maliyet sorulur
+- Hesap olmadığı için **her cihaza ayrı API anahtarı** girilir; anahtar yalnızca o cihazda kalır (yedeğe girmez), sohbetler IndexedDB'de
 
 **❌ Hata defteri** (Kitaplık → Hatalar)
 - Yanlış yapılan sorunun fotoğrafı, ders, konu (YKS konu önerileriyle), **neden** yanlış yapıldığı (bilgi eksiği, yorum, işlem, dikkat, süre) ve püf noktası
@@ -137,8 +138,9 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 
 ### En kolayı: GitHub Pages (telefonda da çalışır)
 1. GitHub'da bu depoda **Settings → Pages** bölümüne git
-2. *Source*: **Deploy from a branch**, *Branch*: `main` (ya da test için `claude/luna-study-app-1xt2uk`) ve `/ (root)` seç, **Save**
+2. *Source*: **Deploy from a branch**, *Branch*: **`claude/luna-study-app-1xt2uk`** ve `/ (root)` seç, **Save** (uygulama bu dalda; `main` boş)
 3. Bir iki dakika sonra adres çıkar: `https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/`
+   Sonraki her güncellemede `.github/workflows/pages.yml` yayını kendiliğinden yeniler.
 4. Telefonda bu adresi aç:
    - **iPhone (Safari):** Paylaş → *Ana Ekrana Ekle*
    - **Android (Chrome):** ⋮ menü → *Uygulamayı yükle*
@@ -184,7 +186,8 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok,
 | `js/giris.js` | Depo için isteğe bağlı Google Drive girişi (yönlendirme akışı, yalnızca drive.file) |
 | `js/depo.js`, `js/depo-ui.js` | Depo: Google Drive / cihaz depolama, yükleme, eşitleme, PDF ve fotoğraf görüntüleyici |
 | `vendor/pdfjs/` | Mozilla PDF.js 6.4 (Apache-2.0), yalnızca PDF açılınca yüklenir |
-| `js/asistan.js` | Eğitim asistanı (Claude): sohbet, belgeler, kaynak gösterimi, kart üretimi, bütçe |
+| `js/asistan.js` | Bilimsel çalışma asistanı (Claude): görev sınırı, araç döngüsü, sohbet, belgeler, öneri kartları, bütçe |
+| `js/asistan-araclar.js` | Asistanın salt okunur araçları: oturumlar, program, konular, denemeler, hata defteri, kitaplık, dosyalar, akademik arama, deneme önerisi |
 | `vendor/anthropic/` | Resmî Anthropic TypeScript SDK 0.131 (MIT), esbuild ile tek dosya tarayıcı paketi |
 | `js/hata.js` | Hata defteri: fotoğraflı yanlış sorular, aralıklı yeniden çözme, hata analizi |
 | `js/kaynak.js`, `js/kaynak-ui.js` | Akademik kütüphane: OpenAlex/Crossref/Open Library, APA 7 / Vancouver / IEEE kaynakça |
