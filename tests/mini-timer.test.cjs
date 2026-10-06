@@ -1,8 +1,8 @@
 const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict');
 const source=fs.readFileSync(require('node:path').join(__dirname,'../js/mini-timer.js'),'utf8');
 const events={},pe={},button={addEventListener(){}};let appended=0,closed=0,requests=0,notified=0;
-const canvas={setAttribute(){},getContext:()=>({fillRect(){},fillText(){}})};
-const child={closed:false,document:{head:{append(){}},body:{append(){appended++;}},createElement:t=>t==='canvas'?canvas:{}},addEventListener:(k,f)=>pe[k]=f,close(){closed++;this.closed=true;pe.pagehide();},focus(){}};
+const canvas={setAttribute(){},getContext:()=>new Proxy({}, {get:(o,k)=>o[k]||(()=>{}),set:(o,k,v)=>{o[k]=v;return true;}})};
+const child={closed:false,document:{head:{append(){}},body:{style:{},append(){appended++;}},createElement:t=>t==='canvas'?canvas:{}},addEventListener:(k,f)=>pe[k]=f,close(){closed++;this.closed=true;pe.pagehide();},focus(){}};
 const ctx={Date,window:{addEventListener(){},documentPictureInPicture:{requestWindow:async o=>{requests++;assert.equal(o.width,320);return child;}}},document:{hidden:false,querySelector:s=>s==='#mini-timer-open'?button:null,addEventListener:(k,f)=>events[k]=f},Store:{data:{timer:{}},save(){}},Timer:{state:()=>({phase:'focus',elapsed:0,countdown:true,remaining:1500,running:true})},U:{hm:()=> '20:30',fmtClock:()=> '25:00'},Scene:{sleepingCompanions(){}},LunaNotify:{timerSnapshot(){notified++;}},setInterval:()=>1,clearInterval(){}};
 vm.createContext(ctx);vm.runInContext(source,ctx);const api=ctx.window.MiniTimer;
 api.init({toast(){},allowExit(){}});

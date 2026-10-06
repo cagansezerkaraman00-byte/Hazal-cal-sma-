@@ -88,6 +88,7 @@ const Store = (() => {
       sound: true,
       notify: false,
       studyReminders: true,
+      miniTheme: 'cream',
       focusMode: true,   // başlayınca sade odak ekranı
       quietFocus: true,  // odaklanırken Luna konuşmasın
       pauseOnLeave: true, // tam odak: uygulamadan çıkınca sayaç durur (izinli uygulamalar hariç)

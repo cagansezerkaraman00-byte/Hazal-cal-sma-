@@ -1691,3 +1691,14 @@ button.stat-chip { font: inherit; color: inherit; cursor: pointer; }
 #bubble[data-speaker="kitten"] .speaker-tag { color: #986125; }
 @media (prefers-reduced-motion: reduce) { #bubble.pop { animation: none; } }
 
+
+/* Mini window palettes */
+.mini-theme-picker{border:1px solid var(--line,#dfd5e8);border-radius:14px;padding:14px;margin:12px 0 20px;min-width:0}
+.mini-theme-picker legend{font-weight:700;padding:0 6px}
+.mini-theme-picker p{font-size:.82rem;margin:0 0 12px}
+.mini-theme-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}
+.mini-theme-option{display:flex;align-items:center;gap:7px;position:relative;padding:10px 8px;border:2px solid transparent;border-radius:10px;cursor:pointer;background:var(--surface);font-size:.8rem;min-height:44px}
+.mini-theme-option:has(input:checked){border-color:var(--accent,#9673b6);font-weight:700}
+.mini-theme-option:focus-within{outline:2px solid var(--accent,#9673b6);outline-offset:2px}
+.mini-theme-option input{margin:0;accent-color:var(--accent,#9673b6)}
+.mini-theme-dot{width:20px;height:20px;flex-shrink:0;border-radius:50%;background:var(--swatch);box-shadow:inset 0 0 0 1px #0002}

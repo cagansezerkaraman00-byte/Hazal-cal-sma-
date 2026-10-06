@@ -6,6 +6,12 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
+    "surum": "2.1.6",
+    "tarih": "2026-10-07",
+    "baslik": "Mini pencerenin beş rengi",
+    "notlar": ["🎨 Ayarlar'dan Sıcak krem, Lavanta, Adaçayı, Gül kurusu veya Gece mavisi seçebilirsin.", "🌸 Her temanın kendi süsleri var: yıldızlar, yaz çiçekleri, lavanta dalları, kalpler ve güneş.", "🐾 Tercihin kaydedilir; açık mini pencerenin rengi hemen değişir. Kedi görseli korunur."]
+  },
+  {
     "surum": "2.1.5",
     "tarih": "2026-10-06",
     "baslik": "Sıcacık mini pencere",

@@ -1175,6 +1175,7 @@
     $('#set-autobreak').checked = s.autoBreak;
     $('#set-autofocus').checked = s.autoFocus;
     $('#set-sound').checked = s.sound;
+    document.querySelectorAll('input[name="mini-theme"]').forEach(el => { el.checked = el.value === (s.miniTheme || 'cream'); });
     $('#set-reminders').checked = !!s.studyReminders;
     $('#set-notify').checked = s.notify && 'Notification' in window && Notification.permission === 'granted';
     $('#set-love').value = D().loveNotes.join('\n');
@@ -1310,6 +1311,10 @@
       showTab('home');
     });
     $('#set-focusmode').addEventListener('change', (e) => { D().settings.focusMode = e.target.checked; save(); renderTimer(Timer.state()); });
+    document.querySelectorAll('input[name="mini-theme"]').forEach(el => el.addEventListener('change', () => {
+      if (!el.checked) return;
+      D().settings.miniTheme = el.value; save(); MiniTimer.refreshTheme();
+    }));
     $('#set-reminders').addEventListener('change',e=>{D().settings.studyReminders=e.target.checked;save();});
     $('#set-notify').addEventListener('change', async (e) => {
       if (e.target.checked) {
