@@ -194,6 +194,67 @@ const Scene = (() => {
     return out.map((r) => r.join(''));
   }
 
+
+  // Öne dönük iri, okunaklı piksel yüzler. Tüy ve göz renkleri karakter paletinden gelir.
+  function expression(rows, mood) {
+    if (mood === 'neutral') return rows;
+    let out = (mood === 'happy' || mood === 'proud' ? eyes(rows, 'happy')
+      : mood === 'sleepy' ? eyes(rows, 'sleep') : rows).map(r => r.split(''));
+    const eyeY = rows.findIndex(r => r.includes('h'));
+    if (eyeY < 0) return rows;
+    const eyeX = [...rows[eyeY]].flatMap((c,i) => c === 'h' ? [i] : []);
+    const dot = (x,y,c) => { if (out[y] && x >= 0 && x < out[y].length) out[y][x] = c; };
+    const mid = Math.round((eyeX[0] + eyeX[eyeX.length-1]) / 2);
+    if (mood === 'angry' || mood === 'sad' || mood === 'tender') {
+      eyeX.forEach((x,i) => {
+        const inward = i === 0 ? 1 : -1;
+        const tilt = mood === 'angry' ? 1 : -1;
+        dot(x-inward, eyeY-2, 'o'); dot(x, eyeY-2+tilt, 'o'); dot(x+inward, eyeY-2+tilt, 'o');
+        if (mood === 'tender') { dot(x+inward,eyeY+2,'t'); dot(x+inward,eyeY+3,'t'); }
+      });
+    }
+    if (mood === 'happy' || mood === 'proud') {
+      dot(mid-2,eyeY+3,'o'); dot(mid+2,eyeY+3,'o');
+      for(let x=mid-1;x<=mid+1;x++)dot(x,eyeY+4,'o');
+      dot(mid-4,eyeY+2,'p'); dot(mid+4,eyeY+2,'p');
+    }
+    if (mood === 'sleepy') {
+      for(let y=eyeY+3;y<=eyeY+5;y++)for(let x=mid-1;x<=mid+1;x++)dot(x,y,'o');
+      dot(mid,eyeY+4,'P'); dot(mid,eyeY+5,'p');
+    }
+    return out.map(r=>r.join(''));
+  }
+  function frontRows() {
+    let rows = blank(28, 29);
+    rows = put(rows, [
+      '.....oooooo.....','...oowwwwwwoo...','..owwwwwwwwwwo..',
+      '.owwwwwwwwwwwwo.','.owwwwwwwwwwwwo.','owwwwwwwwwwwwwwo',
+      'owwwwwwwwwwwwwwo','owwwwwwwwwwwwsso','owwwwwwwwwwwwsso',
+      'owwwwwwwwwwwssso','owwwwwwwwwwsssso','owwmwwwwwwwmwssso',
+      'owwmwwwwwwwmwssso','owwmwwwwwwwmwssso','.owmwwwwwwwmwsso.',
+      '..oooooooooooo..'
+    ],6,12);
+    rows = put(rows, PART.sitTail,0,22,true);
+    rows = put(rows,PART.head,4,0);
+    rows = put(rows,['owwmwwowwmwwo','.ooooo.ooooo.'],7,27,true);
+    return rows;
+  }
+  function emotionPose(actor) {
+    if (!actor.emote || actor.emote.until <= time) return null;
+    const e = actor.emote;
+    if (reducedMotion) return 'face_' + e.mood;
+    const elapsed = time - e.start;
+    // Esneme açılıp kapanır; konuşma sırasında arada bir göz kırpar.
+    if (e.mood === 'sleepy' && Math.floor(elapsed * 1.5) % 3 === 2) return 'face_neutralB';
+    return actor.blink > 0 ? 'face_' + e.mood + 'B' : 'face_' + e.mood;
+  }
+  function express(actor, mood, ms) {
+    const allowed = ['neutral','happy','proud','angry','sad','tender','sleepy'];
+    if (!actor || !allowed.includes(mood)) return;
+    actor.emote = { mood, start: time, until: time + Math.min(14,Math.max(4,ms/1000)) };
+    if (actor === L && play) endPlay(true);
+  }
+
   // Pozlar sağa bakacak şekilde saklanır. hx: kafanın orta sütunu; Luna'nın konumu (L.x) bu sütundur.
   function poseRows() {
     const R = {};
@@ -236,6 +297,11 @@ const Scene = (() => {
       b = put(b, PART.sitTail, 0, 16, true);
       return put(b, PART.head, 8, 0);
     };
+    for (const mood of ['neutral','happy','proud','angry','sad','tender','sleepy']) {
+      const face = expression(frontRows(), mood);
+      add('face_' + mood, face, 13.5);
+      add('face_' + mood + 'B', eyes(face, 'blink'), 13.5);
+    }
     add('sitUp', sit(PART.legDown, 19, 15), 17.5);
     add('playUp', sit(PART.pawUp, 21, 10), 17.5);
     add('playSwipe', sit(PART.pawSwipe, 19, 17), 17.5);
@@ -347,14 +413,14 @@ const Scene = (() => {
   const LILY_BASE = { t: '#9c3d26', g: '#5aa25a', G: '#2f6b3a' };
 
   const LUNA_PAL = {
-    o: '#7d7699', m: '#b3acd0', w: '#fdfcff', s: '#e6e1f3', S: '#cdc6e2', p: '#f7b3c6', P: '#e98aa4',
+    t: '#72c9ef', o: '#665c82', m: '#b3acd0', w: '#fdfcff', s: '#e6e1f3', S: '#cdc6e2', p: '#f7b3c6', P: '#e98aa4',
     e: '#f2b441', E: '#c98524', k: '#4a2f14', h: '#ffffff', x: '#d4cee6',
   };
 
   // ---------- Vesper ve yavru Güçlü ----------
   // Vesper: Luna'nın pozları, simsiyah kadife tüy, mavi gözler (gece silüeti için yumuşak açık dış hat)
   const VES_PAL = {
-    o: '#4d4768', m: '#3d3956', w: '#2a2639', s: '#34304a', S: '#403b5a', p: '#b77089', P: '#9a5672',
+    t: '#72c9ef', o: '#706582', m: '#3d3956', w: '#2a2639', s: '#34304a', S: '#403b5a', p: '#b77089', P: '#9a5672',
     e: '#5ccbff', E: '#2c8fe0', k: '#08141f', h: '#ffffff', x: '#6c678c',
   };
   // Yavru Güçlü: küçük gövde, kocaman yeşil gözler. w: turuncu, s: çizgi, c: krem göğüs/pati
@@ -426,7 +492,7 @@ const Scene = (() => {
     ],
   };
   const KIT_PAL = {
-    o: '#8a4b1f', w: '#ffb45c', s: '#f08a2c', S: '#d06a18', c: '#fff1d6', m: '#c9753a',
+    t: '#72c9ef', o: '#79421f', w: '#ffb45c', s: '#f08a2c', S: '#d06a18', c: '#fff1d6', m: '#c9753a',
     p: '#ff9db3', P: '#e9789a', e: '#9be36a', E: '#5fae3a', k: '#1f2a12', h: '#ffffff', x: '#e8c9a8',
   };
   function kittenRows() {
@@ -437,6 +503,11 @@ const Scene = (() => {
     s = put(s, KIT.head, 1, 0);
     R.sit = { rows: s, hx: 8 };
     R.sitB = { rows: eyes(s, 'blink'), hx: 8 };
+    for (const mood of ['neutral','happy','proud','angry','sad','tender','sleepy']) {
+      const face = expression(s, mood);
+      R['face_' + mood] = { rows: face, hx: 8 };
+      R['face_' + mood + 'B'] = { rows: eyes(face, 'blink'), hx: 8 };
+    }
     const walk = (legs) => {
       let w = blank(27, 14);
       w = put(w, KIT.tailUp, 0, 0);
@@ -575,7 +646,7 @@ const Scene = (() => {
     // Vesper (Luna'nın pozları) ve yavru Güçlü
     const sprite = (rows, hx, pal) => ({ c: [paint(rows, pal), paint(rows, pal, true)], w: rows[0].length, h: rows.length, hx });
     SP.vesper = {};
-    for (const k of ['walkA', 'walkB', 'walkAB', 'walkBB', 'sitUp', 'sitUpB', 'happy', 'sleep', 'loafA', 'loafAB']) SP.vesper[k] = sprite(R[k].rows, R[k].hx, VES_PAL);
+    for (const k of Object.keys(R)) SP.vesper[k] = sprite(R[k].rows, R[k].hx, VES_PAL);
     SP.kitten = {};
     const KR = kittenRows();
     for (const k in KR) SP.kitten[k] = sprite(KR[k].rows, KR[k].hx, KIT_PAL);
@@ -628,7 +699,8 @@ const Scene = (() => {
   let season = 'yaz', events = [], ev = {}, dayKey = '', flowers = [], house = null, decoCv = null, decoBulbs = [], treeBulbs = [];
   let birds = null, nextBirds = U.rand(25, 70), butterflies = [], seasonT = 0, smokeT = 0, fireT = 3, flagT = 0;
   // ziyaretçi kediler
-  let friends = [], nextVisit = U.rand(45, 110), onFriend = null, onFriendSeen = null;
+  let friends = [], nextVisit = U.rand(45, 110), onFriend = null, onFriendSeen = null, onFriendArrival = null;
+  let eveningVisitDay = ''; let bubbleSpeaker = 'luna';
 
   // ---------- Renk yardımcıları ----------
   function hex2rgb(h) {
@@ -1441,6 +1513,8 @@ const Scene = (() => {
   const validX = (x, side) => (side > 0 ? x - 27 >= 1 && x + 11 <= W - 1 : x - 11 >= 1 && x + 27 <= W - 1);
 
   function poseName() {
+    const expressive = emotionPose(L);
+    if (expressive) return expressive;
     const blink = L.blink > 0 ? 'B' : '';
     switch (L.state) {
       case 'walk': return (Math.floor(L.ft * (L.speed > 20 ? 9 : 6)) % 2 ? 'walkA' : 'walkB') + blink;
@@ -1642,6 +1716,10 @@ const Scene = (() => {
     L.ft += dt;
     if (L.awake > 0) L.awake -= dt;
 
+    if (L.emote && L.emote.until > time && !fishItem) {
+      L.state = 'sit'; L.dir = 1; L.wait = 3;
+      return; // konuşurken oturup kullanıcıya bakar, bitince normal davranışa döner
+    }
     if (fishItem) eatFish(dt);
     else if (mode === 'focus') {
       L.target = studyHX();
@@ -1680,7 +1758,9 @@ const Scene = (() => {
     ctx.globalAlpha = 1;
     // pusudayken kalça sallar
     const wig = L.state === 'crouch' && Math.sin(L.ft * 28) > 0 ? 1 : 0;
-    ctx.drawImage(g.c, g.left + wig, g.top);
+    const bob = !reducedMotion && L.emote && L.emote.until > time &&
+      ['happy','proud'].includes(L.emote.mood) ? Math.round(Math.sin(time * 5)) : 0;
+    ctx.drawImage(g.c, g.left + wig, g.top + bob);
     // yılbaşında Noel şapkası
     if (ev.yilbasi) {
       const top = HEAD_TOP[poseName()] ?? 0;
@@ -1807,6 +1887,8 @@ const Scene = (() => {
   // Luna ana karakter; diğerleri arada bir gelir, kısa bir "senaryo" oynar ve gider.
   const FRIEND_SPEED = { vesper: 14, kitten: 40 };
   function fpose(f) {
+    const expressive = f.state !== 'walk' && emotionPose(f);
+    if (expressive) return expressive;
     const blink = f.blink > 0;
     if (f.kind === 'vesper') {
       if (f.state === 'walk') return (Math.floor(f.ft * 6) % 2 ? 'walkA' : 'walkB') + (blink ? 'B' : '');
@@ -1829,23 +1911,26 @@ const Scene = (() => {
     friends.push({ kind, x: from > 0 ? W + 30 : -30, y: 0, vy: 0, dir: from > 0 ? -1 : 1, state: 'walk', ft: 0, steps, blink: 0, blinkIn: U.rand(2, 5) });
     if (onFriendSeen) onFriendSeen(kind);
   }
+  const vesperTime = () => (hour >= 18 || hour < 5) && !!sun && sun.elev < 0;
   function startVisit(kind) {
     if (!W || mode === 'focus' || friends.length) return;
     const side = L.x < W / 2 ? 1 : -1; // Luna'nın daha boş tarafı
     const from = Math.random() < 0.5 ? 1 : -1;
-    const k = kind || (isEvening() && Math.random() < 0.6 ? 'nap' : Math.random() < 0.45 ? 'vesper' : Math.random() < 0.8 ? 'kitten' : 'family');
+    if (kind === 'vesper' && !vesperTime()) return;
+    let k = kind || (vesperTime() ? (Math.random() < 0.6 ? 'vesper' : 'kitten') : 'kitten');
+    if (!vesperTime() && (k === 'nap' || k === 'family')) k = 'kitten';
     if (k === 'vesper') {
-      addFriend('vesper', [{ do: 'walk', x: () => spot(side, 38) }, { do: 'greet', t: 2.5 }, { do: 'sit', t: U.rand(8, 14) }, { do: 'loaf', t: U.rand(6, 12) }, { do: 'leave' }], from);
+      addFriend('vesper', [{ do: 'walk', x: () => spot(side, 38) }, { do: 'greet', t: 10 }, { do: 'sit', t: U.rand(8, 14) }, { do: 'loaf', t: U.rand(6, 12) }, { do: 'leave' }], from);
     } else if (k === 'kitten') {
       addFriend('kitten', [
         { do: 'walk', x: () => Math.round(U.rand(20, W - 20)), hop: true, speed: 46 },
         { do: 'walk', x: () => spot(side, 28), hop: true, speed: 40 },
-        { do: 'greet', t: 2 }, { do: 'sit', t: U.rand(4, 7) }, { do: 'sleep', t: U.rand(14, 26) }, { do: 'sit', t: 2 },
+        { do: 'greet', t: 10 }, { do: 'sit', t: U.rand(4, 7) }, { do: 'sleep', t: U.rand(14, 26) }, { do: 'sit', t: 2 },
         { do: 'leave', hop: true, speed: 46 },
       ], from);
     } else if (k === 'nap') {
       // akşam: Luna'nın yanına kıvrılıp uyurlar
-      addFriend('vesper', [{ do: 'walk', x: () => spot(side, 36) }, { do: 'sleep', t: U.rand(50, 110) }, { do: 'sit', t: 3 }, { do: 'leave' }], from);
+      addFriend('vesper', [{ do: 'walk', x: () => spot(side, 36) }, { do: 'greet', t: 10 }, { do: 'sleep', t: U.rand(50, 110) }, { do: 'sit', t: 3 }, { do: 'leave' }], from);
       if (Math.random() < 0.6) addFriend('kitten', [{ do: 'wait', t: 3 }, { do: 'walk', x: () => spot(-side, 26), speed: 30 }, { do: 'sleep', t: U.rand(40, 90) }, { do: 'leave', hop: true, speed: 44 }], -from);
     } else {
       addFriend('vesper', [{ do: 'walk', x: () => spot(side, 38) }, { do: 'greet', t: 2 }, { do: 'sit', t: U.rand(16, 24) }, { do: 'leave' }], from);
@@ -1853,6 +1938,10 @@ const Scene = (() => {
     }
   }
   function updateFriends(dt) {
+    const today = U.dateKey(new Date());
+    if (vesperTime() && eveningVisitDay !== today && mode !== 'focus' && !friends.length && !play && !fishItem) {
+      startVisit('vesper'); eveningVisitDay = today; nextVisit = U.rand(240,480);
+    }
     if (mode === 'focus') {
       // odakta sahne sakin: yürüyenler sessizce çıkar, uyuyanlar uyumaya devam eder
       for (const f of friends) if (f.state !== 'sleep' && !(f.steps[0] && f.steps[0].do === 'leave')) f.steps = [{ do: 'leave' }];
@@ -1862,6 +1951,9 @@ const Scene = (() => {
     }
     for (let i = friends.length - 1; i >= 0; i--) {
       const f = friends[i];
+      if (f.kind === 'vesper' && !vesperTime() && f.steps[0]?.do !== 'leave') {
+        f.emote = null; f.steps = [{ do: 'leave' }];
+      }
       f.ft += dt;
       if (f.y < 0 || f.vy !== 0) { f.vy += 260 * dt; f.y += f.vy * dt; if (f.y >= 0) { f.y = 0; f.vy = 0; } }
       f.blinkIn -= dt;
@@ -1886,6 +1978,7 @@ const Scene = (() => {
         st.left = st.t;
         f.dir = L.x >= f.x ? 1 : -1; // Luna'ya dönük
         if (st.do === 'greet') {
+          if (onFriendArrival) onFriendArrival(f.kind);
           hearts((f.x + L.x) / 2, groundY - 18, 3);
           if (L.state === 'sit' || L.state === 'walk' || L.state === 'watch') { L.state = 'happy'; L.wait = 3; }
         }
@@ -1904,7 +1997,8 @@ const Scene = (() => {
       ctx.fillStyle = '#000';
       ctx.fillRect(g.left + 2, groundY + 1, g.p.w - 4, 1);
       ctx.globalAlpha = 1;
-      ctx.drawImage(g.c, g.left, g.top);
+      const bob = !reducedMotion && f.emote && f.emote.until > time && f.emote.mood === 'happy' ? Math.round(Math.sin(time*6)) : 0;
+      ctx.drawImage(g.c, g.left, g.top + bob);
     }
   }
 
@@ -1990,8 +2084,9 @@ const Scene = (() => {
   }
   function positionBubble() {
     if (!bubbleOn || !W) return;
-    const g = lunaGeom();
-    const cx = L.x * scale;
+    const actor = bubbleSpeaker === 'luna' ? null : friends.find(f=>f.kind===bubbleSpeaker && f.x >= 0 && f.x <= W);
+    const g = actor ? fgeom(actor) : lunaGeom();
+    const cx = (actor ? actor.x : L.x) * scale;
     let left = Math.round(U.clamp(cx - bubbleW / 2, 8, wrapW - bubbleW - 8));
     // sahnenin üstünden taşmasın (yatay tutulan telefonda sahne alçak)
     let bottom = Math.max(4, Math.min(Math.round((H - (g.top - 1)) * scale + 10), wrapH - bubbleH - 6));
@@ -2115,6 +2210,7 @@ const Scene = (() => {
       onPoke = opts.onPoke;
       onFriend = opts.onFriend || null;
       onFriendSeen = opts.onFriendSeen || null;
+      onFriendArrival = opts.onFriendArrival || null;
       sprites();
       updateSun();
       resize();
@@ -2162,7 +2258,16 @@ const Scene = (() => {
     say(text, opts) {
       opts = opts || {};
       if (!bubbleEl || !text) return;
-      bubbleEl.innerHTML = (opts.love ? '<span class="love-tag">💌</span> ' : '') + U.esc(text);
+      const speaker = ['luna','vesper','kitten'].includes(opts.speaker) ? opts.speaker : 'luna';
+      const actor = speaker === 'luna' ? L : friends.find(f=>f.kind===speaker && f.x >= 0 && f.x <= W);
+      if (!actor) return; // sahnede olmayan karakterin sesi Luna'nın üstünden çıkmasın
+      bubbleSpeaker = speaker;
+      const label = speaker === 'vesper' ? 'Vesper' : speaker === 'kitten' ? 'Güçlü' : 'Luna';
+      bubbleEl.dataset.speaker = speaker;
+      bubbleEl.setAttribute('aria-label', label + ': ' + text);
+      const duration = opts.ms || Math.max(5000, text.length * 85);
+      if (opts.emotion) express(actor,opts.emotion,duration);
+      bubbleEl.innerHTML = '<span class="speaker-tag">' + label + '</span> ' + (opts.love ? '<span class="love-tag">💌</span> ' : '') + U.esc(text);
       bubbleEl.classList.toggle('love', !!opts.love);
       bubbleEl.classList.remove('hidden');
       bubbleEl.classList.remove('pop'); void bubbleEl.offsetWidth; bubbleEl.classList.add('pop');

@@ -5,27 +5,30 @@
    halini okur. */
 
 const SURUMLER = /*SURUMLER*/[
-{
-  "surum": "2.1.2",
-  "tarih": "2026-10-06",
-  "baslik": "Daha çok Luna sohbeti ve uygulama bağlantıları",
-  "notlar": [
-    "🐾 Luna’ya 48 yeni replik; aynı kategoride son üç replik tekrar edilmez.",
-    "🎧 Spotify gömülü oynatıcısı yerine dışarıda açılan liste bağlantısı.",
-    "📲 Android Chrome’da desteklenen bağlantılar yüklü uygulamaya yönlendirilir; açılamazsa web adresi kullanılır. iPad ve iPhone’da cihazın uygulama bağlantısı tercihleri geçerlidir."
-  ]
-},
-{
-  "surum": "2.1.1",
-  "tarih": "2026-10-06",
-  "baslik": "Luna artık halini hatırını soruyor",
-  "notlar": [
-    "🐾 İlk tanışma korunur; sonraki açılışlarda Luna her gün halini hatırını sorar.",
-    "😾 Az çalışılan akşamlarda tatlı sitem, hedef tamamlanınca gururlu replikler.",
-    "🌙 Gece Luna: Anneciğim, hadii uyuyalım!",
-    "🔔 Odak oturumunda tekrarlanan çıkışlara, izin verilen uygulamalar hariç, seyrek hatırlatmalar. Bildirim için izin ve tarayıcı desteği gerekir; uygulama tamamen kapalıyken garanti edilmez."
-  ]
-},
+  {
+    "surum": "2.1.2",
+    "tarih": "2026-10-06",
+    "baslik": "Luna, Vesper ve Güçlü artık daha canlı",
+    "notlar": [
+      "🐾 Luna’ya 48 yeni replik; aynı kategoride son üç replik tekrar edilmez.",
+      "🎧 Spotify gömülü oynatıcısı yerine dışarıda açılan liste bağlantısı.",
+      "📲 Android Chrome’da desteklenen bağlantılar yüklü uygulamaya yönlendirilir; açılamazsa web adresi kullanılır. iPad ve iPhone’da cihazın uygulama bağlantısı tercihleri geçerlidir.",
+      "😻 Luna konuşurken öne döner; övgü, tatlı sitem, özlem ve esneme için yeni piksel yüzler.",
+      "🌙 Vesper saat 18 sonrası hava karardığında ziyarete gelir; Güçlü bebek diliyle sohbet eder.",
+      "💬 Konuşma balonu artık konuşan kediyi takip eder. Hareket azaltma tercihi korunur."
+    ]
+  },
+  {
+    "surum": "2.1.1",
+    "tarih": "2026-10-06",
+    "baslik": "Luna artık halini hatırını soruyor",
+    "notlar": [
+      "🐾 İlk tanışma korunur; sonraki açılışlarda Luna her gün halini hatırını sorar.",
+      "😾 Az çalışılan akşamlarda tatlı sitem, hedef tamamlanınca gururlu replikler.",
+      "🌙 Gece Luna: Anneciğim, hadii uyuyalım!",
+      "🔔 Odak oturumunda tekrarlanan çıkışlara, izin verilen uygulamalar hariç, seyrek hatırlatmalar. Bildirim için izin ve tarayıcı desteği gerekir; uygulama tamamen kapalıyken garanti edilmez."
+    ]
+  },
   {
     "surum": "2.1",
     "tarih": "2026-10-06",

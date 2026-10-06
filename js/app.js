@@ -31,7 +31,7 @@
   }
 
   function say(kind, opts) {
-    Scene.say(Messages.get(kind), opts);
+    Scene.say(Messages.get(kind), { ...Messages.delivery(kind), ...opts });
     lastMsgAt = Date.now();
   }
   function sayLove() {
@@ -326,7 +326,7 @@
     else if (a.app && m >= 1) text = `${exitInfo(a.app).from} hoş geldin ${exitInfo(a.app).e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
     else if (!a.app && m >= 1 && !D().settings.pauseOnLeave) text = `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`;
     if (a.lunaNudge && !a.app) text = Messages.get('focusNudge') + (a.paused ? ' Sayaç durdu; hazır olduğunda Devam’a bas.' : '');
-    if (text) { Scene.say(text); lastMsgAt = Date.now(); }
+    if (text) { Scene.say(text, { emotion: a.lunaNudge ? 'angry' : 'neutral' }); lastMsgAt = Date.now(); }
     return !!text;
   }
   // tam odakta dışarıda kalınca sayaç durdu: izinli bir uygulamadaysa o süre de çalışmaya sayılır
@@ -1587,7 +1587,7 @@
     save,
     toast,
     esc: U.esc,
-    say(kind, vars) { Scene.say(Messages.get(kind, vars)); lastMsgAt = Date.now(); },
+    say(kind, vars) { Scene.say(Messages.get(kind, vars), Messages.delivery(kind)); lastMsgAt = Date.now(); },
     sayText(text, opts) { Scene.say(text, opts); lastMsgAt = Date.now(); },
     openModal,
     closeModal,
@@ -1622,7 +1622,19 @@
     try { if (!localStorage.getItem('luna-temizlik-1')) { localStorage.removeItem('luna-sync-on'); if (window.indexedDB) indexedDB.deleteDatabase('luna-sync'); localStorage.setItem('luna-temizlik-1', '1'); } } catch (e) { /* yok say */ }
     Scene.init($('#sky'), $('#bubble'), {
       onPoke() { Sound.meow(); say('poke'); },
-      onFriend(kind) { Sound.meow(); say(kind === 'vesper' ? 'vesper' : 'kitten'); },
+      onFriend(kind) { Sound.meow(); say(kind === 'vesper' ? 'vesper' : U.pick(['kitten','kittenMiss','kittenHappy'])); },
+      onFriendArrival(kind) {
+        let tries = 0;
+        const speak = () => {
+          if (App.isFocusing()) return;
+          if (Date.now() - lastMsgAt < 10000 || !$('#modal').classList.contains('hidden')) {
+            if (++tries < 7) setTimeout(speak, 1500);
+            return;
+          }
+          say(kind === 'vesper' ? 'vesper' : U.pick(['kitten','kittenMiss','kittenHappy']));
+        };
+        speak();
+      },
       // ilk karşılaşma: tanıştırma + iki kediyle de tanışınca rozet
       onFriendSeen(kind) {
         const st = D().stats;
@@ -1630,7 +1642,7 @@
         st.seen[kind] = Date.now();
         if (st.seen.vesper && st.seen.kitten) st.friendsMet = true;
         save();
-        setTimeout(() => { if (!App.isFocusing()) say(kind === 'vesper' ? 'meetVesper' : 'meetKitten'); }, 2500);
+
         checkBadges();
       },
     });

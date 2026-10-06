@@ -1680,3 +1680,11 @@ button.stat-chip { font: inherit; color: inherit; cursor: pointer; }
 /* kütüphanede ders videosu */
 .vw-video { display: grid; place-items: center; min-height: 100%; }
 .vw-video video { width: 100%; max-height: calc(100vh - 140px); border-radius: 10px; background: #000; }
+
+/* Konuşan kedi: isim ve renkle ayırt edilir, balon mevcut saat kutusunu korur. */
+.speaker-tag { display: block; font-size: .68rem; font-weight: 800; letter-spacing: .04em; margin-bottom: .25rem; color: #75608e; }
+#bubble[data-speaker="vesper"] { border-color: #7896c9; }
+#bubble[data-speaker="vesper"] .speaker-tag { color: #526b9d; }
+#bubble[data-speaker="kitten"] { border-color: #d99a55; }
+#bubble[data-speaker="kitten"] .speaker-tag { color: #986125; }
+@media (prefers-reduced-motion: reduce) { #bubble.pop { animation: none; } }

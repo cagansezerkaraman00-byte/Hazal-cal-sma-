@@ -153,6 +153,12 @@ const Messages = (() => {
   M.done.push(...["Bir oturum daha cebimizde! Anneciğim, şimdi biraz esneyelim 😻","Emeğin kaydedildi. Molada omuzlarını ve gözlerini dinlendir.","Bitti bile! Nasıl geçtiğini bir kelimeyle not etmek ister misin?","Pati çak! Şimdi kendine kısa bir mola ver 🐾"]);
   M.poke.push(...["Mırrr… Anneciğim beni mi çağırdı? 😽","Bir pati benden, bir soru senden. Anlaştık mı?","Buradayım {name}! Kulağımı sevdin, şimdi deftere dönelim 🐾","Minik bir miyav molası verdik. Hazırsan devam 💜"]);
 
+  M.vesper = ["Anneciğimm, gece benimle mi çalışacaksın? Ben sessizce yanına oturayım 🌙","Hava karardı {name}, ben geldim. Bu gece hangi sayfada buluşuyoruz?","Gece nöbeti bende anneciğim. Sen çalış, ben yanında usul usul dururum.","Biraz yoruldun mu? İstersen son bir küçük tekrar, sonra dinlenelim.","Yıldızlar çıktı, ben de geldim. Nasılsın anneciğim?"];
+  M.kitten = ["Anne… napıyo? Ben de bakıyım mıı? 🧡","Anneciim! Minik patimle sayfayı tutuyum mu?","{name}, ben geldiiim! Bana da minicik bi yer aç.","Anne, bu kalem benim oyuncaam mı? Değil mii? Tamam, uslu duruyum."];
+  M.kittenMiss = [...(M.kittenMiss || []), ...["Seni çok özedim anne… Bugün gelemedin mi? Geldin ya, şimdi iyiyim 🥺","Anneciim, nedeen yoktun? Ben sana sarılcaktım… Şimdi yanına kıvrılıyım mı?","Biraz burnum düştü, seni özedim… Ama işin varsa usulca bekleyebilirim 🧡"]];
+  M.kittenHappy = [...(M.kittenHappy || []), ...["Anne bak! Ben güldüüm! Sen gelince patilerim kıpır kıpır oldu 😸","Çook güzel çalışıyon anne! Ben de büyüyünce senin gibi olcam.","Seni gördüüm! Şimdi minicik bi pati çakalım mıı?"]];
+  M.proud = [...(M.proud || []), ...["Çoook güzel çalışıyorsun annem… Sana bakınca içim sıcacık oluyor 😻","Bir dönüp sana bakayım… Aferin annem, ne güzel emek verdin.","Annemi kimse tutamaz bugün! Şimdi oturup seninle gururlanacağım 🐾"]];
+  M.bedtime = [...(M.bedtime || []), ...["Anneciğimm… haaah… gözlerim kapanıyo. Hadii uyuyalım 💤","{name}, saat çoook geç oldu. Ben esnemeye başladım, sen de dinlen annem.","Son sayfayı işaretle anneciğim. Battaniyeye geçelim, yarın yine birlikteyiz 🌙"]];
   function fill(t) {
     return t.replace(/\{name\}/g, Store.data.settings.name || 'canım').replace(/\{kitten\}/g, 'Güçlü');
   }
@@ -213,8 +219,19 @@ const Messages = (() => {
     return true;
   }
 
+
+  function delivery(kind) {
+    const speaker = ['vesper','meetVesper'].includes(kind) ? 'vesper'
+      : ['kitten','kittenMiss','kittenHappy','meetKitten'].includes(kind) ? 'kitten' : 'luna';
+    const emotions = {proud:'proud',goal:'proud',done:'happy',fed:'happy',poke:'happy',
+      lowStudy:'sad',focusNudge:'angry',bedtime:'sleepy',late:'sleepy',
+      kittenMiss:'tender',kittenHappy:'happy',kitten:'neutral',vesper:'neutral',
+      checkIn:'neutral',companion:'neutral',welcome:'neutral'};
+    return { speaker, emotion: emotions[kind] || 'neutral' };
+  }
+
   return {
-    companionState, mood, departure,
+    companionState, mood, departure, delivery,
     get(kind, vars) {
       const arr = M[kind] || M.poke;
       const state = companionState();
