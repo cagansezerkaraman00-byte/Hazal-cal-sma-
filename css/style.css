@@ -1642,8 +1642,6 @@ button.stat-chip { font: inherit; color: inherit; cursor: pointer; }
   .timer-time, body.focusing .timer-time { font-size: 22px; }
   .timer-sub { font-size: .75rem; margin-top: 4px; padding: 0 14px; }
 }
-.hud-left { transition: opacity .2s; }
-.hud-left.under-bubble { opacity: 0; }
 /* uzun bağlantılar (ör. developer.spotify.com/dashboard) dar ekranda sayfayı genişletmesin */
 .guide a, .hint a, .muted a { overflow-wrap: anywhere; }
 /* dar ekran: eğitim modu düğmeleri iki satıra inebilir, deneme adı iki satıra sığar */
