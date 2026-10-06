@@ -16,6 +16,14 @@ Open the link on the phone. A full-screen guide appears and walks through it:
 
 From then on Luna lives on the home screen with its own icon, opens full screen and works without internet. On first launch it asks once for notification permission, which is used for timer alerts and update notices.
 
+## 2.1.4 — consolidated update
+
+Geliştiren: **Çağan Sezer Karaman**.
+
+This release combines expressive companions, contextual reminders, notification branding, the compact sleeping-family timer window, five decorative color themes selectable in Settings, and mobile layout fixes. Preferences remain saved. External mini windows require browser support and a user gesture; closed-app reminders still require additional push infrastructure.
+
+The visible release is **2.1.4**. The internal update identifier remains monotonic so devices that already installed 2.1.5 or 2.1.6 can receive this package. User-facing version labels use `gorunenSurum` when present; update checks and caches continue to use `surum`.
+
 ## Updates (like the App Store, without downloads)
 
 - When a new version is published, Luna shows an **"Update ready"** card, a dot on the Settings tab, a notification and a badge on the app icon.

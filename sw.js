@@ -90,7 +90,7 @@ async function remoteCheck() {
   const box = await caches.open(VENDOR), mark = new URL('__bildirildi/' + v.surum, self.registration.scope).href;
   if (await box.match(mark)) return;
   await box.put(mark, new Response('1'));
-  await self.registration.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${v.surum}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/icon-192.png', self.registration.scope).href, badge: new URL('icons/notification-badge.png', self.registration.scope).href, tag: 'luna-guncelleme' });
+  await self.registration.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${v.gorunenSurum || v.surum}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/icon-192.png', self.registration.scope).href, badge: new URL('icons/notification-badge.png', self.registration.scope).href, tag: 'luna-guncelleme' });
   if (self.navigator && self.navigator.setAppBadge) self.navigator.setAppBadge(1).catch(() => {}); // simgede rozet
 }
 self.addEventListener('periodicsync', (e) => {

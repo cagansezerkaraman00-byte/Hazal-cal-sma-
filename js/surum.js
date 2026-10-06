@@ -6,61 +6,21 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
-    "surum": "2.1.6",
+    "surum": "2.1.7",
+    "gorunenSurum": "2.1.4",
     "tarih": "2026-10-07",
-    "baslik": "Mini pencerenin beş rengi",
-    "notlar": ["🎨 Ayarlar'dan Sıcak krem, Lavanta, Adaçayı, Gül kurusu veya Gece mavisi seçebilirsin.", "🌸 Her temanın kendi süsleri var: yıldızlar, yaz çiçekleri, lavanta dalları, kalpler ve güneş.", "🐾 Tercihin kaydedilir; açık mini pencerenin rengi hemen değişir. Kedi görseli korunur."]
-  },
-  {
-    "surum": "2.1.5",
-    "tarih": "2026-10-06",
-    "baslik": "Sıcacık mini pencere",
+    "baslik": "Luna · Birlikte çalışıyoruz",
     "notlar": [
-      "🐈 Gönderdiğin uyuyan kedi ailesi görseli mini pencereye eklendi.",
-      "⏱️ Sıcak krem tonları, okunaklı sayaç, saat ve tarih; ince ilerleme çubuğuyla sade yatay tasarım.",
-      "📴 Kedi görseli çevrimdışı kullanım için uygulamayla birlikte saklanır."
-    ]
-  },
-  {
-    "surum": "2.1.4",
-    "tarih": "2026-10-06",
-    "baslik": "Minik uyku penceresi",
-    "notlar": [
-      "🐾 Uygulama içindeki büyük mini sayaç kartı kaldırıldı.",
-      "💤 Küçük yatay pencerede üç kedi birbirine sokulup uyur; saat ve sayaç yanlarında görünür.",
-      "↗️ Destekleyen tarayıcıda ayrılmadan önce Mini pencere’ye dokun. Luna’ya geri dönünce kapanır. Web sürümü, uygulama alta alındığında kendiliğinden dış pencere açamaz."
-    ]
-  },
-
-  {
-    "surum": "2.1.3",
-    "tarih": "2026-10-06",
-    "baslik": "Hata düzeltmeleri",
-    "notlar": [
-      "🕐 Luna konuşurken saat ve tarih artık hiç kaybolmuyor; balon saatin yanına ya da altına geçiyor.",
-      "🌙 Gece Luna \"hadi uyuyalım\" dedikten sonra \"nasılsın, başlayalım\" demiyor; hal hatır sorusu sabah geliyor.",
-      "📊 Gece yarısını geçen oturum başladığı güne sayılıyor; Luna'nın övgüsü bugünkü halkayla aynı şeyi söylüyor.",
-      "📱 iPhone'da sayaç düğmeleri karta sığıyor, Mini sayaç tek satırda.",
-      "🔢 Soru ortalamaları ve rozet ilerlemeleri virgüllü (25,4); raporda \"6'sında, 7'sinde\" doğru yazılıyor.",
-      "💾 Son yedek takvim gününe göre gösteriliyor: dün akşam aldığın yedek \"dün\" görünüyor.",
-      "📲 Telefonu yan tutunca kurulum ekranındaki ok yazının üstüne binmiyor."
-    ]
-  },
-  {
-    "surum": "2.1.2",
-    "tarih": "2026-10-06",
-    "baslik": "Luna, Vesper ve Güçlü artık daha canlı",
-    "notlar": [
-      "🐾 Luna’ya 48 yeni replik; aynı kategoride son üç replik tekrar edilmez.",
-      "🎧 Spotify gömülü oynatıcısı yerine dışarıda açılan liste bağlantısı.",
-      "📲 Android Chrome’da desteklenen bağlantılar yüklü uygulamaya yönlendirilir; açılamazsa web adresi kullanılır. iPad ve iPhone’da cihazın uygulama bağlantısı tercihleri geçerlidir.",
-      "😻 Luna konuşurken öne döner; övgü, tatlı sitem, özlem ve esneme için yeni piksel yüzler.",
-      "🌙 Vesper saat 18 sonrası hava karardığında ziyarete gelir; Güçlü bebek diliyle sohbet eder.",
-      "💬 Konuşma balonu artık konuşan kediyi takip eder. Yürüyüş ve oyun tepkileri canlandı; hareket azaltma tercihi korunur.",
-      "🔔 Bildirim logosu ve Android küçük rozeti düzeltildi; ayarlara test bildirimi eklendi.",
-      "🐾 Yarım kalan oturum, eksik hedef ve uzun aralar için farklı, seyrek hatırlatmalar. Uygulama tamamen kapalıyken push sunucusu olmadan garanti edilmez.",
-      "⏱️ Üç kedili, taşınabilir mini sayaç: saat, tarih, hava ve çalışma süresi. Uygulama dışı pencere yalnız destekleyen tarayıcılarda; diğer cihazlarda Luna içinde görünür.",
-      "📌 Mini sayaç oturumunda arka planda süre korunur. İzin varsa bildirimde logo ve bitiş saati gösterilir; bildirim saniye saniye canlı sayaç değildir."
+      "✍️ Geliştiren: Çağan Sezer Karaman.",
+      "🐾 Luna, Vesper ve Güçlü için daha duygulu konuşmalar, yeni piksel yüz ifadeleri, canlı yürüyüş ve oyun tepkileri. Konuşma balonu konuşan kediyi takip eder; saat ve tarih görünür kalır.",
+      "🌙 Vesper akşam hava karardığında gelir; Güçlü sevecen bebek diliyle konuşur. Gece uyku repliğinden sonra çalışma çağrısı yapılmaz.",
+      "🎧 Spotify, YouTube, ChatGPT ve Gemini bağlantıları cihazın desteklediği şekilde kurulu uygulamaya yönlenir; uygun durumda web bağlantısı kullanılır.",
+      "🔔 Bildirim logosu ve küçük rozet düzeltildi. Eksik hedef, yarım oturum ve uzun aralar için farklı, seyrek hatırlatmalar ve test bildirimi eklendi.",
+      "💤 Küçük yatay mini pencerede uyuyan üç kedinin görseli; yanında saat, tarih, hava durumu, çalışma süresi ve ilerleme çubuğu bulunur. Görsel çevrimdışı da açılır.",
+      "🎨 Ayarlar’dan beş mini pencere teması seçilebilir: güneşli Sıcak krem, Lavanta dalları, yaz çiçekli Adaçayı, kalpli Gül kurusu, yıldızlı ve hilalli Gece mavisi. Seçim kaydedilir ve açık pencereye uygulanır.",
+      "↗️ Büyük uygulama içi kart kaldırıldı. Destekleyen tarayıcıda ayrılmadan önce Mini pencere’ye dokunulur; Luna’ya dönünce kapanır. Web sürümü alta alındığında kendiliğinden dış pencere açamaz.",
+      "📌 Mini pencere oturumunda arka plandaki süre korunur. İzin varsa bildirimde bitiş saati gösterilir; canlı saniye sayacı değildir. Uygulama tamamen kapalıyken güvenilir hatırlatma için ek bildirim altyapısı gerekir.",
+      "🛠️ Gece yarısını geçen oturumlar, günlük hedef hesapları, telefon düğme yerleşimleri, Türkçe sayılar, yedek tarihleri ve kurulum ekranı düzeltildi."
     ]
   },
   {
@@ -117,39 +77,6 @@ const SURUMLER = /*SURUMLER*/[
       "Drive'a yükleme yarıda kalırsa dosya cihazda kalıyor, hiçbir şey kaybolmuyor.",
       "Kaynakçada tireli isimler ve kitap bölümleri doğru yazılıyor.",
       "Üniversite modunda devamsızlık saati, ikinci vize notu ve geçmiş dönem ortalaması düzeldi."
-    ]
-  },
-  {
-    "surum": "1.2",
-    "tarih": "2026-10-05",
-    "baslik": "Üniversite, KPSS ve yüksek lisans",
-    "notlar": [
-      "Eğitim modu: YKS'den sonra üniversite, KPSS ya da yüksek lisans. YKS verilerin silinmiyor, her modun kendi ders listesi var.",
-      "Dönem ekranı: dersler, haftalık program, sınav ve ödev takvimi, devamsızlık, not ortalaması ve GANO, telefon takvimine aktarma.",
-      "Telefonda daha derli toplu ekranlar, daha hızlı açılış ve daha az pil kullanımı."
-    ]
-  },
-  {
-    "surum": "1.1",
-    "tarih": "2026-10-04",
-    "baslik": "Kitaplık büyüdü",
-    "notlar": [
-      "Tam odak ve izinli uygulamalar; yavru kedinin adı artık Güçlü.",
-      "Depo: ders fotoğrafları ve PDF'ler, uygulama içinde PDF görüntüleyici, isteğe bağlı Google Drive.",
-      "Hata defteri: yanlış yaptığın soruların fotoğrafı ve aralıklı yeniden çözme.",
-      "Kaynaklar: makale arama, DOI ve ISBN ile ekleme, APA 7 / Vancouver / IEEE kaynakça.",
-      "Tanılama bölümü: bir şey çalışmazsa nedenini gösteriyor."
-    ]
-  },
-  {
-    "surum": "1.0",
-    "tarih": "2026-10-04",
-    "baslik": "Luna ile Çalış",
-    "notlar": [
-      "Luna, canlı gökyüzü, gerçek ay ve güneş, mevsimler ve özel günler.",
-      "Pomodoro ve serbest sayaç, sade odak ekranı.",
-      "YKS planı ve konu takibi, deneme netleri, notlar ve bilgi kartları.",
-      "İlerleme raporu, rozetler, Spotify ve ortam sesleri."
     ]
   }
 ]/*SURUMLER*/;

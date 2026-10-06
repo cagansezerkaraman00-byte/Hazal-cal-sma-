@@ -14,6 +14,7 @@ const Guncelleme = (() => {
   const set = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* gizli mod */ } };
   const esc = (s) => U.esc(s);
   const current = () => SURUMLER[0];
+  const versionLabel = v => v.gorunenSurum || v.surum;
   const fmtDate = (iso) => { const d = new Date(iso + 'T12:00:00'); return isNaN(d) ? iso : `${d.getDate()} ${U.MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
   // "2.10" "2.9"dan yenidir
   function newer(a, b) {
@@ -45,7 +46,7 @@ const Guncelleme = (() => {
       if (!list) throw new Error('liste okunamadı');
       remote = list;
       if (latest()) announce();
-      else if (manual) App.toast('✅', 'Luna güncel', `Sürüm ${current().surum} en yeni sürüm`);
+      else if (manual) App.toast('✅', 'Luna güncel', `Sürüm ${versionLabel(current())} en yeni sürüm`);
       if (reg) reg.update().catch(() => {});
     } catch (e) {
       if (manual) App.toast('📡', 'Güncellemelere bakılamadı', 'İnternet bağlantını kontrol edip tekrar dene');
@@ -78,7 +79,7 @@ const Guncelleme = (() => {
   }
   async function systemNote(v) {
     if (!App.data().settings.notify || !('Notification' in window) || Notification.permission !== 'granted' || !reg) return;
-    try { await reg.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${v.surum}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/icon-192.png', location.href).href, badge: new URL('icons/notification-badge.png', location.href).href, tag: 'luna-guncelleme' }); } catch (e) { /* desteklenmiyor */ }
+    try { await reg.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${versionLabel(v)}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/icon-192.png', location.href).href, badge: new URL('icons/notification-badge.png', location.href).href, tag: 'luna-guncelleme' }); } catch (e) { /* desteklenmiyor */ }
   }
   function dot(on) { const b = $('#tabs button[data-tab="settings"]'); if (b) b.classList.toggle('has-dot', on); }
 
@@ -108,7 +109,7 @@ const Guncelleme = (() => {
 
   // ---------- Yenilikler ----------
   function notesHtml(list) {
-    return list.map((v) => `<div class="wn-ver"><h4>Sürüm ${esc(v.surum)} · ${esc(v.baslik)} <small>${esc(fmtDate(v.tarih))}</small></h4><ul>${v.notlar.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`).join('');
+    return list.map((v) => `<div class="wn-ver"><h4>Sürüm ${esc(versionLabel(v))} · ${esc(v.baslik)} <small>${esc(fmtDate(v.tarih))}</small></h4><ul>${v.notlar.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`).join('');
   }
   function whatsNew() {
     const seen = get(KEY.seen), cur = current().surum;
@@ -120,7 +121,7 @@ const Guncelleme = (() => {
     let tries = 0;
     const show = () => {
       if (!$('#modal').classList.contains('hidden')) { if (++tries < 8) setTimeout(show, 2500); return; }
-      App.openModal(`<div class="wn-head"><img src="icons/icon-192.png" alt="" class="wn-icon"><div><h3>Luna güncellendi ✨</h3><p class="muted small">Sürüm ${esc(cur)} · ${esc(fmtDate(current().tarih))}</p></div></div>
+      App.openModal(`<div class="wn-head"><img src="icons/icon-192.png" alt="" class="wn-icon"><div><h3>Luna güncellendi ✨</h3><p class="muted small">Sürüm ${esc(versionLabel(current()))} · ${esc(fmtDate(current().tarih))}</p></div></div>
         <div class="wn-list">${notesHtml(list)}</div>
         <div class="modal-actions"><button class="btn primary" type="button" data-act="ok">Harika 💛</button></div>`, (card) => {
         card.querySelector('[data-act="ok"]').addEventListener('click', () => App.closeModal());
@@ -228,7 +229,7 @@ const Guncelleme = (() => {
     const v = latest();
     let html = '';
     if (v && !bannerHidden) {
-      html = `<img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Güncelleme hazır</b><small>Sürüm ${esc(v.surum)} · ${esc(v.baslik)}</small></div>
+      html = `<img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Güncelleme hazır</b><small>Sürüm ${esc(versionLabel(v))} · ${esc(v.baslik)}</small></div>
         <button class="btn primary small-btn" type="button" data-up="apply" ${applying ? 'disabled' : ''}>${applying ? 'Yükleniyor…' : 'Güncelle'}</button>
         <button class="icon-btn" type="button" data-up="later" aria-label="Sonra">✕</button>`;
     } else if (!v && canOfferInstall() && !installHidden() && touchDevice()) {
@@ -244,9 +245,9 @@ const Guncelleme = (() => {
     if (!el) return;
     const v = latest(), cur = current();
     el.innerHTML = `<h2>🔄 Güncellemeler</h2>
-      <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna</b><small>Sürüm ${esc(cur.surum)} · ${esc(fmtDate(cur.tarih))}</small><small>Geliştiren: Çağan Sezer Karaman</small></div>
+      <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna</b><small>Sürüm ${esc(versionLabel(cur))} · ${esc(fmtDate(cur.tarih))}</small><small>Geliştiren: Çağan Sezer Karaman</small></div>
         <span class="upd-state ${v ? 'new' : ''}">${checking ? 'Bakılıyor…' : v ? 'Yeni sürüm hazır' : 'Güncel ✓'}</span></div>
-      ${v ? `<div class="upd-new"><div class="wn-list">${notesHtml(fresh())}</div><button class="btn primary" type="button" data-up="apply" ${applying ? 'disabled' : ''}>${applying ? 'Yükleniyor…' : `Sürüm ${esc(v.surum)}'e güncelle`}</button></div>` : ''}
+      ${v ? `<div class="upd-new"><div class="wn-list">${notesHtml(fresh())}</div><button class="btn primary" type="button" data-up="apply" ${applying ? 'disabled' : ''}>${applying ? 'Yükleniyor…' : `Sürüm ${esc(versionLabel(v))}'e güncelle`}</button></div>` : ''}
       <div class="row upd-acts"><button class="btn soft" type="button" data-up="check" ${checking ? 'disabled' : ''}>Güncellemeleri denetle</button>${canOfferInstall() ? `<button class="btn soft" type="button" data-up="install">📲 Ana ekrana ekle</button>` : ''}</div>
       <p class="muted small">Güncellemeler verilerine ve ayarlarına dokunmaz; sayaç da kaldığı yerden devam eder. Yeni sürüm çıkınca bildirim gelmesi için Odak bölümünden <b>Bildirim gönder</b>'i aç.</p>
       <details class="upd-history"><summary>📜 Tüm sürümler ve yenilikler</summary><div class="wn-list">${notesHtml(SURUMLER)}</div></details>`;
