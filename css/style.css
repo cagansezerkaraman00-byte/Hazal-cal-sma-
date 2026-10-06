@@ -508,6 +508,21 @@ body.focusing .focus-exit { display: block; }
 .where-apps .btn { width: 100%; justify-content: center; }
 @media (max-width: 520px) { .allow-set { margin-left: 0; } }
 body.focusing #app { padding-bottom: 24px; }
+/* odakta önce sayaç ve düğmeler gelsin; hedef ve izinli uygulamalar altta (küçük ekranda düğmeler görünür kalsın) */
+body.focusing .timer-card > * { order: 5; }
+body.focusing .timer-card > .focus-exit { order: 0; }
+body.focusing .timer-card > .phase { order: 1; }
+body.focusing .timer-card > .ring-wrap { order: 2; }
+body.focusing .timer-card > .dots { order: 3; }
+body.focusing .timer-card > .controls { order: 4; }
+body.focusing .timer-card > .focus-intent { order: 5; }
+body.focusing .timer-card > .allow-apps { order: 6; }
+body.focusing .timer-card > .park { order: 7; }
+@media (max-height: 760px) {
+  body.focusing .scene { height: clamp(150px, 24vh, 220px); }
+  body.focusing .ring-wrap { width: min(180px, 48vw); }
+  body.focusing .timer-card { gap: 8px; }
+}
 
 /* ---------- Karşılama kartı ---------- */
 .welcome {
@@ -978,6 +993,7 @@ button.block:hover { border-color: var(--line-strong); }
 .modal-card label { display: block; font-weight: 700; font-size: .85rem; color: var(--muted); margin: 12px 0 6px; }
 .modal-card input, .modal-card select { width: 100%; }
 .modal-card input[type=checkbox], .modal-card input[type=radio], .modal-card input[type=color] { width: auto; }
+.modal-card .switch input { width: 42px; } /* aç/kapa düğmesi pencere içinde de tam boy */
 .modal-card label.switch { display: flex; color: var(--text); }
 .stars { display: flex; gap: 6px; }
 .stars button { background: none; border: 0; font-size: 1.9rem; cursor: pointer; filter: grayscale(1) opacity(.4); transition: transform .1s; padding: 0 2px; }
@@ -1525,8 +1541,12 @@ button.stat-chip { font: inherit; color: inherit; cursor: pointer; }
 /* yatay tutulan telefon: sahne alçak, sayaç yanına sığsın */
 @media (max-height: 500px) and (orientation: landscape) {
   .scene { height: 190px; }
-  body.focusing .scene { height: 160px; }
+  body.focusing .scene { height: 104px; }
   .ring-wrap { width: min(190px, 40vh); }
+  body.focusing .ring-wrap { width: 124px; }
+  body.focusing .timer-time { font-size: 24px; }
+  body.focusing .timer-sub { display: none; }
+  body.focusing .timer-card { gap: 6px; padding-top: 26px; padding-bottom: 10px; }
 }
 /* ana ekrandan açılınca (PWA) üst çentik payı */
 @media (display-mode: standalone) {
@@ -1580,3 +1600,7 @@ button.stat-chip { font: inherit; color: inherit; cursor: pointer; }
 .wn-ver li { margin-bottom: 3px; }
 .install-steps { padding-left: 20px; line-height: 1.6; }
 .install-steps li { margin-bottom: 6px; }
+
+/* dokununca grafik değeri */
+.tap-tip { position: fixed; z-index: 70; max-width: min(320px, calc(100vw - 16px)); padding: 6px 10px; border-radius: 10px; background: var(--text); color: var(--surface); font-size: .8rem; font-weight: 700; line-height: 1.35; pointer-events: none; box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .5); animation: tipIn .15s ease-out; }
+@keyframes tipIn { from { opacity: 0; } }

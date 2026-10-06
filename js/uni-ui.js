@@ -17,6 +17,8 @@ const UniUI = (() => {
     const wk = Uni.weekOfTerm(), weeks = +x.weeks || 14;
     const nc = Uni.nextCalendar();
     const ncLeft = nc ? Uni.daysLeft(nc.date) : null;
+    const ex = Uni.upcoming(100000).find((e) => Uni.EXAM.has(e.kind)); // en yakın sınav, ne kadar uzakta olursa olsun
+    const exLeft = ex ? Uni.daysLeft(ex.date) : null;
     const school = Uni.isSchool();
     const sub = school ? [x.faculty, p.dept, p.year, x.term].filter(Boolean).map(esc).join(' · ') || 'Okul ve bölüm bilgilerini Ayarlar → Eğitim modu’ndan girebilirsin.'
       : [p.dept, x.term].filter(Boolean).map(esc).join(' · ') || 'Derslerin, konuların ve sınav tarihin burada; plan kendiliğinden oluşur.';
@@ -25,6 +27,7 @@ const UniUI = (() => {
         <p class="muted small">${sub}</p></div>
         <div class="row"><button class="btn soft small-btn" data-u="ics" type="button" ${x.courses.length || x.events.length ? '' : 'disabled'}>📅 Telefon takvimine aktar</button></div></div>
       ${wk && wk <= weeks + 3 ? `<div class="term-bar" title="Dönem ilerlemesi"><i style="width:${Math.min(100, Math.round((wk / weeks) * 100))}%"></i><span>Dönemin ${Math.min(wk, weeks)}. haftası / ${weeks}</span></div>` : ''}
+      ${ex ? `<p class="uni-next">🏁 <b>${esc(Uni.evName(ex).nom)}</b> · <span class="cd ${urg(exLeft)}">${exLeft === 0 ? 'bugün' : exLeft === 1 ? 'yarın' : Uni.leftText(exLeft) + ' kaldı'}</span></p>` : ''}
       ${nc ? `<p class="uni-next">${(Uni.CAL_KINDS[nc.kind] || Uni.CAL_KINDS.diger)[0]} <b>${esc(nc.title)}</b> ${ncLeft > 0 ? `· <span class="cd ${urg(ncLeft)}">${ncLeft === 1 ? 'yarın' : Uni.leftText(ncLeft) + ' kaldı'}</span>` : '· şu an'}</p>` : ''}
     </div>`;
   }
@@ -58,11 +61,13 @@ const UniUI = (() => {
   }
   function upcomingHtml() {
     const list = Uni.upcoming(45);
+    const later = Uni.upcoming(100000).filter((e) => Uni.daysLeft(e.date) > 45); // KPSS gibi aylar sonraki sınavlar da görünsün
     const past = u().events.filter((e) => !e.done && e.date < U.dateKey(new Date()));
     return `<div class="card">
       <div class="sec-head"><h2>📌 Yaklaşanlar</h2><button class="btn soft small-btn" data-u="add-event" type="button">＋ Sınav / ödev</button></div>
       ${past.length ? `<p class="hint">Tarihi geçmiş ${past.length} kayıt var; notunu girmek ya da "bitti" demek için dokun.</p><ul class="ev-list">${past.map(eventRow).join('')}</ul>` : ''}
-      ${list.length ? `<ul class="ev-list">${list.map(eventRow).join('')}</ul>` : '<p class="empty-state">Önümüzdeki 45 günde kayıtlı sınav ya da teslim yok. Eklediğinde geri sayım ve çalışma planı kendiliğinden oluşur.</p>'}
+      ${list.length ? `<ul class="ev-list">${list.map(eventRow).join('')}</ul>` : later.length ? '<p class="muted small">Önümüzdeki 45 günde sınav ya da teslim yok.</p>' : '<p class="empty-state">Kayıtlı sınav ya da teslim yok. Eklediğinde geri sayım ve çalışma planı kendiliğinden oluşur.</p>'}
+      ${later.length ? `<h3 class="sub-h">Daha ileride</h3><ul class="ev-list">${later.map(eventRow).join('')}</ul>` : ''}
     </div>`;
   }
   function todayHtml() {
@@ -130,13 +135,13 @@ const UniUI = (() => {
     return `<div class="card">
       <div class="sec-head"><h2>🎯 Not ortalaması</h2>
         <select data-u="gpa-by" aria-label="Hesaplama"><option value="credit" ${u().gpaBy !== 'ects' ? 'selected' : ''}>Kredi ile</option><option value="ects" ${u().gpaBy === 'ects' ? 'selected' : ''}>AKTS ile</option></select></div>
-      <div class="gpa-tiles"><div><span>Dönem ortalaması</span><b>${g.term != null ? g.term.toFixed(2) : '—'}</b></div><div><span>Genel ortalama (GANO)</span><b>${g.overall != null ? g.overall.toFixed(2) : '—'}</b></div></div>
+      <div class="gpa-tiles"><div><span>Dönem ortalaması</span><b>${g.term != null ? U.dec(g.term, 2) : '—'}</b></div><div><span>Genel ortalama (GANO)</span><b>${g.overall != null ? U.dec(g.overall, 2) : '—'}</b></div></div>
       <table class="gpa-table"><thead><tr><th>Ders</th><th>Not</th><th>Harf</th><th>${u().gpaBy === 'ects' ? 'AKTS' : 'Kredi'}</th></tr></thead><tbody>
-        ${cs.map((c) => { const sc = Uni.courseScore(c); const lt = c.letter || (sc && sc.complete ? Uni.letterOf(sc.score)[0] : ''); const need = Uni.needForFinal(c, 60); return `<tr><td>${esc(c.name)}${need != null && !sc?.complete ? `<small class="muted"> · DD için finalden ≥ ${need}</small>` : ''}</td><td>${sc ? sc.score : '—'}</td><td>${esc(lt || '—')}</td><td>${esc(u().gpaBy === 'ects' ? c.ects : c.credit)}</td></tr>`; }).join('')}
+        ${cs.map((c) => { const sc = Uni.courseScore(c); const lt = c.letter || (sc && sc.complete ? Uni.letterOf(sc.score)[0] : ''); const need = Uni.needForFinal(c, 60); return `<tr><td>${esc(c.name)}${need != null && !sc?.complete ? `<small class="muted"> · DD için finalden ≥ ${need}</small>` : ''}</td><td>${sc ? U.num(sc.score) : '—'}</td><td>${esc(lt || '—')}</td><td>${esc(u().gpaBy === 'ects' ? c.ects : c.credit)}</td></tr>`; }).join('')}
       </tbody></table>
       <details class="hint"><summary>Geçmiş dönemler ve harf tablosu</summary>
         <p>GANO için önceki dönemlerin kredisini ve ortalamasını ekle:</p>
-        <ul class="past-list">${(u().pastTerms || []).map((p, i) => `<li>${esc(p.term || 'Dönem')} · ${esc(p.credits)} kredi · ${esc(p.gpa)} <button class="icon-btn" data-u="del-past" data-i="${i}" type="button">✕</button></li>`).join('')}</ul>
+        <ul class="past-list">${(u().pastTerms || []).map((p, i) => `<li>${esc(p.term || 'Dönem')} · ${esc(U.num(p.credits))} kredi · ${esc(U.num(p.gpa))} <button class="icon-btn" data-u="del-past" data-i="${i}" type="button">✕</button></li>`).join('')}</ul>
         <div class="inline-form"><input data-u="past-term" placeholder="Dönem (ör. 2025 Güz)"><input data-u="past-cr" inputmode="decimal" placeholder="Kredi"><input data-u="past-gpa" inputmode="decimal" placeholder="Ortalama (ör. 3,25)"><button class="btn soft small-btn" data-u="add-past" type="button">Ekle</button></div>
         <p>Kullanılan tablo (en yaygın): ${Uni.LETTERS.map((l) => `${l[0]} ≥${l[1]} (${l[2]})`).join(', ')}. Okulun bağıl değerlendirme ya da farklı tablo kullanıyorsa dersin düzenleme ekranından harf notunu elle seçebilirsin.</p>
       </details>

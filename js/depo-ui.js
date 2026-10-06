@@ -345,8 +345,13 @@ const DepoUI = (() => {
       if (big) { App.toast('⚠️', 'Dosya çok büyük', `${big.name}: en fazla 200 MB`); return; }
       askMeta(files);
     });
+    // Android klavyesi kelimeyi oluştururken kutu yeniden çizilmesin (harfler çoğalırdı)
+    let composing = false;
+    host.addEventListener('compositionstart', () => { composing = true; });
+    host.addEventListener('compositionend', (e) => { composing = false; if (e.target.dataset.dp === 'search') e.target.dispatchEvent(new Event('input', { bubbles: true })); });
     host.addEventListener('input', (e) => {
       if (e.target.dataset.dp !== 'search') return;
+      if (composing || e.isComposing) return;
       search = e.target.value;
       const pos = e.target.selectionStart;
       render();

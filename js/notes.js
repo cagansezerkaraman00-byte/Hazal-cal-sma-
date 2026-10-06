@@ -226,8 +226,17 @@ const NotesUI = (() => {
       const li = b.closest('.card-list li');
       if (li) editCard(D().cards.find((c) => c.id === li.dataset.id));
     });
+    // arama: Android klavyesi kelimeyi oluştururken (composition) kutu yeniden çizilirse harfler çoğalır;
+    // oluşturma bitene kadar beklenir
+    let composing = false;
+    root.addEventListener('compositionstart', () => { composing = true; });
+    root.addEventListener('compositionend', (e) => {
+      composing = false;
+      if (e.target.dataset.f === 'search' && !e.target.closest('#depo-root, #hata-root, #kaynak-root')) e.target.dispatchEvent(new Event('input', { bubbles: true }));
+    });
     root.addEventListener('input', (e) => {
       if (e.target.closest('#depo-root, #hata-root, #kaynak-root') || e.target.dataset.f !== 'search') return;
+      if (composing || e.isComposing) return;
       search = e.target.value;
       const pos = e.target.selectionStart;
       render();

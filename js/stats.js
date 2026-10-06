@@ -120,7 +120,7 @@ const Stats = (() => {
   }
 
   const hr = (h) => `${U.pad(h)}:00`;
-  const star = (r) => `${r.toFixed(1)}⭐`;
+  const star = (r) => `${U.dec(r)}⭐`;
 
   // ---------- Luna'nın raporu ----------
   function report(days) {
@@ -140,7 +140,7 @@ const Stats = (() => {
     out.highlights.push({ icon: '📅', label: 'Günlük ortalama', value: U.fmtMin(total / (days || Math.max(1, new Set(list.map((s) => U.dateKey(s.start))).size))) });
     out.highlights.push({ icon: '🍅', label: 'Oturum', value: String(list.length) });
     const ar = avgRating(list);
-    if (ar) out.highlights.push({ icon: '⭐', label: 'Ortalama verim', value: ar.toFixed(1) + ' / 5' });
+    if (ar) out.highlights.push({ icon: '⭐', label: 'Ortalama verim', value: U.dec(ar) + ' / 5' });
 
     // Önceki dönemle kıyas
     if (days) {

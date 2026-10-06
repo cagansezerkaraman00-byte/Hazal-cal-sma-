@@ -2179,7 +2179,7 @@ const Scene = (() => {
       L.state = 'walk';
     },
     celebrate() { sparkles(L.x, groundY - 16, 30); hearts(L.x, groundY - 20, 6); L.vy = -80; },
-    sunInfo() { return sun || solar(new Date()); },
+    sunInfo() { return solar(new Date()); }, // her seferinde güncel konumla (şehir değişince eski saat kalmasın)
     // ayın evresi ve şu an gökyüzünde olup olmadığı (hava penceresi için)
     moonInfo(date = new Date()) {
       const il = moonIllum(date), m = moonSky(date);

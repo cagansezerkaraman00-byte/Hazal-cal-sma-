@@ -661,9 +661,18 @@
     const card = old.cloneNode(false);
     card.innerHTML = html;
     old.replaceWith(card);
+    modalDirty = false;
+    card.addEventListener('input', () => { modalDirty = true; }); // yazılan bir şey var: yanlışlıkla kapanmasın
     $('#modal').classList.remove('hidden');
     if (mount) mount(card);
     return card;
+  }
+  let modalDirty = false;
+  // boşluğa dokunma / Esc: yazılanlar kaydedilmediyse önce sor ("Vazgeç" ve "Kaydet" doğrudan kapatır)
+  function dismissModal() {
+    if ($('#modal').classList.contains('hidden')) return;
+    if (modalDirty && !confirm('Yazdıkların kaydedilmedi. Pencere kapatılsın mı?')) return;
+    closeModal();
   }
 
   // ======================================================================
@@ -804,7 +813,7 @@
     const prog = programMode();
     if (yksMode && days != null && days >= 0) chips.push(['⏳', days === 0 ? 'Bugün!' : `${days} gün`, "YKS'ye", 'gold', 'plan']);
     // dönem modunda: sıradaki sınav, bugünkü dersler, dönem haftası
-    const nextEx = prog ? Uni.upcoming(60).find((e) => Uni.EXAM.has(e.kind)) || Uni.upcoming(14)[0] : null;
+    const nextEx = prog ? Uni.upcoming(100000).find((e) => Uni.EXAM.has(e.kind)) || Uni.upcoming(14)[0] : null;
     if (nextEx) {
       const n = Uni.daysLeft(nextEx.date), w = Uni.evName(nextEx);
       chips.push([Uni.EVENT_KINDS[nextEx.kind][0], n === 0 ? 'Bugün!' : n === 1 ? 'Yarın' : `${n} gün`, n <= 1 ? w.nom : w.dat, n <= 7 ? 'gold' : '', 'plan']);
@@ -815,7 +824,7 @@
       const wk = Uni.weekOfTerm();
       if (wk && wk <= (+D().uni.weeks || 14)) chips.push(['📆', `${wk}. hafta`, 'dönem', '']);
       const g = Uni.isSchool() ? Uni.gpa() : null;
-      if (g && g.overall != null) chips.push(['🎯', g.overall.toFixed(2), 'ortalama', '', 'plan']);
+      if (g && g.overall != null) chips.push(['🎯', U.dec(g.overall, 2), 'ortalama', '', 'plan']);
     }
     if (todayMin > 0) chips.push(['⏱️', U.fmtMin(todayMin), 'bugün', pct >= 100 ? 'up' : '']);
     const wm = weekMinutes();
@@ -829,7 +838,7 @@
     const dueHata = window.HataUI ? HataUI.dueCount() : 0;
     if (dueHata) chips.push(['❌', String(dueHata), 'hata sorusu bugün', '', 'notes:hata']);
     const last = window.Deneme && !prog ? Deneme.lastSummary() : null;
-    if (last) chips.push(['📈', `${last.net} net`, `son ${last.type}${last.delta > 0 ? ' · +' + last.delta : ''}`, last.delta > 0 ? 'up' : '', 'deneme']);
+    if (last) chips.push(['📈', `${last.net} net`, `son ${last.type}${last.delta > 0 ? ' · +' + Deneme.fmt(last.delta) : ''}`, last.delta > 0 ? 'up' : '', 'deneme']);
     const msg = pct >= 100 ? 'Bugünkü hedefini tamamladın! Kendinle gurur duy 🎉'
       : sk >= 3 ? `${sk} gündür buradasın, bu istikrar harika 🌟`
       : yksMode && days != null && days >= 0 ? Messages.daily('yks', { days })
@@ -873,7 +882,7 @@
     // saatler
     const hours = Stats.byHour(sm.list);
     const hmax = Math.max(...hours.map((h) => h.minutes), 1);
-    $('#hour-chart').innerHTML = hours.map((h) => `<div class="h" title="${U.pad(h.hour)}:00 · ${U.fmtMin(h.minutes)}${h.rating ? ' · ' + h.rating.toFixed(1) + '⭐' : ''}">
+    $('#hour-chart').innerHTML = hours.map((h) => `<div class="h" title="${U.pad(h.hour)}:00 · ${U.fmtMin(h.minutes)}${h.rating ? ' · ' + U.dec(h.rating) + '⭐' : ''}">
       <i style="height:${(h.minutes / hmax) * 100}%;background:${h.minutes ? ratingColor(h.rating) : '#ffffff10'}"></i>
       <span>${h.hour % 3 === 0 ? h.hour : ''}</span></div>`).join('');
 
@@ -881,7 +890,7 @@
     const subs = Stats.bySubject(sm.list);
     const smax = Math.max(...subs.map((s) => s.minutes), 1);
     $('#subject-bars').innerHTML = subs.length ? subs.map((s) => `<div class="sbar">
-      <div class="top"><span>${U.esc(s.subject.name)}</span><span>${U.fmtMin(s.minutes)}${s.rating ? ' · ' + s.rating.toFixed(1) + '⭐' : ''}</span></div>
+      <div class="top"><span>${U.esc(s.subject.name)}</span><span>${U.fmtMin(s.minutes)}${s.rating ? ' · ' + U.dec(s.rating) + '⭐' : ''}</span></div>
       <div class="track"><i style="width:${(s.minutes / smax) * 100}%;background:${s.subject.color}"></i></div></div>`).join('') : '<p class="empty">Henüz veri yok</p>';
 
     // haftanın günleri (Pzt'den başla)
@@ -1311,9 +1320,13 @@
       save(); $('#subject-name').value = '';
       renderSubjectEdit(); renderSubjectSelects();
     });
+    // notlar yazarken kendiliğinden kaydedilir (sekme değişince kaybolmasın); düğme yalnızca onay verir
+    const saveLove = () => { D().loveNotes = $('#set-love').value.split('\n').map((x) => x.trim()).filter(Boolean); save(); };
+    let loveT = 0;
+    $('#set-love').addEventListener('input', () => { clearTimeout(loveT); loveT = setTimeout(saveLove, 500); });
+    $('#set-love').addEventListener('blur', () => { clearTimeout(loveT); saveLove(); });
     $('#save-love').addEventListener('click', () => {
-      D().loveNotes = $('#set-love').value.split('\n').map((x) => x.trim()).filter(Boolean);
-      save(); renderHome(); toast('💌', 'Notlar kaydedildi');
+      clearTimeout(loveT); saveLove(); renderHome(); toast('💌', 'Notlar kaydedildi');
     });
     // veri
     $('#export').addEventListener('click', async () => {
@@ -1401,6 +1414,28 @@
   // ======================================================================
   // Luna etkileşimleri ve periyodik mesajlar
   // ======================================================================
+  // dokunmatik ekranda grafiklerin "üzerine gelince" değerleri: dokununca küçük bir balonda görünür
+  function bindTapTips() {
+    if (!matchMedia('(pointer: coarse)').matches) return;
+    let tip = null, hideT = 0;
+    const drop = () => { if (tip) { tip.remove(); tip = null; } };
+    document.addEventListener('click', (e) => {
+      drop();
+      const el = e.target.closest('[title]');
+      if (!el || el.closest('button, a, input, select, textarea, label, .modal') || !el.closest('#tab-progress, .tl-track, .week-grid')) return;
+      const r = el.getBoundingClientRect();
+      tip = document.createElement('div');
+      tip.className = 'tap-tip';
+      tip.textContent = el.getAttribute('title');
+      document.body.appendChild(tip);
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      tip.style.left = Math.round(Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2))) + 'px';
+      tip.style.top = Math.round(r.top > h + 16 ? r.top - h - 8 : r.bottom + 8) + 'px';
+      clearTimeout(hideT); hideT = setTimeout(drop, 2600);
+    });
+    window.addEventListener('scroll', drop, { passive: true });
+  }
+
   function bindLuna() {
     $('#feed-btn').addEventListener('click', () => {
       if (D().fish <= 0) { say('noFish'); return; }
@@ -1549,8 +1584,8 @@
     const modalEl = $('#modal');
     let downInCard = false;
     modalEl.addEventListener('pointerdown', (e) => { downInCard = e.target !== modalEl; });
-    modalEl.addEventListener('click', (e) => { if (e.target === modalEl && !downInCard) closeModal(); downInCard = false; });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+    modalEl.addEventListener('click', (e) => { if (e.target === modalEl && !downInCard) dismissModal(); downInCard = false; });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') dismissModal(); });
     const openSession = (e) => {
       const li = e.target.closest('li[data-id]');
       if (!li) return;
@@ -1588,6 +1623,7 @@
     bindSettings();
     bindLuna();
     bindWeather();
+    bindTapTips();
 
     applyTheme();
     applyMode();

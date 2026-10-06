@@ -27,6 +27,9 @@ const U = {
     d = new Date(d);
     return `${U.pad(d.getHours())}:${U.pad(d.getMinutes())}`;
   },
+  // Türkçe ondalık: 3,25 (dec: sabit basamak, num: olduğu gibi)
+  dec(n, d = 1) { return Number(n || 0).toFixed(d).replace('.', ','); },
+  num(n) { return String(n).replace('.', ','); },
   fmtMin(m) {
     m = Math.round(m || 0);
     if (m < 60) return `${m} dk`;
