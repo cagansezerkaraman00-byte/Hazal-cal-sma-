@@ -15,7 +15,11 @@ const SURUMLER = /*SURUMLER*/[
       "📲 Android Chrome’da desteklenen bağlantılar yüklü uygulamaya yönlendirilir; açılamazsa web adresi kullanılır. iPad ve iPhone’da cihazın uygulama bağlantısı tercihleri geçerlidir.",
       "😻 Luna konuşurken öne döner; övgü, tatlı sitem, özlem ve esneme için yeni piksel yüzler.",
       "🌙 Vesper saat 18 sonrası hava karardığında ziyarete gelir; Güçlü bebek diliyle sohbet eder.",
-      "💬 Konuşma balonu artık konuşan kediyi takip eder. Hareket azaltma tercihi korunur."
+      "💬 Konuşma balonu artık konuşan kediyi takip eder. Yürüyüş ve oyun tepkileri canlandı; hareket azaltma tercihi korunur.",
+      "🔔 Bildirim logosu ve Android küçük rozeti düzeltildi; ayarlara test bildirimi eklendi.",
+      "🐾 Yarım kalan oturum, eksik hedef ve uzun aralar için farklı, seyrek hatırlatmalar. Uygulama tamamen kapalıyken push sunucusu olmadan garanti edilmez.",
+      "⏱️ Üç kedili, taşınabilir mini sayaç: saat, tarih, hava ve çalışma süresi. Uygulama dışı pencere yalnız destekleyen tarayıcılarda; diğer cihazlarda Luna içinde görünür.",
+      "📌 Mini sayaç oturumunda arka planda süre korunur. İzin varsa bildirimde logo ve bitiş saati gösterilir; bildirim saniye saniye canlı sayaç değildir."
     ]
   },
   {

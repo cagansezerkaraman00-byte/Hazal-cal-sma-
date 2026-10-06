@@ -1559,7 +1559,7 @@ const Scene = (() => {
   function wander(dt) {
     if (L.state === 'sleep' && !L.nap) { chooseNext(); return; } // gece uykusu bitti
     if (L.state === 'walk') {
-      if (Math.abs(L.x - L.target) <= 1) { L.state = 'sit'; L.wait = isEvening() ? U.rand(8, 18) : U.rand(3, 8); }
+      if (Math.abs(L.x - L.target) <= 1) { L.state = 'sit'; L.wait = isEvening() ? U.rand(8, 18) : U.rand(3, 8); if (!reducedMotion && Math.random()<0.35) express(L,'happy',4000); }
     } else if (L.state === 'sit' || L.state === 'happy' || L.state === 'sleep') {
       L.wait -= dt;
       if (L.wait <= 0) chooseNext();
@@ -1760,7 +1760,9 @@ const Scene = (() => {
     const wig = L.state === 'crouch' && Math.sin(L.ft * 28) > 0 ? 1 : 0;
     const bob = !reducedMotion && L.emote && L.emote.until > time &&
       ['happy','proud'].includes(L.emote.mood) ? Math.round(Math.sin(time * 5)) : 0;
-    ctx.drawImage(g.c, g.left + wig, g.top + bob);
+    const stepBob=!reducedMotion && L.state==='walk' ? Math.round(Math.sin(L.ft*12)) : 0;
+    const playLean=!reducedMotion && L.state==='bat' ? Math.round(Math.sin(L.ft*18)) : 0;
+    ctx.drawImage(g.c, g.left + wig + playLean, g.top + bob + stepBob);
     // yılbaşında Noel şapkası
     if (ev.yilbasi) {
       const top = HEAD_TOP[poseName()] ?? 0;
@@ -2250,6 +2252,20 @@ const Scene = (() => {
     // hemen bir ip oyunu başlat (odaklanırken yok sayılır)
     play() { if (mode !== 'focus') { nextPlay = 0; startPlay(); } },
     // Luna'nın küçük portresi (rapor başlığı vb.)
+    companionPortraits(canvas, y = 155, height = 145, t = 0) {
+      const g=canvas.getContext('2d'), bank=sprites();
+      const kinds=['luna','vesper','kitten'], names=['Luna','Vesper','Güçlü'];
+      kinds.forEach((kind,i)=>{
+        const happy=Math.floor(t/5+i)%3===0;
+        const p=bank[kind][happy?'face_happy':'face_neutral'];
+        const size=kind==='kitten'?5:4;
+        const x=100+i*200;
+        const bob=reducedMotion?0:Math.round(Math.sin(t*2+i));
+        g.imageSmoothingEnabled=false;
+        g.drawImage(p.c[0],Math.round(x-p.w*size/2),y+height-p.h*size-20+bob,p.w*size,p.h*size);
+        g.font='14px system-ui';g.textAlign='center';g.fillStyle='#d9c4e8';g.fillText(names[i],x,y+height-2);g.textAlign='left';
+      });
+    },
     portrait(canvas) {
       const p = sprites().luna.loafA;
       canvas.width = p.w; canvas.height = p.h;

@@ -44,13 +44,8 @@
   }
 
   async function notify(title, body) {
-    if (!D().settings.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
     if (!document.hidden) return;
-    try {
-      const reg = navigator.serviceWorker && (await navigator.serviceWorker.getRegistration());
-      if (reg) await reg.showNotification(title, { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png' });
-      else new Notification(title, { body, icon: 'icons/icon-192.png' });
-    } catch (e) { /* bazı tarayıcılar desteklemez */ }
+    await LunaNotify.send(title,body,{tag:'luna-session'});
   }
 
   async function lockScreen(on) {
@@ -265,7 +260,7 @@
   };
   let allowExit = null; // {app, at}: izinli düğmeye dokunulduğu an
   // uygulamanın kendi yönlendirmeleri (Google Drive, Spotify girişi) de sayacı durdurmaz
-  const EXITS = { google: { e: '☁️', n: 'Google', from: "Google'dan" }, spotifyLogin: { e: '🎧', n: 'Spotify', from: "Spotify'dan" }, guncelleme: { e: '✨', n: 'Güncelleme', from: 'Güncellemeden' } };
+  const EXITS = { miniTimer: { e: '🐾', n: 'Mini sayaç', from: 'Mini sayaçtan' }, google: { e: '☁️', n: 'Google', from: "Google'dan" }, spotifyLogin: { e: '🎧', n: 'Spotify', from: "Spotify'dan" }, guncelleme: { e: '✨', n: 'Güncelleme', from: 'Güncellemeden' } };
   const exitInfo = (k) => APPS[k] || EXITS[k] || { e: '🐾', n: 'Uygulama', from: 'Geri' };
   const allowedApps = () => (D().settings.allowedApps || []).filter((k) => APPS[k]);
   function appWebUrl(k) {
@@ -1180,6 +1175,7 @@
     $('#set-autobreak').checked = s.autoBreak;
     $('#set-autofocus').checked = s.autoFocus;
     $('#set-sound').checked = s.sound;
+    $('#set-reminders').checked = !!s.studyReminders;
     $('#set-notify').checked = s.notify && 'Notification' in window && Notification.permission === 'granted';
     $('#set-love').value = D().loveNotes.join('\n');
     $('#set-focusmode').checked = s.focusMode;
@@ -1314,6 +1310,7 @@
       showTab('home');
     });
     $('#set-focusmode').addEventListener('change', (e) => { D().settings.focusMode = e.target.checked; save(); renderTimer(Timer.state()); });
+    $('#set-reminders').addEventListener('change',e=>{D().settings.studyReminders=e.target.checked;save();});
     $('#set-notify').addEventListener('change', async (e) => {
       if (e.target.checked) {
         if (!('Notification' in window)) { toast('🔕', 'Bu tarayıcı bildirimleri desteklemiyor'); e.target.checked = false; return; }
@@ -1743,7 +1740,7 @@
       const focusing = s.running && s.phase === 'focus';
       if (document.hidden) {
         if (!focusing) return;
-        const app = allowExit && Date.now() - allowExit.at < 15000 ? allowExit.app : null;
+        const app = s.miniBackground ? 'miniTimer' : allowExit && Date.now() - allowExit.at < 15000 ? allowExit.app : null;
         allowExit = null;
         D().timer.away = { at: Date.now(), app }; // sayfa arka planda kapatılsa da açılışta değerlendirilir
         save();
@@ -1764,6 +1761,8 @@
     checkBadges();
     if (Store.loadError) setTimeout(() => toast('🛟', 'Verilerin okunamadı', 'Bozulmasın diye kopyası alındı: Ayarlar → Veriler', 9000), 1500);
 
+    LunaNotify.init(App);
+    MiniTimer.init(App,()=>weatherNow);
     if (window.Guncelleme) Guncelleme.init(App); // güncellemeler, yenilikler ve ana ekrana ekleme
     // ana ekrana eklenmiş uygulamada tarayıcıdan verilerin kalıcı saklanmasını iste (izin penceresi çıkmaz)
     if (navigator.storage && navigator.storage.persist && (matchMedia('(display-mode: standalone)').matches || navigator.standalone)) {

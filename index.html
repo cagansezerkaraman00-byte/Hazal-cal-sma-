@@ -88,6 +88,7 @@
             <div class="controls">
               <button class="btn ghost" id="btn-reset" title="Sıfırla">↺</button>
               <button class="btn primary big" id="btn-toggle">Başla</button>
+              <button class="btn soft" id="mini-timer-open" type="button">🐾 Mini sayaç</button>
               <button class="btn ghost" id="btn-finish" title="Bitir ve kaydet">✓</button>
             </div>
             <form class="park" id="park-form" autocomplete="off">
@@ -482,6 +483,9 @@
             </div>
             <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
             <label class="switch"><input type="checkbox" id="set-notify"> Bildirim gönder (uygulama arka plandayken)</label>
+            <label class="switch"><input type="checkbox" id="set-reminders"> Luna çalışma ve hedef hatırlatmaları</label>
+            <button class="btn soft" type="button" id="test-notification">🔔 Bildirim ve logoyu test et</button>
+            <p class="hint">Hatırlatmalar 09–22 arasında, en az 90 dakika arayla ve günde en fazla üç kez gönderilir. Web sürümünde uygulama tamamen kapalıyken veya cihaz arka planı durdurduğunda gönderim garanti değildir. Sayaç bildirimi canlı saniyeler yerine bitiş saatini gösterir. iPhone/iPad’de bildirim için ana ekrana kurulum ve izin gerekir.</p>
             <label class="field">Luna molada/boşta ne sıklıkla konuşsun? (dakika, 0 = hiç) <input type="number" id="set-msg" min="0" max="240"></label>
           </div>
           <div class="card">
@@ -584,6 +588,8 @@
   <script src="js/uni-ui.js"></script>
   <script src="js/diag.js"></script>
   <script src="js/guncelleme.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/mini-timer.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

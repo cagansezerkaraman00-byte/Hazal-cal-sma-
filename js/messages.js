@@ -159,6 +159,11 @@ const Messages = (() => {
   M.kittenHappy = [...(M.kittenHappy || []), ...["Anne bak! Ben güldüüm! Sen gelince patilerim kıpır kıpır oldu 😸","Çook güzel çalışıyon anne! Ben de büyüyünce senin gibi olcam.","Seni gördüüm! Şimdi minicik bi pati çakalım mıı?"]];
   M.proud = [...(M.proud || []), ...["Çoook güzel çalışıyorsun annem… Sana bakınca içim sıcacık oluyor 😻","Bir dönüp sana bakayım… Aferin annem, ne güzel emek verdin.","Annemi kimse tutamaz bugün! Şimdi oturup seninle gururlanacağım 🐾"]];
   M.bedtime = [...(M.bedtime || []), ...["Anneciğimm… haaah… gözlerim kapanıyo. Hadii uyuyalım 💤","{name}, saat çoook geç oldu. Ben esnemeye başladım, sen de dinlen annem.","Son sayfayı işaretle anneciğim. Battaniyeye geçelim, yarın yine birlikteyiz 🌙"]];
+  M.remindTasks = ["Anneciğim, bugün için {count} küçük işimiz bekliyor. En kolayından başlayalım mı? 🐾","Neredesin annem? Listemizde {count} eksik var; birlikte birini kapatalım mı?"];
+  M.remindPaused = ["Oturumumuz yarım kaldı anneciğim. Hazırsan kaldığın yer seni bekliyor.","Minik bir ara verdik, şimdi geri gelelim mi? Ben defterin yanındayım 🐱"];
+  M.remindStart = ["Bugün çalışmaya hiç gelemedin annem. Beş dakika birlikte başlayalım mı?","Neredesiin anneciğim? Masada küçük bir yer ayırdım sana 🐾"];
+  M.remindGoal = ["Bugünkü hedefe {minutes} dakika kaldı. Yorulmadıysan küçük bir oturum daha yapalım mı?","Anneciğim, {minutes} dakikalık yolumuz kaldı. Hedefi küçültebilir veya beraber devam edebiliriz."];
+  M.remindAway = ["Seni göremeyeli biraz oldu annem. Nasılsın? Hazırsan kısa bir çalışma yapalım.","Pati yoklaması! Ben buradayım, sen de müsaitsen yan yana çalışalım 🐾"];
   function fill(t) {
     return t.replace(/\{name\}/g, Store.data.settings.name || 'canım').replace(/\{kitten\}/g, 'Güçlü');
   }
