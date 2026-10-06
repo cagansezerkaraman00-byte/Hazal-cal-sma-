@@ -351,13 +351,13 @@ const Scene = (() => {
     e: '#f2b441', E: '#c98524', k: '#4a2f14', h: '#ffffff', x: '#d4cee6',
   };
 
-  // ---------- Vesper ve sarman yavru ----------
+  // ---------- Vesper ve yavru Güçlü ----------
   // Vesper: Luna'nın pozları, simsiyah kadife tüy, mavi gözler (gece silüeti için yumuşak açık dış hat)
   const VES_PAL = {
     o: '#4d4768', m: '#3d3956', w: '#2a2639', s: '#34304a', S: '#403b5a', p: '#b77089', P: '#9a5672',
     e: '#5ccbff', E: '#2c8fe0', k: '#08141f', h: '#ffffff', x: '#6c678c',
   };
-  // Sarman yavru: küçük gövde, kocaman yeşil gözler. w: turuncu, s: çizgi, c: krem göğüs/pati
+  // Yavru Güçlü: küçük gövde, kocaman yeşil gözler. w: turuncu, s: çizgi, c: krem göğüs/pati
   const KIT = {
     head: [
       '..o.........o..',
@@ -572,7 +572,7 @@ const Scene = (() => {
       }
       return o;
     });
-    // Vesper (Luna'nın pozları) ve sarman yavru
+    // Vesper (Luna'nın pozları) ve yavru Güçlü
     const sprite = (rows, hx, pal) => ({ c: [paint(rows, pal), paint(rows, pal, true)], w: rows[0].length, h: rows.length, hx });
     SP.vesper = {};
     for (const k of ['walkA', 'walkB', 'walkAB', 'walkBB', 'sitUp', 'sitUpB', 'happy', 'sleep', 'loafA', 'loafAB']) SP.vesper[k] = sprite(R[k].rows, R[k].hx, VES_PAL);
@@ -1803,7 +1803,7 @@ const Scene = (() => {
     }
   }
 
-  // ---------- Ziyaretçi kediler: Vesper ve sarman yavru ----------
+  // ---------- Ziyaretçi kediler: Vesper ve yavru Güçlü ----------
   // Luna ana karakter; diğerleri arada bir gelir, kısa bir "senaryo" oynar ve gider.
   const FRIEND_SPEED = { vesper: 14, kitten: 40 };
   function fpose(f) {

@@ -1,6 +1,6 @@
-/* Hata defteri (Kitaplık → Hatalar): yanlış yapılan sorunun fotoğrafı, konusu, neden yanlış yapıldığı ve
+/* Hata defteri (Notlar → Hatalar): yanlış yapılan sorunun fotoğrafı, konusu, neden yanlış yapıldığı ve
    püf noktası. Sorular aralıklı tekrarla geri gelir (1 → 3 → 7 → 21 gün); dört kez üst üste doğru çözülen soru
-   "öğrenildi" olur. Fotoğraflar Depo'da (Google Drive ya da cihaz) "Hata defteri" türüyle saklanır. */
+   "öğrenildi" olur. Fotoğraflar Kütüphane'de (Google Drive ya da cihaz) "Hata defteri" türüyle saklanır. */
 
 const HataUI = (() => {
   let App = null;
@@ -137,7 +137,7 @@ const HataUI = (() => {
       if (!url && item) {
         try { const blob = await Depo.getBlob(item); if (list[i] === m) { url = URL.createObjectURL(blob); show(reveal); } } catch (e) {
           const el = box.querySelector('.ht-img');
-          if (el) el.innerHTML = `<div class="vw-msg">${e instanceof Depo.NeedAuth ? '☁️ Fotoğraf Drive’da; Kitaplık → Depo’dan bağlantıyı yenile.' : '⚠️ ' + U.esc(e.message)}</div>`;
+          if (el) el.innerHTML = `<div class="vw-msg">${e instanceof Depo.NeedAuth ? '☁️ Fotoğraf Drive’da; Notlar → Kütüphane’dan bağlantıyı yenile.' : '⚠️ ' + U.esc(e.message)}</div>`;
         }
       }
     }
@@ -205,7 +205,7 @@ const HataUI = (() => {
       const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
       if (act === 'cancel') App.closeModal();
       if (act === 'solve') { App.closeModal(); review([m]); }
-      if (act === 'del' && confirm('Bu soru hata defterinden silinsin mi? (Fotoğrafı Depo’da kalır)')) {
+      if (act === 'del' && confirm('Bu soru hata defterinden silinsin mi? (Fotoğrafı Kütüphane’de kalır)')) {
         D().mistakes = D().mistakes.filter((x) => x.id !== m.id);
         App.save(); App.closeModal(); render(); App.refreshHome();
       }

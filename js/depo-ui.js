@@ -1,4 +1,4 @@
-/* Depo ekranı (Kitaplık → Depo) ve tam ekran görüntüleyici (fotoğraf, PDF). */
+/* Depo ekranı (Notlar → Kütüphane) ve tam ekran görüntüleyici (fotoğraf, PDF). */
 
 const DepoUI = (() => {
   let App = null;
@@ -7,9 +7,9 @@ const DepoUI = (() => {
   const $ = (s, el = document) => el.querySelector(s);
   const D = () => Store.data;
   const K = () => Depo.KINDS;
-  const ACCEPT = 'image/*,application/pdf,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.odp,.ods,.txt,.rtf,.key,.pages,.numbers';
+  const ACCEPT = 'image/*,video/*,application/pdf,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.odp,.ods,.txt,.rtf,.key,.pages,.numbers';
 
-  const icon = (it) => (Depo.isPdf(it.mime) ? '📕' : Depo.isImg(it.mime) ? '🖼️' : /word|document|text|rtf|pages/.test(it.mime) ? '📄' : /sheet|excel|numbers/.test(it.mime) ? '📊' : /presentation|powerpoint|keynote/.test(it.mime) ? '📽️' : (K()[it.kind] || K().diger)[0]);
+  const icon = (it) => (Depo.isPdf(it.mime) ? '📕' : Depo.isImg(it.mime) ? '🖼️' : Depo.isVideo(it.mime) ? '🎬' : /word|document|text|rtf|pages/.test(it.mime) ? '📄' : /sheet|excel|numbers/.test(it.mime) ? '📊' : /presentation|powerpoint|keynote/.test(it.mime) ? '📽️' : (K()[it.kind] || K().diger)[0]);
   const subjName = (id) => (id ? Store.subject(id).name : 'Genel');
   const dateTxt = (t) => new Date(t).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: new Date(t).getFullYear() === new Date().getFullYear() ? undefined : 'numeric' });
 
@@ -21,7 +21,7 @@ const DepoUI = (() => {
           <div><b>📱 Dosyaların şimdilik bu cihazda saklanıyor.</b> <span class="muted small">${localTxt || 'Henüz dosya yok.'}</span>
           <p class="muted small">İstersen Google Drive'ı bağlayabilirsin: dosyalar senin Drive'ındaki <b>Luna Depo</b> klasöründe durur, cihazında yer kaplamaz. Bağlamasan da Depo bu cihazda sorunsuz çalışır.</p></div>
           ${cid ? '<button class="btn soft" data-dp="connect" type="button">☁️ Google Drive’ı bağla</button>' : `<details class="drive-setup"><summary>☁️ Google Drive’ı bağla (isteğe bağlı)</summary>
-            <p class="hint">Bir kez yapılır (adımlar Ayarlar → Kılavuz → <b>Depo ve Google Drive</b>). Google Cloud'da "Authorized redirect URI" olarak şunu ekle:</p>
+            <p class="hint">Bir kez yapılır (adımlar Ayarlar → Kılavuz → <b>Kütüphane ve Google Drive</b>). Google Cloud'da "Authorized redirect URI" olarak şunu ekle:</p>
             <code class="sp-uri">${U.esc(GAuth.redirectUri())}</code>
             <div class="inline-form"><input data-dp="client" placeholder="Client ID (…apps.googleusercontent.com)" autocomplete="off" spellcheck="false"><button class="btn primary" data-dp="connect" type="button">Bağlan</button></div>
           </details>`}
@@ -65,7 +65,7 @@ const DepoUI = (() => {
       <div class="notes-bar depo-bar">
         <label class="btn primary">📷 Fotoğraf çek<input type="file" accept="image/*" capture="environment" hidden data-dp="cam"></label>
         <label class="btn soft">📎 Dosya ekle<input type="file" multiple accept="${ACCEPT}" hidden data-dp="pick"></label>
-        <input type="search" data-dp="search" placeholder="Depoda ara…" value="${U.esc(search)}">
+        <input type="search" data-dp="search" placeholder="Kütüphanede ara…" value="${U.esc(search)}">
       </div>
       ${subjChips.length ? `<div class="chips">${[['', 'Tüm dersler']].concat(subjChips.map((s) => [s.id, s.name])).map(([id, n]) => `<button class="chip ${filterSubject === id ? 'active' : ''}" data-dp-subj="${id}" type="button">${U.esc(n)}</button>`).join('')}</div>` : ''}
       ${kinds.size > 1 ? `<div class="chips">${[['', '🗂️ Hepsi']].concat(Object.keys(K()).filter((k) => kinds.has(k)).map((k) => [k, K()[k][0] + ' ' + K()[k][1]])).map(([id, n]) => `<button class="chip ${filterKind === id ? 'active' : ''}" data-dp-kind="${id}" type="button">${U.esc(n)}</button>`).join('')}</div>` : ''}
@@ -74,7 +74,7 @@ const DepoUI = (() => {
           <span class="dt-name">${U.esc(it.name)}</span>
           <span class="dt-meta"><span class="tag">${U.esc(subjName(it.subjectId))}</span> ${it.src === 'drive' ? '☁️' : '📱'} ${dateTxt(it.created)}</span>
         </button>`).join('')}</div>`
-        : `<div class="card empty-state"><div style="font-size:2rem">🗂️</div><p><b>${visible().length ? 'Aramana uyan dosya yok.' : 'Depon boş.'}</b></p><p class="muted">Ders fotoğrafları, PDF'ler, çalışma kağıtları ve ödevler ders ders burada. Galeride aramana gerek kalmaz; PDF'ler uygulamanın içinde açılır.</p></div>`}`;
+        : `<div class="card empty-state"><div style="font-size:2rem">🗂️</div><p><b>${visible().length ? 'Aramana uyan dosya yok.' : 'Kütüphanen boş.'}</b></p><p class="muted">Ders fotoğrafları, PDF'ler, çalışma kağıtları ve ödevler ders ders burada. Galeride aramana gerek kalmaz; PDF'ler uygulamanın içinde açılır.</p></div>`}`;
     // önizlemeler (IndexedDB'den, ekrana çizildikten sonra)
     for (const it of items.slice(0, 120)) {
       Depo.thumbUrl(it).then((u) => {
@@ -87,13 +87,13 @@ const DepoUI = (() => {
   // ---------- Dosya ekleme ----------
   function askMeta(files) {
     const first = files[0];
-    const kind = Depo.isImg(first.type) ? 'foto' : Depo.isPdf(first.type) ? 'not' : 'diger';
+    const kind = Depo.isImg(first.type) ? 'foto' : Depo.isPdf(first.type) ? 'not' : Depo.isVideo(first.type) ? 'video' : 'diger';
     const total = files.reduce((a, f) => a + f.size, 0);
     const subj = filterSubject || (D().subjects[0] && D().subjects[0].id) || '';
     const target = Depo.driveReady() && Depo.hasToken() ? '☁️ Google Drive’a kaydedilecek' : '📱 Bu cihaza kaydedilecek';
     let chosenKind = filterKind || kind;
     const card = App.openModal(`
-      <h3>🗂️ Depoya ekle</h3>
+      <h3>🗂️ Kütüphaneye ekle</h3>
       <p class="muted">${files.length === 1 ? `<b>${U.esc(first.name)}</b>` : `<b>${files.length}</b> dosya`} · ${Depo.fmtSize(total)} · ${target}${files.some((f) => Depo.isImg(f.type)) ? ' (fotoğraflar okunaklı kalacak şekilde küçültülür)' : ''}</p>
       ${files.length === 1 ? `<label>Ad</label><input data-f="title" maxlength="120" value="${U.esc(first.name.replace(/\.[^.]+$/, ''))}">` : ''}
       <label>Ders</label><select data-f="subject">${D().subjects.map((s) => `<option value="${s.id}" ${s.id === subj ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')}<option value="" ${!subj ? 'selected' : ''}>Genel</option></select>
@@ -121,10 +121,10 @@ const DepoUI = (() => {
     try {
       const added = await Depo.addFiles(files, meta, (i, n, p) => { progress = { i, n, p, label: 'Kaydediliyor' }; render(); });
       if (added.fellBack) App.toast('☁️', added.fellBack === added.length ? 'Drive’a yüklenemedi, bu cihaza kaydedildi' : `${added.fellBack} dosya Drive’a yüklenemedi, bu cihaza kaydedildi`, 'Bağlantı düzelince "Drive’a taşı"ya dokunman yeter; hiçbir dosya kaybolmadı');
-      else App.toast('🗂️', added.length === 1 ? 'Dosya depoya eklendi' : `${added.length} dosya depoya eklendi`, added[0].src === 'drive' ? 'Google Drive · Luna Depo' : 'Bu cihazda');
+      else App.toast('🗂️', added.length === 1 ? 'Dosya kütüphaneye eklendi' : `${added.length} dosya kütüphaneye eklendi`, added[0].src === 'drive' ? 'Google Drive · Luna Depo' : 'Bu cihazda');
       if (App.checkBadges) App.checkBadges();
     } catch (e) {
-      App.toast('⚠️', e instanceof Depo.NeedAuth ? 'Drive bağlantısı yenilenmeli' : 'Dosya kaydedilemedi', e instanceof Depo.NeedAuth ? 'Depo’daki "Drive bağlantısını yenile"ye dokun' : e.message);
+      App.toast('⚠️', e instanceof Depo.NeedAuth ? 'Drive bağlantısı yenilenmeli' : 'Dosya kaydedilemedi', e instanceof Depo.NeedAuth ? 'Kütüphane’deki "Drive bağlantısını yenile"ye dokun' : e.message);
     }
     progress = null;
     render();
@@ -166,6 +166,8 @@ const DepoUI = (() => {
     if (Depo.isImg(item.mime)) {
       $('#vw-body').innerHTML = `<div class="vw-img"><img src="${V.url}" alt="${U.esc(item.name)}"></div>`;
       applyZoom();
+    } else if (Depo.isVideo(item.mime)) {
+      $('#vw-body').innerHTML = `<div class="vw-video"><video src="${V.url}" controls playsinline preload="metadata"></video></div>`;
     } else if (Depo.isPdf(item.mime)) {
       try { await renderPdf(blob, my); } catch (e) {
         const offline = !navigator.onLine || /fetch|import|module|network/i.test(String(e && e.message));
@@ -380,7 +382,7 @@ const DepoUI = (() => {
   async function syncNow(manual) {
     if (!Depo.driveReady()) return;
     if (!Depo.hasToken()) { // oturum ekran çizildikten sonra dolmuş olabilir: sessizce hiçbir şey yapmasın
-      if (manual) App.toast('☁️', 'Drive bağlantısı yenilenmeli', 'Depo’daki "Drive bağlantısını yenile"ye dokun');
+      if (manual) App.toast('☁️', 'Drive bağlantısı yenilenmeli', 'Kütüphane’deki "Drive bağlantısını yenile"ye dokun');
       render();
       return;
     }
@@ -407,10 +409,10 @@ const DepoUI = (() => {
           App.toast('☁️', 'Google Drive bağlandı', 'Dosyaların artık Drive’daki Luna Depo klasöründe');
           if (window.NotesUI) NotesUI.setView('depo');
           App.showTab('notes');
-          setTimeout(() => App.dismissFocus && App.dismissFocus(), 0); // odak sürüyorsa da Depo görünsün
+          setTimeout(() => App.dismissFocus && App.dismissFocus(), 0); // odak sürüyorsa da Kütüphane görünsün
           syncNow(false);
-        } else if (r.result === 'denied') App.toast('☁️', 'Drive izni verilmedi', 'İstersen Depo’dan yeniden deneyebilirsin');
-        else if (r.result === 'state') App.toast('☁️', 'Drive bağlantısı tamamlanamadı', 'Depo’dan bir kez daha "Bağlan" de');
+        } else if (r.result === 'denied') App.toast('☁️', 'Drive izni verilmedi', 'İstersen Kütüphane’den yeniden deneyebilirsin');
+        else if (r.result === 'state') App.toast('☁️', 'Drive bağlantısı tamamlanamadı', 'Kütüphane’den bir kez daha "Bağlan" de');
       } else if (Depo.driveReady() && Depo.hasToken()) setTimeout(() => syncNow(false), 4000);
     },
     render,

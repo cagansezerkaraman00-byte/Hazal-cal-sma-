@@ -138,7 +138,7 @@ const Messages = (() => {
   };
 
   function fill(t) {
-    return t.replace(/\{name\}/g, Store.data.settings.name || 'canım').replace(/\{kitten\}/g, Store.data.settings.kittenName || 'Güçlü');
+    return t.replace(/\{name\}/g, Store.data.settings.name || 'canım').replace(/\{kitten\}/g, 'Güçlü');
   }
 
   function timeOfDay(d = new Date()) {

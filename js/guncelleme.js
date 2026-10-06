@@ -48,13 +48,30 @@ const Guncelleme = (() => {
     } catch (e) {
       if (manual) App.toast('📡', 'Güncellemelere bakılamadı', 'İnternet bağlantını kontrol edip tekrar dene');
     }
+    await checkDates();
     checking = false;
     renderCard();
+  }
+  // Sınav tarihleri (sinav-tarihleri.json): ÖSYM tarihi değişince geri sayım ve plan kendiliğinden ona uyar
+  async function checkDates() {
+    if (!window.YKS || !YKS.setOfficial) return;
+    try {
+      const r = await fetch('sinav-tarihleri.json?guncel=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      const ch = YKS.setOfficial(await r.json());
+      if (!ch) return;
+      App.refresh();
+      App.toast('🗓️', ch.kesin ? 'YKS tarihi kesinleşti' : 'YKS tarihi güncellendi', `${fmtDate(ch.to)} · geri sayım ve plan buna göre ayarlandı`, 7000);
+    } catch (e) { /* çevrimdışı: kayıtlı tarih geçerli */ }
+  }
+  // uygulama simgesindeki kırmızı rozet (iPhone'da "Rozetler"): güncelleme hazırsa 1
+  function iconBadge(on) {
+    try { if (on && navigator.setAppBadge) navigator.setAppBadge(1).catch(() => {}); else if (!on && navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {}); } catch (e) { /* desteklenmiyor */ }
   }
   function announce() {
     const v = latest();
     if (!v) return;
-    renderBanner(); renderCard(); dot(true);
+    renderBanner(); renderCard(); dot(true); iconBadge(true);
     if (get(KEY.notified) !== v.surum) { set(KEY.notified, v.surum); systemNote(v); }
   }
   async function systemNote(v) {
@@ -134,6 +151,71 @@ const Guncelleme = (() => {
     });
   }
 
+  // tarayıcıdan açılınca tam ekran "Luna'yı yükle" (bir kez kurunca bir daha çıkmaz)
+  const inApp = () => /FBAN|FBAV|Instagram|Line\/|Twitter|TikTok|Snapchat|WhatsApp|GSA\//i.test(navigator.userAgent);
+  const isSafari = () => isIOS() && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent) && !inApp();
+  function installScreen(force) {
+    if (standalone() || (!force && (installHidden() || !matchMedia('(pointer: coarse)').matches))) return;
+    if ($('#install-screen')) return;
+    const ipad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    let steps;
+    if (inApp()) {
+      steps = `<li>Bu sayfa bir uygulamanın içinde açıldı. Sağ üstteki <b>•••</b> menüsünden <b>${isIOS() ? "Safari'de aç" : 'Tarayıcıda aç'}</b>'a dokun.</li><li>Açılan sayfada bu adımlar yeniden görünecek.</li>`;
+    } else if (isIOS()) {
+      steps = `<li><b>Paylaş</b> düğmesine dokun <svg class="share-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v10h14V11h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> <small>(${ipad ? 'sağ üstte' : 'altta'}; görmüyorsan önce <b>•••</b> düğmesine dokun)</small></li>
+        <li>Listede <b>Ana Ekrana Ekle</b>'yi bul <small>(gerekirse aşağı kaydır)</small></li>
+        <li><b>Ekle</b>'ye dokun. Luna artık ana ekranında; bundan sonra oradan aç.</li>`;
+    } else if (installEvt) {
+      steps = '<li>Aşağıdaki <b>Luna\'yı yükle</b> düğmesine dokun, sonra <b>Yükle</b>.</li><li>Luna ana ekranına ve uygulamalarının arasına gelir; oradan aç.</li>';
+    } else {
+      steps = '<li>Tarayıcının menüsünü aç (sağ üstte <b>⋮</b>).</li><li><b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>\'ye dokun.</li><li>Luna ana ekranına gelir; bundan sonra oradan aç.</li>';
+    }
+    const el = document.createElement('div');
+    el.id = 'install-screen';
+    el.className = 'install-screen';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-label', "Luna'yı yükle");
+    el.innerHTML = `<div class="is-card">
+        <img src="icons/icon-512.png" alt="Luna" class="is-icon">
+        <h2>Luna</h2>
+        <p class="muted">Ders çalışma arkadaşın 🐾 Ana ekranına ekle; tek dokunuşla açılır, internetsiz de çalışır, güncellemeleri kendisi alır.</p>
+        <ol class="install-steps">${steps}</ol>
+        ${installEvt ? '<button class="btn primary big" type="button" data-is="install">📲 Luna\'yı yükle</button>' : ''}
+        <button class="btn soft" type="button" data-is="later">Şimdilik tarayıcıda devam et</button>
+      </div>
+      ${isSafari() && !ipad ? '<div class="is-arrow" aria-hidden="true">⬇︎</div>' : ''}`;
+    el.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-is]');
+      if (!b) return;
+      if (b.dataset.is === 'install') { await install(); if (get(KEY.install) === 'kuruldu') el.remove(); }
+      else { set(KEY.install, String(Date.now())); el.remove(); renderBanner(); }
+    });
+    document.body.appendChild(el);
+  }
+  // ana ekrandaki Luna'nın ilk açılışında: güncellemeler ve sayaç için bildirim izni (iOS dokunuşla ister)
+  function askNotify() {
+    if (!standalone() || !('Notification' in window) || Notification.permission !== 'default' || get('luna-bildirim-soruldu')) return;
+    let tries = 0;
+    const show = () => {
+      if (!$('#modal').classList.contains('hidden')) { if (++tries < 10) setTimeout(show, 3000); return; }
+      set('luna-bildirim-soruldu', '1');
+      App.openModal(`<div class="wn-head"><img src="icons/icon-192.png" alt="" class="wn-icon"><div><h3>🔔 Haber vereyim mi?</h3><p class="muted small">Yeni sürüm çıkınca ve sayaç bitince bildirim gönderirim.</p></div></div>
+        <div class="modal-actions"><button class="btn soft" type="button" data-act="no">Şimdi değil</button><button class="btn primary" type="button" data-act="yes">İzin ver</button></div>`, (card) => {
+        card.addEventListener('click', async (e) => {
+          const b = e.target.closest('[data-act]');
+          if (!b) return;
+          App.closeModal();
+          if (b.dataset.act !== 'yes') return;
+          try {
+            const p = await Notification.requestPermission();
+            if (p === 'granted') { App.data().settings.notify = true; App.save(); App.toast('🔔', 'Bildirimler açık', 'Yeni sürüm çıkınca haber vereceğim'); }
+          } catch (err) { /* desteklenmiyor */ }
+        });
+      });
+    };
+    setTimeout(show, 5000);
+  }
+
   // ---------- Görünüm ----------
   function renderBanner() {
     const el = $('#update-banner');
@@ -170,13 +252,13 @@ const Guncelleme = (() => {
     const a = b.dataset.up;
     if (a === 'apply') apply();
     else if (a === 'check') check(true);
-    else if (a === 'install') install();
+    else if (a === 'install') { if (installEvt) install(); else installScreen(true); }
     else if (a === 'later') { bannerHidden = true; renderBanner(); }
     else if (a === 'install-later') { set(KEY.install, String(Date.now())); renderBanner(); }
   }
 
   // ---------- Çevrimdışı PDF ----------
-  // ana ekrandaki uygulamada, internet varken PDF görüntüleyiciyi bir kez önceden indir (Depo'daki PDF'ler internetsiz de açılsın)
+  // ana ekrandaki uygulamada, internet varken PDF görüntüleyiciyi bir kez önceden indir (Kütüphane'deki PDF'ler internetsiz de açılsın)
   async function prefetchPdf() {
     try {
       if (!standalone() || !navigator.onLine || !window.caches || (navigator.connection && navigator.connection.saveData)) return;
@@ -225,14 +307,21 @@ const Guncelleme = (() => {
     init(app) {
       App = app;
       document.addEventListener('click', (e) => { if (e.target.closest('#update-banner, #update-card')) onClick(e); });
-      window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; renderBanner(); renderCard(); });
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault(); installEvt = e; renderBanner(); renderCard();
+        const sc = $('#install-screen'); if (sc) { sc.remove(); installScreen(true); } // Android: yükle düğmesi gelsin
+      });
       window.addEventListener('appinstalled', () => {
         installEvt = null; set(KEY.install, 'kuruldu'); renderBanner(); renderCard();
+        const sc = $('#install-screen'); if (sc) sc.remove();
         App.toast('📲', 'Luna ana ekranına eklendi', 'Bundan sonra oradan aç; verilerin orada saklanır', 7000);
       });
       renderCard();
       renderBanner();
       whatsNew();
+      iconBadge(false); // açık sürüm en yenisi (yeni sürüm bulunursa yeniden yanar)
+      setTimeout(() => installScreen(false), 1200);
+      askNotify();
       if (/#guncelleme$/.test(location.hash)) { App.showTab('settings'); history.replaceState(null, '', location.pathname + location.search); }
       if (!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
       setupSW();
@@ -240,9 +329,9 @@ const Guncelleme = (() => {
       setTimeout(prefetchPdf, 30000);
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) tryAutoReload();
-        else if (Date.now() - lastCheck > 10 * 60000) check(false);
+        else if (Date.now() - lastCheck > 2 * 60000) check(false);
       });
-      setInterval(() => { if (!document.hidden) check(false); }, 60 * 60000);
+      setInterval(() => { if (!document.hidden) check(false); }, 10 * 60000); // açıkken 10 dakikada bir
     },
     check,
     apply,

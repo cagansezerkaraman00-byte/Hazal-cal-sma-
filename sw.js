@@ -9,7 +9,7 @@ const FILES = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/storage.js', 'js/surum.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
   'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/giris.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify.js', 'js/uni.js', 'js/uni-ui.js', 'js/diag.js', 'js/guncelleme.js', 'js/app.js',
-  'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-48.png',
 ];
 const SHELL = new Set(FILES.map((f) => new URL(f, self.registration.scope).href));
 
@@ -91,6 +91,7 @@ async function remoteCheck() {
   if (await box.match(mark)) return;
   await box.put(mark, new Response('1'));
   await self.registration.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${v.surum}: ${v.baslik}. Dokun, güncelleyelim.`, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'luna-guncelleme' });
+  if (self.navigator && self.navigator.setAppBadge) self.navigator.setAppBadge(1).catch(() => {}); // simgede rozet
 }
 self.addEventListener('periodicsync', (e) => {
   if (e.tag === 'luna-guncelleme') e.waitUntil(remoteCheck().catch(() => {}));

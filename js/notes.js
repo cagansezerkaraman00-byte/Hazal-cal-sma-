@@ -50,7 +50,7 @@ const NotesUI = (() => {
       <div class="seg notes-seg">
         <button data-view="notes" class="${view === 'notes' ? 'active' : ''}">📓 Notlar</button>
         <button data-view="cards" class="${view === 'cards' ? 'active' : ''}">🃏 Kartlar${due ? ` <span class="pill-count">${due}</span>` : ''}</button>
-        ${window.DepoUI ? `<button data-view="depo" class="${view === 'depo' ? 'active' : ''}">🗂️ Depo</button>` : ''}
+        ${window.DepoUI ? `<button data-view="depo" class="${view === 'depo' ? 'active' : ''}">🗂️ Kütüphane</button>` : ''}
         ${window.HataUI ? `<button data-view="hata" class="${view === 'hata' ? 'active' : ''}">❌ Hatalar${HataUI.dueCount() ? ` <span class="pill-count">${HataUI.dueCount()}</span>` : ''}</button>` : ''}
         ${window.KaynakUI ? `<button data-view="kaynak" class="${view === 'kaynak' ? 'active' : ''}">📚 Kaynaklar</button>` : ''}
       </div>
@@ -66,6 +66,7 @@ const NotesUI = (() => {
   function notesHtml() {
     return `<div class="notes-bar">
         <button class="btn primary" data-act="new-note">＋ Yeni not</button>
+        ${getDraft() ? '<button class="btn soft" data-act="draft-note">📝 Yarım kalan nota devam et</button>' : ''}
         <input type="search" data-f="search" placeholder="Notlarda ara…" value="${U.esc(search)}">
       </div>
       ${subjectChips()}
@@ -117,7 +118,12 @@ const NotesUI = (() => {
   }
 
   // ---------- Not düzenleme ----------
-  function editNote(n) {
+  // yarım not cihazda taslak olarak durur: uygulama kapansa da kaybolmaz, açınca kaldığın yerden sürer
+  const DRAFT = 'luna-not-taslak';
+  const getDraft = () => { try { const d = JSON.parse(localStorage.getItem(DRAFT) || 'null'); return d && Date.now() - d.at < 14 * 864e5 ? d : null; } catch (e) { return null; } };
+  const setDraft = (d) => { try { if (d) localStorage.setItem(DRAFT, JSON.stringify(d)); else localStorage.removeItem(DRAFT); } catch (e) { /* gizli mod */ } };
+  function editNote(n, fromDraft) {
+    if (fromDraft) { const d = getDraft(); n = d && !d.isNew ? D().notes.find((x) => x.id === d.id) || null : null; }
     const isNew = !n;
     n = n || { id: U.uid(), subjectId: filterSubject || (D().subjects[0] && D().subjects[0].id) || '', title: '', body: '', pinned: false, created: Date.now() };
     const card = App.openModal(`
@@ -128,20 +134,29 @@ const NotesUI = (() => {
       <label class="switch"><input type="checkbox" data-f="pinned" ${n.pinned ? 'checked' : ''}> Üste sabitle</label>
       <div class="modal-actions">${isNew ? '' : '<button class="btn danger" data-act="del">Sil</button><span style="flex:1"></span>'}
         <button class="btn soft" data-act="cancel">Vazgeç</button><button class="btn primary" data-act="save">Kaydet</button></div>`);
+    const f = (k) => card.querySelector(`[data-f="${k}"]`);
+    // aynı notun taslağı varsa geri getir
+    const d = getDraft();
+    if (d && (fromDraft || (isNew ? d.isNew : d.id === n.id))) {
+      f('title').value = d.title || ''; f('body').value = d.body || '';
+      if (d.subjectId != null && [...f('subject').options].some((o) => o.value === d.subjectId)) f('subject').value = d.subjectId;
+      card.querySelector('h3').insertAdjacentHTML('afterend', '<p class="hint">📝 Yarım kalan notun geri geldi.</p>');
+    }
+    card.addEventListener('input', () => setDraft({ id: n.id, isNew, title: f('title').value, body: f('body').value, subjectId: f('subject').value, at: Date.now() }));
     card.addEventListener('click', (e) => {
       const act = e.target.closest('button') && e.target.closest('button').dataset.act;
-      if (act === 'cancel') App.closeModal();
+      if (act === 'cancel') { setDraft(null); App.closeModal(); render(); }
       if (act === 'del' && confirm('Bu not silinsin mi?')) { D().notes = D().notes.filter((x) => x.id !== n.id); done(); }
       if (act === 'save') {
         const title = card.querySelector('[data-f="title"]').value.trim().slice(0, 80);
         const body = card.querySelector('[data-f="body"]').value.slice(0, 20000);
-        if (!title && !body.trim()) { App.closeModal(); return; }
+        if (!title && !body.trim()) { setDraft(null); App.closeModal(); render(); return; }
         Object.assign(n, { title, body, subjectId: card.querySelector('[data-f="subject"]').value, pinned: card.querySelector('[data-f="pinned"]').checked, updated: Date.now() });
         if (isNew) D().notes.push(n);
         done();
       }
     });
-    function done() { App.save(); App.closeModal(); render(); App.refreshHome(); }
+    function done() { setDraft(null); App.save(); App.closeModal(); render(); App.refreshHome(); }
   }
 
   // ---------- Kart düzenleme ----------
@@ -224,6 +239,7 @@ const NotesUI = (() => {
       if (b.dataset.filter != null && b.classList.contains('chip')) { filterSubject = b.dataset.filter; render(); return; }
       const act = b.dataset.act;
       if (act === 'new-note') return editNote(null);
+      if (act === 'draft-note') return editNote(null, true);
       if (act === 'new-card') return editCard(null);
       if (act === 'review') return review();
       if (b.classList.contains('note-card')) return editNote(D().notes.find((n) => n.id === b.dataset.id));

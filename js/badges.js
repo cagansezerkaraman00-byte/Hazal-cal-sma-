@@ -88,7 +88,7 @@ const Badges = (() => {
     { id: 'hata1', cat: 'ilk', e: '❌', n: 'Hatadan Ders', d: 'Hata defterine ilk soruyu ekle', prog: (c) => c.mistakes, max: 1, msg: 'Yanlışına bakmak cesaret ister ve sen yaptın 💛 Her hata seni doğruya bir adım daha yaklaştırıyor.' },
     { id: 'hata10', cat: 'odak', e: '🧠', n: 'Hata Avcısı', d: '10 hata sorusunu öğren (4 kez doğru çöz)', prog: (c) => c.mistakesLearned, max: 10, msg: '10 yanlışı doğruya çevirdin 🧠 O sorular artık senin; seninle çok gurur duyuyorum.' },
     { id: 'kaynak5', cat: 'ozel', e: '📚', n: 'Kütüphaneci', d: 'Kütüphanene 5 kaynak ekle', prog: (c) => c.refs, max: 5, msg: 'Kendi akademik kütüphaneni kuruyorsun 📚 Kıvırcık saçlı bilim insanım benim!' },
-    { id: 'depo10', cat: 'ozel', e: '🗂️', n: 'Düzenli Masa', d: 'Depoya 10 dosya ekle', prog: (c) => c.depo, max: 10, msg: 'Her şey yerli yerinde 🗂️ Düzenli bir masa, berrak bir zihin demek.' },
+    { id: 'depo10', cat: 'ozel', e: '🗂️', n: 'Düzenli Masa', d: 'Kütüphaneye 10 dosya ekle', prog: (c) => c.depo, max: 10, msg: 'Her şey yerli yerinde 🗂️ Düzenli bir masa, berrak bir zihin demek.' },
     { id: 'friends', cat: 'ozel', e: '🐈‍⬛', n: 'Kedi Ailesi', d: 'Vesper ve minik Güçlü ile tanış', test: (c) => c.friends, msg: 'Vesper ve minik Güçlü de geldi 🐈‍⬛ Bu küçük dünya senin için kuruldu.' },
     { id: 'bayram', cat: 'ozel', e: '🌙', n: 'Bayram Çalışkanı', d: 'Bir bayram gününde çalış', test: (c) => c.special.has('ramazan') || c.special.has('kurban'), msg: 'Bayramda bile çalıştın 🌙 Bayramın mübarek olsun güzelim, emeğin de.' },
     { id: 'newyear', cat: 'ozel', e: '🎆', n: 'Yeni Yıl Yıldızı', d: 'Yılbaşı haftasında çalış', test: (c) => c.special.has('yilbasi'), msg: 'Yeni yıla çalışarak girdin 🎆 Bu yıl senin yılın olacak, biliyorum.' },

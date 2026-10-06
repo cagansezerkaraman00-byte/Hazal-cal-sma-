@@ -1,4 +1,4 @@
-/* Kaynaklar: akademik kütüphane ve kaynakça (Kitaplık → Kaynaklar).
+/* Kaynaklar: akademik kütüphane ve kaynakça (Notlar → Kaynaklar).
    - Makale arama: OpenAlex (anahtarsız günde ~100 arama; isteğe bağlı ücretsiz anahtar), yedek: Crossref
    - DOI ile ekleme: Crossref (yazar ad/soyadı ayrı, en doğru künye), yedek: OpenAlex
    - ISBN ile kitap: Open Library, yedek: Google Books

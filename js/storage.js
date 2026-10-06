@@ -1,4 +1,4 @@
-/* Luna ile Çalış — veri katmanı ve küçük yardımcılar.
+/* Luna — veri katmanı ve küçük yardımcılar.
    Her şey tarayıcının localStorage'ında saklanır; sunucu yok. */
 
 const U = {
@@ -91,7 +91,6 @@ const Store = (() => {
       quietFocus: true,  // odaklanırken Luna konuşmasın
       pauseOnLeave: true, // tam odak: uygulamadan çıkınca sayaç durur (izinli uygulamalar hariç)
       allowedApps: ['chatgpt', 'gemini', 'youtube', 'spotify'], // tam odakta sayacı durdurmayan uygulamalar
-      kittenName: 'Güçlü', // sarı yavrunun adı
       theme: 'light',    // light | dark | auto (gün batımında koyu)
       weather: true,     // günlük hava durumu
       city: 'İstanbul',
@@ -149,7 +148,7 @@ const Store = (() => {
     out.settings = { ...def.settings, ...(isObj(obj.settings) ? obj.settings : {}) };
     out.settings.profile = { ...def.settings.profile, ...(isObj(out.settings.profile) ? out.settings.profile : {}) };
     if (!Array.isArray(out.settings.allowedApps)) out.settings.allowedApps = def.settings.allowedApps.slice();
-    if (out.settings.kittenName === 'Sarman') out.settings.kittenName = 'Güçlü'; // yavrunun yeni adı
+    delete out.settings.kittenName; // yavrunun adı sabit: Güçlü
     for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files', 'mistakes', 'refs']) {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }

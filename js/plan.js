@@ -38,6 +38,7 @@ const PlanUI = (() => {
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
+  const fmtDay = (iso) => { const d = new Date(iso + 'T12:00:00'); return isNaN(d) ? iso : `${d.getDate()} ${U.MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
   const monday = (d) => U.addDays(U.dayStart(d), -((new Date(d).getDay() + 6) % 7));
 
   // Günlük rutinler (alan bazlı) — her gün kısa, düzenli soru çözümü
@@ -258,7 +259,7 @@ const PlanUI = (() => {
         <div class="yks-controls">
           <div class="seg" data-role="field">${Object.keys(YKS.FIELDS).map((k) => `<button data-field="${k}" class="${k === field ? 'active' : ''}">${YKS.FIELDS[k].short}</button>`).join('')}</div>
           <label class="yks-date">Sınav tarihi <input type="date" data-f="exam" value="${YKS.examDate()}"></label>
-          ${!Y().examDate && YKS.DATE_NOTE ? `<p class="hint">${U.esc(YKS.DATE_NOTE)}</p>` : ''}
+          ${YKS.customDate() ? `<p class="hint">Kendi seçtiğin tarih. <button class="link-btn" data-act="exam-official">Resmi tarihe dön (${fmtDay(YKS.officialDate())})</button></p>` : `<p class="hint">${U.esc(YKS.dateNote())}</p>`}
           ${ph ? `<p class="phase-note"><b>${ph.name}:</b> ${ph.text}</p>` : ''}
           <div class="overall"><div class="track"><i style="width:${Math.round(prog.pct * 100)}%"></i></div>
             <span class="small">Konular <b>%${Math.round(prog.pct * 100)}</b> hazır · YKS'de ≈ <b>${prog.questionsCovered}</b>/${prog.questions} soruya denk</span></div>
@@ -374,6 +375,7 @@ const PlanUI = (() => {
       if (ev.target.closest('.today-plan')) return onPlanClick(ev);
       const b = ev.target.closest('button');
       if (!b) return;
+      if (b.dataset.act === 'exam-official') { Y().examDate = null; App.save(); render(); App.refreshHome(); return; }
       if (b.dataset.field) {
         const first = !Y().field;
         Y().field = b.dataset.field;
@@ -419,7 +421,8 @@ const PlanUI = (() => {
     root.addEventListener('change', (ev) => {
       if (ev.target.dataset.f !== 'exam') return;
       const v = ev.target.value;
-      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) { Y().examDate = v; App.save(); render(); App.refreshHome(); }
+      // resmi tarih seçilirse kendi tarihi sayılmaz: ÖSYM tarihi değişince geri sayım yine kendiliğinden güncellenir
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) { Y().examDate = v === YKS.officialDate() ? null : v; App.save(); render(); App.refreshHome(); }
     });
   }
 

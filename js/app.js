@@ -1,4 +1,4 @@
-/* Luna ile Çalış — arayüz ve her şeyi birbirine bağlayan kod. */
+/* Luna — arayüz ve her şeyi birbirine bağlayan kod. */
 
 (() => {
   const $ = (s, el = document) => el.querySelector(s);
@@ -379,7 +379,7 @@
       document.title = `${U.fmtClock(shown)} · ${isBreak ? 'Mola' : subj} — Luna`;
     } else {
       mini.classList.add('hidden');
-      document.title = 'Luna ile Çalış';
+      document.title = 'Luna';
     }
   }
 
@@ -541,6 +541,8 @@
       <input type="number" id="m-min" min="1" max="720" value="${s.minutes}">
       <label>Neler çalıştın? Önemli noktalar</label>
       <textarea id="m-note" rows="3" placeholder="Örn: Türev kuralları, zincir kuralı, 30 soru çözdüm">${U.esc(s.note)}</textarea>
+      <label for="m-q">Kaç soru çözdün? <span class="muted small">(isteğe bağlı)</span></label>
+      <div class="q-step"><button type="button" class="btn soft" data-q="-5" aria-label="5 azalt">−5</button><input type="number" id="m-q" min="0" max="999" inputmode="numeric" placeholder="0" value="${s.questions || ''}"><button type="button" class="btn soft" data-q="5" aria-label="5 artır">+5</button><button type="button" class="btn soft" data-q="10" aria-label="10 artır">+10</button></div>
       <label>Zorlandığın / tekrar etmen gereken yer <span class="muted small">(tekrar listesine eklenir)</span></label>
       <input id="m-hard" placeholder="Örn: Trigonometrik türevler" value="${U.esc(s.hard)}">
       <label>Verimin nasıldı?</label>
@@ -552,6 +554,8 @@
         <button class="btn soft" id="m-cancel">${opts.justDone ? 'Sonra' : 'Vazgeç'}</button>
         <button class="btn primary" id="m-save">Kaydet</button>
       </div>`;
+    modalDirty = false;
+    $('#modal-card').addEventListener('input', () => { modalDirty = true; });
     const paint = () => {
       $$('#m-stars button').forEach((b) => b.classList.toggle('on', +b.dataset.v <= rating));
       $$('#m-moods button').forEach((b) => b.classList.toggle('on', b.dataset.v === mood));
@@ -559,6 +563,11 @@
     paint();
     $$('#m-stars button').forEach((b) => b.addEventListener('click', () => { rating = +b.dataset.v; paint(); }));
     $$('#m-moods button').forEach((b) => b.addEventListener('click', () => { mood = mood === b.dataset.v ? '' : b.dataset.v; paint(); }));
+    $$('.q-step [data-q]').forEach((b) => b.addEventListener('click', () => {
+      const q = $('#m-q');
+      q.value = U.clamp((parseInt(q.value, 10) || 0) + +b.dataset.q, 0, 999) || '';
+      modalDirty = true;
+    }));
     $('#m-cancel').addEventListener('click', closeModal);
     $('#m-del') && $('#m-del').addEventListener('click', () => {
       if (!confirm('Bu oturum silinsin mi?')) return;
@@ -584,6 +593,7 @@
         hard: $('#m-hard').value.trim(),
         rating: rating || null,
         mood,
+        questions: U.clamp(parseInt($('#m-q').value, 10) || 0, 0, 999),
       });
       if (manual) D().sessions.push(target);
       D().sessions.sort((a, b) => a.start - b.start);
@@ -729,7 +739,7 @@
         ${s.note ? `<div class="note">${U.esc(s.note)}</div>` : ''}
         ${s.hard ? `<div class="note hard">⚠️ ${U.esc(s.hard)}</div>` : ''}
       </div>
-      <div class="right">${U.fmtMin(s.minutes)}<div class="meta">${s.rating ? '⭐'.repeat(Math.min(5, +s.rating || 0)) : ''} ${U.esc(s.mood || '')}</div></div>
+      <div class="right">${U.fmtMin(s.minutes)}<div class="meta">${+s.questions ? `${+s.questions} soru · ` : ''}${s.rating ? '⭐'.repeat(Math.min(5, +s.rating || 0)) : ''} ${U.esc(s.mood || '')}</div></div>
     </li>`;
   }
 
@@ -751,7 +761,8 @@
     $('#goal-text').textContent = pct >= 100 ? `Hedef (${U.fmtMin(goal)}) tamam! 🎉` : `Hedefe ${U.fmtMin(goal - mins)} kaldı`;
     const todayKey = U.dateKey(new Date());
     const today = D().sessions.filter((s) => U.dateKey(s.start) === todayKey).sort((a, b) => b.start - a.start);
-    $('#today-sessions-count').textContent = today.length ? `${today.length} oturum` : '';
+    const qToday = today.reduce((n, s) => n + (+s.questions || 0), 0);
+    $('#today-sessions-count').textContent = today.length ? `${today.length} oturum${qToday ? ` · ${qToday} soru ✍️` : ''}` : '';
     $('#today-sessions-label').textContent = today.length ? `Bugünün oturumları (${today.length})` : 'Bugünün oturumları';
     $('#today-list').innerHTML = today.length ? today.map((s) => sessionItem(s)).join('') : '<li class="empty" style="display:block">Bugün henüz oturum yok. Luna seni bekliyor 🐾</li>';
     $('#day-timeline').innerHTML = timelineHtml(new Date(), true);
@@ -1145,7 +1156,6 @@
     $('#set-focusmode').checked = s.focusMode;
     $('#set-quiet').checked = s.quietFocus;
     $('#set-pauseleave').checked = s.pauseOnLeave;
-    $('#set-kitten').value = s.kittenName || 'Güçlü';
     $('#set-weather').checked = s.weather;
     $$('#theme-seg button').forEach((b) => b.classList.toggle('active', b.dataset.theme === s.theme));
     $('#city-chips').innerHTML = CITIES.map(([n, la, lo]) => `<button class="chip ${Math.abs(la - s.lat) < 0.05 && Math.abs(lo - s.lon) < 0.05 ? 'active' : ''}" data-lat="${la}" data-lon="${lo}" data-name="${n}">${n}</button>`).join('');
@@ -1159,7 +1169,7 @@
   const LEVEL_HINT = {
     yks: 'Plan sekmesinde YKS konuların, Deneme sekmesinde netlerin. Üniversiteye başlayınca "Üniversite"ye dokun: YKS verilerin silinmez, istediğin an geri dönebilirsin.',
     uni: 'Plan sekmesi artık Dönem: dersler, ders programı, sınav takvimi, devamsızlık, not ortalaması ve derslere göre günlük çalışma planı.',
-    yl: 'Dönem ekranında derslerin, seminer ve tez teslim tarihlerin; Kitaplık → Kaynaklar\'da makalelerin ve kaynakçan.',
+    yl: 'Dönem ekranında derslerin, seminer ve tez teslim tarihlerin; Notlar → Kaynaklar\'da makalelerin ve kaynakçan.',
     kpss: 'Plan sekmesinde KPSS derslerin ve konuların; sınav tarihini girince geri sayım ve tekrar planı oluşur.',
     diger: 'Plan sekmesinde kendi derslerin ve sınav tarihlerin.',
   };
@@ -1267,7 +1277,6 @@
       a.href = appUrl(a.dataset.app);
       allowExit = { app: a.dataset.app, at: Date.now() };
     });
-    $('#set-kitten').addEventListener('change', (e) => { D().settings.kittenName = e.target.value.trim().slice(0, 20) || 'Güçlü'; e.target.value = D().settings.kittenName; save(); });
     $('#call-cats').addEventListener('click', (e) => {
       const b = e.target.closest('button[data-visit]');
       if (!b) return;
@@ -1397,7 +1406,7 @@
             if (b.dataset.imp === 'cancel') { closeModal(); return; }
             if (b.dataset.imp === 'replace') {
               if (!confirm('Bu cihazdaki bütün veriler yedektekiyle değişecek. Emin misin?')) return;
-              if (!Store.importJSON(obj)) { toast('⚠️', 'Yedek bu cihaza yazılamadı', 'Depolama dolu olabilir; Depo’dan yer açıp tekrar dene', 8000); return; }
+              if (!Store.importJSON(obj)) { toast('⚠️', 'Yedek bu cihaza yazılamadı', 'Depolama dolu olabilir; Notlar → Kütüphane’den yer açıp tekrar dene', 8000); return; }
               location.reload();
               return;
             }
@@ -1611,7 +1620,7 @@
     $('#welcome').addEventListener('click', (e) => {
       const b = e.target.closest('[data-tab]');
       if (!b) return;
-      const [tab, view] = b.dataset.tab.split(':'); // ör. notes:hata → Kitaplık'ın Hatalar bölümü
+      const [tab, view] = b.dataset.tab.split(':'); // ör. notes:hata → Notlar'ın Hatalar bölümü
       if (view && window.NotesUI) NotesUI.setView(view);
       showTab(tab);
     });
@@ -1642,6 +1651,9 @@
     renderClock();
     renderHome();
     renderFooter();
+    // uygulama kapanırken / arka plana geçerken her şey bir kez daha cihaza yazılır (iOS arka planda kapatabilir)
+    window.addEventListener('pagehide', () => save());
+    document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
     window.addEventListener('luna-save-failed', () => toast('⚠️', 'Değişiklikler kaydedilemiyor', 'Cihazın depolama alanı dolmuş olabilir. Hemen Ayarlar → "Yedek al" ile bir kopya sakla', 12000));
     window.addEventListener('luna-data-changed', () => { renderSubjectSelects(); repaint(); }); // başka sekmede kaydedildi
     setInterval(renderClock, 1000);

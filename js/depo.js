@@ -10,10 +10,11 @@ const Depo = (() => {
 
   const KINDS = {
     not: ['📄', 'Ders notu'], kagit: ['📝', 'Çalışma kağıdı'], odev: ['📊', 'Proje / ödev'],
-    kitap: ['📚', 'Kitap / makale'], foto: ['📸', 'Fotoğraf'], hata: ['❌', 'Hata defteri'], diger: ['🗂️', 'Diğer'],
+    kitap: ['📚', 'Kitap / makale'], foto: ['📸', 'Fotoğraf'], video: ['🎬', 'Ders videosu'], hata: ['❌', 'Hata defteri'], diger: ['🗂️', 'Diğer'],
   };
   const isImg = (m) => /^image\//.test(m || '');
   const isPdf = (m) => m === 'application/pdf';
+  const isVideo = (m) => /^video\//.test(m || '');
   const fmtSize = (b) => (b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
 
   // ---------- Bu cihazdaki depo (IndexedDB) ----------
@@ -140,8 +141,10 @@ const Depo = (() => {
     else blob = await driveDownload(item.rid);
     if (!blob) throw new Error('Dosya bu cihazda bulunamadı');
     if (blob.type !== item.mime && item.mime) blob = new Blob([blob], { type: item.mime });
-    blobCache.set(item.id, blob);
-    while (blobCache.size > 6) blobCache.delete(blobCache.keys().next().value);
+    if (blob.size < 20 * 1048576) { // büyük dosyalar (video) bellekte tutulmaz
+      blobCache.set(item.id, blob);
+      while (blobCache.size > 6) blobCache.delete(blobCache.keys().next().value);
+    }
     return blob;
   }
 
@@ -294,7 +297,7 @@ const Depo = (() => {
   }
 
   return {
-    KINDS, isImg, isPdf, fmtSize, IDB, NeedAuth,
+    KINDS, isImg, isPdf, isVideo, fmtSize, IDB, NeedAuth,
     loadCfg, cfg: () => cfg, saveCfg, redirectUri: GAuth.redirectUri, authorize, hasToken, driveReady,
     connect() { cfg.connected = true; saveCfg(); },
     getBlob, openPdf, addFiles, remove, moveToDrive, syncDrive, thumbUrl, saveThumb, makeThumb,

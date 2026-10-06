@@ -1,4 +1,4 @@
-/* Kaynaklar ekranı (Kitaplık → Kaynaklar): arama, DOI/ISBN ile ekleme, elle ekleme, kaynakça. */
+/* Kaynaklar ekranı (Notlar → Kaynaklar): arama, DOI/ISBN ile ekleme, elle ekleme, kaynakça. */
 
 const KaynakUI = (() => {
   let App = null;

@@ -390,6 +390,7 @@ a { color: var(--lav-ink); }
 .section-title::before { content: '✦'; color: var(--accent-ink); font-size: .9em; }
 .section-title:first-child { margin-top: 4px; }
 .hint { font-size: .8rem; color: var(--muted); margin: 8px 0 0; line-height: 1.4; }
+.link-btn { background: none; border: 0; padding: 4px 0; font: inherit; font-weight: 800; color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .pill, .badge-soft {
   display: inline-flex; align-items: center; gap: 4px;
   border-radius: 999px; padding: 2px 9px; font-size: .74rem; font-weight: 800; white-space: nowrap;
@@ -1004,6 +1005,9 @@ button.block:hover { border-color: var(--line-strong); }
 .stars button { background: none; border: 0; font-size: 1.9rem; cursor: pointer; filter: grayscale(1) opacity(.4); transition: transform .1s; padding: 0 2px; }
 .stars button.on { filter: none; transform: scale(1.08); }
 .moods { display: flex; gap: 6px; flex-wrap: wrap; }
+.q-step { display: flex; gap: 6px; align-items: stretch; }
+.q-step input { flex: 1; min-width: 0; text-align: center; font-weight: 800; }
+.q-step .btn { min-width: 48px; padding: 0 10px; }
 .moods button { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; font-size: 1.4rem; padding: 4px 9px; cursor: pointer; }
 .moods button.on { border-color: var(--accent-edge); background: var(--accent-soft); }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; }
@@ -1652,3 +1656,29 @@ button.stat-chip { font: inherit; color: inherit; cursor: pointer; }
   .task-list .x, .session-list .del { min-width: 40px; min-height: 40px; }
   .check { width: 30px; height: 30px; }
 }
+
+/* ---------- Kurulum ekranı (tarayıcıdan açılınca) ---------- */
+.install-screen {
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; overflow-y: auto;
+  padding: calc(20px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom));
+  background: radial-gradient(120% 80% at 50% 0%, #fff4e6 0%, #efe4ff 45%, #c9b5f0 100%);
+  color: #2b2350; animation: tipIn .25s ease-out;
+}
+:root[data-theme="dark"] .install-screen { background: radial-gradient(120% 80% at 50% 0%, #2a2560 0%, #171c48 55%, #0d1236 100%); color: #f1ecff; }
+.is-card { width: min(420px, 100%); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.is-icon { width: 112px; height: 112px; border-radius: 26px; box-shadow: 0 14px 34px -14px rgba(60, 30, 120, .6); }
+.is-card h2 { font-size: 1.7rem; margin: 2px 0 0; letter-spacing: .5px; }
+.is-card p { margin: 0; line-height: 1.5; }
+.is-card .install-steps { text-align: left; width: 100%; background: rgba(255, 255, 255, .7); border-radius: 18px; padding: 14px 16px 14px 36px; margin: 6px 0; line-height: 1.55; }
+:root[data-theme="dark"] .is-card .install-steps { background: rgba(255, 255, 255, .08); }
+.is-card .install-steps li { margin-bottom: 8px; }
+.is-card .install-steps small { opacity: .75; }
+.is-card .btn { width: 100%; justify-content: center; }
+.share-ic { width: 20px; height: 20px; vertical-align: -4px; color: #2f6fe0; }
+.is-arrow { position: fixed; left: 50%; bottom: calc(6px + env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: 2rem; color: #2f6fe0; animation: isBob 1.2s ease-in-out infinite; pointer-events: none; }
+@keyframes isBob { 50% { transform: translate(-50%, 8px); } }
+@media (prefers-reduced-motion: reduce) { .is-arrow { animation: none; } }
+
+/* kütüphanede ders videosu */
+.vw-video { display: grid; place-items: center; min-height: 100%; }
+.vw-video video { width: 100%; max-height: calc(100vh - 140px); border-radius: 10px; background: #000; }

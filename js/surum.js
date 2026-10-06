@@ -6,6 +6,22 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
+    "surum": "2.1",
+    "tarih": "2026-10-06",
+    "baslik": "Luna artık telefonunda bir uygulama",
+    "notlar": [
+      "🐱 Yeni simge: ana ekranda mor yıldızların arasındaki beyaz kedi. Adı da kısaca Luna.",
+      "📲 Tarayıcıdan açınca adım adım kurulum ekranı çıkıyor; iPhone'da Paylaş → Ana Ekrana Ekle, Android'de tek dokunuş. Bir kere kurman yeterli.",
+      "🔔 Yeni sürüm gelince bildirim ve simgede küçük bir rozet görüyorsun. Dokunup güncelliyorsun, hiçbir şey indirmeden kaldığın yerden devam ediyorsun.",
+      "💾 Her şey yazarken kaydediliyor; uygulamayı kapatsan da yarım kalan notun bir dahaki açılışta seni bekliyor.",
+      "📅 YKS tarihi ÖSYM açıklayınca kendiliğinden güncellenecek; geri sayım ve plan ona göre ayarlanıyor. İstersen kendi tarihini de seçebilirsin.",
+      "✍️ Oturum bitince kaç soru çözdüğünü yazabiliyorsun; ana sayfada bugün kaç soru çözdüğün görünüyor.",
+      "📚 Kitaplık artık Notlar; dosyaların Kütüphane'de. Ders videolarını da ekleyip uygulamanın içinde izleyebiliyorsun.",
+      "🧡 Yavru kedinin adı Güçlü, hep öyle kalacak.",
+      "🛠️ Küçük ekranlarda daha derli toplu ayarlar ve birçok ufak düzeltme."
+    ]
+  },
+  {
     "surum": "2.0",
     "tarih": "2026-10-06",
     "baslik": "Güncellemeler artık uygulamanın içinde",
@@ -15,7 +31,7 @@ const SURUMLER = /*SURUMLER*/[
       "📲 Luna'yı tarayıcıdan açınca ana ekrana ekleme rehberi çıkıyor; Android'de tek dokunuşla yükleniyor.",
       "🐾 Tam odakta izinli uygulamalar: YouTube, ChatGPT, Gemini ya da Spotify'a hangi yoldan geçersen geç, dönüşte \"Neredeydin?\" diye soruyorum. Seçersen sayaç hiç durmamış gibi devam ediyor.",
       "📱 Telefonda daha rahat: odak ekranındaki düğmeler küçük ekranlara sığıyor, grafiklerde dokununca değer görünüyor, küçük dokunma alanları büyüdü.",
-      "⌨️ Android klavyesinde Notlar ve Depo aramasında harfler artık çoğalmıyor; arama daha hızlı.",
+      "⌨️ Android klavyesinde Notlar ve Kütüphane aramasında harfler artık çoğalmıyor; arama daha hızlı.",
       "📝 Bir pencerede yazdıkların, yanlışlıkla dışarı dokununca kaybolmuyor; önce soruyorum. Sevgilinden notlar yazarken kaydediliyor.",
       "🎯 Sahnedeki küçük sayaca dokununca odak ekranına geri dönüyorsun.",
       "🛠️ Uzak tarihli sınavlar (KPSS gibi) listede ve geri sayımda görünüyor; ondalıklar virgüllü; çevrimdışı PDF, dar ekran ve yatay ekran düzeltmeleri."

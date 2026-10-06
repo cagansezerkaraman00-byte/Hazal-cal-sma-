@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Luna ile Çalış</title>
-  <meta name="description" content="Kedi Luna ile yıldızlı bir ders çalışma uygulaması">
+  <title>Luna</title>
+  <meta name="description" content="Luna ile ders çalış: sayaç, plan, deneme, notlar ve kütüphane">
   <meta name="theme-color" content="#f6f1ff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Luna">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" href="icons/favicon-48.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="application-name" content="Luna">
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" crossorigin="anonymous">
@@ -46,7 +47,7 @@
       <button data-tab="home" class="active"><span>🏠</span><b>Çalış</b></button>
       <button data-tab="plan"><span>🗓️</span><b>Plan</b></button>
       <button data-tab="deneme"><span>📝</span><b>Deneme</b></button>
-      <button data-tab="notes"><span>📚</span><b>Kitaplık</b></button>
+      <button data-tab="notes"><span>📚</span><b>Notlar</b></button>
       <button data-tab="progress"><span>📈</span><b>İlerleme</b></button>
       <button data-tab="settings"><span>⚙️</span><b>Ayarlar</b></button>
     </nav>
@@ -259,7 +260,7 @@
               <li><b>≈ sayılar</b> o konudan YKS'de yılda ortalama kaç soru geldiğini gösterir (2018–2025 sınavlarından derlendi; kaynaklar sayfanın altında). Yüzdeler de bu ağırlığa göre: soru getiren konuyu bitirmek daha çok sayılır.</li>
               <li><b>Haftalık program</b> her pazartesi kendiliğinden hazırlanır ve hafta boyunca karışmaz. Konuların soru ağırlığına, işaretlediğin durumlara, denemelerdeki eksiklerine ve son günlerde hangi dersi çalışmadığına bakar. Her gün paragraf + problem rutini, pazar günleri deneme günüdür. <b>↻ Yenile</b> haftayı yeniden karar.</li>
               <li><b>Bugünün planı</b> ana ekranda da durur. <b>Başla ▶</b> sayacı o konuyla başlatır; oturum bitince madde kendiliğinden işaretlenir.</li>
-              <li>Sınav tarihi şimdilik tahmini; ÖSYM açıklayınca Plan sekmesinden düzeltebilirsin.</li>
+              <li>Sınav tarihi şimdilik tahmini; ÖSYM açıklayınca kendiliğinden güncellenir, geri sayım ve plan da ona uyar. İstersen Plan sekmesinden kendi tarihini seçebilirsin.</li>
             </ul>
           </details>
           <details>
@@ -286,7 +287,7 @@
             </ul>
           </details>
           <details>
-            <summary>📚 Kitaplık: notlar ve bilgi kartları</summary>
+            <summary>📚 Notlar ve bilgi kartları</summary>
             <ul>
               <li><b>Notlar:</b> derse göre not al, ara, 📌 ile üste sabitle. <code>**kalın**</code>, <code>`kod`</code> ve satır başında "- " ile madde yazabilirsin.</li>
               <li><b>Kartlar</b> aralıklı tekrar (Leitner) ile çalışır: ön yüze soru, arka yüze cevap. Bildiğin kart bir üst kutuya geçer ve daha seyrek gelir (1 → her gün, 2 → 1 gün, 3 → 3 gün, 4 → haftada bir, 5 → 16 günde bir). Bilemediğin kart 1. kutuya döner. Bu, bilgiyi kalıcı yapmanın en etkili yollarından biri.</li>
@@ -295,7 +296,7 @@
           <details>
             <summary>❌ Hata defteri</summary>
             <ul>
-              <li>Kitaplık → <b>Hatalar</b>'da denemede ya da testte yanlış yaptığın sorunun fotoğrafını çek; dersini, konusunu, <b>neden</b> yanlış yaptığını (bilgi eksiği, yorum, işlem, dikkat, süre) ve doğru cevabı/püf noktasını yaz.</li>
+              <li>Notlar → <b>Hatalar</b>'da denemede ya da testte yanlış yaptığın sorunun fotoğrafını çek; dersini, konusunu, <b>neden</b> yanlış yaptığını (bilgi eksiği, yorum, işlem, dikkat, süre) ve doğru cevabı/püf noktasını yaz.</li>
               <li>Soru ertesi gün, sonra 3, 7 ve 21 gün sonra yeniden karşına çıkar. Önce kendin çöz, sonra notu aç. Bilemezsen başa döner; dört kez üst üste doğru çözdüğün soru "öğrenildi" olur. Bu, aralıklı tekrar ve kendini sınamanın birleşimi; kalıcı öğrenmenin en güçlü yollarından.</li>
               <li><b>Hata analizi</b> en sık hata nedenini ve en çok soru biriken konuları gösterir.</li>
             </ul>
@@ -303,16 +304,16 @@
           <details>
             <summary>📚 Kaynaklar ve kaynakça</summary>
             <ul>
-              <li>Kitaplık → <b>Kaynaklar</b>'da makale arayabilir (OpenAlex), <b>DOI</b> (makale) ya da <b>ISBN</b> (kitap) yapıştırıp künyeyi otomatik doldurabilir ya da elle ekleyebilirsin.</li>
+              <li>Notlar → <b>Kaynaklar</b>'da makale arayabilir (OpenAlex), <b>DOI</b> (makale) ya da <b>ISBN</b> (kitap) yapıştırıp künyeyi otomatik doldurabilir ya da elle ekleyebilirsin.</li>
               <li>Kaynakların seçtiğin biçimde yazılır: <b>APA 7</b>, <b>Vancouver</b> (tıp ve sağlık bölümleri için önerilir) ya da <b>IEEE</b> (mühendislik). APA'da metin içi atıf da gösterilir. <b>Kopyala</b> ile Word'e yapıştırınca italikler korunur; <b>Kaynakçayı kopyala</b> dersin tüm kaynaklarını sıralı verir.</li>
               <li>Açık erişimli makalelerde 🔓 bağlantısı tam metne gider.</li>
               <li>Künyeyi yine de kontrol et: veritabanlarındaki bilgiler bazen eksik olabilir (ör. kitap baskısı); ✏️ ile düzeltebilirsin.</li>
             </ul>
           </details>
           <details>
-            <summary>🗂️ Depo ve Google Drive</summary>
+            <summary>🗂️ Kütüphane ve Google Drive</summary>
             <ul>
-              <li>Kitaplık → <b>Depo</b>'da ders fotoğraflarını, PDF'leri, çalışma kağıtlarını ve ödevleri ders ders saklarsın. <b>📷 Fotoğraf çek</b> ile tahtayı ya da kağıdı çekip doğrudan derse koyabilirsin; galeride aramana gerek kalmaz.</li>
+              <li>Notlar → <b>Kütüphane</b>'de ders fotoğraflarını, PDF'leri, çalışma kağıtlarını ve ödevleri ders ders saklarsın. <b>📷 Fotoğraf çek</b> ile tahtayı ya da kağıdı çekip doğrudan derse koyabilirsin; galeride aramana gerek kalmaz.</li>
               <li>PDF'ler ve fotoğraflar uygulamanın içinde tam ekran açılır (yakınlaştırma, sayfa sayısı). Word, PowerPoint gibi dosyalar Drive'da açılır.</li>
               <li>Fotoğraflar okunaklı kalacak şekilde küçültülür; böylece hem hızlı açılır hem az yer tutar.</li>
               <li><b>Google Drive'ı bağlarsan</b> dosyalar senin Drive'ındaki <b>Luna Depo</b> klasöründe durur: iPad'inde yer kaplamaz, telefonda da aynı dosyaları görürsün (Depo → ↻ Eşitle). Uygulama sadece kendi yüklediği dosyaları görebilir; Drive'ının geri kalanına dokunamaz.
@@ -320,10 +321,10 @@
                   <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a>'a Google hesabınla gir, yeni bir proje aç (ör. "Luna").</li>
                   <li><b>APIs &amp; Services → Library</b>'den <b>Google Drive API</b>'yi bul ve <b>Enable</b> de.</li>
                   <li><b>Google Auth Platform</b> (OAuth izin ekranı) → <b>Get started</b>: uygulama adı "Luna", kitle <b>External</b>. Sonra <b>Audience → Test users</b>'a Hazal'ın Gmail adresini ekle.</li>
-                  <li><b>Clients → Create client → Web application</b>. <b>Authorized JavaScript origins</b>: <code>https://cagansezerkaraman00-byte.github.io</code>, <b>Authorized redirect URIs</b>: Depo'da yazan adres (sonunda <code>/</code> ile).</li>
-                  <li>Çıkan <b>Client ID</b>'yi Depo'daki alana yapıştır, <b>Bağlan</b> de, Google hesabını seç ve izin ver. "Google bu uygulamayı doğrulamadı" uyarısı çıkarsa bu senin kendi uygulaman; <b>Devam</b> diyebilirsin.</li>
+                  <li><b>Clients → Create client → Web application</b>. <b>Authorized JavaScript origins</b>: <code>https://cagansezerkaraman00-byte.github.io</code>, <b>Authorized redirect URIs</b>: Kütüphane'de yazan adres (sonunda <code>/</code> ile).</li>
+                  <li>Çıkan <b>Client ID</b>'yi Kütüphane'deki alana yapıştır, <b>Bağlan</b> de, Google hesabını seç ve izin ver. "Google bu uygulamayı doğrulamadı" uyarısı çıkarsa bu senin kendi uygulaman; <b>Devam</b> diyebilirsin.</li>
                 </ol></li>
-              <li>Güvenlik için Google bağlantıyı saatte bir yeniler; Depo'da "Drive bağlantısını yenile"ye dokunman yeter. O arada eklediğin dosyalar bu cihaza kaydedilir, sonra <b>Drive'a taşı</b> ile tek dokunuşla Drive'a geçer.</li>
+              <li>Güvenlik için Google bağlantıyı saatte bir yeniler; Kütüphane'de "Drive bağlantısını yenile"ye dokunman yeter. O arada eklediğin dosyalar bu cihaza kaydedilir, sonra <b>Drive'a taşı</b> ile tek dokunuşla Drive'a geçer.</li>
               <li>Silinen dosya Drive çöp kutusuna gider; 30 gün içinde oradan geri alabilirsin.</li>
             </ul>
           </details>
@@ -476,7 +477,7 @@
             <label class="switch"><input type="checkbox" id="set-quiet"> Odaklanırken Luna sessiz kalsın</label>
             <label class="switch"><input type="checkbox" id="set-pauseleave"> 🔒 Tam odak: uygulamadan çıkınca sayaç dursun</label>
             <div class="allow-set" id="allow-set">
-              <p class="muted small">İşaretlediğin uygulamalarda çalışırken sayaç durmaz. Odak ekranındaki düğmeden açarsan hiç sormam; ana ekrandan ya da uygulama değiştiriciden geçtiysen dönüşte "Neredeydin?" diye sorarım, izinli uygulamayı seçersen sayaç hiç durmamış gibi devam eder. Başka bir yere geçince 15 saniye sonra durur; ekranı kilitlemek de çıkmak sayılır (odaklanırken ekran açık kalır).</p>
+              <p class="muted small">İşaretlediğin uygulamalarda sayaç durmaz. Dönünce "Neredeydin?" diye sorarım; izinli uygulamayı seçersen sayaç hiç durmamış gibi devam eder. Başka bir yere geçersen 15 saniye sonra durur.</p>
               <div class="chips" id="allow-chips"></div>
             </div>
             <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
@@ -486,10 +487,9 @@
           <div class="card">
             <h2>🐈 Kediler</h2>
             <p class="muted small">Luna ana karakter; Vesper (mavi gözlü siyah kedi) ve sarı yavru Güçlü arada bir uğrar. Molada ve boştayken gelirler, odaklanırken seni rahatsız etmezler.</p>
-            <label class="field">Sarı yavrunun adı <input id="set-kitten" maxlength="20"></label>
             <div class="row" id="call-cats">
               <button class="btn soft" data-visit="vesper">🐈‍⬛ Vesper'ı çağır</button>
-              <button class="btn soft" data-visit="kitten">🧡 Yavruyu çağır</button>
+              <button class="btn soft" data-visit="kitten">🧡 Güçlü'yü çağır</button>
               <button class="btn soft" data-visit="family">🐾 Hepsi</button>
             </div>
           </div>
@@ -518,7 +518,7 @@
           </div>
           <div class="card">
             <h2>💾 Veriler</h2>
-            <p class="muted small">Veriler sadece bu cihazda saklanır. Arada bir yedek al; yeni cihazda <b>İçe aktar</b> ile birleştirebilir ya da tamamen yükleyebilirsin.</p>
+            <p class="muted small">Her şey sen yazarken bu cihaza kendiliğinden kaydedilir; uygulamayı kapatsan da, güncellesen de kaybolmaz. Telefon değiştirirken <b>Yedek al</b>, yeni cihazda <b>İçe aktar</b>.</p>
             <p class="small backup-info" id="backup-info"></p>
             <div class="rescue hidden" id="rescue-info">
               <p class="small"><b>🛟 Kurtarma kopyası var.</b> Uygulama bir ara verilerini okuyamadı ve bozulmasın diye ham hâlini sakladı. İndirip <b>İçe aktar</b> ile geri yükleyebilirsin.</p>
