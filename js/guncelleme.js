@@ -83,7 +83,10 @@ const Guncelleme = (() => {
   function dot(on) { const b = $('#tabs button[data-tab="settings"]'); if (b) b.classList.toggle('has-dot', on); }
 
   // ---------- Güncelleme ----------
+  let reloading = false;
   function reload() {
+    if (reloading) return;
+    reloading = true;
     applying = true;
     App.allowExit('guncelleme'); // yenileme anı "uygulamadan çıkış" sayılmasın
     location.reload();
@@ -241,7 +244,7 @@ const Guncelleme = (() => {
     if (!el) return;
     const v = latest(), cur = current();
     el.innerHTML = `<h2>🔄 Güncellemeler</h2>
-      <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna</b><small>Sürüm ${esc(cur.surum)} · ${esc(fmtDate(cur.tarih))}</small></div>
+      <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna</b><small>Sürüm ${esc(cur.surum)} · ${esc(fmtDate(cur.tarih))}</small><small>Geliştiren: Çağan Sezer Karaman</small></div>
         <span class="upd-state ${v ? 'new' : ''}">${checking ? 'Bakılıyor…' : v ? 'Yeni sürüm hazır' : 'Güncel ✓'}</span></div>
       ${v ? `<div class="upd-new"><div class="wn-list">${notesHtml(fresh())}</div><button class="btn primary" type="button" data-up="apply" ${applying ? 'disabled' : ''}>${applying ? 'Yükleniyor…' : `Sürüm ${esc(v.surum)}'e güncelle`}</button></div>` : ''}
       <div class="row upd-acts"><button class="btn soft" type="button" data-up="check" ${checking ? 'disabled' : ''}>Güncellemeleri denetle</button>${canOfferInstall() ? `<button class="btn soft" type="button" data-up="install">📲 Ana ekrana ekle</button>` : ''}</div>

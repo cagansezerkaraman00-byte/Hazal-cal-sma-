@@ -2,6 +2,12 @@
 
 const Messages = (() => {
   const M = {
+    checkIn: ["Nasılsın anneciğim? Bugün keyfin nasıl, anlat bakalım 🐾","{name}, bugün nasıl hissediyorsun? Önce bir halini hatırını sorayım dedim 💜","Hoş geldiiin anneciğim! Günün nasıl geçti? Biraz soluklan, sonra birlikte başlarız 🐱"],
+    lowStudy: ["Bugün biraz az çalıştık, patilerim biraz düştü 🥺 Ama küçücük bir adımla başlayabiliriz anneciğim.","{name}, kitaplar bizi bekliyor… Biraz sitemliyim bugün 😾 Hadi yalnızca on dakika deneyelim.","Hıımm, dersler biraz yalnız kaldı bugün 🐾 Yorulduysan dinlen; hazırsan beraber kısa bir oturum yapalım."],
+    focusNudge: ["Anneciğim, yine mi dışarı kaçtın? 😾 Hadi dersine odaklan, molada bakarız.","{name}, patimi masaya koydum! 🐾 Şimdi bir tek şu soruya odaklanalım.","Biraz kızdım bak 😼 Sürekli çıkıp girince konumuz yarım kalıyor. Hadi kaldığımız yerden!"],
+    proud: ["Aferin anneciğim! Bugünkü emeğini gördüm, kuyruğum mutluluktan durmuyor 😻","{name}, bugün güzel çalıştın! Biraz dinlen, sonra istersen devam ederiz 💜"],
+    bedtime: ["{name}, ben yatmaya gidiyoruum… Hadi sen de uyu anneciğim 🌙","Anneciğimm, gözlerim kapanıyor. Hadii uyuyalım, yarın yine birlikteyiz 💤","Battaniyeme kıvrıldım bile {name}. Bugünlük bu kadar, iyi gecelerr 🐾"],
+    companion: ["Yanına kıvrıldım anneciğim. Bugün neyi birlikte halledelim? 🐾","Bir bardak su içtin mi {name}? Ben de patilerimi esnetiyorum 💜","Miyav! Buradayım anneciğim, acele etmeden birlikte ilerleyelim 🐱"],
     morning: [
       'Günaydın {name}! ☀️ Güneş doğdu, ben de hazırım. Bugün ne çalışıyoruz?',
       'Günaydın! Kahvaltını yaptın mı? Aç karnına ders çalışılmaz miyav 🐾',
@@ -160,7 +166,45 @@ const Messages = (() => {
     return `İyi geceler ${n} 🌙`;
   }
 
+
+  // Konuşma geçmişi çalışma verilerinden ayrı tutulur; yerel takvim gününde yenilenir.
+  function companionState(now = new Date()) {
+    const day = U.dateKey(now);
+    let c = Store.data.lunaConversation;
+    if (!c || typeof c !== 'object' || Array.isArray(c)) c = {};
+    if (c.day !== day) c = { introduced: !!c.introduced, day, checkedIn: false, departures: 0, lastNudge: 0, bedtime: false };
+    Store.data.lunaConversation = c;
+    return c;
+  }
+
+  function mood(now = new Date()) {
+    const c = companionState(now), h = now.getHours();
+    if ((h >= 23 || h < 5) && !c.bedtime) return 'bedtime';
+    const today = U.dateKey(now);
+    const minutes = Store.data.sessions.reduce((sum, s) =>
+      sum + (U.dateKey(s.end || s.start) === today ? Math.max(0, Number(s.minutes) || 0) : 0), 0);
+    const goal = Math.max(1, Number(Store.data.settings.dailyGoal) || 180);
+    if (minutes >= goal) return 'proud';
+    // Güne yeni başlayan ya da halen çalışan kullanıcıya "az çalıştın" deme.
+    const t = Store.data.timer;
+    if (h >= 17 && h < 23 && minutes < Math.min(30, goal / 4) && !(t && t.running)) return 'lowStudy';
+    return 'companion';
+  }
+
+  function departure(away, now = new Date()) {
+    const c = companionState(now);
+    if (!away || away.app || away.lunaCounted || now.getTime() - away.at <= 15000) return false;
+    away.lunaCounted = true;
+    c.departures = (Number(c.departures) || 0) + 1;
+    // İlk çıkış normaldir. Hatırlatmalar en fazla on dakikada bir gelir.
+    if (c.departures < 2 || (c.lastNudge && now.getTime() - c.lastNudge < 600000)) return false;
+    c.lastNudge = now.getTime();
+    away.lunaNudge = true;
+    return true;
+  }
+
   return {
+    companionState, mood, departure,
     get(kind, vars) {
       let t = fill(U.pick(M[kind] || M.poke));
       if (vars) for (const k of Object.keys(vars)) t = t.split('{' + k + '}').join(vars[k]);

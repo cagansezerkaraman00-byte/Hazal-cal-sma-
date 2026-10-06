@@ -5,6 +5,17 @@
    halini okur. */
 
 const SURUMLER = /*SURUMLER*/[
+{
+  "surum": "2.1.1",
+  "tarih": "2026-10-06",
+  "baslik": "Luna artık halini hatırını soruyor",
+  "notlar": [
+    "🐾 İlk tanışma korunur; sonraki açılışlarda Luna her gün halini hatırını sorar.",
+    "😾 Az çalışılan akşamlarda tatlı sitem, hedef tamamlanınca gururlu replikler.",
+    "🌙 Gece Luna: Anneciğim, hadii uyuyalım!",
+    "🔔 Odak oturumunda tekrarlanan çıkışlara, izin verilen uygulamalar hariç, seyrek hatırlatmalar. Bildirim için izin ve tarayıcı desteği gerekir; uygulama tamamen kapalıyken garanti edilmez."
+  ]
+},
   {
     "surum": "2.1",
     "tarih": "2026-10-06",
