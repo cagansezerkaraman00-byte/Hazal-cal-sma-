@@ -268,9 +268,23 @@
   const EXITS = { google: { e: '☁️', n: 'Google', from: "Google'dan" }, spotifyLogin: { e: '🎧', n: 'Spotify', from: "Spotify'dan" }, guncelleme: { e: '✨', n: 'Güncelleme', from: 'Güncellemeden' } };
   const exitInfo = (k) => APPS[k] || EXITS[k] || { e: '🐾', n: 'Uygulama', from: 'Geri' };
   const allowedApps = () => (D().settings.allowedApps || []).filter((k) => APPS[k]);
-  function appUrl(k) {
+  function appWebUrl(k) {
+    if (!APPS[k]) return '';
     if (k === 'spotify') { const p = spotifyParts(D().settings.spotify); if (p) return `https://open.spotify.com/${p.type}/${p.id}`; }
     return APPS[k].url;
+  }
+  function appUrl(k) {
+    const web = appWebUrl(k);
+    if (!web) return '';
+    // Android Chrome: hedef uygulama bu bağlantıyı destekliyorsa aç; yoksa güvenli web adresi.
+    // iOS/iPadOS: HTTPS Universal Link kararı işletim sistemine aittir.
+    const packages = { chatgpt: 'com.openai.chatgpt', gemini: 'com.google.android.apps.bard',
+      youtube: 'com.google.android.youtube', spotify: 'com.spotify.music' };
+    if (/Android/i.test(navigator.userAgent) && /Chrome\//i.test(navigator.userAgent)) {
+      return 'intent://' + web.slice('https://'.length) + '#Intent;scheme=https;package=' +
+        packages[k] + ';S.browser_fallback_url=' + encodeURIComponent(web) + ';end';
+    }
+    return web;
   }
   function renderAllowApps() {
     const list = allowedApps();
@@ -1094,8 +1108,8 @@
     const src = spotifyEmbed(D().settings.spotify);
     // "Spotify'da aç": telefonda uygulama yüklüyse doğrudan uygulamada açılır (önizleme yerine tam şarkılar)
     $('#spotify-frame').innerHTML = src
-      ? `<iframe src="${src}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify"></iframe>
-        <a class="sp-open" href="https://open.spotify.com/${p.type}/${p.id}" target="_blank" rel="noopener">Spotify uygulamasında aç ↗</a>`
+      ? `<a class="btn primary sp-open" href="${U.esc(appUrl('spotify'))}" target="_blank" rel="noopener" data-app="spotify">Spotify'da dinle ↗</a>
+        <p class="hint">Liste ayrı açılır; cihazın destekliyorsa yüklü Spotify uygulamasına geçersin.</p>`
       : '<p class="empty">Geçerli bir Spotify bağlantısı yapıştır.</p>';
     $$('#spotify-presets .chip').forEach((c) => c.classList.toggle('active', c.dataset.url === D().settings.spotify));
     const preset = PRESETS.find(([, u]) => u === D().settings.spotify);
@@ -1130,6 +1144,12 @@
       D().settings.spotify = c.dataset.url; save();
       $('#spotify-input').value = c.dataset.url;
       loadSpotify();
+    });
+    $('#spotify-frame').addEventListener('click', (e) => {
+      const link = e.target.closest('a[data-app="spotify"]');
+      if (!link) return;
+      link.href = appUrl('spotify');
+      if (allowedApps().includes('spotify')) allowExit = { app: 'spotify', at: Date.now() };
     });
     // müzik paneli ilk açıldığında yüklenir (sayfa açılışını yavaşlatmasın)
     $('#music-card').addEventListener('toggle', () => { if ($('#music-card').open) renderMusic(); });

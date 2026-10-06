@@ -143,6 +143,16 @@ const Messages = (() => {
     ],
   };
 
+  M.checkIn.push(...["Anneciğim, bugün içinden neler geçiyor? Önce seni bir dinleyeyim 🐾","Hoş geldin {name}! Enerjin nasıl: minik bir adım mı, uzun bir çalışma mı?","Bugünün en güzel şeyi neydi? Benimki seni burada görmek 😽","Su tamam mı, rahat bir sandalye tamam mı? Sen nasılsın peki?","Bugün zor geçtiyse yavaş başlayabiliriz anneciğim 💜","Miyav merhaba! Aklında ders dışında bir şey varsa önce not edelim."]);
+  M.lowStudy.push(...["Kitap açık ama biz biraz uzaklara daldık galiba 😼 Bir sayfayla barışalım mı?","Anneciğim, bugün derslerle pek görüşemedik. On dakika birlikte dener miyiz?","Burnumu biraz kıvırdım ama sana güveniyorum. Küçük bir başlangıç yeter 🐾","Hazırsan en kolay soruyu seçelim. Zor olanı sonra düşünürüz.","Bugün plan az ilerledi diye bütün gün boşa gitmedi. Bir adım daha atabiliriz.","Hııım, ben masadayım, kalem burada… Eksik olan minicik bir başlangıç 😾"]);
+  M.focusNudge.push(...["Pati kontrolü! Şimdi ekrandan ekrana değil, sorudan soruya gidiyoruz 😼","Anneciğim, bildirimler bekleyebilir. Önce şu paragrafı bitirelim mi?","Biraz somurttum bak! Hadi dikkatimizi yine deftere getirelim 🐾","{name}, molada gezelim; şimdi şu küçük işi birlikte bitirelim.","Daldık yine galiba. Sorun değil, kaldığın satırı bul; ben buradayım.","Telefon çok konuşuyor bugün, biz biraz derse kulak verelim 😾"]);
+  M.proud.push(...["Anneciğim hedef tamam! Şimdi gururlu bir miyavı hak ettin 😻","Bugünkü emeğini tek tek topladın. Ben de yanına mutlulukla kıvrıldım.","{name}, bugün kendine verdiğin sözü tuttun. Biraz dinlenebilirsin 💜","Kocaman bir aferin! Şimdi gözlerini ekrandan ayırıp uzağa bak.","Patiler havaya! Bugünkü hedefi beraber kapattık 🐾","Bugün yeterince emek verdin. Yeni iş eklemeden bu anın tadını çıkaralım."]);
+  M.bedtime.push(...["Anneciğimm, battaniye hazır. Hadii uyuyalım, yarın yine görüşürüz 🌙","{name}, ben pati pijamalarımı giydim sayılır. Gözlerimizi dinlendirelim mi?","Son sayfayı işaretle, kaldığın yer kaçmıyor. İyi geceler anneciğim 💤","Gece ekibi paydos! Ben kıvrılıyorum, sen de güzelce dinlen.","Bugünün defterini kapatalım mı? Yarınki ilk küçük adımı sabaha bırakıyoruz.","Mırr… Uykum geldi {name}. Hadi ışıkları biraz kısalım 🌙"]);
+  M.companion.push(...["Kaleminin yanındaki yer benim. Beraber sessizce çalışabiliriz 🐱","Anneciğim, büyük planı küçücük parçalara bölelim mi?","Bir soru, bir nefes, bir yudum su. Acelemiz yok 💜","Takıldığın yere küçük bir yıldız koy; sonra tekrar döneriz.","Bugün mükemmel olmak zorunda değilsin. Başlamak yeter {name}.","Ben burada mırlıyorum. Sen sıradaki küçük işini seç bakalım 🐾"]);
+  M.start.push(...["Anneciğim hazırsa pati ekibi hazır! İlk sorudan başlıyoruz 🐾","Şimdi yalnızca önündeki işe bakalım. Geri kalanı sırayla gelir.","Defter açıldı, Luna yerleşti. Hadi {name}, başlıyoruz!","Küçük bir hedef seç: bu oturumda neyi bitirmek istiyorsun?"]);
+  M.done.push(...["Bir oturum daha cebimizde! Anneciğim, şimdi biraz esneyelim 😻","Emeğin kaydedildi. Molada omuzlarını ve gözlerini dinlendir.","Bitti bile! Nasıl geçtiğini bir kelimeyle not etmek ister misin?","Pati çak! Şimdi kendine kısa bir mola ver 🐾"]);
+  M.poke.push(...["Mırrr… Anneciğim beni mi çağırdı? 😽","Bir pati benden, bir soru senden. Anlaştık mı?","Buradayım {name}! Kulağımı sevdin, şimdi deftere dönelim 🐾","Minik bir miyav molası verdik. Hazırsan devam 💜"]);
+
   function fill(t) {
     return t.replace(/\{name\}/g, Store.data.settings.name || 'canım').replace(/\{kitten\}/g, 'Güçlü');
   }
@@ -206,7 +216,15 @@ const Messages = (() => {
   return {
     companionState, mood, departure,
     get(kind, vars) {
-      let t = fill(U.pick(M[kind] || M.poke));
+      const arr = M[kind] || M.poke;
+      const state = companionState();
+      if (!state.replies || typeof state.replies !== 'object' || Array.isArray(state.replies)) state.replies = {};
+      const history = Array.isArray(state.replies[kind]) ? state.replies[kind] : [];
+      const fresh = arr.filter((line) => !history.includes(line));
+      const selected = U.pick(fresh.length ? fresh : arr);
+      state.replies[kind] = [...history, selected].slice(-Math.min(3, arr.length - 1 || 1));
+      Store.save();
+      let t = fill(selected);
       if (vars) for (const k of Object.keys(vars)) t = t.split('{' + k + '}').join(vars[k]);
       return t;
     },

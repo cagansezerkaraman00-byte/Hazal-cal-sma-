@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.1.2",
+  "tarih": "2026-10-06",
+  "baslik": "Daha çok Luna sohbeti ve uygulama bağlantıları",
+  "notlar": [
+    "🐾 Luna’ya 48 yeni replik; aynı kategoride son üç replik tekrar edilmez.",
+    "🎧 Spotify gömülü oynatıcısı yerine dışarıda açılan liste bağlantısı.",
+    "📲 Android Chrome’da desteklenen bağlantılar yüklü uygulamaya yönlendirilir; açılamazsa web adresi kullanılır. iPad ve iPhone’da cihazın uygulama bağlantısı tercihleri geçerlidir."
+  ]
+},
+{
   "surum": "2.1.1",
   "tarih": "2026-10-06",
   "baslik": "Luna artık halini hatırını soruyor",
