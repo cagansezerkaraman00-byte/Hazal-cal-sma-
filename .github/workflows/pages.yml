@@ -17,6 +17,12 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
+      - name: Pages durumu
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/pages" --jq '"kaynak: \(.build_type) \(.source.branch // "-") \(.source.path // "") · durum: \(.status // "-") · adres: \(.html_url)"' || echo "Pages ayarı okunamadı"
+          gh api "repos/${{ github.repository }}/pages/builds/latest" --jq '"son yayın: \(.status) \(.commit[0:7]) \(.created_at)"' || true
       - name: Pages yayını iste
         env:
           GH_TOKEN: ${{ github.token }}
