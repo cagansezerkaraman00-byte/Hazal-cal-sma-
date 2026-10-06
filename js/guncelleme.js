@@ -32,6 +32,8 @@ const Guncelleme = (() => {
   const fresh = () => (remote ? remote.filter((v) => newer(v.surum, current().surum)) : []);
   const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // iPad'e klavye/trackpad takılıyken de dokunmatik cihaz sayılsın
+  const touchDevice = () => isIOS() || matchMedia('(pointer: coarse)').matches;
 
   // ---------- Denetleme ----------
   async function check(manual) {
@@ -155,7 +157,7 @@ const Guncelleme = (() => {
   const inApp = () => /FBAN|FBAV|Instagram|Line\/|Twitter|TikTok|Snapchat|WhatsApp|GSA\//i.test(navigator.userAgent);
   const isSafari = () => isIOS() && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent) && !inApp();
   function installScreen(force) {
-    if (standalone() || (!force && (installHidden() || !matchMedia('(pointer: coarse)').matches))) return;
+    if (standalone() || (!force && (installHidden() || !touchDevice()))) return;
     if ($('#install-screen')) return;
     const ipad = /iPad/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     let steps;
@@ -164,7 +166,7 @@ const Guncelleme = (() => {
     } else if (isIOS()) {
       steps = `<li><b>Paylaş</b> düğmesine dokun <svg class="share-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v10h14V11h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> <small>(${ipad ? 'sağ üstte' : 'altta'}; görmüyorsan önce <b>•••</b> düğmesine dokun)</small></li>
         <li>Listede <b>Ana Ekrana Ekle</b>'yi bul <small>(gerekirse aşağı kaydır)</small></li>
-        <li><b>Ekle</b>'ye dokun. Luna artık ana ekranında; bundan sonra oradan aç.</li>`;
+        <li><b>Web uygulaması olarak aç</b> anahtarı varsa açık kalsın, sonra <b>Ekle</b>'ye dokun. Luna artık ana ekranında; bundan sonra oradan aç.</li>`;
     } else if (installEvt) {
       steps = '<li>Aşağıdaki <b>Luna\'yı yükle</b> düğmesine dokun, sonra <b>Yükle</b>.</li><li>Luna ana ekranına ve uygulamalarının arasına gelir; oradan aç.</li>';
     } else {
@@ -226,7 +228,7 @@ const Guncelleme = (() => {
       html = `<img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Güncelleme hazır</b><small>Sürüm ${esc(v.surum)} · ${esc(v.baslik)}</small></div>
         <button class="btn primary small-btn" type="button" data-up="apply" ${applying ? 'disabled' : ''}>${applying ? 'Yükleniyor…' : 'Güncelle'}</button>
         <button class="icon-btn" type="button" data-up="later" aria-label="Sonra">✕</button>`;
-    } else if (!v && canOfferInstall() && !installHidden() && matchMedia('(pointer: coarse)').matches) {
+    } else if (!v && canOfferInstall() && !installHidden() && touchDevice()) {
       html = `<img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna'yı ana ekranına ekle</b><small>Tek dokunuşla açılır, internetsiz de çalışır</small></div>
         <button class="btn primary small-btn" type="button" data-up="install">${installEvt ? 'Yükle' : 'Nasıl?'}</button>
         <button class="icon-btn" type="button" data-up="install-later" aria-label="Sonra">✕</button>`;
