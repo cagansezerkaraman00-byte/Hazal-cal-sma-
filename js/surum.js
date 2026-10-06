@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
+    "surum": "2.1.5",
+    "tarih": "2026-10-06",
+    "baslik": "Sıcacık mini pencere",
+    "notlar": [
+      "🐈 Gönderdiğin uyuyan kedi ailesi görseli mini pencereye eklendi.",
+      "⏱️ Sıcak krem tonları, okunaklı sayaç, saat ve tarih; ince ilerleme çubuğuyla sade yatay tasarım.",
+      "📴 Kedi görseli çevrimdışı kullanım için uygulamayla birlikte saklanır."
+    ]
+  },
+  {
     "surum": "2.1.4",
     "tarih": "2026-10-06",
     "baslik": "Minik uyku penceresi",
