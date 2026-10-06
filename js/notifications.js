@@ -28,7 +28,7 @@ const LunaNotify = (() => {
     const timer = data.timer;
     if (timer && timer.running) return null; // çalışma ve molayı bölme
     const today = day(now);
-    const minutes = data.sessions.reduce((n,s) => n + (day(new Date(s.end || s.start)) === today ? Math.max(0,+s.minutes || 0) : 0),0);
+    const minutes = data.sessions.reduce((n,s) => n + (day(new Date(s.start || s.end)) === today ? Math.max(0,+s.minutes || 0) : 0),0);
     const pending = data.tasks.filter(t => !t.done && t.due && t.due <= today);
     if (pending.length && hour >= 17) return {kind:'remindTasks',vars:{count:pending.length}};
     if (timer && timer.phase === 'focus' && timer.accum > 0 && timer.pausedAt && +now - timer.pausedAt >= 30*60000)

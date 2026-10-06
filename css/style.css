@@ -484,7 +484,8 @@ select option { background: var(--surface); color: var(--text); }
 .dots i.on { background: var(--ring); }
 .subject-row { display: flex; gap: 8px; width: 100%; max-width: 340px; }
 .subject-row select { flex: 1; }
-.controls { display: flex; align-items: center; gap: 14px; margin-top: 2px; }
+.controls { display: flex; align-items: center; gap: 14px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
+#mini-timer-open { order: 1; white-space: nowrap; }
 
 /* ---------- Sade odak ekranı (sayaç çalışırken) ---------- */
 body.focusing .tabs, body.focusing .tab:not(#tab-home) { display: none !important; }
@@ -1674,6 +1675,7 @@ button.stat-chip { font: inherit; color: inherit; cursor: pointer; }
 .is-card .btn { width: 100%; justify-content: center; }
 .share-ic { width: 20px; height: 20px; vertical-align: -4px; color: #2f6fe0; }
 .is-arrow { position: fixed; left: 50%; bottom: calc(6px + env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: 2rem; color: #2f6fe0; animation: isBob 1.2s ease-in-out infinite; pointer-events: none; }
+@media (max-height: 640px) { .is-arrow { display: none; } }
 @keyframes isBob { 50% { transform: translate(-50%, 8px); } }
 @media (prefers-reduced-motion: reduce) { .is-arrow { animation: none; } }
 

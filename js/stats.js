@@ -160,7 +160,7 @@ const Stats = (() => {
     if (sk >= 3) out.strengths.push(`${sk} gündür aralıksız çalışıyorsun, harika bir seri! 🔥`);
     const last7 = byDay(7);
     const active7 = last7.filter((d) => d.minutes > 0).length;
-    if (active7 >= 5) out.strengths.push(`Son 7 günün ${active7}'inde çalıştın, çok düzenlisin.`);
+    if (active7 >= 5) out.strengths.push(`Son 7 günün ${active7}${{ 5: "'inde", 6: "'sında", 7: "'sinde" }[active7]} çalıştın, çok düzenlisin.`);
     else if (active7 <= 2) out.improve.push('Her gün küçük bir oturum bile (25 dk) en güçlü alışkanlıktır. Yarın kısa bir tane deneyelim mi? 🐾');
     const goalDays = byDay(Math.min(span, 30)).filter((d) => d.minutes >= goal).length;
     if (goalDays) out.highlights.push({ icon: '🎯', label: 'Hedefe ulaşılan gün', value: String(goalDays) });

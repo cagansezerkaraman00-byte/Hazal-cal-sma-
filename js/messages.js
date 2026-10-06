@@ -203,7 +203,7 @@ const Messages = (() => {
     if ((h >= 23 || h < 5) && !c.bedtime) return 'bedtime';
     const today = U.dateKey(now);
     const minutes = Store.data.sessions.reduce((sum, s) =>
-      sum + (U.dateKey(s.end || s.start) === today ? Math.max(0, Number(s.minutes) || 0) : 0), 0);
+      sum + (U.dateKey(s.start || s.end) === today ? Math.max(0, Number(s.minutes) || 0) : 0), 0);
     const goal = Math.max(1, Number(Store.data.settings.dailyGoal) || 180);
     if (minutes >= goal) return 'proud';
     // Güne yeni başlayan ya da halen çalışan kullanıcıya "az çalıştın" deme.

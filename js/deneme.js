@@ -181,7 +181,7 @@ const DenemeUI = (() => {
             const maxS = weak[0].score || 1;
             return `<li class="weak-item" data-topic="${w.topic.id}">
               <span class="rank">${i + 1}</span>
-              <div class="weak-topic">${U.esc(w.topic.name)}<small>${U.esc(YKS.SUBJECTS[w.topic.subjectKey].name)} · ≈${w.topic.avg} soru · ${w.count}× eksik</small></div>
+              <div class="weak-topic">${U.esc(w.topic.name)}<small>${U.esc(YKS.SUBJECTS[w.topic.subjectKey].name)} · ≈${U.num(w.topic.avg)} soru · ${w.count}× eksik</small></div>
               <div class="wbar" title="Öncelik"><i style="width:${Math.round((w.score / maxS) * 100)}%"></i></div>
               <span class="weak-acts"><button class="icon-btn" data-act="review" title="Tekrar listesine ekle">📌</button><button class="btn soft small-btn" data-act="study">Çalış ▶</button></span>
             </li>`;

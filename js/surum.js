@@ -6,6 +6,20 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
+    "surum": "2.1.3",
+    "tarih": "2026-10-06",
+    "baslik": "Hata düzeltmeleri",
+    "notlar": [
+      "🕐 Luna konuşurken saat ve tarih artık hiç kaybolmuyor; balon saatin yanına ya da altına geçiyor.",
+      "🌙 Gece Luna \"hadi uyuyalım\" dedikten sonra \"nasılsın, başlayalım\" demiyor; hal hatır sorusu sabah geliyor.",
+      "📊 Gece yarısını geçen oturum başladığı güne sayılıyor; Luna'nın övgüsü bugünkü halkayla aynı şeyi söylüyor.",
+      "📱 iPhone'da sayaç düğmeleri karta sığıyor, Mini sayaç tek satırda.",
+      "🔢 Soru ortalamaları ve rozet ilerlemeleri virgüllü (25,4); raporda \"6'sında, 7'sinde\" doğru yazılıyor.",
+      "💾 Son yedek takvim gününe göre gösteriliyor: dün akşam aldığın yedek \"dün\" görünüyor.",
+      "📲 Telefonu yan tutunca kurulum ekranındaki ok yazının üstüne binmiyor."
+    ]
+  },
+  {
     "surum": "2.1.2",
     "tarih": "2026-10-06",
     "baslik": "Luna, Vesper ve Güçlü artık daha canlı",

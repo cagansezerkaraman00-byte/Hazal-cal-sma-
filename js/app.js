@@ -1238,7 +1238,7 @@
     $('#rescue-info').classList.toggle('hidden', !Store.rescueCopy());
     const t = D().lastBackup;
     if (!t) { el.textContent = '🌱 Henüz yedek almadın.'; return; }
-    const days = Math.floor((Date.now() - t) / 864e5);
+    const days = Math.round((U.dayStart(new Date()) - U.dayStart(t)) / 864e5); // takvim günü (23:30'daki yedek ertesi gün "dün")
     el.textContent = `✅ Son yedek: ${days < 1 ? 'bugün' : days === 1 ? 'dün' : days + ' gün önce'} (${new Date(t).toLocaleDateString('tr-TR')})`;
   }
 
@@ -1505,7 +1505,8 @@
   function dailyCheckIn() {
     if (document.hidden || !$('#modal').classList.contains('hidden')) return false;
     const s = Timer.state(), c = Messages.companionState();
-    if (s.running || c.checkedIn || Date.now() - lastMsgAt < 12000) return false;
+    const hh = new Date().getHours(); // gece 23–05 arası "nasılsın, başlayalım" sorulmaz (uyku saati)
+    if (s.running || c.checkedIn || hh >= 23 || hh < 5 || Date.now() - lastMsgAt < 12000) return false;
     sayCompanion('checkIn');
     return true;
   }
@@ -1559,7 +1560,7 @@
       if (exam && D().lastExamGreet !== today) { D().lastExamGreet = today; save(); App.sayText(Messages.get('exam', { what: examClause(exam) })); return; }
       if (document.hidden) return;
       if (Messages.mood() === 'bedtime') sayCompanion('bedtime');
-      else if (!Messages.companionState().checkedIn) sayCompanion('checkIn');
+      else if (!Messages.companionState().checkedIn && h >= 5 && h < 23) sayCompanion('checkIn');
       else if (ss.length && Date.now() - ss[ss.length - 1].start > 3 * 864e5) say('comeback');
       else if (fullMoon) { D().lastMoonGreet = today; save(); say('dolunay', { ms: 8000 }); }
       else sayCompanion(Messages.mood());

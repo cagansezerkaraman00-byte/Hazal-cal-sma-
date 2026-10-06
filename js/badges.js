@@ -241,7 +241,7 @@ const Badges = (() => {
           let prog = '';
           if (!on && !b.test) {
             const cur = Math.min(b.prog(c), b.max);
-            const txt = b.max >= 10 || cur % 1 ? `${Math.floor(cur * 10) / 10}/${b.max}` : `${Math.floor(cur)}/${b.max}`;
+            const txt = b.max >= 10 || cur % 1 ? `${U.num(Math.floor(cur * 10) / 10)}/${b.max}` : `${Math.floor(cur)}/${b.max}`;
             prog = `<div class="b-prog"><i style="width:${Math.round((cur / b.max) * 100)}%"></i></div><div class="b-ptxt">${txt}</div>`;
           }
           return `<button class="badge ${on ? 'on' : ''}" data-id="${b.id}" type="button">

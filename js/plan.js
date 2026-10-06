@@ -130,7 +130,7 @@ const PlanUI = (() => {
           if (todaySubjects.has(x.sid)) continue;
           todaySubjects.add(x.sid);
           used.add(x.t.id);
-          items.push({ kind: 'topic', yksKey: x.t.subjectKey, topicId: x.t.id, title: blockTitle(x), sub: `${YKS.SUBJECTS[x.t.subjectKey].name} · YKS'de ≈${x.t.avg} soru${x.e ? ` · ${x.e}× denemede eksik` : ''}`, minutes: 50 });
+          items.push({ kind: 'topic', yksKey: x.t.subjectKey, topicId: x.t.id, title: blockTitle(x), sub: `${YKS.SUBJECTS[x.t.subjectKey].name} · YKS'de ≈${U.num(x.t.avg)} soru${x.e ? ` · ${x.e}× denemede eksik` : ''}`, minutes: 50 });
         }
         prevSubjects = todaySubjects;
       }
@@ -325,7 +325,7 @@ const PlanUI = (() => {
     return `<li class="topic-row" data-id="${t.id}">
       <button class="topic-status" data-s="${st}" title="${STATUS[st].label}" aria-label="${U.esc(t.name)}: ${STATUS[st].label}">${STATUS[st].icon}</button>
       <span class="topic-name">${U.esc(t.name)}${t.d ? `<small class="muted"> · ${U.esc(t.d)}</small>` : ''}</span>
-      <span class="topic-badges"><span class="q-badge" title="YKS'de ortalama soru">≈${t.avg}</span>${e ? `<span class="eksik-badge">${e}× eksik</span>` : ''}</span>
+      <span class="topic-badges"><span class="q-badge" title="YKS'de ortalama soru">≈${U.num(t.avg)}</span>${e ? `<span class="eksik-badge">${e}× eksik</span>` : ''}</span>
     </li>`;
   }
 
