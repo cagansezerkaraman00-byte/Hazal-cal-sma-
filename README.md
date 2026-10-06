@@ -27,11 +27,11 @@ From then on Luna lives on the home screen with its own icon, opens full screen 
 
 1. Make the change and test it locally (`python3 -m http.server 8000`).
 2. Add a new entry at the **top** of the list in `js/surum.js`: version (e.g. `2.2`), date, a short title and notes. The cache version comes from this file, so `sw.js` never needs editing.
-3. Push. The Pages workflow redeploys and every installed copy picks up the update.
+3. Push to `claude/luna-study-app-1xt2uk` (the branch GitHub Pages publishes). Pages redeploys in a minute or two and every installed copy offers the update.
 
 ### When ÖSYM announces the exam date
 
-Edit `sinav-tarihleri.json`: set `yks.tarih` to the official date and `kesin` to `true`, then push. Every installed Luna updates its countdown and study plan automatically and shows a short notice. If Hazal picked her own date, hers is kept, and she can switch back to the official one with one tap.
+Edit `sinav-tarihleri.json`: set `yks.tarih` to the official date and `kesin` to `true`, then push to the same branch. Every installed Luna updates its countdown and study plan automatically and shows a short notice. If Hazal picked her own date, hers is kept, and she can switch back to the official one with one tap.
 
 ## Features
 
@@ -88,7 +88,7 @@ python3 -m http.server 8000
 
 ## Hosting
 
-The app is served by GitHub Pages: **Settings → Pages → Deploy from a branch → `main` / root**. `.github/workflows/pages.yml` refreshes the deployment on every push.
+The app is served by GitHub Pages from the app branch: **Settings → Pages → Deploy from a branch → `claude/luna-study-app-1xt2uk` / (root)**. Every push to that branch is published automatically; `.github/workflows/pages.yml` prints which branch Pages is serving and its latest build. If the app is later merged into `main`, switch the Pages branch to `main` and push releases there; the address stays the same, so installed copies keep working.
 
 ## App Store / Play Store
 
