@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <div class="update-banner hidden" id="update-banner" role="status" aria-live="polite"></div>
   <div id="app">
     <!-- Sahne -->
     <header class="scene">
@@ -47,7 +48,6 @@
       <button data-tab="deneme"><span>📝</span><b>Deneme</b></button>
       <button data-tab="notes"><span>📚</span><b>Kitaplık</b></button>
       <button data-tab="progress"><span>📈</span><b>İlerleme</b></button>
-      <button data-tab="asistan"><span>🎓</span><b>Asistan</b></button>
       <button data-tab="settings"><span>⚙️</span><b>Ayarlar</b></button>
     </nav>
 
@@ -155,8 +155,7 @@
         <div class="grid">
           <div class="card good"><h2>⭐ Güçlü yönlerin</h2><ul class="insights" id="rep-strengths"></ul></div>
           <div class="card warn"><h2>🌱 Gelişim fırsatları</h2><ul class="insights" id="rep-improve"></ul></div>
-          <div class="card tip wide-card"><h2>💡 Öneriler</h2><ul class="insights" id="rep-tips"></ul>
-            <button class="btn soft" id="ask-week" type="button">🎓 Haftamı asistanla değerlendir</button></div>
+          <div class="card tip wide-card"><h2>💡 Öneriler</h2><ul class="insights" id="rep-tips"></ul></div>
           <div class="card wide-card">
             <h2>Saatlere göre verim <span class="muted small">(yükseklik: süre · renk: verim)</span></h2>
             <div class="hours" id="hour-chart"></div>
@@ -234,10 +233,6 @@
       </section>
 
       <!-- AYARLAR -->
-      <!-- ASİSTAN -->
-      <section class="tab" id="tab-asistan">
-        <div id="asistan-root"></div>
-      </section>
 
       <section class="tab" id="tab-settings">
         <div class="card guide">
@@ -271,9 +266,9 @@
             <summary>🎓 Üniversite, KPSS ve yüksek lisans modu</summary>
             <ul>
               <li>YKS bitince <b>Ayarlar → 🎓 Eğitim modu</b>'ndan <b>Üniversite</b>'ye dokun. YKS konuların, denemelerin ve bütün oturumların silinmez; istediğin an geri dönebilirsin.</li>
-              <li>Plan sekmesi <b>Dönem</b> olur. Ders programının <b>fotoğrafını</b> yükle, Asistan dersleri, saatleri ve derslikleri okusun ya da dersleri elle ekle. Her ders sayaçtaki ders listene de eklenir.</li>
-              <li><b>📄 İzlence</b> (syllabus) PDF'ini yüklersen kredi, AKTS, değerlendirme ağırlıkları (vize %40, final %60…), haftalık konular ve tarihli sınavlar doldurulur. Kaydetmeden önce kontrol edersin.</li>
-              <li><b>🏫 Akademik takvim → İnternetten bul:</b> Asistan okulunun resmî takvimini internette arar, vize, final, bütünleme ve tatil tarihlerini kaynaklarıyla getirir. Resmî siteyle karşılaştırıp istediklerini eklersin.</li>
+              <li>Plan sekmesi <b>Dönem</b> olur. Derslerini saatleri, derslikleri ve hocalarıyla ekle; her ders sayaçtaki ders listene de eklenir.</li>
+              <li>Her derse kredi, AKTS, değerlendirme ağırlıkları (vize %40, final %60…) ve haftalık konular girebilirsin.</li>
+              <li><b>🏫 Akademik takvim:</b> okulunun takvimindeki vize, final, bütünleme ve tatil tarihlerini ekle; geri sayımlar ve çalışma planı bunlara göre oluşur.</li>
               <li><b>Bugünün çalışma listesi</b> kendiliğinden oluşur: sınava 21, 14, 10, 7, 5, 3, 2 ve 1 gün kala tekrar turları (aralıklı tekrar), ödevler için parça parça adımlar, o gün gördüğün derslerin aynı gün tekrarı. ▶ ile o maddeyle sayaç başlar; oturum bitince madde işaretlenir.</li>
               <li><b>Devamsızlık:</b> bugünkü derste "Gelmedim"e dokun; kaç saat hakkın kaldığını sayarım, sınıra yaklaşınca nazikçe uyarırım.</li>
               <li><b>Not ortalaması:</b> vize ve final notlarını gir; ders notun, harf notun, dönem ortalaman ve GANO hesaplanır. Finalden en az kaç alman gerektiğini de yazarım.</li>
@@ -302,7 +297,7 @@
             <ul>
               <li>Kitaplık → <b>Hatalar</b>'da denemede ya da testte yanlış yaptığın sorunun fotoğrafını çek; dersini, konusunu, <b>neden</b> yanlış yaptığını (bilgi eksiği, yorum, işlem, dikkat, süre) ve doğru cevabı/püf noktasını yaz.</li>
               <li>Soru ertesi gün, sonra 3, 7 ve 21 gün sonra yeniden karşına çıkar. Önce kendin çöz, sonra notu aç. Bilemezsen başa döner; dört kez üst üste doğru çözdüğün soru "öğrenildi" olur. Bu, aralıklı tekrar ve kendini sınamanın birleşimi; kalıcı öğrenmenin en güçlü yollarından.</li>
-              <li><b>Hata analizi</b> en sık hata nedenini ve en çok soru biriken konuları gösterir. Takıldığın soruyu "🎓 Asistan çözsün" ile adım adım çözdürebilirsin.</li>
+              <li><b>Hata analizi</b> en sık hata nedenini ve en çok soru biriken konuları gösterir.</li>
             </ul>
           </details>
           <details>
@@ -310,28 +305,8 @@
             <ul>
               <li>Kitaplık → <b>Kaynaklar</b>'da makale arayabilir (OpenAlex), <b>DOI</b> (makale) ya da <b>ISBN</b> (kitap) yapıştırıp künyeyi otomatik doldurabilir ya da elle ekleyebilirsin.</li>
               <li>Kaynakların seçtiğin biçimde yazılır: <b>APA 7</b>, <b>Vancouver</b> (tıp ve sağlık bölümleri için önerilir) ya da <b>IEEE</b> (mühendislik). APA'da metin içi atıf da gösterilir. <b>Kopyala</b> ile Word'e yapıştırınca italikler korunur; <b>Kaynakçayı kopyala</b> dersin tüm kaynaklarını sıralı verir.</li>
-              <li>Açık erişimli makalelerde 🔓 bağlantısı tam metne gider. "🎓 Özetle" kaynağı asistana özetletir.</li>
+              <li>Açık erişimli makalelerde 🔓 bağlantısı tam metne gider.</li>
               <li>Künyeyi yine de kontrol et: veritabanlarındaki bilgiler bazen eksik olabilir (ör. kitap baskısı); ✏️ ile düzeltebilirsin.</li>
-            </ul>
-          </details>
-          <details>
-            <summary>🎓 Bilimsel çalışma asistanı</summary>
-            <ul>
-              <li><b>Asistan</b> yalnızca dört iş yapar: <b>soru ve test inceleme</b> (adım adım çözüm, konu, hata nedeni, benzer sorular), <b>akademik kaynak inceleme</b> (PDF, not, makale; sayfa göstererek), <b>deneme kontrolü ve eksik analizi</b>, <b>çalışma programı kontrolü</b>. Bunların dışındaki istekleri nazikçe geri çevirir.</li>
-              <li><b>Verilerine kendisi bakar:</b> oturumların, haftalık programın, konu durumların, denemelerin, hata defterin, Depo dosyaların ve notların. Bunları yalnızca okur; hiçbir şeyi değiştiremez. Hangi verilere baktığı cevabın üstünde küçük etiketlerle görünür.</li>
-              <li><b>📝 Deneme karnemi oku:</b> karnenin ya da sonuç sayfasının fotoğrafını gösterirsen ders ders doğru-yanlışları çıkarır, netleri doğrular, önceki denemelerinle karşılaştırıp yorumlar ve <b>💾 Denemelere kaydet</b> kartı çıkarır; kaydı sen onaylarsın.</li>
-              <li><b>Kaynak gösterir:</b> PDF'e dayanan cümlelerin yanında küçük numaralar çıkar; dokununca alıntıyı ve sayfa numarasını görürsün. Akademik aramada ve internet aramasında kaynaklar bağlantısıyla listelenir; kaynak uydurmaz, emin olmadığında bunu söyler.</li>
-              <li>Hazır düğmeler: <b>Denemelerimi analiz et</b>, <b>Programımı kontrol et</b>, <b>Hatalarımı analiz et</b>; Çalış ekranındaki "Haftamı asistanla değerlendir", Deneme sekmesindeki "Asistanla analiz et" de aynı asistana gider. Anlatımı Ayarlar → Eğitim modu'ndaki düzeyine ve bölümüne göre ayarlar.</li>
-              <li>Cevapları <b>📓 Nota kaydet</b> ile notlarına ekleyebilir, <b>🃏 Kart üret</b> ile aralıklı tekrar kartlarına dönüştürebilirsin.</li>
-              <li><b>Kurulum</b> (bir kez):
-                <ol>
-                  <li><a href="https://platform.claude.com/" target="_blank" rel="noopener">platform.claude.com</a>'a (Anthropic geliştirici konsolu) gir ve hesap aç.</li>
-                  <li><b>Billing</b>'den bakiye ekle (ör. 5-10 $). Claude.ai aboneliği bu bakiyeyi kapsamaz. İstersen <b>Limits</b>'ten aylık harcama sınırı koy.</li>
-                  <li><b>API Keys → Create Key</b> ile "Luna" adında bir anahtar oluştur ve kopyala.</li>
-                  <li>Asistan → ⚙️ Asistan ayarları'na yapıştır, <b>Kaydet</b> de (anahtar ücretsiz bir istekle doğrulanır).</li>
-                </ol></li>
-              <li><b>Maliyet:</b> her cevabın altında kaç dolar tuttuğu yazar; uygulama aylık bütçeyi (varsayılan 5 $) aşınca durur. Büyük PDF'lerden önce tahmini maliyet sorulur; sadece ilgili sayfaları seçmek ucuzlatır. Aynı sohbette takip soruları önbellek sayesinde çok daha ucuzdur. Model seçimi ayarlardadır: Opus 5.5 en derin, Sonnet 5.5 daha ekonomik, Haiku 4.5 en ucuz.</li>
-              <li>API anahtarı yalnızca bu cihazda durur ve veri yedeğine girmez; sohbetler de bu cihazda saklanır. Anahtarı kimseyle paylaşma.</li>
             </ul>
           </details>
           <details>
@@ -418,9 +393,19 @@
             </ul>
           </details>
           <details>
+            <summary>🔄 Güncellemeler ve kurulum</summary>
+            <ul>
+              <li>Yeni bir sürüm çıkınca sana haber veririm: üstte <b>"Güncelleme hazır"</b> kartı belirir, Ayarlar sekmesinde küçük bir nokta yanar; bildirim izni verdiysen bir de bildirim gelir.</li>
+              <li><b>Güncelle</b>'ye dokununca yeni sürüm yüklenir ve uygulama yenilenir. Verilerin, ayarların ve çalışan sayacın olduğu gibi kalır; hiçbir şey sıfırlanmaz.</li>
+              <li>Güncellemeden sonra <b>Yenilikler</b> penceresinde neyin değiştiğini görürsün. Ayarlar → Güncellemeler'de bütün sürümlerin notları ve <b>Güncellemeleri denetle</b> düğmesi var.</li>
+              <li>Bir şeyle meşgul değilken uygulamadan çıkarsan yeni sürümü sessizce de yükleyebilirim; sayaç çalışırken ya da bir pencere açıkken asla yenilemem.</li>
+              <li><b>Ana ekrana ekle:</b> Luna'yı tarayıcıda açarsan bunu nasıl yapacağını gösteririm. Ana ekrandaki Luna tam ekran açılır, internetsiz çalışır ve verilerini kendi içinde saklar; bundan sonra hep oradan aç.</li>
+            </ul>
+          </details>
+          <details>
             <summary>❓ Sık sorulanlar</summary>
             <ul>
-              <li><b>Sayfayı kapatırsam sayaç durur mu?</b> Hayır; geri geldiğinde doğru süreyi gösterir. Ama <b>tam odak</b> açıksa (varsayılan) uygulamadan çıkınca 15 saniye sonra durur; geri gelince "Devam" demen yeterli. Yapay zekâ, YouTube ve Spotify'ı odak ekranındaki düğmelerden açarsan sayaç hiç durmaz. Ayarlar → Odak'tan kapatabilir ya da izinli uygulamaları seçebilirsin.</li>
+              <li><b>Sayfayı kapatırsam sayaç durur mu?</b> Hayır; geri geldiğinde doğru süreyi gösterir. Ama <b>tam odak</b> açıksa (varsayılan) uygulamadan çıkınca 15 saniye sonra durur; geri gelince "Devam" demen yeterli. İzinli uygulamalarda (ChatGPT, Gemini, YouTube, Spotify) çalışırken sayaç durmaz: odak ekranındaki düğmeden açarsan hiç sormam, başka yoldan geçtiysen dönüşte "Neredeydin?" diye sorarım. Ayarlar → Odak'tan kapatabilir ya da izinli uygulamaları seçebilirsin.</li>
               <li><b>Bildirim gelmiyor?</b> Ayarlar → Odak → Bildirim'i aç ve izin ver. iPhone'da bildirimler için uygulamayı Ana Ekrana eklemiş olman gerekir.</li>
               <li><b>Bir şey çalışmıyor mu (hava durumu, Spotify…)?</b> Ayarlar → <b>Tanılama</b>'yı aç: neyin neden çalışmadığını orada yazarım. <b>Bağlantıları test et</b> ile internetin hangi servislere ulaştığını görebilir, <b>Raporu kopyala</b> ile durumu paylaşabilirsin.</li>
               <li><b>Luna çok konuşuyor / hiç konuşmuyor?</b> Ayarlar → Odak'tan konuşma sıklığını değiştir; odaklanırken zaten sessizim.</li>
@@ -429,6 +414,7 @@
           </details>
         </div>
         <div class="grid">
+          <div class="card update-card" id="update-card"></div>
           <div class="card">
             <h2>🎨 Görünüm</h2>
             <div class="seg" id="theme-seg">
@@ -471,9 +457,7 @@
                 <label class="field">Son ders günü <input type="date" id="set-termend"></label>
               </div>
               <label class="field school-only">Devamsızlık sınırı (%) <input type="number" id="set-abs" min="0" max="100"></label>
-              <p class="muted small">Tarihleri bilmiyorsan Asistan okulunun akademik takvimini internetten bulabilir: <b>Dönem → 🏫 Akademik takvim → İnternetten bul</b>.</p>
             </div>
-            <p class="muted small">Asistan anlatımını da bu bilgilere göre ayarlar.</p>
           </div>
           <div class="card">
             <h2>🍅 Zamanlayıcı</h2>
@@ -492,7 +476,7 @@
             <label class="switch"><input type="checkbox" id="set-quiet"> Odaklanırken Luna sessiz kalsın</label>
             <label class="switch"><input type="checkbox" id="set-pauseleave"> 🔒 Tam odak: uygulamadan çıkınca sayaç dursun</label>
             <div class="allow-set" id="allow-set">
-              <p class="muted small">Bu uygulamaları odak ekranındaki düğmelerden açarsan sayaç durmaz. Başka bir yere geçersen 15 saniye sonra durur; ekranı kilitlemek de çıkmak sayılır (odaklanırken ekran açık kalır).</p>
+              <p class="muted small">İşaretlediğin uygulamalarda çalışırken sayaç durmaz. Odak ekranındaki düğmeden açarsan hiç sormam; ana ekrandan ya da uygulama değiştiriciden geçtiysen dönüşte "Neredeydin?" diye sorarım, izinli uygulamayı seçersen sayaç hiç durmamış gibi devam eder. Başka bir yere geçince 15 saniye sonra durur; ekranı kilitlemek de çıkmak sayılır (odaklanırken ekran açık kalır).</p>
               <div class="chips" id="allow-chips"></div>
             </div>
             <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
@@ -567,7 +551,6 @@
       <span class="vw-pageno" id="vw-page"></span>
       <div class="vw-tools">
         <span class="vw-zoom" id="vw-zoom"><button class="icon-btn" data-vw="out" type="button" title="Uzaklaştır">−</button><button class="vw-zoom-val" id="vw-zoom-val" data-vw="fit" type="button" title="Sığdır">100%</button><button class="icon-btn" data-vw="in" type="button" title="Yakınlaştır">＋</button></span>
-        <button class="btn soft vw-ask hidden" id="vw-ask" data-vw="ask" type="button">🦉 Asistana sor</button>
         <button class="icon-btn" data-vw="download" type="button" title="İndir / paylaş">⬇️</button>
         <button class="icon-btn" data-vw="edit" type="button" title="Düzenle / sil">✏️</button>
       </div>
@@ -577,6 +560,7 @@
   <div class="toasts" id="toasts"></div>
 
   <script src="js/storage.js"></script>
+  <script src="js/surum.js"></script>
   <script src="js/messages.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/takvim.js"></script>
@@ -596,11 +580,10 @@
   <script src="js/kaynak-ui.js"></script>
   <script src="js/badges.js"></script>
   <script src="js/spotify.js"></script>
-  <script src="js/asistan-araclar.js"></script>
-  <script src="js/asistan.js"></script>
   <script src="js/uni.js"></script>
   <script src="js/uni-ui.js"></script>
   <script src="js/diag.js"></script>
+  <script src="js/guncelleme.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

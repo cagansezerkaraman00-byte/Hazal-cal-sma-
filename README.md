@@ -31,7 +31,7 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 **⏱️ YPT'den esinlenen özellikler** (sosyal kısımlar yok, sadece Hazal için)
 - **Derslerim** kutucukları: dokununca sayaç o dersle başlar, bugün kaç dakika çalışıldığı yazar
 - **24 saatlik zaman çizelgesi** (bugün) ve **haftalık zaman çizelgesi**: hangi saatte hangi ders
-- **Tam odak** (varsayılan açık): uygulamadan çıkınca sayaç 15 saniye sonra durur, dönüşte Luna nazikçe "Devam" demeni bekler. **İzinli uygulamalar** (ChatGPT, Gemini, Claude, YouTube, Spotify) odak ekranındaki düğmelerden açılırsa sayaç hiç durmaz; liste Ayarlar → Odak'tan seçilir. Web uygulaması hangi uygulamaya geçildiğini göremediği için izinli çıkış bu düğmelerle işaretlenir; sayfa arka planda kapansa bile dönüşte doğru hesaplanır
+- **Tam odak** (varsayılan açık): uygulamadan çıkınca sayaç 15 saniye sonra durur, dönüşte Luna nazikçe "Devam" demeni bekler. **İzinli uygulamalarda** (ChatGPT, Gemini, YouTube, Spotify; liste Ayarlar → Odak'tan seçilir) çalışırken sayaç durmaz: odak ekranındaki düğmeden açılırsa hiç sorulmaz, ana ekrandan ya da uygulama değiştiriciden geçildiyse dönüşte **"Neredeydin?"** diye sorulur; izinli uygulama seçilirse sayaç hiç durmamış gibi devam eder ve o süre çalışmaya sayılır. Sayfa arka planda kapansa bile dönüşte doğru hesaplanır
 
 **🍅 Zamanlayıcı**
 - Pomodoro (odak / kısa mola / uzun mola) ve serbest kronometre
@@ -49,8 +49,7 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - Tek dokunuşla geçiş; YKS konuları, denemeler ve oturumlar silinmez, istenince geri dönülür. Her modun kendi ders listesi vardır
 - Plan sekmesi **Dönem** olur: okul, fakülte, dönem haftası çubuğu, sıradaki akademik takvim olayı
 - **Dersler:** kod, kredi, AKTS, öğretim üyesi, derslik, haftalık saatler, değerlendirme ağırlıkları, haftalık konular; her ders sayaç derslerine eklenir
-- **Ders programını fotoğraftan okuma** ve **izlenceden (syllabus PDF) doldurma** (Claude, yapılandırılmış çıktı); kaydetmeden önce onay
-- **Akademik takvimi internetten bulma:** önce web araması (kaynaklı), sonra yalnızca bulunan metinden tarih çıkarma; uydurma yok, kaynaklar gösterilir
+- **Akademik takvim:** vize, final, bütünleme ve tatil tarihleri; geri sayımlar ve çalışma planı bunlara göre oluşur
 - **Otomatik günlük çalışma listesi:** sınava 21/14/10/7/5/3/2/1 gün kala tekrar turları (aralıklı tekrar), ödevler için adım adım plan, o gün görülen dersin aynı gün tekrarı; ▶ ile sayaç başlar, bitince madde işaretlenir
 - **Devamsızlık** ("Gelmedim" ile, saat ve sınır yüzdesine göre kalan hak), **not ortalaması** (harf notu, finalden gereken puan, dönem ortalaması ve GANO, kredi ya da AKTS ağırlıklı)
 - **Telefon takvimine aktarma (.ics):** haftalık tekrar eden dersler, hatırlatmalı sınavlar, akademik takvim
@@ -84,7 +83,7 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - **Sevgilinden notlar:** Ayarlar'a yazılan notları Luna arada söyler; günlük hedefe ulaşınca **günün gizli notu** açılır
 - Açılışta karşılama kartı: YKS'ye kalan gün (eğitim düzeyi YKS ise), bugün ve bu hafta çalışılan süre, seri, biten konular, son deneme neti, bekleyen kartlar ve hata soruları (dokununca ilgili bölüme gider)
 - Molalarda küçük öneriler (su iç, gözlerini dinlendir…)
-- 64 rozet 🏅 (her birinde Hazal'a kısa bir sevgi notu)
+- 63 rozet 🏅 (her birinde Hazal'a kısa bir sevgi notu)
 
 **🎧 Müzik** (Çalış ekranında katlanır kutu)
 - Spotify çalma listesi/albüm bağlantısı yapıştırıp uygulamanın içinden dinleme
@@ -96,7 +95,7 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - Derse göre notlar (arama, sabitleme, **kalın**, `kod`, madde işaretleri)
 - Aralıklı tekrar (Leitner, 5 kutu) ile bilgi kartları ve tekrar modu
 
-**🏅 Rozetler:** 7 kategoride 64 rozet; her birinin içinde Hazal'a yazılmış kısa bir sevgi notu, kilitli olanlarda ilerleme çubuğu
+**🏅 Rozetler:** 7 kategoride 63 rozet; her birinin içinde Hazal'a yazılmış kısa bir sevgi notu, kilitli olanlarda ilerleme çubuğu
 
 **📖 Kılavuz:** Ayarlar'da, Luna'nın ağzından her özelliğin açıklaması
 
@@ -109,27 +108,26 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 - **Google Drive** (isteğe bağlı): dosyalar Hazal'ın kendi Drive'ındaki *Luna Depo* klasöründe durur (iPad'de yer kaplamaz, telefon ve tablette aynı dosyalar). `drive.file` izni: uygulama sadece kendi yüklediği dosyaları görür. Giriş açılır pencere değil yönlendirme ile (iPad ana ekran uygulamasında sorunsuz); 5 MB üstü dosyalar kaldığı yerden devam edebilen yüklemeyle gider; silinen dosya Drive çöp kutusuna gider
 - Drive bağlanmadan önce dosyalar bu cihazda (IndexedDB) saklanır; **Drive'a taşı** ile tek dokunuşta Drive'a geçer, cihazda yer açılır. Drive oturumu saatte bir yenilenir; o arada eklenen dosyalar kaybolmaz
 
-**🎓 Bilimsel çalışma asistanı** (Asistan sekmesi, Claude)
-- Sorbil'in Billy'si gibi **yalnızca dört iş** yapar: soru ve testleri ayrıntılı inceleme (önce ipucu, sonra çözüm, benzer sorular ve mini testler), akademik kaynak inceleme (PDF, not, makale; kaynağa sadık açıklama, güvenilir kaynak bulma ve atıf doğrulama), **deneme kontrolü** (netleri 4 yanlış 1 doğru kuralıyla doğrulama, gelişimi yorumlama, eksik konuları sınav ağırlığı × kaçırma sıklığıyla önceliklendirme) ve **çalışma programı kontrolü** (plana uyum, ders dağılımı, aralıklı tekrar, uyku ve yorgunluk işaretleri). Bunların dışındaki istekleri tek cümleyle nazikçe geri çevirir
-- **Verilerini kendisi okur:** çalışma oturumları, program, konu durumları, denemeler, hata defteri, kitaplık, Depo dosyaları (PDF ve fotoğraflar dahil) ve notlar salt okunur araçlarla incelenir; sayı uydurmaz, veri azsa söyler. OpenAlex/Crossref ile akademik kaynak arar
-- **Karne/deneme sonucu fotoğrafı:** okuduğu sonucu bir **öneri kartı** olarak gösterir; deneme ancak "Kaydet"e basınca eklenir (asistan hiçbir veriyi kendisi değiştirmez)
-- Hızlı başlangıç çipleri: *Denemelerimi analiz et*, *Programımı kontrol et*, *Deneme karnemi oku*, *Soru / test incele*, *Hatalarımı analiz et*, *Kaynağımı incele*, *Akademik kaynak bul*
-- Cevaplar tek dokunuşla **nota** ya da **bilgi kartlarına** dönüşür; Depo görüntüleyicisinden ve hata defterinden "Asistana sor"
-- Resmî Anthropic SDK (tarayıcı paketi uygulama içinde), Claude Opus 5.5 varsayılan (Sonnet 5.5 / Haiku 4.5 seçilebilir), akışlı yanıt, otomatik önbellek, güvenlik reddinde sunucu tarafı yedek model
-- **Maliyet kontrolü:** her yanıtın maliyeti gösterilir, aylık bütçe (varsayılan 5 $) dolunca durur, büyük PDF'lerden önce tahmini maliyet sorulur
-- Hesap olmadığı için **her cihaza ayrı API anahtarı** girilir; anahtar yalnızca o cihazda kalır (yedeğe girmez), sohbetler IndexedDB'de
-
 **❌ Hata defteri** (Kitaplık → Hatalar)
 - Yanlış yapılan sorunun fotoğrafı, ders, konu (YKS konu önerileriyle), **neden** yanlış yapıldığı (bilgi eksiği, yorum, işlem, dikkat, süre) ve püf noktası
 - Aralıklı tekrar: ertesi gün, sonra 3, 7, 21 gün; dört kez üst üste doğru çözülen soru "öğrenildi". Önce çöz, sonra notu aç
-- Hata analizi: en sık hata nedeni ve ona özel öneri, en çok soru biriken konular; "Asistan çözsün" ile adım adım çözüm
+- Hata analizi: en sık hata nedeni ve ona özel öneri, en çok soru biriken konular
 
 **📚 Kaynaklar** (Kitaplık → Kaynaklar)
 - OpenAlex'te makale arama (özet, atıf sayısı, açık erişim bağlantısı; sınır dolarsa Crossref yedeği), **DOI** ile makale (Crossref), **ISBN** ile kitap (Open Library / Google Books), elle ekleme (makale, kitap, web sayfası)
 - **APA 7** (Türkçe karşılıklarıyla, metin içi atıf dahil), **Vancouver** (tıp/sağlık bölümlerinde otomatik önerilir), **IEEE**; Word'e italikleriyle kopyalama, dersin tüm kaynakçasını tek dokunuşla kopyalama
-- Aynı DOI ikinci kez eklenmez, mevcut künye güncel bilgilerle düzenlenir; "Özetle" ile asistana özetletme
+- Aynı DOI ikinci kez eklenmez, mevcut künye güncel bilgilerle düzenlenir
 
-**📈 Haftalık değerlendirme:** İlerleme sekmesinden son 7 günün dakikaları, ders dağılımı, verimli saatler, ruh hâli ve denemeleri asistana gönderilir; iyi gidenler, 2-3 küçük değişiklik ve gelecek haftanın 3 hedefi
+**🔄 Güncellemeler** (Ayarlar → Güncellemeler)
+- Yeni sürüm çıkınca uygulama haber verir: üstte **"Güncelleme hazır"** kartı, Ayarlar sekmesinde nokta ve (bildirim izni varsa) bir bildirim
+- **Güncelle**'ye dokununca yeni sürüm yüklenir ve uygulama yenilenir; veriler, ayarlar ve çalışan sayaç olduğu gibi kalır
+- Güncellemeden sonraki ilk açılışta **Yenilikler** penceresi; Ayarlar'da bütün sürümlerin notları
+- Android'de ana ekrandaki uygulama kapalıyken de yeni sürüme bakılır (tarayıcı izin verirse)
+- Hazal bir şeyle meşgul değilken uygulamadan çıkınca yeni sürüm sessizce de yüklenebilir; hiçbir iş yarıda kesilmez
+
+**📲 Tek bağlantıyla kurulum**
+- Bağlantı tarayıcıda açılınca **"Luna'yı ana ekranına ekle"** kartı çıkar: Android'de tek dokunuşla yüklenir, iPhone ve iPad'de adım adım gösterilir
+- Ana ekrandaki Luna tam ekran açılır, internetsiz çalışır ve verilerini kendi içinde saklar
 
 **🛡️ Veri güvenliği**
 - Kayıtlı veri bir gün okunamazsa uygulama sessizce sıfırlamaz: ham veri kurtarma kopyasına alınır, açılışta haber verilir, Ayarlar → Veriler'den indirilip geri yüklenebilir
@@ -138,12 +136,13 @@ Hazal'ın beyaz, kabarık tüylü, kehribar gözlü kedisi **Luna** ile yıldız
 
 ### En kolayı: GitHub Pages (telefonda da çalışır)
 1. GitHub'da bu depoda **Settings → Pages** bölümüne git
-2. *Source*: **Deploy from a branch**, *Branch*: **`claude/luna-study-app-1xt2uk`** ve `/ (root)` seç, **Save** (uygulama bu dalda; `main` boş)
-3. Bir iki dakika sonra adres çıkar: `https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/`
+2. *Source*: **Deploy from a branch**, *Branch*: uygulamanın bulunduğu dal ve `/ (root)` seç, **Save**
+3. Bir iki dakika sonra adres çıkar: **`https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/`**. Hazal'a gönderilecek tek bağlantı bu.
    Sonraki her güncellemede `.github/workflows/pages.yml` yayını kendiliğinden yeniler.
-4. Telefonda bu adresi aç:
-   - **iPhone (Safari):** Paylaş → *Ana Ekrana Ekle*
-   - **Android (Chrome):** ⋮ menü → *Uygulamayı yükle*
+4. Telefonda bu adresi aç; açılan karttaki adımlarla ana ekrana ekle:
+   - **iPhone / iPad (Safari):** Paylaş → *Ana Ekrana Ekle*
+   - **Android (Chrome):** *Yükle* düğmesi ya da ⋮ menü → *Uygulamayı yükle*
+5. Bundan sonra Luna'yı hep ana ekrandan aç: veriler orada saklanır, güncellemeler oraya gelir.
 
 ### Bilgisayarda denemek için
 ```bash
@@ -186,20 +185,27 @@ Tüm veriler sadece kullanılan cihazın tarayıcısında saklanır (sunucu yok,
 | `js/giris.js` | Depo için isteğe bağlı Google Drive girişi (yönlendirme akışı, yalnızca drive.file) |
 | `js/depo.js`, `js/depo-ui.js` | Depo: Google Drive / cihaz depolama, yükleme, eşitleme, PDF ve fotoğraf görüntüleyici |
 | `vendor/pdfjs/` | Mozilla PDF.js 6.4 (Apache-2.0), yalnızca PDF açılınca yüklenir |
-| `js/asistan.js` | Bilimsel çalışma asistanı (Claude): görev sınırı, araç döngüsü, sohbet, belgeler, öneri kartları, bütçe |
-| `js/asistan-araclar.js` | Asistanın salt okunur araçları: oturumlar, program, konular, denemeler, hata defteri, kitaplık, dosyalar, akademik arama, deneme önerisi |
-| `vendor/anthropic/` | Resmî Anthropic TypeScript SDK 0.131 (MIT), esbuild ile tek dosya tarayıcı paketi |
 | `js/hata.js` | Hata defteri: fotoğraflı yanlış sorular, aralıklı yeniden çözme, hata analizi |
 | `js/kaynak.js`, `js/kaynak-ui.js` | Akademik kütüphane: OpenAlex/Crossref/Open Library, APA 7 / Vancouver / IEEE kaynakça |
-| `js/uni.js`, `js/uni-ui.js` | Üniversite / KPSS / yüksek lisans modu: dersler, program, sınav takvimi, devamsızlık, not ortalaması, otomatik plan, .ics, yapay zekâ yardımcıları |
+| `js/uni.js`, `js/uni-ui.js` | Üniversite / KPSS / yüksek lisans modu: dersler, program, sınav takvimi, devamsızlık, not ortalaması, otomatik plan, .ics |
 | `js/diag.js` | Tanılama: bağlantı testleri, durum özeti, hata günlüğü |
 | `js/messages.js` | Luna'nın mesajları |
 | `js/audio.js` | Zil, miyav ve ortam sesleri |
 | `js/app.js` | Arayüz ve her şeyi bağlayan kod |
 | `js/storage.js` | Veri saklama |
+| `js/surum.js` | Sürüm numarası ve sürüm notları (Yenilikler) |
+| `js/guncelleme.js` | Güncelleme denetimi, "Güncelleme hazır" kartı, bildirim, Yenilikler penceresi, ana ekrana ekleme rehberi |
 | `sw.js`, `manifest.webmanifest` | Telefona yükleme ve çevrimdışı çalışma |
 
-> Dosyalarda değişiklik yaptıktan sonra `sw.js` içindeki `VERSION` değerini artırırsan telefondaki uygulama da güncellenir.
+## Yeni sürüm çıkarmak
+1. Değişiklikleri yap ve dene (`python3 -m http.server 8000`).
+2. `js/surum.js` dosyasında listenin **en üstüne** yeni bir kayıt ekle: sürüm numarası (ör. `2.1`), tarih, kısa bir başlık ve notlar. Önbellek sürümü de buradan gelir; `sw.js`'ye dokunmak gerekmez.
+3. Gönder (push). Pages yayını yenilenir; Hazal'ın telefonundaki Luna yeni sürümü görüp "Güncelleme hazır" der, dokununca güncellenir ve yeni notları gösterir.
 
 ## Üniversite için uyarlama
-Artık ayrı bir uyarlama gerekmez: **Ayarlar → 🎓 Eğitim modu → Üniversite** (ya da KPSS, yüksek lisans) seçilince Plan sekmesi Dönem ekranına dönüşür. YKS verileri saklanır; istenince YKS moduna geri dönülür. YKS sürümünün yedeği GitHub'da `yedek/yks-2027` dalında da duruyor.
+Ayrı bir uyarlama gerekmez: **Ayarlar → 🎓 Eğitim modu → Üniversite** (ya da KPSS, yüksek lisans) seçilince Plan sekmesi Dönem ekranına dönüşür. YKS verileri saklanır; istenince YKS moduna geri dönülür.
+
+## Play Store ve App Store
+Luna şu an web uygulaması olarak kuruluyor (tek bağlantı, ana ekrana ekle); mağazaya gerek kalmadan iPhone, iPad ve Android'de uygulama gibi çalışıyor ve güncellemelerini kendisi alıyor. Mağazalara çıkmak istenirse aynı kod paketlenebilir:
+- **Play Store:** Trusted Web Activity (ör. Bubblewrap ya da PWABuilder) ile Android paketi; Google Play geliştirici hesabı (tek seferlik ücret) gerekir.
+- **App Store:** Capacitor gibi bir sarmalayıcı ile iOS uygulaması; Apple Developer Program üyeliği (yıllık ücret) ve Xcode gerekir.

@@ -133,7 +133,7 @@ const HataUI = (() => {
         ${reveal ? `<div class="flash-back">${m.note ? U.esc(m.note).replace(/\n/g, '<br>') : '<span class="muted">Not eklememişsin.</span>'}</div>` : ''}
         <div class="review-actions">${reveal
           ? '<button class="btn soft big" data-act="no" type="button">Yine zorlandım ❌</button><button class="btn primary big" data-act="yes" type="button">Doğru çözdüm ✅</button>'
-          : `<button class="btn primary big" data-act="flip" type="button">Notu / cevabı göster</button>${window.Asistan && item ? '<button class="btn soft" data-act="ask" type="button">🎓 Asistan çözsün</button>' : ''}`}</div>`;
+          : `<button class="btn primary big" data-act="flip" type="button">Notu / cevabı göster</button>`}</div>`;
       if (!url && item) {
         try { const blob = await Depo.getBlob(item); if (list[i] === m) { url = URL.createObjectURL(blob); show(reveal); } } catch (e) {
           const el = box.querySelector('.ht-img');
@@ -158,12 +158,6 @@ const HataUI = (() => {
       if (act === 'close') { if (url) URL.revokeObjectURL(url); App.closeModal(); render(); return; }
       if (act === 'flip') return show(true);
       const m = list[i];
-      if (act === 'ask') {
-        const item = D().files.find((f) => f.id === m.fileId);
-        App.closeModal();
-        if (item) Asistan.ask(`Bu soruyu adım adım çöz. Konusu: ${m.topic || 'belirtilmedi'}. Ben bu soruda şu yüzden yanlış yapmıştım: ${(REASONS[m.reason] || REASONS.bilgi)[1]}. Çözümden sonra bu tip sorularda nelere dikkat etmem gerektiğini kısaca yaz.`, '❌ ' + (m.topic || 'Hata sorusu'), [{ src: 'depo', id: item.id, name: item.name, mime: item.mime }]);
-        return;
-      }
       D().stats.mistakeReviews = (D().stats.mistakeReviews || 0) + 1;
       if (act === 'yes') {
         right++;

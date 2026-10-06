@@ -1,10 +1,9 @@
-# Uygulamaya gelen her güncellemede GitHub Pages yayınını yeniler
-# (Pages "Deploy from a branch" ile bu daldan yayınlanıyor; bot gönderimleri yayını kendiliğinden başlatmıyor).
+# Her gönderimden sonra GitHub Pages yayınını yeniler: Hazal'ın telefonundaki Luna yeni sürümü
+# görür ve "Güncelleme hazır" der. (Pages kapalıysa yalnızca bir not bırakır.)
 name: Yayını yenile
 
 on:
   push:
-    branches: [claude/luna-study-app-1xt2uk]
   workflow_dispatch:
 
 permissions:
@@ -25,7 +24,7 @@ jobs:
           if out=$(gh api -X POST "repos/${{ github.repository }}/pages/builds" 2>&1); then
             echo "$out"
           elif echo "$out" | grep -q "does not have a GitHub Pages site"; then
-            echo "::notice::GitHub Pages kapalı. Settings → Pages → Deploy from a branch → claude/luna-study-app-1xt2uk, / (root) seçilince her güncellemede yayın yenilenir."
+            echo "::notice::GitHub Pages kapalı. Settings → Pages → Deploy from a branch ile açılınca her güncellemede yayın yenilenir."
           else
             echo "$out"; exit 1
           fi

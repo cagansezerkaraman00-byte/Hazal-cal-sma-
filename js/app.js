@@ -231,7 +231,6 @@
     if (name === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (name === 'notes' && window.NotesUI) NotesUI.render();
     if (name === 'settings') renderSettings();
-    if (name === 'asistan' && window.Asistan) Asistan.render();
     if (name === 'home') renderHome();
     try { localStorage.setItem('luna-tab', name); } catch (e) { /* yok say */ }
   }
@@ -252,22 +251,22 @@
   ];
 
   // ======================================================================
-  // Tam odak: izinli uygulamalar (yapay zekâ, YouTube, Spotify)
+  // Tam odak: izinli uygulamalar (ChatGPT, Gemini, YouTube, Spotify)
   // ======================================================================
-  // Web uygulaması hangi uygulamaya geçildiğini göremez; bu yüzden izinli uygulamalar
-  // odak ekranındaki düğmelerden açılır ve o çıkış "izinli" diye işaretlenir.
+  // Web uygulaması hangi uygulamaya geçildiğini göremez: odak ekranındaki düğmeden açılan uygulama
+  // doğrudan "izinli" sayılır; başka yoldan geçildiyse dönüşte "Neredeydin?" diye sorulur.
+  // (from: "-dan/-den" eki, was: "-daydım/-deydim")
   const AWAY_GRACE = 15000; // kısa bakışlar sayılmaz
   const APPS = {
-    chatgpt: { e: '🤖', n: 'ChatGPT', url: 'https://chatgpt.com/' },
-    gemini: { e: '✨', n: 'Gemini', url: 'https://gemini.google.com/app' },
-    claude: { e: '🧡', n: 'Claude', url: 'https://claude.ai/new' },
-    youtube: { e: '▶️', n: 'YouTube', url: 'https://www.youtube.com/' },
-    spotify: { e: '🎧', n: 'Spotify', url: 'https://open.spotify.com/' },
+    chatgpt: { e: '🤖', n: 'ChatGPT', url: 'https://chatgpt.com/', from: "ChatGPT'den", was: "ChatGPT'deydim" },
+    gemini: { e: '✨', n: 'Gemini', url: 'https://gemini.google.com/app', from: "Gemini'den", was: "Gemini'deydim" },
+    youtube: { e: '▶️', n: 'YouTube', url: 'https://www.youtube.com/', from: "YouTube'dan", was: "YouTube'daydım" },
+    spotify: { e: '🎧', n: 'Spotify', url: 'https://open.spotify.com/', from: "Spotify'dan", was: "Spotify'daydım" },
   };
   let allowExit = null; // {app, at}: izinli düğmeye dokunulduğu an
   // uygulamanın kendi yönlendirmeleri (Google Drive, Spotify girişi) de sayacı durdurmaz
-  const EXITS = { google: { e: '☁️', n: 'Google' }, spotifyLogin: { e: '🎧', n: 'Spotify' } };
-  const exitInfo = (k) => APPS[k] || EXITS[k] || { e: '🐾', n: 'Uygulama' };
+  const EXITS = { google: { e: '☁️', n: 'Google', from: "Google'dan" }, spotifyLogin: { e: '🎧', n: 'Spotify', from: "Spotify'dan" }, guncelleme: { e: '✨', n: 'Güncelleme', from: 'Güncellemeden' } };
+  const exitInfo = (k) => APPS[k] || EXITS[k] || { e: '🐾', n: 'Uygulama', from: 'Geri' };
   const allowedApps = () => (D().settings.allowedApps || []).filter((k) => APPS[k]);
   function appUrl(k) {
     if (k === 'spotify') { const p = spotifyParts(D().settings.spotify); if (p) return `https://open.spotify.com/${p.type}/${p.id}`; }
@@ -290,19 +289,46 @@
     save();
     return true;
   }
-  // geri dönüş: duruma göre tek bir nazik cümle
+  // geri dönüş: duruma göre tek bir nazik cümle; izinli uygulama varsa "Neredeydin?" diye sorar.
+  // Bir şey söylediyse true döner (açılış selamı bunun üstüne konuşmasın).
   function welcomeBack() {
     const x = D().timer, a = x && x.away;
-    if (!a) return;
+    if (!a) return false;
     checkAway();
     delete x.away;
     save();
     const m = Math.round((Date.now() - a.at) / 60000);
+    if (a.paused && allowedApps().length) { askWhere(m); return true; }
     let text = '';
     if (a.paused) text = `Hoş geldin! Uygulamadan çıkınca sayaç durdu ⏸ Hazır olduğunda "Devam"a bas, kaldığımız yerden sürdürelim 🐾`;
-    else if (a.app && m >= 1) text = `${exitInfo(a.app).n}'dan hoş geldin ${exitInfo(a.app).e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
+    else if (a.app && m >= 1) text = `${exitInfo(a.app).from} hoş geldin ${exitInfo(a.app).e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
     else if (!a.app && m >= 1 && !D().settings.pauseOnLeave) text = `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`;
     if (text) { Scene.say(text); lastMsgAt = Date.now(); }
+    return !!text;
+  }
+  // tam odakta dışarıda kalınca sayaç durdu: izinli bir uygulamadaysa o süre de çalışmaya sayılır
+  function askWhere(m) {
+    const list = allowedApps();
+    const ask = () => openModal(`<h3>🐾 Neredeydin?</h3>
+      <p class="muted">${m >= 1 ? `${m} dakika` : 'Bir süre'} uygulamanın dışındaydın, sayaç durdu. İzinli uygulamalardan birinde çalıştıysan söyle; o süre de çalışmana sayılsın, sayaç hiç durmamış gibi devam etsin.</p>
+      <div class="where-apps">${list.map((k) => `<button class="btn soft" type="button" data-where="${k}">${APPS[k].e} ${APPS[k].was}</button>`).join('')}</div>
+      <div class="modal-actions"><button class="btn soft" type="button" data-where="">Başka bir yerdeydim</button></div>`, (card) => {
+      card.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-where]');
+        if (!b) return;
+        const k = b.dataset.where;
+        closeModal();
+        if (k && Timer.resumeFrom(Timer.state().pausedAt)) {
+          lockScreen(true);
+          Scene.say(`${APPS[k].from} hoş geldin ${APPS[k].e} Sayaç hiç durmamış gibi devam ediyor; o süre de çalışmana sayıldı.`);
+        } else {
+          Scene.say('Sorun değil, hazır olduğunda "Devam"a bas, kaldığımız yerden sürdürelim 🐾');
+        }
+        lastMsgAt = Date.now();
+      });
+    });
+    if ($('#modal').classList.contains('hidden')) ask();
+    else pendingWhere = ask; // başka bir pencere açıksa o kapanınca sorulur
   }
 
   let timerKey = '';
@@ -567,8 +593,10 @@
   }
 
   let pendingDone = null; // açık bir pencere yüzünden bekleyen "oturum tamamlandı" penceresi
+  let pendingWhere = null; // bekleyen "Neredeydin?" sorusu
   function closeModal() {
     $('#modal').classList.add('hidden'); $('#modal-card').innerHTML = '';
+    if (pendingWhere) { const f = pendingWhere; pendingWhere = null; setTimeout(() => { if ($('#modal').classList.contains('hidden')) f(); else pendingWhere = f; }, 300); return; }
     if (pendingDone) {
       const s = pendingDone;
       pendingDone = null;
@@ -1397,8 +1425,10 @@
     else say(Messages.timeOfDay());
   }
 
+  let welcomedBack = false;
   function greetOnOpen() {
     const ss = D().sessions;
+    if (welcomedBack) return; // dönüş mesajı (ya da "Neredeydin?") zaten konuştu
     // özel günlerde günde bir kez tebrik
     const evs = Scene.today ? Scene.today().events.map((e) => e.key) : [];
     const special = evs.includes('yilbasi') ? 'yilbasi' : evs.includes('ramazan') || evs.includes('kurban') ? 'bayram' : evs.includes('ulusal') ? 'ulusal' : evs.includes('sevgililer') ? 'love' : null;
@@ -1460,6 +1490,8 @@
     showTab,
     celebrate() { Scene.celebrate(); Sound.chime(); },
     isFocusing() { const s = Timer.state(); return s.running && s.phase === 'focus'; },
+    // kullanıcı bir işin ortasında mı (sayaç, açık pencere, görüntüleyici): sessiz güncelleme beklesin
+    isBusy() { return Timer.state().running || !$('#modal').classList.contains('hidden') || !$('#viewer').classList.contains('hidden'); },
     playSpotify(url) {
       D().settings.spotify = url;
       save();
@@ -1494,7 +1526,6 @@
     if (window.DenemeUI) DenemeUI.init(App);
     if (window.NotesUI) NotesUI.init(App);
     if (window.DepoUI) DepoUI.init(App);
-    if (window.Asistan) Asistan.init(App);
     if (window.HataUI) HataUI.init(App);
     if (window.KaynakUI) KaynakUI.init(App);
     if (window.Badges) Badges.init(App);
@@ -1503,7 +1534,7 @@
     renderSubjectSelects();
     Timer.init(timerHandlers);
     renderAllowApps();
-    welcomeBack(); // uygulama dışındayken sayfa kapanmışsa (iOS) dönüşte değerlendir
+    welcomedBack = welcomeBack(); // uygulama dışındayken sayfa kapanmışsa (iOS) dönüşte değerlendir
     syncSceneMode();
     if (Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
 
@@ -1550,7 +1581,6 @@
     $('#today-list').addEventListener('click', openSession);
     $('#history').addEventListener('click', openSession);
     $('#btn-manual').addEventListener('click', () => openSessionModal(null));
-    $('#ask-week').addEventListener('click', () => { if (window.Asistan) Asistan.askWeek(); });
 
     bindTimer();
     bindTasks();
@@ -1603,39 +1633,11 @@
     checkBadges();
     if (Store.loadError) setTimeout(() => toast('🛟', 'Verilerin okunamadı', 'Bozulmasın diye kopyası alındı: Ayarlar → Veriler', 9000), 1500);
 
-    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) setupUpdates();
+    if (window.Guncelleme) Guncelleme.init(App); // güncellemeler, yenilikler ve ana ekrana ekleme
     // ana ekrana eklenmiş uygulamada tarayıcıdan verilerin kalıcı saklanmasını iste (izin penceresi çıkmaz)
     if (navigator.storage && navigator.storage.persist && (matchMedia('(display-mode: standalone)').matches || navigator.standalone)) {
       navigator.storage.persisted().then((p) => p || navigator.storage.persist()).catch(() => {});
     }
-  }
-
-  // Güncellemeler: yeni sürüm arka planda iner; sayfa güvenli bir anda (uygulamadan çıkılınca,
-  // sayaç çalışmıyorken) yenilenir. Kullanıcının elindeki iş asla yarıda kesilmez.
-  function setupUpdates() {
-    const hadController = !!navigator.serviceWorker.controller;
-    let pending = false, reloading = false;
-    navigator.serviceWorker.register('sw.js').then((reg) => {
-      const check = () => reg.update().catch(() => {});
-      document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
-      setInterval(check, 60 * 60000);
-    }).catch(() => {});
-    const busy = () => {
-      const s = Timer.state();
-      return s.running || !$('#modal').classList.contains('hidden') || !$('#viewer').classList.contains('hidden') || !!document.querySelector('#asistan-root .ai-msg.live');
-    };
-    const tryReload = () => {
-      if (!pending || reloading || busy()) return;
-      reloading = true;
-      location.reload();
-    };
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!hadController) return; // ilk kurulum: yenilemeye gerek yok
-      pending = true;
-      if (document.hidden) tryReload();
-      else toast('✨', 'Yeni sürüm hazır', 'Uygulamadan çıkıp dönünce kendiliğinden yüklenecek');
-    });
-    document.addEventListener('visibilitychange', () => { if (document.hidden) tryReload(); });
   }
 
   document.addEventListener('DOMContentLoaded', init);

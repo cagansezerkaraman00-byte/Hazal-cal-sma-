@@ -428,12 +428,6 @@ const PlanUI = (() => {
     render,
     renderToday,
     onSession,
-    // asistan için yan etkisiz okuma: bu haftanın kayıtlı programı (yoksa null, yeniden üretmez)
-    peek() {
-      const c = Y().planCache, field = Y().field;
-      if (!field || !c || !Array.isArray(c.days) || c.week !== U.dateKey(monday(new Date())) || c.field !== field) return null;
-      return { week: c.week, days: c.days.map((d) => { const done = doneSet(d.date); return { date: d.date, items: d.items.map((it) => ({ ...it, done: done.has(it.key) })) }; }) };
-    },
     phase,
   };
 })();

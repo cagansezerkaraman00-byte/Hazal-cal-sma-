@@ -150,7 +150,6 @@ const DepoUI = (() => {
     $('#vw-title').innerHTML = `${U.esc(item.name)}<small>${U.esc(subjName(item.subjectId))} · ${(K()[item.kind] || K().diger).join(' ')}${item.note ? ' · ' + U.esc(item.note) : ''}</small>`;
     $('#vw-page').textContent = '';
     $('#vw-zoom').classList.toggle('hidden', !(Depo.isPdf(item.mime) || Depo.isImg(item.mime)));
-    $('#vw-ask').classList.toggle('hidden', !(window.Asistan && (Depo.isPdf(item.mime) || Depo.isImg(item.mime))));
     $('#vw-body').innerHTML = '<div class="vw-msg">Açılıyor…</div>';
     el.classList.remove('hidden');
     document.body.classList.add('viewer-open');
@@ -367,7 +366,6 @@ const DepoUI = (() => {
       else if (act === 'download') download(V.item);
       else if (act === 'edit') editItem(V.item);
       else if (act === 'auth') Depo.authorize();
-      else if (act === 'ask' && window.Asistan) { const it = V.item; closeViewer(); Asistan.askAboutFile(it); }
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && V.item && $('#modal').classList.contains('hidden')) closeViewer(); });
     window.addEventListener('resize', () => { if (V.pdf && V.resize) { V.resize(); V.pages.forEach((p) => { V.io.unobserve(p); V.io.observe(p); }); } });

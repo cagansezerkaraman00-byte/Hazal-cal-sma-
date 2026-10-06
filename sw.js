@@ -1,13 +1,14 @@
-/* Hızlı açılış ve çevrimdışı çalışma.
+/* Hızlı açılış, çevrimdışı çalışma ve güncellemeler.
    Uygulama kabuğu (HTML, CSS, JS, simgeler) sürüme bağlı önbellekten gelir: zayıf internette de anında açılır
-   ve dosyalar hep aynı sürümden olur. Dosyaları değiştirince VERSION'ı artır: yeni sürüm arka planda iner,
-   sayfa güvenli bir anda (uygulamadan çıkılınca, sayaç çalışmıyorken) yenilenir. */
-const VERSION = 'luna-v19';
-const VENDOR = 'luna-vendor-1'; // büyük ve değişmeyen kütüphaneler (PDF.js, Anthropic SDK), yazı tipleri
+   ve dosyalar hep aynı sürümden olur. Sürüm numarası js/surum.js'den gelir: oraya yeni bir sürüm eklenince
+   bu dosya da "değişmiş" sayılır, yeni sürüm arka planda iner ve açık uygulama "Güncelleme hazır" der. */
+importScripts('js/surum.js');
+const VERSION = 'luna-' + SURUMLER[0].surum;
+const VENDOR = 'luna-vendor-1'; // büyük ve değişmeyen kütüphaneler (PDF.js), yazı tipleri
 const FILES = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
-  'js/storage.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
-  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/giris.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify.js', 'js/asistan-araclar.js', 'js/asistan.js', 'js/uni.js', 'js/uni-ui.js', 'js/diag.js', 'js/app.js',
+  'js/storage.js', 'js/surum.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
+  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/giris.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify.js', 'js/uni.js', 'js/uni-ui.js', 'js/diag.js', 'js/guncelleme.js', 'js/app.js',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 const SHELL = new Set(FILES.map((f) => new URL(f, self.registration.scope).href));
@@ -40,6 +41,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin) {
+    // güncelleme denetimi: önbelleği atla, sunucudaki en yeni hali al
+    if (url.searchParams.has('guncel')) { e.respondWith(fetch(req, { cache: 'no-store' })); return; }
     // sayfa gezintisi (Spotify/Google dönüşündeki ?code= ve #… dahil): sürümün index.html'i
     if (req.mode === 'navigate') {
       e.respondWith(caches.match(new URL('index.html', self.registration.scope).href, { cacheName: VERSION })
@@ -58,9 +61,37 @@ self.addEventListener('fetch', (e) => {
   if (/fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) e.respondWith(cacheFirst(req, VENDOR).catch(() => new Response('', { status: 504 })));
 });
 
+// bildirime dokununca uygulama öne gelir; güncelleme bildirimiyse güncelleme başlar
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
+  const upd = e.notification.tag === 'luna-guncelleme';
   e.waitUntil(
-    self.clients.matchAll({ type: 'window' }).then((cs) => (cs[0] ? cs[0].focus() : self.clients.openWindow('./')))
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
+      const c = cs[0];
+      if (c) { if (upd) c.postMessage({ type: 'guncelleme' }); return c.focus(); }
+      return self.clients.openWindow(upd ? './#guncelleme' : './');
+    })
   );
+});
+
+// Android'de ana ekrandaki uygulama kapalıyken yeni sürüme bakılır (tarayıcı izin verirse, günde bir iki kez)
+const newer = (a, b) => {
+  const x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] || 0) - (y[i] || 0); if (d) return d > 0; }
+  return false;
+};
+async function remoteCheck() {
+  const r = await fetch('js/surum.js?guncel=' + Date.now(), { cache: 'no-store' });
+  const m = r.ok && (await r.text()).match(/\/\*SURUMLER\*\/([\s\S]*?)\/\*SURUMLER\*\//);
+  if (!m) return;
+  const v = JSON.parse(m[1])[0];
+  if (!v || !newer(v.surum, SURUMLER[0].surum)) return;
+  // aynı sürüm için bir kez haber ver
+  const box = await caches.open(VENDOR), mark = new URL('__bildirildi/' + v.surum, self.registration.scope).href;
+  if (await box.match(mark)) return;
+  await box.put(mark, new Response('1'));
+  await self.registration.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${v.surum}: ${v.baslik}. Dokun, güncelleyelim.`, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'luna-guncelleme' });
+}
+self.addEventListener('periodicsync', (e) => {
+  if (e.tag === 'luna-guncelleme') e.waitUntil(remoteCheck().catch(() => {}));
 });

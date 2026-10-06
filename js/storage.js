@@ -87,7 +87,7 @@ const Store = (() => {
       focusMode: true,   // başlayınca sade odak ekranı
       quietFocus: true,  // odaklanırken Luna konuşmasın
       pauseOnLeave: true, // tam odak: uygulamadan çıkınca sayaç durur (izinli uygulamalar hariç)
-      allowedApps: ['chatgpt', 'gemini', 'claude', 'youtube', 'spotify'], // tam odakta sayacı durdurmayan uygulamalar
+      allowedApps: ['chatgpt', 'gemini', 'youtube', 'spotify'], // tam odakta sayacı durdurmayan uygulamalar
       kittenName: 'Güçlü', // sarı yavrunun adı
       theme: 'light',    // light | dark | auto (gün batımında koyu)
       weather: true,     // günlük hava durumu
@@ -96,7 +96,7 @@ const Store = (() => {
       lon: 28.97,
       spotify: 'https://open.spotify.com/playlist/37i9dQZF1DWWQRwui0ExPn',
       msgInterval: 20,
-      profile: { level: 'yks', dept: '', year: '' }, // eğitim düzeyi ve bölüm (asistan ve ileride bölüme göre plan)
+      profile: { level: 'yks', dept: '', year: '' }, // eğitim düzeyi ve bölüm
     },
     subjects: [
       { id: 's1', name: 'Matematik', color: '#f7c948' },
@@ -130,7 +130,6 @@ const Store = (() => {
     badges: {},     // id -> timestamp
     tasksDone: 0,
     reviewDone: 0,
-    ai: { month: '', usd: 0, req: 0 }, // asistanın bu ayki harcaması (anahtar burada değil)
     // üniversite / KPSS / yüksek lisans modu
     uni: { school: '', faculty: '', term: '', termStart: '', termEnd: '', weeks: 14, absPct: 30, gpaBy: 'credit', courses: [], events: [], calendar: [], pastTerms: [], done: {} },
     subjectSets: {}, // modlara göre ders listeleri (yks | program | archive)
@@ -152,7 +151,6 @@ const Store = (() => {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }
     if (!isObj(out.badges)) out.badges = {};
-    if (!isObj(out.ai)) out.ai = def.ai;
     out.uni = { ...def.uni, ...(isObj(obj.uni) ? obj.uni : {}) };
     for (const k of ['courses', 'events', 'calendar', 'pastTerms']) if (!Array.isArray(out.uni[k])) out.uni[k] = [];
     if (!isObj(out.uni.done)) out.uni.done = {};

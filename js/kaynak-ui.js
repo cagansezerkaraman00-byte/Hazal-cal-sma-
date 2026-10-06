@@ -22,7 +22,6 @@ const KaynakUI = (() => {
           <button class="chip" data-kr="copy" type="button">📋 Kopyala</button>
           ${link ? `<a class="chip" href="${U.esc(link)}" target="_blank" rel="noopener noreferrer">🔗 Aç</a>` : ''}
           ${oa ? `<a class="chip" href="${U.esc(oa)}" target="_blank" rel="noopener noreferrer">🔓 Açık erişim</a>` : ''}
-          ${window.Asistan ? '<button class="chip" data-kr="ask" type="button">🎓 Özetle</button>' : ''}
           <button class="chip" data-kr="edit" type="button">✏️</button>
         </span>
       </div></li>`;
@@ -159,7 +158,6 @@ const KaynakUI = (() => {
         if (!r) return;
         if (act === 'copy') copyRich(Kaynak.format(r, style(), true), Kaynak.format(r, style(), false));
         if (act === 'edit') edit(r, false);
-        if (act === 'ask' && window.Asistan) Asistan.ask(`Şu kaynağı benim düzeyime göre özetle: ana soru, yöntem, bulgular ve sınırlılıklar. Bu kaynağı nasıl kullanabileceğimi (hangi konuda, ödevde nasıl atıf yapacağımı) söyle. Kaynakta olmayan bilgi ekleme; özet yoksa yalnızca başlık ve künyeden çıkarabileceklerini söyle.\n\nKünye: ${Kaynak.format(r, 'apa', false)}${r.abstract ? `\n\nÖzet: ${r.abstract}` : ''}`, '📚 ' + r.title.slice(0, 50));
       }
     });
     host.addEventListener('change', (e) => {

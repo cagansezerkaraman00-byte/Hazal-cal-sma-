@@ -1,8 +1,7 @@
 /* Üniversite (ve KPSS / yüksek lisans) modu: veri ve hesaplar.
    Dersler (kredi, AKTS, hoca, derslik, haftalık saatler), sınav/ödev takvimi, akademik takvim,
    devamsızlık, not ortalaması (harf notu + GANO), sınav tarihlerine göre otomatik çalışma planı,
-   telefon takvimine aktarma (.ics). Yapay zekâ yardımcıları: akademik takvimi internetten bulma,
-   ders programını fotoğraftan okuma, ders izlencesinden (syllabus) doldurma. */
+   telefon takvimine aktarma (.ics). */
 
 const Uni = (() => {
   const D = () => Store.data;
@@ -274,73 +273,14 @@ const Uni = (() => {
     return lines.join('\r\n');
   }
 
-  // ---------- Yapay zekâ yardımcıları ----------
-  const CAL_SCHEMA = {
-    type: 'object', additionalProperties: false, required: ['termStart', 'termEnd', 'items'],
-    properties: {
-      termStart: { type: 'string', description: 'YYYY-MM-DD ya da boş' }, termEnd: { type: 'string', description: 'YYYY-MM-DD ya da boş' },
-      items: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['title', 'date', 'end', 'kind'], properties: { title: { type: 'string' }, date: { type: 'string', description: 'YYYY-MM-DD' }, end: { type: 'string', description: 'YYYY-MM-DD ya da boş' }, kind: { type: 'string', enum: Object.keys(CAL_KINDS) } } } },
-    },
-  };
-  const TT_SCHEMA = {
-    type: 'object', additionalProperties: false, required: ['courses'],
-    properties: { courses: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['code', 'name', 'instructor', 'room', 'slots'], properties: {
-      code: { type: 'string' }, name: { type: 'string' }, instructor: { type: 'string' }, room: { type: 'string' },
-      slots: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['day', 'start', 'end'], properties: { day: { type: 'integer', description: '1=Pazartesi … 7=Pazar' }, start: { type: 'string', description: 'HH:MM' }, end: { type: 'string', description: 'HH:MM' } } } },
-    } } } },
-  };
-  const SYL_SCHEMA = {
-    type: 'object', additionalProperties: false, required: ['code', 'name', 'credit', 'ects', 'instructor', 'weights', 'topics', 'events'],
-    properties: {
-      code: { type: 'string' }, name: { type: 'string' }, credit: { type: 'number' }, ects: { type: 'number' }, instructor: { type: 'string' },
-      weights: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['name', 'w'], properties: { name: { type: 'string' }, w: { type: 'number' } } } },
-      topics: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['week', 'title'], properties: { week: { type: 'integer' }, title: { type: 'string' } } } },
-      events: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['kind', 'title', 'date'], properties: { kind: { type: 'string', enum: Object.keys(EVENT_KINDS) }, title: { type: 'string' }, date: { type: 'string', description: 'YYYY-MM-DD ya da boş' } } } },
-    },
-  };
   const validDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') && !isNaN(new Date(s + 'T12:00:00'));
   const validTime = (s) => /^\d{2}:\d{2}$/.test(s || '');
-
-  // akademik takvim: önce web araması (kaynaklı metin), sonra o metinden yapılandırılmış liste
-  async function findCalendar() {
-    const u = U_(), p = D().settings.profile;
-    const school = u.school || p.dept;
-    if (!school) throw new Error('Önce okulunu yaz');
-    const year = new Date().getMonth() >= 6 ? `${new Date().getFullYear()}-${new Date().getFullYear() + 1}` : `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`;
-    const a = await Asistan.call({
-      web: true, maxTokens: 6000,
-      text: `${school}${u.faculty ? ' ' + u.faculty : ''} ${year} eğitim-öğretim yılı akademik takvimini bul. Mümkünse okulun resmî sitesindeki (öğrenci işleri) takvimi kullan; ${u.faculty ? 'fakülteye özel takvim varsa onu öncele. ' : ''}${u.term ? `Özellikle "${u.term}" dönemi.` : 'İçinde bulunduğumuz dönem ve bir sonraki dönem.'}\nŞunları tarihleriyle listele: dönem başlangıcı ve son ders günü, ara sınav (vize) haftası, final (yarıyıl sonu) sınavları, bütünleme sınavları, ders ekle-bırak/kayıt tarihleri, resmî tatiller ve ara tatil. Her tarihin kaynağını göster. Bulamadığın ya da emin olmadığın tarihi uydurma, "bulunamadı" de.`,
-    });
-    const b = await Asistan.call({
-      schema: CAL_SCHEMA, maxTokens: 4000, effort: 'medium',
-      text: `Aşağıdaki akademik takvim metninden tarihleri çıkar. Yalnızca metinde açıkça geçen tarihleri al; tarih aralıklarında "date" başlangıç, "end" bitiş olsun. Tarihleri YYYY-MM-DD yaz. Dönem başlangıç/bitişini termStart/termEnd'e koy (yoksa boş bırak).\n\n${a.text}`,
-    });
-    const items = (b.json.items || []).filter((x) => validDate(x.date)).map((x) => ({ ...x, end: validDate(x.end) ? x.end : '' }));
-    return { items, termStart: validDate(b.json.termStart) ? b.json.termStart : '', termEnd: validDate(b.json.termEnd) ? b.json.termEnd : '', sources: a.sources, text: a.text, cost: a.cost + b.cost };
-  }
-  async function scanTimetable(blob) {
-    const r = await Asistan.call({
-      schema: TT_SCHEMA, maxTokens: 6000, blob,
-      text: 'Bu bir üniversite haftalık ders programı. Her dersi; kodu, adı, hocası, dersliği ve haftalık saatleriyle çıkar (gün: 1=Pazartesi … 7=Pazar, saatler HH:MM). Aynı dersin farklı günlerdeki saatleri aynı dersin slotları olsun. Okuyamadığın alanı boş bırak; tahmin etme.',
-    });
-    return { courses: (r.json.courses || []).map((c) => ({ ...c, slots: (c.slots || []).filter((s) => s.day >= 1 && s.day <= 7 && validTime(s.start) && validTime(s.end)) })), cost: r.cost };
-  }
-  async function parseSyllabus(blob) {
-    const r = await Asistan.call({
-      schema: SYL_SCHEMA, maxTokens: 8000, blob,
-      text: 'Bu bir ders izlencesi (syllabus). Dersin kodunu, adını, kredisini, AKTS\'sini, öğretim üyesini, değerlendirme ağırlıklarını (ör. Vize 40, Final 60; toplam 100), haftalık konuları ve tarihi belli sınav/ödevleri çıkar. Belgede olmayan bilgiyi uydurma: sayılar için 0, metinler için boş bırak, tarihler YYYY-MM-DD ya da boş.',
-    });
-    const j = r.json;
-    j.events = (j.events || []).filter((e) => validDate(e.date));
-    j.weights = (j.weights || []).filter((w) => w.name && +w.w > 0);
-    return { ...j, cost: r.cost };
-  }
 
   return {
     DAY_NAMES, DAY_SHORT, EVENT_KINDS, CAL_KINDS, LETTERS, COLORS, EXAM,
     isProgramMode, isSchool, evName, evLeft, addKpss, setMode, syncSubjects, addCourse, removeCourse, course, weeklyHours, slotHours, attendance,
     letterOf, courseScore, needForFinal, coefOf, gpa, upcoming, classesOn, weekOfTerm, nextCalendar,
-    planFor, toggleDone, daysLeft, leftText, isoDay, ics, findCalendar, scanTimetable, parseSyllabus, validDate, validTime, mins,
+    planFor, toggleDone, daysLeft, leftText, isoDay, ics, validDate, validTime, mins,
   };
 })();
 

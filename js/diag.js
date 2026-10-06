@@ -37,7 +37,8 @@ const Diag = (() => {
 
   async function appInfo() {
     let ver = '—', persisted = null, usage = null;
-    try { if (window.caches) ver = (await caches.keys()).filter((k) => /^luna-v\d+$/.test(k)).sort().pop() || 'önbellek yok'; } catch (e) { /* yok say */ }
+    if (window.SURUMLER) ver = 'Sürüm ' + SURUMLER[0].surum;
+    try { if (window.caches && !(await caches.keys()).some((k) => k === 'luna-' + (window.SURUMLER ? SURUMLER[0].surum : ''))) ver += ' (önbellek henüz yok)'; } catch (e) { /* yok say */ }
     try { if (navigator.storage && navigator.storage.persisted) persisted = await navigator.storage.persisted(); } catch (e) { /* yok say */ }
     try { if (navigator.storage && navigator.storage.estimate) usage = (await navigator.storage.estimate()).usage; } catch (e) { /* yok say */ }
     const sw = !('serviceWorker' in navigator) ? 'desteklenmiyor' : navigator.serviceWorker.controller ? 'aktif' : 'henüz değil (bir kez yenile)';
@@ -51,7 +52,6 @@ const Diag = (() => {
     ['🔑 Spotify giriş', 'https://accounts.spotify.com/'],
     ['🔤 Google Fonts (yazı tipi)', 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'],
     ['☁️ Google Drive', 'https://www.googleapis.com/drive/v3/about'],
-    ['🎓 Claude (asistan)', 'https://api.anthropic.com/v1/models'],
   ];
   async function ping(url) {
     const t0 = performance.now();
@@ -81,10 +81,6 @@ const Diag = (() => {
     return `${link} · hesap bağlı (${s.user || 'kullanıcı'}) · ${s.lists} çalma listesi · durum: ${st}${s.lastStatus ? ' · son API kodu ' + s.lastStatus : ''}`;
   }
 
-  function aiText(a) {
-    if (!a.ready) return 'API anahtarı girilmemiş';
-    return `${a.model} · bu ay ${a.req} istek, $${a.usd.toFixed(2)} / $${a.budget} · web araması ${a.web ? 'açık' : 'kapalı'}${a.err ? ' · son hata: ' + a.err : ''}`;
-  }
   function depoText(d) {
     const where = d.drive ? `Google Drive bağlı (${d.token ? 'oturum açık' : 'bağlantı yenilenmeli'})` : d.client ? 'Client ID girilmiş, Drive bağlı değil' : 'Drive bağlı değil';
     return `${where} · ${d.files} dosya${d.local ? ` (${d.local} tanesi bu cihazda, ${Depo.fmtSize(d.localBytes)})` : ''}${d.err ? ' · son hata: ' + d.err : ''}`;
@@ -107,7 +103,6 @@ const Diag = (() => {
         ['🌦️ Hava', window.Weather ? weatherText(Weather.status()) : 'modül yüklenmedi'],
         ['🎧 Spotify', spotifyText(window.SpotifyLink && SpotifyLink.status ? SpotifyLink.status() : null)],
         ['🗂️ Depo', window.Depo ? depoText(Depo.status()) : 'modül yüklenmedi'],
-        ['🎓 Asistan', window.Asistan ? aiText(Asistan.status()) : 'modül yüklenmedi'],
         ['💾 Veri', `${D().sessions.length} oturum · ${D().denemeler.length} deneme · ${D().notes.length} not · ${D().cards.length} kart · ${dataKB} KB${a.usage ? ` (tarayıcıda toplam ${Math.round(a.usage / 1024)} KB)` : ''} · son yedek: ${D().lastBackup ? ago(D().lastBackup) : 'yok'}`],
       ],
       errors: window.ErrLog ? ErrLog.list() : [],

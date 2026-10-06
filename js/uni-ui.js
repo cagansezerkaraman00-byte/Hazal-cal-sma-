@@ -2,7 +2,6 @@
 
 const UniUI = (() => {
   let App = null;
-  let lastSources = [];
   const $ = (s, el = document) => el.querySelector(s);
   const D = () => Store.data;
   const u = () => D().uni;
@@ -45,10 +44,8 @@ const UniUI = (() => {
       <h2>📚 Derslerini ekleyelim</h2>
       <p class="muted">Ders programını, sınav ve ödev tarihlerini bir kez gir; çalışma planın, geri sayımların, devamsızlığın ve not ortalaman kendiliğinden hesaplansın.</p>
       <div class="uni-acts">
-        <label class="btn primary">📷 Ders programının fotoğrafı<input type="file" accept="image/*,application/pdf" hidden data-u="tt-file"></label>
-        <button class="btn soft" data-u="add-course" type="button">＋ Elle ders ekle</button>
+        <button class="btn primary" data-u="add-course" type="button">＋ Ders ekle</button>
       </div>
-      <p class="hint">Fotoğraftan okuma ve izlenceden doldurma Asistan ile çalışır (Asistan sekmesinden API anahtarı gerekir). Okuduklarını kaydetmeden önce kontrol edebilirsin.</p>
     </div>`;
   }
   function eventRow(e) {
@@ -107,7 +104,7 @@ const UniUI = (() => {
   function coursesHtml() {
     const cs = u().courses;
     return `<div class="card wide-card">
-      <div class="sec-head"><h2>📘 Dersler</h2><span class="row">${Uni.isSchool() ? '<label class="btn soft small-btn">📷 Programdan oku<input type="file" accept="image/*,application/pdf" hidden data-u="tt-file"></label>' : ''}${D().settings.profile.level === 'kpss' ? '<button class="btn soft small-btn" data-u="kpss" type="button">🏛️ KPSS dersleri</button>' : ''}<button class="btn soft small-btn" data-u="add-course" type="button">＋ Ders</button></span></div>
+      <div class="sec-head"><h2>📘 Dersler</h2><span class="row">${D().settings.profile.level === 'kpss' ? '<button class="btn soft small-btn" data-u="kpss" type="button">🏛️ KPSS dersleri</button>' : ''}<button class="btn soft small-btn" data-u="add-course" type="button">＋ Ders</button></span></div>
       ${cs.length ? `<div class="course-grid">${cs.map((c) => {
         const school = Uni.isSchool(), at = Uni.attendance(c), sc = school ? Uni.courseScore(c) : null, lt = sc ? Uni.letterOf(sc.score) : null;
         const next = Uni.upcoming(120).find((e) => e.courseId === c.id);
@@ -123,8 +120,6 @@ const UniUI = (() => {
             <button class="chip" data-u="edit-course" data-c="${c.id}" type="button">✏️ Düzenle</button>
             <button class="chip" data-u="add-event" data-c="${c.id}" type="button">＋ Sınav</button>
             ${c.topics.length ? `<button class="chip" data-u="topics" data-c="${c.id}" type="button">📖 Konular</button>` : ''}
-            ${school ? `<label class="chip">📄 İzlence<input type="file" accept="application/pdf,image/*" hidden data-u="syl-file" data-c="${c.id}"></label>` : ''}
-            ${window.Asistan ? `<button class="chip" data-u="ask-course" data-c="${c.id}" type="button">🎓 Sınava hazırla</button>` : ''}
           </footer></article>`;
       }).join('')}</div>` : '<p class="empty-state">Henüz ders yok.</p>'}
     </div>`;
@@ -152,9 +147,8 @@ const UniUI = (() => {
     const cal = (u().calendar || []).slice().sort((a, b) => a.date.localeCompare(b.date));
     const t = U.dateKey(new Date());
     return `<div class="card">
-      <div class="sec-head"><h2>🏫 Akademik takvim</h2><span class="row">${window.Asistan ? '<button class="btn soft small-btn" data-u="find-cal" type="button">🎓 İnternetten bul</button>' : ''}<button class="btn soft small-btn" data-u="add-cal" type="button">＋</button></span></div>
-      ${cal.length ? `<ul class="ev-list">${cal.map((x) => { const n = Uni.daysLeft(x.date), past = (x.end || x.date) < t; return `<li class="ev-item ${past ? 'done' : ''}" data-cal="${x.id}"><span class="ev-ic">${(Uni.CAL_KINDS[x.kind] || Uni.CAL_KINDS.diger)[0]}</span><div class="ev-text"><b>${esc(x.title)}</b><small>${fmtDate(x.date)}${x.end ? ' – ' + fmtDate(x.end) : ''}</small></div>${past ? '' : `<span class="cd ${urg(n)}">${n <= 0 ? 'şu an' : Uni.leftText(n)}</span>`}</li>`; }).join('')}</ul>` : '<p class="empty-state">Vize ve final haftalarını, tatilleri ekle; ya da Asistan okulunun resmî takvimini internetten bulsun.</p>'}
-      ${lastSources.length ? `<details class="hint"><summary>Son aramanın kaynakları</summary><ol>${lastSources.map((s) => `<li>${/^https?:\/\//.test(s.url || '') ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.label)}</a>` : esc(s.label)}</li>`).join('')}</ol></details>` : ''}
+      <div class="sec-head"><h2>🏫 Akademik takvim</h2><span class="row"><button class="btn soft small-btn" data-u="add-cal" type="button">＋</button></span></div>
+      ${cal.length ? `<ul class="ev-list">${cal.map((x) => { const n = Uni.daysLeft(x.date), past = (x.end || x.date) < t; return `<li class="ev-item ${past ? 'done' : ''}" data-cal="${x.id}"><span class="ev-ic">${(Uni.CAL_KINDS[x.kind] || Uni.CAL_KINDS.diger)[0]}</span><div class="ev-text"><b>${esc(x.title)}</b><small>${fmtDate(x.date)}${x.end ? ' – ' + fmtDate(x.end) : ''}</small></div>${past ? '' : `<span class="cd ${urg(n)}">${n <= 0 ? 'şu an' : Uni.leftText(n)}</span>`}</li>`; }).join('')}</ul>` : '<p class="empty-state">Vize ve final haftalarını, tatilleri ekle; geri sayımlar ve çalışma planı bu tarihlere göre oluşur.</p>'}
     </div>`;
   }
 
@@ -312,99 +306,6 @@ const UniUI = (() => {
     });
   }
 
-  // ---------- Yapay zekâ akışları ----------
-  async function withAi(label, job) {
-    if (!window.Asistan || !Asistan.ready()) { App.toast('🎓', 'Önce Asistan’ı kur', 'Asistan sekmesi → ⚙️ Asistan ayarları → API anahtarı'); return null; }
-    App.toast('🎓', label, 'Birkaç saniye sürebilir', 6000);
-    try { return await job(); } catch (e) { App.toast('⚠️', 'Asistan tamamlayamadı', e.message); return null; }
-  }
-  async function scanTT(file) {
-    const r = await withAi('Ders programın okunuyor…', () => Uni.scanTimetable(file));
-    if (!r) return;
-    if (!r.courses.length) { App.toast('📷', 'Programda ders bulunamadı', 'Daha net bir fotoğraf dene'); return; }
-    const card = App.openModal(`<h3>📷 ${r.courses.length} ders okundu</h3><p class="muted small">Kontrol et; istemediklerinin işaretini kaldır. (Maliyet: $${r.cost.toFixed(3)})</p>
-      <ul class="gen-cards">${r.courses.map((c, i) => `<li><label><input type="checkbox" checked data-i="${i}"><span><b>${esc([c.code, c.name].filter(Boolean).join(' · '))}</b><small>${c.slots.map((s) => `${Uni.DAY_SHORT[s.day]} ${s.start}–${s.end}`).join(', ') || 'saat okunamadı'}${c.room ? ' · ' + esc(c.room) : ''}${c.instructor ? ' · ' + esc(c.instructor) : ''}</small></span></label></li>`).join('')}</ul>
-      <div class="modal-actions"><button class="btn soft" data-act="cancel" type="button">Vazgeç</button><button class="btn primary" data-act="add" type="button">Derslere ekle</button></div>`);
-    card.addEventListener('click', (e) => {
-      const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
-      if (act === 'cancel') App.closeModal();
-      if (act !== 'add') return;
-      let n = 0;
-      card.querySelectorAll('[data-i]').forEach((cb) => {
-        if (!cb.checked) return;
-        const c = r.courses[+cb.dataset.i];
-        const low = (t) => String(t || '').toLocaleLowerCase('tr-TR');
-        const same = u().courses.find((x) => (c.code && low(x.code) === low(c.code)) || low(x.name) === low(c.name));
-        if (same) { for (const s of c.slots) if (!same.slots.some((y) => +y.day === s.day && y.start === s.start)) same.slots.push({ ...s, room: c.room || '' }); same.instructor = same.instructor || c.instructor; same.room = same.room || c.room; }
-        else Uni.addCourse({ name: c.name || c.code || 'Ders', code: c.code, instructor: c.instructor, room: c.room, slots: c.slots.map((s) => ({ ...s, room: '' })) });
-        n++;
-      });
-      Uni.syncSubjects(); App.save(); App.closeModal(); refresh();
-      App.toast('📘', `${n} ders eklendi`, 'Kredi, AKTS ve değerlendirme ağırlıklarını ✏️ ile tamamlayabilirsin');
-    });
-  }
-  async function syllabus(courseId, file) {
-    const c = Uni.course(courseId);
-    if (!c) return;
-    const r = await withAi('İzlence okunuyor…', () => Uni.parseSyllabus(file));
-    if (!r) return;
-    const card = App.openModal(`<h3>📄 ${esc(r.name || c.name)}</h3><p class="muted small">İzlenceden çıkanlar; kaydetmeden önce kontrol et. (Maliyet: $${r.cost.toFixed(3)})</p>
-      <ul class="syl-sum">
-        ${r.code ? `<li><label><input type="checkbox" checked data-k="code"> Kod: <b>${esc(r.code)}</b></label></li>` : ''}
-        ${r.credit ? `<li><label><input type="checkbox" checked data-k="credit"> Kredi: <b>${esc(r.credit)}</b></label></li>` : ''}
-        ${r.ects ? `<li><label><input type="checkbox" checked data-k="ects"> AKTS: <b>${esc(r.ects)}</b></label></li>` : ''}
-        ${r.instructor ? `<li><label><input type="checkbox" checked data-k="instructor"> Öğretim üyesi: <b>${esc(r.instructor)}</b></label></li>` : ''}
-        ${r.weights.length ? `<li><label><input type="checkbox" checked data-k="weights"> Değerlendirme: <b>${r.weights.map((w) => `${esc(w.name)} %${esc(w.w)}`).join(', ')}</b></label></li>` : ''}
-        ${r.topics.length ? `<li><label><input type="checkbox" checked data-k="topics"> ${r.topics.length} haftalık konu</label></li>` : ''}
-        ${r.events.length ? `<li><label><input type="checkbox" checked data-k="events"> Tarihli sınav/ödev: <b>${r.events.map((e) => `${esc(e.title || K[e.kind][1])} (${esc(e.date)})`).join(', ')}</b></label></li>` : ''}
-      </ul>
-      <div class="modal-actions"><button class="btn soft" data-act="cancel" type="button">Vazgeç</button><button class="btn primary" data-act="apply" type="button">Derse uygula</button></div>`);
-    card.addEventListener('click', (e) => {
-      const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
-      if (act === 'cancel') App.closeModal();
-      if (act !== 'apply') return;
-      const on = (k) => { const cb = card.querySelector(`[data-k="${k}"]`); return cb && cb.checked; };
-      if (on('code')) c.code = r.code;
-      if (on('credit')) c.credit = r.credit;
-      if (on('ects')) c.ects = r.ects;
-      if (on('instructor')) c.instructor = r.instructor;
-      if (on('weights')) c.weights = r.weights.map((w) => ({ name: w.name, w: w.w, score: (c.weights.find((x) => x.name === w.name) || {}).score ?? null }));
-      if (on('topics')) c.topics = r.topics.map((t) => ({ week: t.week, title: t.title, done: false }));
-      if (on('events')) for (const ev of r.events) if (!u().events.some((x) => x.courseId === c.id && x.date === ev.date && x.kind === ev.kind)) u().events.push({ id: U.uid(), courseId: c.id, kind: ev.kind, title: ev.title, date: ev.date, time: '', note: '', done: false, grade: '' });
-      App.save(); App.closeModal(); refresh();
-      App.toast('📄', 'İzlence derse uygulandı');
-    });
-  }
-  async function findCal() {
-    const r = await withAi('Akademik takvim internette aranıyor…', () => Uni.findCalendar());
-    if (!r) return;
-    lastSources = r.sources || [];
-    if (!r.items.length) { App.toast('🏫', 'Takvimde tarih bulunamadı', 'Okul adını tam yazmayı ya da elle eklemeyi dene'); render(); return; }
-    const card = App.openModal(`<h3>🏫 Akademik takvim</h3><p class="muted small">${r.items.length} tarih bulundu (maliyet $${r.cost.toFixed(3)}). Resmî kaynakla karşılaştırıp istemediklerinin işaretini kaldır.</p>
-      ${r.termStart ? `<label class="switch"><input type="checkbox" data-k="term" checked> Dönem: ${esc(r.termStart)} – ${esc(r.termEnd || '?')}</label>` : ''}
-      <ul class="gen-cards">${r.items.map((x, i) => `<li><label><input type="checkbox" checked data-i="${i}"><span><b>${(Uni.CAL_KINDS[x.kind] || Uni.CAL_KINDS.diger)[0]} ${esc(x.title)}</b><small>${esc(x.date)}${x.end ? ' – ' + esc(x.end) : ''}</small></span></label></li>`).join('')}</ul>
-      ${lastSources.length ? `<details class="hint" open><summary>Kaynaklar</summary><ol>${lastSources.map((s) => `<li>${/^https?:\/\//.test(s.url || '') ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.label)}</a>` : esc(s.label)}</li>`).join('')}</ol></details>` : ''}
-      <div class="modal-actions"><button class="btn soft" data-act="cancel" type="button">Vazgeç</button><button class="btn primary" data-act="add" type="button">Takvime ekle</button></div>`);
-    card.addEventListener('click', (e) => {
-      const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
-      if (act === 'cancel') { App.closeModal(); render(); }
-      if (act !== 'add') return;
-      const t = card.querySelector('[data-k="term"]');
-      if (t && t.checked) { u().termStart = r.termStart; if (r.termEnd) u().termEnd = r.termEnd; }
-      let n = 0;
-      card.querySelectorAll('[data-i]').forEach((cb) => {
-        if (!cb.checked) return;
-        const x = r.items[+cb.dataset.i];
-        if (u().calendar.some((y) => y.date === x.date && y.title === x.title)) return;
-        u().calendar.push({ id: U.uid(), title: x.title, date: x.date, end: x.end || '', kind: x.kind, src: 'ai' });
-        n++;
-      });
-      App.save(); App.closeModal(); refresh();
-      if (n) App.toast('🏫', `${n} tarih takvime eklendi`, 'Geri sayımlar ana sayfada ve Dönem ekranında');
-      else App.toast('🏫', 'Yeni tarih yok', 'Seçtiklerin zaten takvimde');
-    });
-  }
-
   function refresh() { render(); App.refreshHome(); App.refreshSubjects(); }
 
   // ---------- Olaylar ----------
@@ -424,7 +325,6 @@ const UniUI = (() => {
     else if (act === 'add-cal') calForm(null);
     else if (act === 'kpss') { const n = Uni.addKpss(); App.save(); refresh(); App.toast('🏛️', n ? `${n} ders konularıyla eklendi` : 'KPSS dersleri zaten ekli', 'Sınav tarihini de eklersen tekrar planı oluşur'); }
     else if (act === 'topics') topicsForm(Uni.course(b.dataset.c));
-    else if (act === 'find-cal') findCal();
     else if (act === 'ics') shareIcs();
     else if (act === 'absent') {
       const c = Uni.course(b.dataset.c), slot = c && c.slots.find((s) => +s.day === +b.dataset.d && s.start === b.dataset.s);
@@ -438,7 +338,6 @@ const UniUI = (() => {
       if (i < 0) App.toast('🚶', `${c.name}: devamsızlık ${at.used}/${at.limit} saat`, at.left <= 2 ? 'Sınıra çok yaklaştın, dikkat 💛' : `${at.left} saat hakkın kaldı`);
     } else if (act === 'plan-done') { Uni.toggleDone(new Date(b.dataset.date + 'T12:00:00'), b.dataset.id); refresh(); }
     else if (act === 'plan-start') startItem(b.dataset.id, b.dataset.date);
-    else if (act === 'ask-course') askCourse(Uni.course(b.dataset.c));
     else if (act === 'add-past') {
       const num = (k) => { const t = $(`#uni-root [data-u="${k}"]`).value.trim().replace(',', '.'); return t === '' ? NaN : Number(t); };
       const cr = num('past-cr'), g = num('past-gpa');
@@ -454,12 +353,7 @@ const UniUI = (() => {
     $('#today-plan').addEventListener('click', (e) => { if (Uni.isProgramMode()) onClick(e); });
     root.addEventListener('change', (e) => {
       const t = e.target;
-      if (t.dataset.u === 'gpa-by') { u().gpaBy = t.value; App.save(); render(); return; }
-      if (!t.files || !t.files[0]) return;
-      const f = t.files[0];
-      t.value = '';
-      if (t.dataset.u === 'tt-file') scanTT(f);
-      if (t.dataset.u === 'syl-file') syllabus(t.dataset.c, f);
+      if (t.dataset.u === 'gpa-by') { u().gpaBy = t.value; App.save(); render(); }
     });
   }
   function startItem(id, date) {
@@ -474,12 +368,6 @@ const UniUI = (() => {
     const now = new Date(session.start || Date.now());
     const it = Uni.planFor(now).find((x) => !x.done && x.text.slice(0, 80) === session.intent);
     if (it) Uni.toggleDone(now, it.id);
-  }
-  function askCourse(c) {
-    if (!c) return;
-    const next = Uni.upcoming(120).find((e) => e.courseId === c.id);
-    const topics = c.topics.length ? c.topics.map((t) => `${t.week ? t.week + '. hafta: ' : ''}${t.title}${t.done ? ' (çalıştım)' : ''}`).join('\n') : '(konu listesi girilmemiş)';
-    Asistan.ask(`${c.name}${c.code ? ' (' + c.code + ')' : ''} dersinin sınavına hazırlanmak istiyorum${next ? ` (${Uni.evLeft(next)})` : ''}.\nKonular:\n${topics}\n\nBana gün gün bir çalışma planı yap (aktif hatırlama ve aralıklı tekrarla), her konu için en önemli kavramları ve sık sorulan soru tiplerini kısaca yaz, sonunda kendimi sınayabileceğim 5 soru sor. Konuyu bölümüme ve düzeyime göre anlat.`, '🎓 ' + c.name);
   }
   async function shareIcs() {
     const blob = new Blob([Uni.ics()], { type: 'text/calendar' });

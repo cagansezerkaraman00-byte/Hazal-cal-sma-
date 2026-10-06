@@ -140,6 +140,18 @@ const Timer = (() => {
       tick();
       return true;
     },
+    // izinli bir uygulamadaydı: tam odağın duraklatması geri alınır, aradaki süre çalışmaya sayılır
+    // (süre o arada dolduysa oturum dolduğu anda kaydedilir)
+    resumeFrom(t) {
+      const x = st();
+      if (x.running || x.phase !== 'focus' || !x.pausedAt || !(x.accum > 0)) return false;
+      x.running = true;
+      x.resumedAt = Math.min(t, Date.now());
+      x.pausedAt = null;
+      persist();
+      tick();
+      return true;
+    },
     // "Bitir": odakta oturumu kaydeder; molada molayı bitirir
     finish() {
       const x = st();
