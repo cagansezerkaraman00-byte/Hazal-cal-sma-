@@ -37,7 +37,7 @@
         </div>
       </div>
       <div id="weather-pop" class="weather-pop hidden" role="dialog" aria-label="Hava durumu"></div>
-      <div id="mini-timer" class="mini-timer hidden"></div>
+      <div id="mini-timer" class="mini-timer hidden" role="button" tabindex="0" title="Sayaca dön"></div>
       <div id="bubble" class="bubble hidden"></div>
     </header>
 
@@ -58,7 +58,7 @@
           <div class="card welcome wide-card" id="welcome"></div>
 
           <div class="card timer-card">
-            <button class="focus-exit" id="focus-exit" type="button" title="Sayaç çalışmaya devam eder">Diğer ekranlar ↗</button>
+            <button class="focus-exit" id="focus-exit" type="button" title="Sayaç çalışmaya devam eder; sahnedeki küçük sayaca dokununca geri dönersin">Diğer ekranlar ↗</button>
             <div class="seg" id="kind-seg">
               <button data-kind="pomodoro">🍅 Pomodoro</button>
               <button data-kind="free">⏱️ Serbest</button>
@@ -82,7 +82,7 @@
                 <select id="subject-select" aria-label="Ders"></select>
                 <button class="icon-btn" id="add-subject-quick" title="Yeni ders">＋</button>
               </div>
-              <input id="intent-input" class="intent" maxlength="80" placeholder="🎯 Bu oturumda ne yapacağım? (örn. 20 türev sorusu)">
+              <input id="intent-input" class="intent" maxlength="80" placeholder="🎯 Bu oturumda ne yapacağım?" aria-label="Bu oturumda ne yapacağım? (örn. 20 türev sorusu)">
             </div>
             <div class="controls">
               <button class="btn ghost" id="btn-reset" title="Sıfırla">↺</button>
@@ -90,7 +90,7 @@
               <button class="btn ghost" id="btn-finish" title="Bitir ve kaydet">✓</button>
             </div>
             <form class="park" id="park-form" autocomplete="off">
-              <input id="park-input" maxlength="140" placeholder="💭 Aklına başka bir şey mi geldi? Yaz, sonraya bırak">
+              <input id="park-input" maxlength="140" placeholder="💭 Aklına gelen?" aria-label="Aklına gelen başka bir şeyi yaz, sonraya bırak">
               <button class="btn soft">Sonraya</button>
             </form>
           </div>

@@ -467,14 +467,23 @@
       D().tasks.push({ id: U.uid(), text: '💭 ' + text, subjectId: '', due: '', done: false, created: Date.now() });
       save();
       inp.value = '';
-      inp.placeholder = '✓ Plan sekmesine kaydedildi, şimdi derse dön 🐾';
-      setTimeout(() => { inp.placeholder = '💭 Aklına başka bir şey mi geldi? Yaz, sonraya bırak'; }, 3500);
+      inp.placeholder = '✓ Eklendi, derse dön 🐾';
+      setTimeout(() => { inp.placeholder = '💭 Aklına gelen?'; }, 3500);
       renderHome();
     });
     $('#focus-exit').addEventListener('click', () => {
       focusDismissed = true;
       renderTimer(Timer.state());
     });
+    // sahnedeki mini sayaç: dokununca sayaca (odaktaysa sade odak ekranına) geri dön
+    const backToTimer = () => {
+      focusDismissed = false;
+      showTab('home');
+      renderTimer(Timer.state());
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    $('#mini-timer').addEventListener('click', backToTimer);
+    $('#mini-timer').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); backToTimer(); } });
     $('#add-subject-quick').addEventListener('click', () => {
       const name = prompt('Yeni ders adı:');
       if (!name || !name.trim()) return;
@@ -1299,7 +1308,10 @@
     $('#subject-edit').addEventListener('change', (e) => {
       const li = e.target.closest('li'); if (!li) return;
       const s = D().subjects.find((x) => x.id === li.dataset.id); if (!s) return;
-      if (e.target.dataset.f === 'name' && e.target.value.trim()) s.name = e.target.value.trim();
+      if (e.target.dataset.f === 'name') {
+        if (e.target.value.trim()) s.name = e.target.value.trim();
+        else { e.target.value = s.name; toast('📚', 'Ders adı boş olamaz', 'Önceki adı geri koydum'); } // boş bırakılırsa eski ad görünsün
+      }
       if (e.target.dataset.f === 'color') s.color = e.target.value;
       save(); renderSubjectSelects();
     });

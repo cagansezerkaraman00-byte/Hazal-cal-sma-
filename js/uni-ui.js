@@ -142,7 +142,7 @@ const UniUI = (() => {
       <details class="hint"><summary>Geçmiş dönemler ve harf tablosu</summary>
         <p>GANO için önceki dönemlerin kredisini ve ortalamasını ekle:</p>
         <ul class="past-list">${(u().pastTerms || []).map((p, i) => `<li>${esc(p.term || 'Dönem')} · ${esc(U.num(p.credits))} kredi · ${esc(U.num(p.gpa))} <button class="icon-btn" data-u="del-past" data-i="${i}" type="button">✕</button></li>`).join('')}</ul>
-        <div class="inline-form"><input data-u="past-term" placeholder="Dönem (ör. 2025 Güz)"><input data-u="past-cr" inputmode="decimal" placeholder="Kredi"><input data-u="past-gpa" inputmode="decimal" placeholder="Ortalama (ör. 3,25)"><button class="btn soft small-btn" data-u="add-past" type="button">Ekle</button></div>
+        <div class="inline-form past-form"><input data-u="past-term" placeholder="Dönem (ör. 2025 Güz)"><input data-u="past-cr" inputmode="decimal" placeholder="Kredi"><input data-u="past-gpa" inputmode="decimal" placeholder="Ortalama (ör. 3,25)"><button class="btn soft small-btn" data-u="add-past" type="button">Ekle</button></div>
         <p>Kullanılan tablo (en yaygın): ${Uni.LETTERS.map((l) => `${l[0]} ≥${l[1]} (${l[2]})`).join(', ')}. Okulun bağıl değerlendirme ya da farklı tablo kullanıyorsa dersin düzenleme ekranından harf notunu elle seçebilirsin.</p>
       </details>
     </div>`;
@@ -348,9 +348,11 @@ const UniUI = (() => {
       const cr = num('past-cr'), g = num('past-gpa');
       if (!(cr > 0) || !(g >= 0 && g <= 4)) { App.toast('🎯', 'Kredi ve 0-4 arası ortalama gir'); return; }
       u().pastTerms.push({ term: $('#uni-root [data-u="past-term"]').value.trim(), credits: cr, gpa: g });
-      App.save(); render();
-    } else if (act === 'del-past') { u().pastTerms.splice(+b.dataset.i, 1); App.save(); render(); }
+      App.save(); render(); reopenPast();
+    } else if (act === 'del-past') { u().pastTerms.splice(+b.dataset.i, 1); App.save(); render(); reopenPast(); }
   }
+  // geçmiş dönem ekleyip silince bölüm kapanmasın (yeni kayıt ve form görünür kalsın)
+  function reopenPast() { const d = $('#uni-root [data-u="past-term"]'); if (d && d.closest('details')) d.closest('details').open = true; }
   function bind() {
     const root = $('#uni-root');
     root.addEventListener('click', onClick);

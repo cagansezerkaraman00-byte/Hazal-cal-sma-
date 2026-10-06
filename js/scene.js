@@ -1988,14 +1988,24 @@ const Scene = (() => {
     const r = el.getBoundingClientRect(), w = wrap.getBoundingClientRect();
     hudR = r.width ? { right: r.right - w.left, bottom: r.bottom - w.top } : null;
   }
+  // dar ekranda balon saat kutusunun üstüne biniyorsa kutu bir süre soluklaşır (yarım kesik yazı görünmesin)
+  let hudUnder = false;
+  function setHudUnder(on) {
+    if (on === hudUnder) return;
+    hudUnder = on;
+    const el = wrap && wrap.querySelector('.hud-left');
+    if (el) el.classList.toggle('under-bubble', on);
+  }
   function positionBubble() {
     if (!bubbleOn || !W) return;
     const g = lunaGeom();
     const cx = L.x * scale;
     let left = Math.round(U.clamp(cx - bubbleW / 2, 8, wrapW - bubbleW - 8));
-    const bottom = Math.round((H - (g.top - 1)) * scale + 10);
+    // sahnenin üstünden taşmasın (yatay tutulan telefonda sahne alçak)
+    const bottom = Math.max(4, Math.min(Math.round((H - (g.top - 1)) * scale + 10), wrapH - bubbleH - 6));
     // telefonda saat kutusunun üstüne biniyorsa balonu kutunun sağına kaydır (sığarsa)
     if (hudR && wrapH - bottom - bubbleH < hudR.bottom && left < hudR.right && hudR.right + 8 + bubbleW <= wrapW - 6) left = Math.round(hudR.right + 8);
+    setHudUnder(!!hudR && wrapH - bottom - bubbleH < hudR.bottom - 4 && left < hudR.right - 4);
     const arrow = Math.round(U.clamp(cx - left, 14, bubbleW - 14));
     // yalnızca değişince yaz (her karede stil/düzen hesabı olmasın)
     if (left !== bubbleL) { bubbleEl.style.left = left + 'px'; bubbleL = left; }
@@ -2038,6 +2048,7 @@ const Scene = (() => {
       bubbleEl.classList.add('hidden');
       bubbleUntil = 0;
       bubbleOn = false;
+      setHudUnder(false);
     }
     positionBubble();
   }

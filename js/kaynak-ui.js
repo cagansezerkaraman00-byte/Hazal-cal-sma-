@@ -130,7 +130,8 @@ const KaynakUI = (() => {
       const act = b.dataset.kr;
       if (act === 'search') {
         query = $('#kaynak-root [data-kr="q"]').value.trim();
-        if (query.length < 3 || searching) return;
+        if (searching) return;
+        if (query.length < 3) { App.toast('🔎', 'En az 3 harf yaz', 'Konu, başlık ya da yazar adı'); return; }
         searching = true; render();
         try { results = await Kaynak.search(query); } catch (err) { App.toast('⚠️', 'Arama yapılamadı', err.message); }
         searching = false; render();

@@ -19,7 +19,7 @@ const DepoUI = (() => {
     if (!Depo.driveReady()) {
       return `<div class="depo-status local">
           <div><b>📱 Dosyaların şimdilik bu cihazda saklanıyor.</b> <span class="muted small">${localTxt || 'Henüz dosya yok.'}</span>
-          <p class="muted small">İstersen Google Drive'ı bağlayabilirsin: dosyalar senin Drive'ındaki <b>Luna Depo</b> klasöründe durur, iPad'inde yer kaplamaz. Bağlamasan da Depo bu cihazda sorunsuz çalışır.</p></div>
+          <p class="muted small">İstersen Google Drive'ı bağlayabilirsin: dosyalar senin Drive'ındaki <b>Luna Depo</b> klasöründe durur, cihazında yer kaplamaz. Bağlamasan da Depo bu cihazda sorunsuz çalışır.</p></div>
           ${cid ? '<button class="btn soft" data-dp="connect" type="button">☁️ Google Drive’ı bağla</button>' : `<details class="drive-setup"><summary>☁️ Google Drive’ı bağla (isteğe bağlı)</summary>
             <p class="hint">Bir kez yapılır (adımlar Ayarlar → Kılavuz → <b>Depo ve Google Drive</b>). Google Cloud'da "Authorized redirect URI" olarak şunu ekle:</p>
             <code class="sp-uri">${U.esc(GAuth.redirectUri())}</code>
@@ -168,7 +168,8 @@ const DepoUI = (() => {
       applyZoom();
     } else if (Depo.isPdf(item.mime)) {
       try { await renderPdf(blob, my); } catch (e) {
-        if (my === V.token) $('#vw-body').innerHTML = `<div class="vw-msg">⚠️ PDF açılamadı (${U.esc(e.message || 'bilinmeyen hata')}). <button class="btn soft" data-vw="download" type="button">İndir / paylaş</button></div>`;
+        const offline = !navigator.onLine || /fetch|import|module|network/i.test(String(e && e.message));
+        if (my === V.token) $('#vw-body').innerHTML = `<div class="vw-msg">${offline ? '📡 PDF görüntüleyici henüz bu cihaza inmemiş. İnternete bağlıyken bir kez aç; sonra internetsiz de çalışır.' : `⚠️ PDF açılamadı (${U.esc(e.message || 'bilinmeyen hata')}).`} <button class="btn soft" data-vw="download" type="button">İndir / paylaş</button></div>`;
       }
     } else {
       $('#vw-body').innerHTML = `<div class="vw-msg"><div style="font-size:3rem">${icon(item)}</div>Bu dosya türü burada önizlenemiyor.
@@ -331,7 +332,7 @@ const DepoUI = (() => {
         render();
         try {
           const n = await Depo.moveToDrive((i, total, p) => { progress = { i, n: total, p, label: 'Drive’a taşınıyor' }; render(); });
-          App.toast('☁️', `${n} dosya Drive’a taşındı`, 'iPad’inde yer açıldı');
+          App.toast('☁️', `${n} dosya Drive’a taşındı`, 'Cihazında yer açıldı');
         } catch (err) { App.toast('⚠️', 'Taşıma yarıda kaldı', err instanceof Depo.NeedAuth ? 'Drive bağlantısını yenileyip tekrar dene' : err.message); }
         progress = null; render();
       }

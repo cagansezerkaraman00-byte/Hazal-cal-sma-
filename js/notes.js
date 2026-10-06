@@ -64,17 +64,21 @@ const NotesUI = (() => {
   }
 
   function notesHtml() {
-    const q = search.toLocaleLowerCase('tr-TR');
-    const list = D().notes
-      .filter((n) => !filterSubject || n.subjectId === filterSubject)
-      .filter((n) => !q || (n.title + ' ' + n.body).toLocaleLowerCase('tr-TR').includes(q))
-      .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updated - a.updated);
     return `<div class="notes-bar">
         <button class="btn primary" data-act="new-note">＋ Yeni not</button>
         <input type="search" data-f="search" placeholder="Notlarda ara…" value="${U.esc(search)}">
       </div>
       ${subjectChips()}
-      ${list.length ? `<div class="note-grid">${list.map((n) => `<article class="note-card" data-id="${n.id}" style="--c:${Store.subject(n.subjectId).color}">
+      <div class="notes-results">${notesListHtml()}</div>`;
+  }
+  // aramada yalnızca bu kısım yenilenir (arama kutusu yerinde kalır: klavye bozulmaz, hızlıdır)
+  function notesListHtml() {
+    const q = search.toLocaleLowerCase('tr-TR');
+    const list = D().notes
+      .filter((n) => !filterSubject || n.subjectId === filterSubject)
+      .filter((n) => !q || (n.title + ' ' + n.body).toLocaleLowerCase('tr-TR').includes(q))
+      .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.updated - a.updated);
+    return `${list.length ? `<div class="note-grid">${list.map((n) => `<article class="note-card" data-id="${n.id}" style="--c:${Store.subject(n.subjectId).color}">
           <header><span class="tag">${U.esc(subjName(n.subjectId))}</span>${n.pinned ? '<span title="Sabit">📌</span>' : ''}</header>
           <h3>${U.esc(n.title || 'Başlıksız not')}</h3>
           <div class="note-body">${fmt(n.body.length > 700 ? n.body.slice(0, 700) + '…' : n.body)}</div>
@@ -226,23 +230,13 @@ const NotesUI = (() => {
       const li = b.closest('.card-list li');
       if (li) editCard(D().cards.find((c) => c.id === li.dataset.id));
     });
-    // arama: Android klavyesi kelimeyi oluştururken (composition) kutu yeniden çizilirse harfler çoğalır;
-    // oluşturma bitene kadar beklenir
-    let composing = false;
-    root.addEventListener('compositionstart', () => { composing = true; });
-    root.addEventListener('compositionend', (e) => {
-      composing = false;
-      if (e.target.dataset.f === 'search' && !e.target.closest('#depo-root, #hata-root, #kaynak-root')) e.target.dispatchEvent(new Event('input', { bubbles: true }));
-    });
+    // arama: kutu yeniden çizilmez (Android klavyesi kelimeyi oluştururken bozulmasın), yalnızca liste yenilenir
+    let searchT = 0;
     root.addEventListener('input', (e) => {
       if (e.target.closest('#depo-root, #hata-root, #kaynak-root') || e.target.dataset.f !== 'search') return;
-      if (composing || e.isComposing) return;
       search = e.target.value;
-      const pos = e.target.selectionStart;
-      render();
-      const inp = root.querySelector('[data-f="search"]');
-      inp.focus();
-      try { inp.setSelectionRange(pos, pos); } catch (err) { /* bazı tarayıcılar */ }
+      clearTimeout(searchT);
+      searchT = setTimeout(() => { const box = root.querySelector('.notes-results'); if (box) box.innerHTML = notesListHtml(); else render(); }, 120);
     });
   }
 

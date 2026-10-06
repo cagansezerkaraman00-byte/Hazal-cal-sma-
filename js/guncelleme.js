@@ -175,6 +175,19 @@ const Guncelleme = (() => {
     else if (a === 'install-later') { set(KEY.install, String(Date.now())); renderBanner(); }
   }
 
+  // ---------- Çevrimdışı PDF ----------
+  // ana ekrandaki uygulamada, internet varken PDF görüntüleyiciyi bir kez önceden indir (Depo'daki PDF'ler internetsiz de açılsın)
+  async function prefetchPdf() {
+    try {
+      if (!standalone() || !navigator.onLine || !window.caches || (navigator.connection && navigator.connection.saveData)) return;
+      const box = await caches.open('luna-vendor-1');
+      for (const f of ['vendor/pdfjs/pdf.min.mjs', 'vendor/pdfjs/pdf.worker.min.mjs']) {
+        const u = new URL(f, location.href);
+        if (!(await box.match(u.origin + u.pathname))) await fetch(f); // servis çalışanı satıcı önbelleğine yazar
+      }
+    } catch (e) { /* sonra yeniden denenir */ }
+  }
+
   // ---------- Servis çalışanı ----------
   function setupSW() {
     let hadController = !!navigator.serviceWorker.controller;
@@ -224,6 +237,7 @@ const Guncelleme = (() => {
       if (!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;
       setupSW();
       setTimeout(() => check(false), 4000);
+      setTimeout(prefetchPdf, 30000);
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) tryAutoReload();
         else if (Date.now() - lastCheck > 10 * 60000) check(false);

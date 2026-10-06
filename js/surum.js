@@ -15,7 +15,10 @@ const SURUMLER = /*SURUMLER*/[
       "📲 Luna'yı tarayıcıdan açınca ana ekrana ekleme rehberi çıkıyor; Android'de tek dokunuşla yükleniyor.",
       "🐾 Tam odakta izinli uygulamalar: YouTube, ChatGPT, Gemini ya da Spotify'a hangi yoldan geçersen geç, dönüşte \"Neredeydin?\" diye soruyorum. Seçersen sayaç hiç durmamış gibi devam ediyor.",
       "📱 Telefonda daha rahat: odak ekranındaki düğmeler küçük ekranlara sığıyor, grafiklerde dokununca değer görünüyor, küçük dokunma alanları büyüdü.",
-      "🛠️ Uzak tarihli sınavlar artık listede ve geri sayımda görünüyor; yazı ve sayı biçimleri Türkçe kurallarına uydu; birçok küçük düzeltme."
+      "⌨️ Android klavyesinde Notlar ve Depo aramasında harfler artık çoğalmıyor; arama daha hızlı.",
+      "📝 Bir pencerede yazdıkların, yanlışlıkla dışarı dokununca kaybolmuyor; önce soruyorum. Sevgilinden notlar yazarken kaydediliyor.",
+      "🎯 Sahnedeki küçük sayaca dokununca odak ekranına geri dönüyorsun.",
+      "🛠️ Uzak tarihli sınavlar (KPSS gibi) listede ve geri sayımda görünüyor; ondalıklar virgüllü; çevrimdışı PDF, dar ekran ve yatay ekran düzeltmeleri."
     ]
   },
   {
