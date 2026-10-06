@@ -48,7 +48,7 @@
     if (!document.hidden) return;
     try {
       const reg = navigator.serviceWorker && (await navigator.serviceWorker.getRegistration());
-      if (reg) reg.showNotification(title, { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png' });
+      if (reg) await reg.showNotification(title, { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png' });
       else new Notification(title, { body, icon: 'icons/icon-192.png' });
     } catch (e) { /* bazı tarayıcılar desteklemez */ }
   }
@@ -279,7 +279,15 @@
     $('#allow-set').classList.toggle('hidden', !D().settings.pauseOnLeave);
   }
   // uygulama dışındaki süreyi değerlendir: tam odakta izinsiz çıkış 15 sn'yi geçtiyse sayaç o anda durur
+  function checkLunaAway() {
+    const away = D().timer && D().timer.away;
+    const nudge = Messages.departure(away);
+    if (away && away.lunaCounted) save();
+    if (nudge) notify('Luna dersine çağırıyor 🐾', Messages.get('focusNudge'));
+  }
+
   function checkAway() {
+    checkLunaAway();
     const x = D().timer, a = x && x.away;
     if (!a || a.app || a.paused || !D().settings.pauseOnLeave) return false;
     const s = Timer.state();
@@ -298,16 +306,17 @@
     delete x.away;
     save();
     const m = Math.round((Date.now() - a.at) / 60000);
-    if (a.paused && allowedApps().length) { askWhere(m); return true; }
+    if (a.paused && allowedApps().length) { askWhere(m, !!a.lunaNudge); return true; }
     let text = '';
     if (a.paused) text = `Hoş geldin! Uygulamadan çıkınca sayaç durdu ⏸ Hazır olduğunda "Devam"a bas, kaldığımız yerden sürdürelim 🐾`;
     else if (a.app && m >= 1) text = `${exitInfo(a.app).from} hoş geldin ${exitInfo(a.app).e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
     else if (!a.app && m >= 1 && !D().settings.pauseOnLeave) text = `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`;
+    if (a.lunaNudge && !a.app) text = Messages.get('focusNudge') + (a.paused ? ' Sayaç durdu; hazır olduğunda Devam’a bas.' : '');
     if (text) { Scene.say(text); lastMsgAt = Date.now(); }
     return !!text;
   }
   // tam odakta dışarıda kalınca sayaç durdu: izinli bir uygulamadaysa o süre de çalışmaya sayılır
-  function askWhere(m) {
+  function askWhere(m, nudge = false) {
     const list = allowedApps();
     const ask = () => openModal(`<h3>🐾 Neredeydin?</h3>
       <p class="muted">${m >= 1 ? `${m} dakika` : 'Bir süre'} uygulamanın dışındaydın, sayaç durdu. İzinli uygulamalardan birinde çalıştıysan söyle; o süre de çalışmana sayılsın, sayaç hiç durmamış gibi devam etsin.</p>
@@ -322,7 +331,7 @@
           lockScreen(true);
           Scene.say(`${APPS[k].from} hoş geldin ${APPS[k].e} Sayaç hiç durmamış gibi devam ediyor; o süre de çalışmana sayıldı.`);
         } else {
-          Scene.say('Sorun değil, hazır olduğunda "Devam"a bas, kaldığımız yerden sürdürelim 🐾');
+          Scene.say(nudge ? Messages.get('focusNudge') + ' Hazır olduğunda Devam’a bas 🐾' : 'Sorun değil, hazır olduğunda Devam’a bas, kaldığımız yerden sürdürelim 🐾');
         }
         lastMsgAt = Date.now();
       });
@@ -1468,23 +1477,51 @@
     });
   }
 
+  function sayCompanion(kind) {
+    const c = Messages.companionState();
+    if (kind === 'checkIn') c.checkedIn = true;
+    if (kind === 'bedtime') c.bedtime = true;
+    save();
+    say(kind, { ms: 9000 });
+  }
+
+  function dailyCheckIn() {
+    if (document.hidden || !$('#modal').classList.contains('hidden')) return false;
+    const s = Timer.state(), c = Messages.companionState();
+    if (s.running || c.checkedIn || Date.now() - lastMsgAt < 12000) return false;
+    sayCompanion('checkIn');
+    return true;
+  }
+
   function periodic() {
+    if (dailyCheckIn()) return;
     const iv = D().settings.msgInterval;
     if (!iv || document.hidden || !$('#modal').classList.contains('hidden')) return;
     if (Date.now() - lastMsgAt < iv * 60000) return;
     const s = Timer.state();
     const focusing = s.running && s.phase === 'focus';
     if (focusing && D().settings.quietFocus) return; // odaklanırken rahatsız etme
+    if (!s.running && Messages.mood() === 'bedtime') { sayCompanion('bedtime'); return; }
     if (!focusing && Math.random() < 0.35 && sayLove()) return;
     if (focusing) say('during');
     else if (s.running) say('breakStart');
-    else say(Messages.timeOfDay());
+    else sayCompanion(Messages.mood());
   }
 
   let welcomedBack = false;
   function greetOnOpen() {
     const ss = D().sessions;
+    setTimeout(dailyCheckIn, 15000);
     if (welcomedBack) return; // dönüş mesajı (ya da "Neredeydin?") zaten konuştu
+    const conversation = Messages.companionState();
+    if (!conversation.introduced) {
+      setTimeout(() => {
+        if (document.hidden) return;
+        conversation.introduced = true; save();
+        say('welcome', { ms: 9000 });
+      }, 1200);
+      return;
+    }
     // özel günlerde günde bir kez tebrik
     const evs = Scene.today ? Scene.today().events.map((e) => e.key) : [];
     const special = evs.includes('yilbasi') ? 'yilbasi' : evs.includes('ramazan') || evs.includes('kurban') ? 'bayram' : evs.includes('ulusal') ? 'ulusal' : evs.includes('sevgililer') ? 'love' : null;
@@ -1503,10 +1540,12 @@
     const exam = programMode() ? Uni.upcoming(3).find((e) => Uni.EXAM.has(e.kind)) : null;
     setTimeout(() => {
       if (exam && D().lastExamGreet !== today) { D().lastExamGreet = today; save(); App.sayText(Messages.get('exam', { what: examClause(exam) })); return; }
-      if (!ss.length) say('welcome', { ms: 9000 });
-      else if (Date.now() - ss[ss.length - 1].start > 3 * 864e5) say('comeback');
+      if (document.hidden) return;
+      if (Messages.mood() === 'bedtime') sayCompanion('bedtime');
+      else if (!Messages.companionState().checkedIn) sayCompanion('checkIn');
+      else if (ss.length && Date.now() - ss[ss.length - 1].start > 3 * 864e5) say('comeback');
       else if (fullMoon) { D().lastMoonGreet = today; save(); say('dolunay', { ms: 8000 }); }
-      else say(Messages.timeOfDay());
+      else sayCompanion(Messages.mood());
     }, 1200);
     // emek birikti ama bir aydır yedek yok: iki haftada en fazla bir kez nazik hatırlatma
     const month = 30 * 864e5, now = Date.now();
@@ -1678,7 +1717,7 @@
         save();
         // arka planda kod çalışmaya devam ediyorsa (bilgisayar sekmesi) süre dolunca hemen durdur
         clearTimeout(awayTimer);
-        if (D().settings.pauseOnLeave && !app) awayTimer = setTimeout(checkAway, AWAY_GRACE + 500);
+        if (!app) awayTimer = setTimeout(checkAway, AWAY_GRACE + 500);
         return;
       }
       clearTimeout(awayTimer);

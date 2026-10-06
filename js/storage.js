@@ -202,7 +202,7 @@ const Store = (() => {
   // Yedeği mevcut verilerle birleştirir: hiçbir kayıt silinmez, eksikler eklenir.
   // id'li listeler id'ye göre, haritalar anahtara göre birleşir; ayarlar bu cihazdaki gibi kalır.
   // Bilinmeyen (ileride eklenecek) alanlar da aynı kurallarla birleşir. Eklenen kayıt sayısını döndürür.
-  const LOCAL_ONLY = new Set(['version', 'settings', 'timer', 'lastGoalDay', 'lastWeatherMsg', 'lastSpecialGreet', 'lastBackup', 'lastBackupNudge', 'lastMoonGreet', 'lastExamGreet']);
+  const LOCAL_ONLY = new Set(['version', 'settings', 'timer', 'lastGoalDay', 'lastWeatherMsg', 'lastSpecialGreet', 'lastBackup', 'lastBackupNudge', 'lastMoonGreet', 'lastExamGreet', 'lunaConversation']);
   const COUNTERS = new Set(['fish', 'fed', 'tasksDone', 'reviewDone', 'planItems', 'planFull', 'cardReviews']);
   const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
   const hasIds = (arr) => arr.length > 0 && arr.every((x) => isObj(x) && (typeof x.id === 'string' || typeof x.id === 'number'));
