@@ -2,7 +2,7 @@
 const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '../js/messages.js'), 'utf8');
 const passed = (() => {
 
-const Store = { data: { settings: { name: 'Hazal', dailyGoal: 180 }, sessions: [], timer: null, loveNotes: [] } };
+const Store = { save() {}, data: { settings: { name: 'Hazal', dailyGoal: 180 }, sessions: [], timer: null, loveNotes: [] } };
 const U = {
  dateKey: d => { d = new Date(d); return [d.getFullYear(), d.getMonth()+1, d.getDate()].join('-'); },
  pick: a => a[0]

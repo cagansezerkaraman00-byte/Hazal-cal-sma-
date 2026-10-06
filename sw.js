@@ -7,9 +7,9 @@ const VERSION = 'luna-' + SURUMLER[0].surum;
 const VENDOR = 'luna-vendor-1'; // büyük ve değişmeyen kütüphaneler (PDF.js), yazı tipleri
 const FILES = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
-  'js/storage.js', 'js/surum.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
+  'js/notifications.js', 'js/mini-timer.js', 'js/storage.js', 'js/surum.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
   'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/giris.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify.js', 'js/uni.js', 'js/uni-ui.js', 'js/diag.js', 'js/guncelleme.js', 'js/app.js',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-48.png',
+  'icons/notification-badge.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-48.png',
 ];
 const SHELL = new Set(FILES.map((f) => new URL(f, self.registration.scope).href));
 
@@ -68,7 +68,7 @@ self.addEventListener('notificationclick', (e) => {
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
       const c = cs[0];
-      if (c) { if (upd) c.postMessage({ type: 'guncelleme' }); return c.focus(); }
+      if (c) { if (upd) c.postMessage({ type: 'guncelleme' }); else c.postMessage({type:'luna-open-tab',tab:e.notification.data?.tab || 'home'}); return c.focus(); }
       return self.clients.openWindow(upd ? './#guncelleme' : './');
     })
   );
@@ -90,7 +90,7 @@ async function remoteCheck() {
   const box = await caches.open(VENDOR), mark = new URL('__bildirildi/' + v.surum, self.registration.scope).href;
   if (await box.match(mark)) return;
   await box.put(mark, new Response('1'));
-  await self.registration.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${v.surum}: ${v.baslik}. Dokun, güncelleyelim.`, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'luna-guncelleme' });
+  await self.registration.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${v.surum}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/icon-192.png', self.registration.scope).href, badge: new URL('icons/notification-badge.png', self.registration.scope).href, tag: 'luna-guncelleme' });
   if (self.navigator && self.navigator.setAppBadge) self.navigator.setAppBadge(1).catch(() => {}); // simgede rozet
 }
 self.addEventListener('periodicsync', (e) => {

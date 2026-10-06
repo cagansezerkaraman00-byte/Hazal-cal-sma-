@@ -31,7 +31,7 @@
   }
 
   function say(kind, opts) {
-    Scene.say(Messages.get(kind), opts);
+    Scene.say(Messages.get(kind), { ...Messages.delivery(kind), ...opts });
     lastMsgAt = Date.now();
   }
   function sayLove() {
@@ -44,13 +44,8 @@
   }
 
   async function notify(title, body) {
-    if (!D().settings.notify || !('Notification' in window) || Notification.permission !== 'granted') return;
     if (!document.hidden) return;
-    try {
-      const reg = navigator.serviceWorker && (await navigator.serviceWorker.getRegistration());
-      if (reg) await reg.showNotification(title, { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png' });
-      else new Notification(title, { body, icon: 'icons/icon-192.png' });
-    } catch (e) { /* bazı tarayıcılar desteklemez */ }
+    await LunaNotify.send(title,body,{tag:'luna-session'});
   }
 
   async function lockScreen(on) {
@@ -265,12 +260,26 @@
   };
   let allowExit = null; // {app, at}: izinli düğmeye dokunulduğu an
   // uygulamanın kendi yönlendirmeleri (Google Drive, Spotify girişi) de sayacı durdurmaz
-  const EXITS = { google: { e: '☁️', n: 'Google', from: "Google'dan" }, spotifyLogin: { e: '🎧', n: 'Spotify', from: "Spotify'dan" }, guncelleme: { e: '✨', n: 'Güncelleme', from: 'Güncellemeden' } };
+  const EXITS = { miniTimer: { e: '🐾', n: 'Mini sayaç', from: 'Mini sayaçtan' }, google: { e: '☁️', n: 'Google', from: "Google'dan" }, spotifyLogin: { e: '🎧', n: 'Spotify', from: "Spotify'dan" }, guncelleme: { e: '✨', n: 'Güncelleme', from: 'Güncellemeden' } };
   const exitInfo = (k) => APPS[k] || EXITS[k] || { e: '🐾', n: 'Uygulama', from: 'Geri' };
   const allowedApps = () => (D().settings.allowedApps || []).filter((k) => APPS[k]);
-  function appUrl(k) {
+  function appWebUrl(k) {
+    if (!APPS[k]) return '';
     if (k === 'spotify') { const p = spotifyParts(D().settings.spotify); if (p) return `https://open.spotify.com/${p.type}/${p.id}`; }
     return APPS[k].url;
+  }
+  function appUrl(k) {
+    const web = appWebUrl(k);
+    if (!web) return '';
+    // Android Chrome: hedef uygulama bu bağlantıyı destekliyorsa aç; yoksa güvenli web adresi.
+    // iOS/iPadOS: HTTPS Universal Link kararı işletim sistemine aittir.
+    const packages = { chatgpt: 'com.openai.chatgpt', gemini: 'com.google.android.apps.bard',
+      youtube: 'com.google.android.youtube', spotify: 'com.spotify.music' };
+    if (/Android/i.test(navigator.userAgent) && /Chrome\//i.test(navigator.userAgent)) {
+      return 'intent://' + web.slice('https://'.length) + '#Intent;scheme=https;package=' +
+        packages[k] + ';S.browser_fallback_url=' + encodeURIComponent(web) + ';end';
+    }
+    return web;
   }
   function renderAllowApps() {
     const list = allowedApps();
@@ -312,7 +321,7 @@
     else if (a.app && m >= 1) text = `${exitInfo(a.app).from} hoş geldin ${exitInfo(a.app).e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
     else if (!a.app && m >= 1 && !D().settings.pauseOnLeave) text = `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`;
     if (a.lunaNudge && !a.app) text = Messages.get('focusNudge') + (a.paused ? ' Sayaç durdu; hazır olduğunda Devam’a bas.' : '');
-    if (text) { Scene.say(text); lastMsgAt = Date.now(); }
+    if (text) { Scene.say(text, { emotion: a.lunaNudge ? 'angry' : 'neutral' }); lastMsgAt = Date.now(); }
     return !!text;
   }
   // tam odakta dışarıda kalınca sayaç durdu: izinli bir uygulamadaysa o süre de çalışmaya sayılır
@@ -1094,8 +1103,8 @@
     const src = spotifyEmbed(D().settings.spotify);
     // "Spotify'da aç": telefonda uygulama yüklüyse doğrudan uygulamada açılır (önizleme yerine tam şarkılar)
     $('#spotify-frame').innerHTML = src
-      ? `<iframe src="${src}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify"></iframe>
-        <a class="sp-open" href="https://open.spotify.com/${p.type}/${p.id}" target="_blank" rel="noopener">Spotify uygulamasında aç ↗</a>`
+      ? `<a class="btn primary sp-open" href="${U.esc(appUrl('spotify'))}" target="_blank" rel="noopener" data-app="spotify">Spotify'da dinle ↗</a>
+        <p class="hint">Liste ayrı açılır; cihazın destekliyorsa yüklü Spotify uygulamasına geçersin.</p>`
       : '<p class="empty">Geçerli bir Spotify bağlantısı yapıştır.</p>';
     $$('#spotify-presets .chip').forEach((c) => c.classList.toggle('active', c.dataset.url === D().settings.spotify));
     const preset = PRESETS.find(([, u]) => u === D().settings.spotify);
@@ -1131,6 +1140,12 @@
       $('#spotify-input').value = c.dataset.url;
       loadSpotify();
     });
+    $('#spotify-frame').addEventListener('click', (e) => {
+      const link = e.target.closest('a[data-app="spotify"]');
+      if (!link) return;
+      link.href = appUrl('spotify');
+      if (allowedApps().includes('spotify')) allowExit = { app: 'spotify', at: Date.now() };
+    });
     // müzik paneli ilk açıldığında yüklenir (sayfa açılışını yavaşlatmasın)
     $('#music-card').addEventListener('toggle', () => { if ($('#music-card').open) renderMusic(); });
     $('#mixer').addEventListener('input', (e) => {
@@ -1160,6 +1175,7 @@
     $('#set-autobreak').checked = s.autoBreak;
     $('#set-autofocus').checked = s.autoFocus;
     $('#set-sound').checked = s.sound;
+    $('#set-reminders').checked = !!s.studyReminders;
     $('#set-notify').checked = s.notify && 'Notification' in window && Notification.permission === 'granted';
     $('#set-love').value = D().loveNotes.join('\n');
     $('#set-focusmode').checked = s.focusMode;
@@ -1294,6 +1310,7 @@
       showTab('home');
     });
     $('#set-focusmode').addEventListener('change', (e) => { D().settings.focusMode = e.target.checked; save(); renderTimer(Timer.state()); });
+    $('#set-reminders').addEventListener('change',e=>{D().settings.studyReminders=e.target.checked;save();});
     $('#set-notify').addEventListener('change', async (e) => {
       if (e.target.checked) {
         if (!('Notification' in window)) { toast('🔕', 'Bu tarayıcı bildirimleri desteklemiyor'); e.target.checked = false; return; }
@@ -1567,7 +1584,7 @@
     save,
     toast,
     esc: U.esc,
-    say(kind, vars) { Scene.say(Messages.get(kind, vars)); lastMsgAt = Date.now(); },
+    say(kind, vars) { Scene.say(Messages.get(kind, vars), Messages.delivery(kind)); lastMsgAt = Date.now(); },
     sayText(text, opts) { Scene.say(text, opts); lastMsgAt = Date.now(); },
     openModal,
     closeModal,
@@ -1602,7 +1619,19 @@
     try { if (!localStorage.getItem('luna-temizlik-1')) { localStorage.removeItem('luna-sync-on'); if (window.indexedDB) indexedDB.deleteDatabase('luna-sync'); localStorage.setItem('luna-temizlik-1', '1'); } } catch (e) { /* yok say */ }
     Scene.init($('#sky'), $('#bubble'), {
       onPoke() { Sound.meow(); say('poke'); },
-      onFriend(kind) { Sound.meow(); say(kind === 'vesper' ? 'vesper' : 'kitten'); },
+      onFriend(kind) { Sound.meow(); say(kind === 'vesper' ? 'vesper' : U.pick(['kitten','kittenMiss','kittenHappy'])); },
+      onFriendArrival(kind) {
+        let tries = 0;
+        const speak = () => {
+          if (App.isFocusing()) return;
+          if (Date.now() - lastMsgAt < 10000 || !$('#modal').classList.contains('hidden')) {
+            if (++tries < 7) setTimeout(speak, 1500);
+            return;
+          }
+          say(kind === 'vesper' ? 'vesper' : U.pick(['kitten','kittenMiss','kittenHappy']));
+        };
+        speak();
+      },
       // ilk karşılaşma: tanıştırma + iki kediyle de tanışınca rozet
       onFriendSeen(kind) {
         const st = D().stats;
@@ -1610,7 +1639,7 @@
         st.seen[kind] = Date.now();
         if (st.seen.vesper && st.seen.kitten) st.friendsMet = true;
         save();
-        setTimeout(() => { if (!App.isFocusing()) say(kind === 'vesper' ? 'meetVesper' : 'meetKitten'); }, 2500);
+
         checkBadges();
       },
     });
@@ -1711,7 +1740,7 @@
       const focusing = s.running && s.phase === 'focus';
       if (document.hidden) {
         if (!focusing) return;
-        const app = allowExit && Date.now() - allowExit.at < 15000 ? allowExit.app : null;
+        const app = s.miniBackground ? 'miniTimer' : allowExit && Date.now() - allowExit.at < 15000 ? allowExit.app : null;
         allowExit = null;
         D().timer.away = { at: Date.now(), app }; // sayfa arka planda kapatılsa da açılışta değerlendirilir
         save();
@@ -1732,6 +1761,8 @@
     checkBadges();
     if (Store.loadError) setTimeout(() => toast('🛟', 'Verilerin okunamadı', 'Bozulmasın diye kopyası alındı: Ayarlar → Veriler', 9000), 1500);
 
+    LunaNotify.init(App);
+    MiniTimer.init(App,()=>weatherNow);
     if (window.Guncelleme) Guncelleme.init(App); // güncellemeler, yenilikler ve ana ekrana ekleme
     // ana ekrana eklenmiş uygulamada tarayıcıdan verilerin kalıcı saklanmasını iste (izin penceresi çıkmaz)
     if (navigator.storage && navigator.storage.persist && (matchMedia('(display-mode: standalone)').matches || navigator.standalone)) {

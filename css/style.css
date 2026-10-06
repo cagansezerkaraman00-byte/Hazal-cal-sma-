@@ -1680,3 +1680,17 @@ button.stat-chip { font: inherit; color: inherit; cursor: pointer; }
 /* kütüphanede ders videosu */
 .vw-video { display: grid; place-items: center; min-height: 100%; }
 .vw-video video { width: 100%; max-height: calc(100vh - 140px); border-radius: 10px; background: #000; }
+
+/* Konuşan kedi: isim ve renkle ayırt edilir, balon mevcut saat kutusunu korur. */
+.speaker-tag { display: block; font-size: .68rem; font-weight: 800; letter-spacing: .04em; margin-bottom: .25rem; color: #75608e; }
+#bubble[data-speaker="vesper"] { border-color: #7896c9; }
+#bubble[data-speaker="vesper"] .speaker-tag { color: #526b9d; }
+#bubble[data-speaker="kitten"] { border-color: #d99a55; }
+#bubble[data-speaker="kitten"] .speaker-tag { color: #986125; }
+@media (prefers-reduced-motion: reduce) { #bubble.pop { animation: none; } }
+
+.luna-mini-panel{position:fixed;z-index:1800;right:14px;bottom:85px;width:min(380px,calc(100vw - 20px));border:1px solid #817090;border-radius:16px;overflow:hidden;background:#17192b;color:#fff;box-shadow:0 14px 50px #0005}
+.luna-mini-panel canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+.mini-handle{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;touch-action:none;cursor:grab;background:#29273e}
+.luna-mini-panel button{font:inherit;font-size:12px;background:#3a3654;color:#fff4dc;border:1px solid #796985;border-radius:8px;padding:8px;min-height:38px;cursor:pointer}
+.mini-actions{display:flex;gap:8px;padding:0 10px}.mini-help{font-size:11px;line-height:1.4;color:#c0bed3;margin:9px 12px 12px}
