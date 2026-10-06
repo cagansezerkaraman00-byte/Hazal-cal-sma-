@@ -6,6 +6,17 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
+    "surum": "2.1.4",
+    "tarih": "2026-10-06",
+    "baslik": "Minik uyku penceresi",
+    "notlar": [
+      "🐾 Uygulama içindeki büyük mini sayaç kartı kaldırıldı.",
+      "💤 Küçük yatay pencerede üç kedi birbirine sokulup uyur; saat ve sayaç yanlarında görünür.",
+      "↗️ Destekleyen tarayıcıda ayrılmadan önce Mini pencere’ye dokun. Luna’ya geri dönünce kapanır. Web sürümü, uygulama alta alındığında kendiliğinden dış pencere açamaz."
+    ]
+  },
+
+  {
     "surum": "2.1.3",
     "tarih": "2026-10-06",
     "baslik": "Hata düzeltmeleri",

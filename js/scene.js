@@ -2252,6 +2252,21 @@ const Scene = (() => {
     // hemen bir ip oyunu başlat (odaklanırken yok sayılır)
     play() { if (mode !== 'focus') { nextPlay = 0; startPlay(); } },
     // Luna'nın küçük portresi (rapor başlığı vb.)
+    sleepingCompanions(canvas, t = 0) {
+      const g=canvas.getContext('2d'), bank=sprites();
+      g.imageSmoothingEnabled=false;
+      g.fillStyle='#302b46';g.fillRect(18,152,222,14);g.fillRect(26,142,206,32);
+      // Two adults face inward; the kitten sleeps across their paws.
+      [['vesper',33,137,3.5,0],['luna',112,143,3.5,1],['kitten',85,162,3,0]].forEach(([kind,x,y,scale,dir],i)=>{
+        const p=bank[kind].sleep;
+        const breath=reducedMotion?0:Math.round(Math.sin(t*1.35+i*.25));
+        g.drawImage(p.c[dir],x,y-p.h*scale+breath,p.w*scale,p.h*scale);
+      });
+      g.fillStyle='#afa0d3';g.font='18px monospace';
+      g.fillText('z',60,54);g.font='24px monospace';g.fillText('z',79,37);
+      g.font='16px system-ui';g.fillStyle='#c3b4d4';g.textAlign='center';
+      g.fillText('Luna · Vesper · Güçlü',130,190);g.textAlign='left';
+    },
     companionPortraits(canvas, y = 155, height = 145, t = 0) {
       const g=canvas.getContext('2d'), bank=sprites();
       const kinds=['luna','vesper','kitten'], names=['Luna','Vesper','Güçlü'];
