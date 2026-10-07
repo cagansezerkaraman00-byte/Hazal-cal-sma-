@@ -6,7 +6,7 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
-  "surum": "2.3.4",
+  "surum": "2.3.5",
   "tarih": "2026-10-07",
   "baslik": "Üç kediye beslenme replikleri ve uygulama içi Spotify",
   "notlar": [
