@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.3.6",
+  "tarih": "2026-10-07",
+  "baslik": "Güvenli güncelleme ve açılış onarımı",
+  "notlar": [
+    "🛠️ Güncelleme dosyaları aynı sürümün doğrulamasından geçmeden etkinleşmez. Eksik veya karışık indirme eski çalışan sürümün yerini almaz.",
+    "🔄 Açılış tamamlanamazsa boş ekran yerine yeniden deneme ve onarım bağlantısı gösterilir; çalışma kayıtları silinmez.",
+    "📦 Sayfa ve kod dosyaları sürüm numarasıyla eşleştirilir."
+  ]
+},
+{
   "surum": "2.3.5",
   "tarih": "2026-10-07",
   "baslik": "Üç kediye beslenme replikleri ve uygulama içi Spotify",
@@ -173,4 +183,5 @@ const SURUMLER = /*SURUMLER*/[
 ]/*SURUMLER*/;
 
 if (typeof window !== 'undefined') { window.SURUMLER = SURUMLER; }
+
 

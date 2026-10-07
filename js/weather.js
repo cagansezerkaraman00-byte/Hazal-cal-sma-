@@ -260,3 +260,4 @@ const Weather = (() => {
 
 // app.js `window.Weather` ile kontrol ediyor; üst düzey const window'a eklenmez
 if (typeof window !== 'undefined') window.Weather = Weather;
+

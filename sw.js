@@ -13,15 +13,37 @@ const FILES = [
 ];
 const SHELL = new Set(FILES.map((f) => new URL(f, self.registration.scope).href));
 
-self.addEventListener('install', (e) => {
-  // HTTP önbelleğini atla: yeni sürüm gerçekten yeni dosyalarla kurulsun
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES.map((f) => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting()));
+// A release is usable only when every code file matches the published digest.
+async function installRelease() {
+  const mr = await fetch('release-manifest.json', { cache: 'no-store' });
+  if (!mr.ok) throw new Error('Release manifest unavailable');
+  const manifest = await mr.json();
+  if (manifest.version !== SURUMLER[0].surum) throw new Error('Release version mismatch');
+  const responses = await Promise.all(FILES.map(async file => {
+    const response = await fetch(new Request(file, { cache: 'reload' }));
+    if (!response.ok) throw new Error('Release file unavailable: ' + file);
+    const key = file === './' ? 'index.html' : file;
+    if (/\.(js|css|html|webmanifest)$/.test(key)) {
+      if (!manifest.files[key]) throw new Error('Missing release digest: ' + key);
+      const bytes = await response.clone().arrayBuffer();
+      const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
+      if (digest !== manifest.files[key]) throw new Error('Release file mismatch: ' + key);
+    }
+    return [file, response];
+  }));
+  const cache = await caches.open(VERSION);
+  await Promise.all(responses.map(([file, response]) => cache.put(file, response)));
+  await self.skipWaiting();
+}
+self.addEventListener('install', e => e.waitUntil(installRelease()));
+self.addEventListener('message', e => {
+  if (e.data?.type === 'LUNA_VERSION') e.ports?.[0]?.postMessage({ version: SURUMLER[0].surum });
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('luna-') && k !== VERSION && k !== VENDOR).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => /^luna-\d/.test(k) && k !== VERSION && !keys.filter(x => /^luna-\d/.test(x)).sort((a,b) => b.localeCompare(a, undefined, {numeric:true})).slice(0, 3).includes(k)).map((k) => caches.delete(k))))
       .then(async () => {
         try { for(const n of await self.registration.getNotifications())if(n.tag?.startsWith('luna-'))n.close(); } catch(e) {}
         return self.clients.claim();
@@ -55,7 +77,13 @@ self.addEventListener('fetch', (e) => {
     }
     if (url.pathname.includes('/vendor/')) { e.respondWith(cacheFirst(req, VENDOR, url.origin + url.pathname)); return; }
     const key = url.origin + url.pathname;
-    if (SHELL.has(key)) { e.respondWith(cacheFirst(req, VERSION, key)); return; }
+    if (SHELL.has(key)) {
+      const requested = url.searchParams.get('v');
+      const version = requested && /^\d+(?:\.\d+)+$/.test(requested) ? 'luna-' + requested : VERSION;
+      // A missing old file must never be replaced with a different release's code.
+      e.respondWith(version === VERSION ? cacheFirst(req, version, key) : caches.open(version).then(c => c.match(key)).then(r => r || new Response('Release expired; reopen Luna', {status:503})));
+      return;
+    }
     // diğer dosyalar: önce ağ, olmazsa önbellek
     e.respondWith(fetch(req).catch(() => caches.match(req)));
     return;

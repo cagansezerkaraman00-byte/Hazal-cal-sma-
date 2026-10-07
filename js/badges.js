@@ -274,3 +274,4 @@ const Badges = (() => {
 })();
 
 if (typeof window !== 'undefined') { window.Badges = Badges; }
+

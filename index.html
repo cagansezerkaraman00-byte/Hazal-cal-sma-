@@ -4,6 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Luna</title>
+  <script>
+  window.LunaBoot = (() => {
+    let ready=false, problem='', shown=false;
+    function show(){
+      if(ready || shown || !document.body)return;
+      shown=true;const box=document.createElement('section');box.id='luna-boot-repair';
+      box.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#eee5ff;color:#30234f;display:grid;place-content:center;padding:28px;font:17px system-ui';
+      box.innerHTML='<h2>Luna tam açılamadı 💜</h2><p>Dosyalar eksik yüklenmiş olabilir. Kayıtlarını silmeden yeniden deneyelim.</p><p id="luna-boot-error"></p><p><button id="luna-boot-retry" style="padding:14px">Yeniden dene</button></p><a href="repair.html?guncel=repair">Güvenli onarımı aç</a>';
+      document.body.appendChild(box);box.querySelector('#luna-boot-error').textContent=problem;
+      box.querySelector('#luna-boot-retry').onclick=()=>location.reload();
+    }
+    function fail(error){problem=String(error?.message || 'Bir uygulama dosyası yüklenemedi.');show();}
+    window.addEventListener('error',e=>{if(!ready){if(e.target?.tagName==='SCRIPT')fail(new Error('Uygulama dosyası yüklenemedi.'));else if(e.message)fail(new Error(e.message));}},true);
+    document.addEventListener('DOMContentLoaded',()=>{if(problem)show();});
+    setTimeout(()=>{if(!ready)show();},25000);
+    window.addEventListener('load',()=>{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});});
+    return {fail,ready(){ready=true;document.getElementById('luna-boot-repair')?.remove();}};
+  })();
+  </script>
+
   <meta name="description" content="Luna ile ders çalış: sayaç, plan, deneme, notlar ve kütüphane">
   <meta name="theme-color" content="#f6f1ff">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -25,8 +45,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css">
-  <script src="js/kurulum.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.3.6">
+  <script src="js/kurulum.js?v=2.3.6"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -581,33 +601,34 @@
   </div>
   <div class="toasts" id="toasts"></div>
 
-  <script src="js/storage.js"></script>
-  <script src="js/surum.js"></script>
-  <script src="js/messages.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/takvim.js"></script>
-  <script src="js/scene.js"></script>
-  <script src="js/timer.js"></script>
-  <script src="js/stats.js"></script>
-  <script src="js/weather.js"></script>
-  <script src="js/yks.js"></script>
-  <script src="js/plan.js"></script>
-  <script src="js/deneme.js"></script>
-  <script src="js/notes.js"></script>
-  <script src="js/giris.js"></script>
-  <script src="js/depo.js"></script>
-  <script src="js/depo-ui.js"></script>
-  <script src="js/hata.js"></script>
-  <script src="js/kaynak.js"></script>
-  <script src="js/kaynak-ui.js"></script>
-  <script src="js/badges.js"></script>
-  <script src="js/spotify.js"></script>
-  <script src="js/uni.js"></script>
-  <script src="js/uni-ui.js"></script>
-  <script src="js/diag.js"></script>
-  <script src="js/guncelleme.js"></script>
-  <script src="js/notifications.js"></script>
-  <script src="js/mini-timer.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/storage.js?v=2.3.6"></script>
+  <script src="js/surum.js?v=2.3.6"></script>
+  <script src="js/messages.js?v=2.3.6"></script>
+  <script src="js/audio.js?v=2.3.6"></script>
+  <script src="js/takvim.js?v=2.3.6"></script>
+  <script src="js/scene.js?v=2.3.6"></script>
+  <script src="js/timer.js?v=2.3.6"></script>
+  <script src="js/stats.js?v=2.3.6"></script>
+  <script src="js/weather.js?v=2.3.6"></script>
+  <script src="js/yks.js?v=2.3.6"></script>
+  <script src="js/plan.js?v=2.3.6"></script>
+  <script src="js/deneme.js?v=2.3.6"></script>
+  <script src="js/notes.js?v=2.3.6"></script>
+  <script src="js/giris.js?v=2.3.6"></script>
+  <script src="js/depo.js?v=2.3.6"></script>
+  <script src="js/depo-ui.js?v=2.3.6"></script>
+  <script src="js/hata.js?v=2.3.6"></script>
+  <script src="js/kaynak.js?v=2.3.6"></script>
+  <script src="js/kaynak-ui.js?v=2.3.6"></script>
+  <script src="js/badges.js?v=2.3.6"></script>
+  <script src="js/spotify.js?v=2.3.6"></script>
+  <script src="js/uni.js?v=2.3.6"></script>
+  <script src="js/uni-ui.js?v=2.3.6"></script>
+  <script src="js/diag.js?v=2.3.6"></script>
+  <script src="js/guncelleme.js?v=2.3.6"></script>
+  <script src="js/notifications.js?v=2.3.6"></script>
+  <script src="js/mini-timer.js?v=2.3.6"></script>
+  <script src="js/app.js?v=2.3.6"></script>
 </body>
 </html>
+

@@ -211,3 +211,4 @@ const Kaynak = (() => {
 })();
 
 if (typeof window !== 'undefined') { window.Kaynak = Kaynak; }
+

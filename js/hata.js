@@ -221,3 +221,4 @@ const HataUI = (() => {
 })();
 
 if (typeof window !== 'undefined') { window.HataUI = HataUI; }
+

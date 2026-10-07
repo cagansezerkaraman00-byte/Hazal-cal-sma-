@@ -265,3 +265,4 @@ const NotesUI = (() => {
 })();
 
 if (typeof window !== 'undefined') { window.NotesUI = NotesUI; }
+

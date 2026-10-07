@@ -425,3 +425,4 @@ const DenemeUI = (() => {
 
 // app.js varlık kontrolü için (üst düzey const window'a eklenmez)
 if (typeof window !== 'undefined') { window.Deneme = Deneme; window.DenemeUI = DenemeUI; }
+

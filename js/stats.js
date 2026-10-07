@@ -270,3 +270,4 @@ const Stats = (() => {
 
   return { inRange, byDay, byHour, bySubject, byWeekday, summary, streak, bestStreak, minutesOn, report, avgRating };
 })();
+

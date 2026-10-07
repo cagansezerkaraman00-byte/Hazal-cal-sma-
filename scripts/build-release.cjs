@@ -1,0 +1,11 @@
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const root=path.join(__dirname,'..');
+const versions=JSON.parse(fs.readFileSync(path.join(root,'js/surum.js'),'utf8').match(/\/\*SURUMLER\*\/([\s\S]*?)\/\*SURUMLER\*\//)[1]);
+const version=versions[0].surum;
+const htmlPath=path.join(root,'index.html');
+let html=fs.readFileSync(htmlPath,'utf8').replace(/((?:src|href)="(?:js\/[^"?]+\.js|css\/[^"?]+\.css))(?:\?v=[^"]+)?"/g, '$1?v='+version+'"');
+fs.writeFileSync(htmlPath,html);
+const files=['index.html','manifest.webmanifest','css/style.css',...fs.readdirSync(path.join(root,'js')).filter(x=>x.endsWith('.js')).map(x=>'js/'+x)];
+const manifest={version,files:Object.fromEntries(files.map(p=>[p,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex')]))};
+fs.writeFileSync(path.join(root,'release-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
+console.log('Release '+version+': '+files.length+' code files verified');

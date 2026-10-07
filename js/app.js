@@ -1680,5 +1680,9 @@ d="${list.includes(k)}">${APPS[k].e} ${APPS[k].n}</button>`).join('');
     }
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => {
+    try { init(); if (window.LunaBoot) LunaBoot.ready(); }
+    catch (error) { console.error('Luna startup:', error); if (window.LunaBoot) LunaBoot.fail(error); }
+  });
 })();
+

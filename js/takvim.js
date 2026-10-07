@@ -71,3 +71,4 @@ const Takvim = (() => {
 })();
 
 if (typeof window !== 'undefined') { window.Takvim = Takvim; }
+

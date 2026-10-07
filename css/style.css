@@ -1783,3 +1783,4 @@ html.kurulum body::before, html.kurulum body::after { display: none !important; 
   .kurulum:has(> .kr-steps:not([hidden])) .kr-steps { grid-column: 2; grid-row: 3; width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .kr-arrow, .kr-steps.kr-flash { animation: none; } }
+
