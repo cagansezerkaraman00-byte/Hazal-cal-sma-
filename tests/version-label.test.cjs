@@ -44,4 +44,3 @@ ok(allowExits===1,'reload exempted from focus penalty');
 console.log(`${count} update flow checks passed`);
 
 })().catch(e=>{ console.error(e); process.exitCode=1; });
-

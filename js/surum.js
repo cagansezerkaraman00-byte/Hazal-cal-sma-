@@ -6,6 +6,19 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
+    "surum": "2.3.1",
+    "gorunenSurum": "2.1.4",
+    "tarih": "2026-10-07",
+    "baslik": "Kurulum ve bildirim düzeltmeleri",
+    "notlar": [
+      "🔔 Bildirimlerde şeffaf kedi simgesi kullanılır; eski Luna bildirimleri güncellemede temizlenir.",
+      "💜 Mor kurulum sayfası, yükleme isteği kabul edilince kapanmaz ve uygulamanın içini tarayıcıda açmaz. Kurulumdan sonra ana ekrandaki Luna simgesinden açılır.",
+      "📲 Bildirime dokununca varsa ana ekrandan açılmış Luna penceresi tercih edilir. Kurulum simgeleri çevrimdışı önbelleğe eklendi.",
+      "🐾 Son mobil mini pencere, beş tema ve karakter iyileştirmeleri korunur. Başarısız dış pencere açılışları temizlenir.",
+      "✍️ Geliştiren: Çağan Sezer Karaman."
+    ]
+  },
+  {
     "surum": "2.3",
     "tarih": "2026-10-07",
     "baslik": "Yeni kurulum sayfası",

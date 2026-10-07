@@ -9,7 +9,7 @@ const FILES = [
   'assets/sleeping-family.jpg', './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/kurulum.js', 'js/notifications.js', 'js/mini-timer.js', 'js/storage.js', 'js/surum.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
   'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/deneme.js', 'js/notes.js', 'js/giris.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify.js', 'js/uni.js', 'js/uni-ui.js', 'js/diag.js', 'js/guncelleme.js', 'js/app.js',
-  'icons/notification-badge.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-48.png',
+  'icons/luna-notification-v2.png', 'icons/icon-512-maskable.png', 'icons/notification-badge.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-48.png',
 ];
 const SHELL = new Set(FILES.map((f) => new URL(f, self.registration.scope).href));
 
@@ -21,8 +21,11 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== VENDOR).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('luna-') && k !== VERSION && k !== VENDOR).map((k) => caches.delete(k))))
+      .then(async () => {
+        try { for(const n of await self.registration.getNotifications())if(n.tag?.startsWith('luna-'))n.close(); } catch(e) {}
+        return self.clients.claim();
+      })
   );
 });
 
@@ -67,9 +70,10 @@ self.addEventListener('notificationclick', (e) => {
   const upd = e.notification.tag === 'luna-guncelleme';
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
-      const c = cs[0];
+      const own=cs.filter(c=>c.url.startsWith(self.registration.scope));
+      const c=own.find(c=>new URL(c.url).searchParams.get('source')==='homescreen') || own.find(c=>c.focused) || own[0];
       if (c) { if (upd) c.postMessage({ type: 'guncelleme' }); else c.postMessage({type:'luna-open-tab',tab:e.notification.data?.tab || 'home'}); return c.focus(); }
-      return self.clients.openWindow(upd ? './#guncelleme' : './');
+      return self.clients.openWindow(upd ? './?source=homescreen#guncelleme' : './?source=homescreen');
     })
   );
 });
@@ -90,7 +94,7 @@ async function remoteCheck() {
   const box = await caches.open(VENDOR), mark = new URL('__bildirildi/' + v.surum, self.registration.scope).href;
   if (await box.match(mark)) return;
   await box.put(mark, new Response('1'));
-  await self.registration.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${v.gorunenSurum || v.surum}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/icon-192.png', self.registration.scope).href, badge: new URL('icons/notification-badge.png', self.registration.scope).href, tag: 'luna-guncelleme' });
+  await self.registration.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${v.gorunenSurum || v.surum}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/luna-notification-v2.png', self.registration.scope).href, badge: new URL('icons/luna-notification-v2.png', self.registration.scope).href, tag: 'luna-guncelleme' });
   if (self.navigator && self.navigator.setAppBadge) self.navigator.setAppBadge(1).catch(() => {}); // simgede rozet
 }
 self.addEventListener('periodicsync', (e) => {

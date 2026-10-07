@@ -218,7 +218,7 @@ const MiniTimer = (() => {
       next.document.body.append(canvas);next.document.title='Luna · Mini sayaç';
       next.addEventListener('pagehide',()=>{if(pip===next){cleanup();closedWhileAway();if(document.hidden)LunaNotify.timerSnapshot();}},{once:true});
       render(canvas);tickId=setInterval(()=>render(canvas),1000);
-    } catch(e) {app.toast('🐾','Mini pencere açılamadı','Bir kez daha dokunarak dene.');}
+    } catch(e) {close();app.toast('🐾','Mini pencere açılamadı','Bir kez daha dokunarak dene.');}
     finally {opening=false;}
   }
   function windowGuide() {

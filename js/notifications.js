@@ -10,7 +10,7 @@ const LunaNotify = (() => {
     return m;
   }
   function options(body, extra = {}) {
-    return { body, icon: asset('icon-192.png'), badge: asset('notification-badge.png'),
+    return { body, icon: asset('luna-notification-v2.png'), badge: asset('luna-notification-v2.png'),
       tag: 'luna-message', data: { tab: 'home' }, ...extra };
   }
   async function send(title, body, extra = {}) {

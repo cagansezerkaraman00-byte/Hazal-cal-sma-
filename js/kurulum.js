@@ -12,7 +12,7 @@ const LunaKurulum = (() => {
     } catch (e) { return false; }
   })();
   const oauthReturn = /[?&#](code|state|access_token|error)=/.test(location.search + location.hash); // Google/Spotify girişi dönüşü
-  const active = params.has('kurulum') || (!standalone && !oauthReturn && !params.has('app') && navigator.webdriver !== true);
+  const active = params.has('kurulum') || (!standalone && !oauthReturn && !params.has('app'));
   if (!active) return { active: false };
 
   document.documentElement.classList.add('kurulum');
@@ -21,13 +21,13 @@ const LunaKurulum = (() => {
 
   const isIOS = /iP(hone|ad|od)/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isIPad = isIOS && !/iPhone|iPod/.test(ua);
-  const inApp = /FBAN|FBAV|Instagram|Line\/|Twitter|TikTok|Snapchat|GSA\//i.test(ua);
+  const inApp = /FBAN|FBAV|Instagram|Line\/|Twitter|TikTok|Snapchat|WhatsApp|GSA\//i.test(ua);
   const iosOther = isIOS && /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
   const isAndroid = /Android/i.test(ua);
   const isFirefox = /Firefox\//.test(ua) && !isIOS;
   const isMacSafari = !isIOS && /Macintosh/.test(ua) && /Safari\//.test(ua) && !/Chrome|Chromium|Edg\//.test(ua);
 
-  let deferred = null, waiting = false, root = null;
+  let deferred = null, root = null, completed = false;
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; });
   window.addEventListener('appinstalled', () => { deferred = null; done(); });
   // yükleme için servis çalışanı gerekir; ayrıca uygulama ilk açılışta internetsiz de hazır olur
@@ -43,7 +43,7 @@ const LunaKurulum = (() => {
     iosOther: `<ol><li>Adres çubuğundaki <b>Paylaş</b> ${share} düğmesine dokun</li><li><b>Ana Ekrana Ekle</b> → <b>Ekle</b></li><li>Göremezsen bağlantıyı <b>Safari</b>'de aç</li></ol>`,
     inApp: `<ol><li>Bu sayfa başka bir uygulamanın içinde açıldı</li><li>Sağ üstteki <b>•••</b> menüsünden <b>${isIOS ? "Safari'de aç" : 'Tarayıcıda aç'}</b>'a dokun</li><li>Açılan sayfada <b>Luna'yı yükle</b>'ye yeniden dokun</li></ol>`,
     mac: '<ol><li>Üstteki menü çubuğunda <b>Dosya</b>\'ya tıkla</li><li><b>Dock\'a Ekle</b> → <b>Ekle</b></li><li>Luna Dock\'tan açılır 💜</li></ol>',
-    android: '<ol><li>Sağ üstteki <b>⋮</b> menüsüne dokun</li><li><b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>\'ye dokun</li><li><b>Yükle</b> → ana ekrandaki <b>Luna</b>\'ya dokun 💜</li></ol><p class="kr-note">Menüde yükleme yoksa önce <b>Chrome\'da aç</b>\'a dokun. Luna zaten yüklüyse ana ekrandan aç.</p>',
+    android: '<ol><li>Sağ üstteki <b>⋮</b> menüsüne dokun</li><li><b>Uygulamayı yükle</b> seçeneğine dokun</li><li><b>Yükle</b> → ana ekrandaki <b>Luna</b>\'ya dokun 💜</li></ol><p class="kr-note">Sadece bağlantı kısayolu oluşturma; kurulu Luna adres çubuğu olmadan açılır. Menüde yükleme yoksa önce <b>Chrome\'da aç</b>\'a dokun. Luna zaten yüklüyse ana ekrandan aç.</p>',
     desktop: '<ol><li>Adres çubuğunun sağındaki <b>yükle</b> simgesine (⊕) ya da <b>⋮</b> menüsüne tıkla</li><li><b>Luna\'yı yükle</b> → <b>Yükle</b></li></ol><p class="kr-note">Luna zaten yüklüyse adres çubuğundaki "uygulamada aç" simgesine tıkla.</p>',
     firefox: '<ol><li>Firefox uygulama yükleyemiyor</li><li>Bağlantıyı <b>Chrome</b>, <b>Edge</b> ya da <b>Safari</b>\'de aç</li></ol>',
   };
@@ -65,11 +65,12 @@ const LunaKurulum = (() => {
     });
   }
   function done() {
+    completed = true;
     if (!root) return;
     $('.kr-btn').hidden = true;
     $('.kr-arrow').hidden = true;
     const box = $('#kr-steps');
-    box.innerHTML = `<p class="kr-done">🎉 Luna yüklendi!</p><p class="kr-note">${isAndroid ? 'Ana ekranındaki' : 'Uygulamalarındaki'} <b>Luna</b> simgesine dokun.</p>`;
+    box.innerHTML = `<p class="kr-done">✓ Kurulum isteğin alındı</p><p class="kr-note">Kurulum tamamlanınca ${isAndroid || isIOS ? 'ana ekranındaki' : 'uygulamalarındaki'} <b>Luna</b> simgesine dokun. Bu sayfa uygulamaya yönlendirilmez.</p>`;
     box.hidden = false;
   }
   async function install() {
@@ -79,22 +80,15 @@ const LunaKurulum = (() => {
         await e.prompt();
         const choice = await e.userChoice;
         if (choice && choice.outcome === 'accepted') done();
+        else showSteps(isAndroid ? 'android' : 'desktop');
       } catch (err) { showSteps(isAndroid ? 'android' : 'desktop'); }
       return;
     }
     if (inApp) return showSteps('inApp');
     if (isIOS) return showSteps(iosOther ? 'iosOther' : 'ios');
     if (isMacSafari) return showSteps('mac');
-    if (isFirefox) return showSteps('firefox');
-    // Chrome/Edge yükleme izni birkaç saniye içinde gelir: kısa bekle, gelirse aynı dokunuşla aç
-    if (waiting) return;
-    waiting = true;
-    const btn = $('.kr-btn'), label = btn.textContent;
-    btn.textContent = 'Hazırlanıyor…';
-    const until = Date.now() + 3500;
-    while (!deferred && Date.now() < until) await new Promise((r) => setTimeout(r, 150));
-    btn.textContent = label; waiting = false;
-    if (deferred) return install();
+    if (isFirefox && !isAndroid) return showSteps('firefox');
+    // Kurulum izni henüz gelmediyse kullanıcı adımları görür; sonraki dokunuş sistemi açar.
     showSteps(isAndroid ? 'android' : 'desktop');
   }
   function build() {
@@ -113,6 +107,7 @@ const LunaKurulum = (() => {
       <div class="kr-arrow" aria-hidden="true" hidden>⬇︎</div>`;
     document.body.prepend(root);
     $('.kr-btn').addEventListener('click', install);
+    if(completed)done();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();
   return { active: true, install };

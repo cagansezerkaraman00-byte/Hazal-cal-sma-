@@ -79,7 +79,7 @@ const Guncelleme = (() => {
   }
   async function systemNote(v) {
     if (!App.data().settings.notify || !('Notification' in window) || Notification.permission !== 'granted' || !reg) return;
-    try { await reg.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${versionLabel(v)}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/icon-192.png', location.href).href, badge: new URL('icons/notification-badge.png', location.href).href, tag: 'luna-guncelleme' }); } catch (e) { /* desteklenmiyor */ }
+    try { await reg.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${versionLabel(v)}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/luna-notification-v2.png', location.href).href, badge: new URL('icons/luna-notification-v2.png', location.href).href, tag: 'luna-guncelleme' }); } catch (e) { /* desteklenmiyor */ }
   }
   function dot(on) { const b = $('#tabs button[data-tab="settings"]'); if (b) b.classList.toggle('has-dot', on); }
 
@@ -249,6 +249,7 @@ const Guncelleme = (() => {
         <span class="upd-state ${v ? 'new' : ''}">${checking ? 'Bakılıyor…' : v ? 'Yeni sürüm hazır' : 'Güncel ✓'}</span></div>
       ${v ? `<div class="upd-new"><div class="wn-list">${notesHtml(fresh())}</div><button class="btn primary" type="button" data-up="apply" ${applying ? 'disabled' : ''}>${applying ? 'Yükleniyor…' : `Sürüm ${esc(versionLabel(v))}'e güncelle`}</button></div>` : ''}
       <div class="row upd-acts"><button class="btn soft" type="button" data-up="check" ${checking ? 'disabled' : ''}>Güncellemeleri denetle</button>${canOfferInstall() ? `<button class="btn soft" type="button" data-up="install">📲 Ana ekrana ekle</button>` : ''}</div>
+      <p class="muted small">${standalone() ? '✓ Luna bağımsız uygulama olarak açık.' : 'Tarayıcıda açık. Bağımsız kullanmak için ana ekranındaki Luna simgesinden aç.'}</p>
       <p class="muted small">Güncellemeler verilerine ve ayarlarına dokunmaz; sayaç da kaldığı yerden devam eder. Yeni sürüm çıkınca bildirim gelmesi için Odak bölümünden <b>Bildirim gönder</b>'i aç.</p>
       <details class="upd-history"><summary>📜 Tüm sürümler ve yenilikler</summary><div class="wn-list">${notesHtml(SURUMLER)}</div></details>`;
   }
