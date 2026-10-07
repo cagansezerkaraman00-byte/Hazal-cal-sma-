@@ -5,6 +5,16 @@
    halini okur. */
 
 const SURUMLER = /*SURUMLER*/[
+{
+  "surum": "2.3.4",
+  "tarih": "2026-10-07",
+  "baslik": "Üç kediye beslenme replikleri ve uygulama içi Spotify",
+  "notlar": [
+    "🐟 Luna, Vesper ve Güçlü için toplam 60 yeni beslenme repliği; her karakterin son 19 sözü tekrar edilmez.",
+    "🐾 Sahnedeki kediler sırayla beslenir, yemek bitince kendi sözlerini söyler. Yemek sürerken tekrar dokunmak balık harcamaz.",
+    "🎧 Spotify listeleri ve şarkıları Luna içindeki resmi oynatıcıda açılır; bunun için Client ID gerekmez. Hesap girişi ve tam dinleme Spotify koşullarına bağlıdır."
+  ]
+},
   {
     "surum": "2.3.3",
     "tarih": "2026-10-07",
@@ -163,3 +173,4 @@ const SURUMLER = /*SURUMLER*/[
 ]/*SURUMLER*/;
 
 if (typeof window !== 'undefined') { window.SURUMLER = SURUMLER; }
+

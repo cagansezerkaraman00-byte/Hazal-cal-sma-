@@ -281,27 +281,10 @@
         packages[k] + ';S.browser_fallback_url=' + encodeURIComponent(web) + ';end';
     }
     return web;
-  }
-  function renderAllowApps() {
-    const list = allowedApps();
-    $('#allow-apps').innerHTML = list.length ? `<span class="allow-lbl">Sayaç durmadan aç:</span>${list.map((k) => `<a class="allow-app" href="${appUrl(k)}" target="_blank" rel="noopener" data-app="${k}">${APPS[k].e} ${APPS[k].n}</a>`).join('')}` : '';
-    $('#allow-chips').innerHTML = Object.keys(APPS).map((k) => `<button class="chip ${list.includes(k) ? 'active' : ''}" type="button" data-app="${k}" aria-pressed="${list.includes(k)}">${APPS[k].e} ${APPS[k].n}</button>`).join('');
+d="${list.includes(k)}">${APPS[k].e} ${APPS[k].n}</button>`).join('');
     $('#allow-set').classList.toggle('hidden', !D().settings.pauseOnLeave);
   }
-  // uygulama dışındaki süreyi değerlendir: tam odakta izinsiz çıkış 15 sn'yi geçtiyse sayaç o anda durur
-  function checkLunaAway() {
-    const away = D().timer && D().timer.away;
-    const nudge = Messages.departure(away);
-    if (away && away.lunaCounted) save();
-    if (nudge) notify('Luna dersine çağırıyor 🐾', Messages.get('focusNudge'));
-  }
-
-  function checkAway() {
-    checkLunaAway();
-    const x = D().timer, a = x && x.away;
-    if (!a || a.app || a.paused || !D().settings.pauseOnLeave) return false;
-    const s = Timer.state();
-    if (!(s.running && s.phase === 'focus') || Date.now() - a.at <= AWAY_GRACE) return false;
+  // uygulama dışındaki süreyi değerlendir: tam odakta izinsiz çıkış 15 sn'yi geçtiyse sayaç o& s.phase === 'focus') || Date.now() - a.at <= AWAY_GRACE) return false;
     if (!Timer.pauseAt(a.at + AWAY_GRACE)) return false;
     a.paused = true;
     save();
@@ -318,9 +301,7 @@
     const m = Math.round((Date.now() - a.at) / 60000);
     if (a.paused && allowedApps().length) { askWhere(m, !!a.lunaNudge); return true; }
     let text = '';
-    if (a.paused) text = `Hoş geldin! Uygulamadan çıkınca sayaç durdu ⏸ Hazır olduğunda "Devam"a bas, kaldığımız yerden sürdürelim 🐾`;
-    else if (a.app && m >= 1) text = `${exitInfo(a.app).from} hoş geldin ${exitInfo(a.app).e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
-    else if (!a.app && m >= 1 && !D().settings.pauseOnLeave) text = `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`;
+    if (a.paused) text = `Hoş geldin! Uygulamadan çık.app && m >= 1 && !D().settings.pauseOnLeave) text = `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`;
     if (a.lunaNudge && !a.app) text = Messages.get('focusNudge') + (a.paused ? ' Sayaç durdu; hazır olduğunda Devam’a bas.' : '');
     if (text && Scene.say(text, a.lunaNudge ? Messages.delivery('focusNudge') : { emotion: 'neutral' }) !== false) lastMsgAt = Date.now();
     return !!text;
@@ -413,34 +394,7 @@
     });
   }
 
-  const timerHandlers = {
-    onTick: renderTimer,
-    onStart(phase, resumed) {
-      if (!resumed) focusDismissed = false;
-      syncSceneMode();
-      if (phase === 'focus') {
-        lockScreen(true);
-        if (!resumed) { say('start'); Sound.soft(); }
-      } else if (!resumed) say('breakStart');
-    },
-    onPause() { syncSceneMode(); lockScreen(false); },
-    onReset() { syncSceneMode(); lockScreen(false); },
-    onTooShort() { toast('⏱️', '1 dakikadan kısa oturumlar kaydedilmez'); },
-    beforeFinish: () => checkAway(),
-    onFocusDone(session) {
-      lockScreen(false);
-      Sound.chime();
-      session.id = U.uid();
-      session.note = session.intent || ''; session.hard = ''; session.rating = null; session.mood = '';
-      D().sessions.push(session);
-      if (session.minutes >= 10) D().fish++;
-      save();
-      if (window.PlanUI) PlanUI.onSession(session);
-      if (window.UniUI) UniUI.onSession(session);
-      notify('Oturum tamamlandı! 🎉', `${U.fmtMin(session.minutes)} ${Store.subject(session.subjectId).name} çalıştın. Mola zamanı!`);
-      say('done');
-      // başka bir pencere açıksa (yarım not, kart, deneme…) üstüne yazma: kapanınca göster
-      if ($('#modal').classList.contains('hidden')) openSessionModal(session, { justDone: true });
+  const tsList.contains('hidden')) openSessionModal(session, { justDone: true });
       else { pendingDone = session; toast('🎉', 'Oturum kaydedildi', U.fmtMin(session.minutes)); }
       afterDataChange();
       syncSceneMode();
@@ -464,44 +418,11 @@
     $('#btn-reset').addEventListener('click', () => {
       const s = Timer.state();
       if (s.fresh) return;
-      if (s.phase === 'focus' && s.elapsed > 120 && !confirm('Bu oturum kaydedilmeden sıfırlansın mı?')) return;
-      Timer.reset();
-    });
-    $$('#kind-seg button').forEach((b) => b.addEventListener('click', () => {
-      const s = Timer.state();
-      if (s.kind === b.dataset.kind) return;
-      if (!s.fresh && !confirm('Mevcut sayaç sıfırlanacak. Devam edilsin mi?')) return;
-      Timer.setKind(b.dataset.kind);
-      syncSceneMode();
-    }));
-    $('#subject-select').addEventListener('change', (e) => Timer.setSubject(e.target.value));
-    $('#intent-input').addEventListener('input', (e) => Timer.setIntent(e.target.value));
-    $('#intent-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); if (!Timer.state().running) Timer.toggle(); } });
-    // "Aklına başka bir şey mi geldi?" → görevlere ekle, odağı bozma
-    $('#park-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const inp = $('#park-input');
-      const text = inp.value.trim();
-      if (!text) return;
-      D().tasks.push({ id: U.uid(), text: '💭 ' + text, subjectId: '', due: '', done: false, created: Date.now() });
+      if (s.phase === 'focus' && s.elapsed > 120 && !confirm('Bu oturum kaydedilmeden sıfırlansın mı?')) asks.push({ id: U.uid(), text: '💭 ' + text, subjectId: '', due: '', done: false, created: Date.now() });
       save();
       inp.value = '';
       inp.placeholder = '✓ Eklendi, derse dön 🐾';
-      setTimeout(() => { inp.placeholder = '💭 Aklına gelen?'; }, 3500);
-      renderHome();
-    });
-    $('#focus-exit').addEventListener('click', () => {
-      focusDismissed = true;
-      renderTimer(Timer.state());
-    });
-    // sahnedeki mini sayaç: dokununca sayaca (odaktaysa sade odak ekranına) geri dön
-    const backToTimer = () => {
-      focusDismissed = false;
-      showTab('home');
-      renderTimer(Timer.state());
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-    $('#mini-timer').addEventListener('click', backToTimer);
+      setTimeout(() => { inp.placeholder = '💭 AklıntListener('click', backToTimer);
     $('#mini-timer').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); backToTimer(); } });
     $('#add-subject-quick').addEventListener('click', () => {
       const name = prompt('Yeni ders adı:');
@@ -517,30 +438,11 @@
     // klavye: boşluk = başlat/duraklat
     document.addEventListener('keydown', (e) => {
       if (e.code !== 'Space' || currentTab !== 'home' || !$('#modal').classList.contains('hidden')) return;
-      if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) return;
-      e.preventDefault();
-      Timer.toggle();
-    });
-  }
-
-  function renderSubjectSelects() {
-    const cur = (D().timer && D().timer.subjectId) || '';
-    $('#subject-select').innerHTML = subjectOptions(cur);
-    $('#task-subject').innerHTML = subjectOptions('');
-  }
-
-  // ======================================================================
-  // Oturum penceresi (bitince not + verim, ya da elle ekleme / düzenleme)
-  // ======================================================================
+      if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(document.activeElement.tag============================================
   function openSessionModal(session, opts = {}) {
     const manual = !session;
     const now = new Date();
-    const s = session || { start: now.getTime() - 3600000, minutes: 60, subjectId: Timer.state().subjectId, note: '', hard: '', rating: null, mood: '' };
-    const startD = new Date(s.start);
-    const title = opts.justDone ? '🎉 Oturum tamamlandı!' : manual ? '✍️ Çalışmamı ekle' : '✏️ Oturumu düzenle';
-    const sub = opts.justDone
-      ? `${U.fmtMin(s.minutes)} çalıştın, harikasın ${U.esc(D().settings.name)}! ${s.minutes >= 10 ? 'Luna sana bir balık verdi 🐟' : ''}`
-      : manual ? 'Uygulama dışında çalıştıysan buraya ekleyebilirsin.' : `${startD.toLocaleDateString('tr-TR')} ${U.hm(startD)}`;
+    const s = session || { start: now.getTime() - 3600000, minutes: 60, subjectId: Timer.sta.hm(startD)}`;
     let rating = s.rating || 0, mood = s.mood || '';
 
     // temiz kutu: önceki pencerelerin dinleyicileri bu pencereye taşınmasın
@@ -563,32 +465,11 @@
       <label for="m-q">Kaç soru çözdün? <span class="muted small">(isteğe bağlı)</span></label>
       <div class="q-step"><button type="button" class="btn soft" data-q="-5" aria-label="5 azalt">−5</button><input type="number" id="m-q" min="0" max="999" inputmode="numeric" placeholder="0" value="${s.questions || ''}"><button type="button" class="btn soft" data-q="5" aria-label="5 artır">+5</button><button type="button" class="btn soft" data-q="10" aria-label="10 artır">+10</button></div>
       <label>Zorlandığın / tekrar etmen gereken yer <span class="muted small">(tekrar listesine eklenir)</span></label>
-      <input id="m-hard" placeholder="Örn: Trigonometrik türevler" value="${U.esc(s.hard)}">
-      <label>Verimin nasıldı?</label>
-      <div class="stars" id="m-stars">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-v="${i}">⭐</button>`).join('')}</div>
-      <label>Nasıl hissediyorsun?</label>
-      <div class="moods" id="m-moods">${['🤩', '🙂', '😐', '😴', '😣'].map((m) => `<button type="button" data-v="${m}">${m}</button>`).join('')}</div>
-      <div class="modal-actions">
-        ${!manual && !opts.justDone ? '<button class="btn danger" id="m-del">Sil</button><span style="flex:1"></span>' : ''}
-        <button class="btn soft" id="m-cancel">${opts.justDone ? 'Sonra' : 'Vazgeç'}</button>
-        <button class="btn primary" id="m-save">Kaydet</button>
-      </div>`;
-    modalDirty = false;
-    $('#modal-card').addEventListener('input', () => { modalDirty = true; });
-    const paint = () => {
-      $$('#m-stars button').forEach((b) => b.classList.toggle('on', +b.dataset.v <= rating));
+      <input id="m-hard	oggle('on', +b.dataset.v <= rating));
       $$('#m-moods button').forEach((b) => b.classList.toggle('on', b.dataset.v === mood));
     };
     paint();
-    $$('#m-stars button').forEach((b) => b.addEventListener('click', () => { rating = +b.dataset.v; paint(); }));
-    $$('#m-moods button').forEach((b) => b.addEventListener('click', () => { mood = mood === b.dataset.v ? '' : b.dataset.v; paint(); }));
-    $$('.q-step [data-q]').forEach((b) => b.addEventListener('click', () => {
-      const q = $('#m-q');
-      q.value = U.clamp((parseInt(q.value, 10) || 0) + +b.dataset.q, 0, 999) || '';
-      modalDirty = true;
-    }));
-    $('#m-cancel').addEventListener('click', closeModal);
-    $('#m-del') && $('#m-del').addEventListener('click', () => {
+    $$('#m-stars button').forEach((b) => b.addEventListener('click', () => { rating = +b.data('click', () => {
       if (!confirm('Bu oturum silinsin mi?')) return;
       D().sessions = D().sessions.filter((x) => x.id !== s.id);
       save(); closeModal(); afterDataChange();
@@ -609,34 +490,16 @@
         end: opts.justDone ? s.end : start + minutes * 60000,
         minutes,
         note: $('#m-note').value.trim(),
-        hard: $('#m-hard').value.trim(),
-        rating: rating || null,
-        mood,
-        questions: U.clamp(parseInt($('#m-q').value, 10) || 0, 0, 999),
-      });
-      if (manual) D().sessions.push(target);
-      D().sessions.sort((a, b) => a.start - b.start);
-      if (target.hard && target.hard !== hardBefore) {
-        D().review.unshift({ id: U.uid(), text: target.hard, subjectId: target.subjectId, created: Date.now(), done: false });
-      }
-      save();
-      closeModal();
+       al();
       if (opts.justDone && rating) {
         if (rating >= 4) Scene.say(rating === 5 ? 'Beş yıldız! Muhteşemsin ✨' : 'Çok verimli bir oturumdu, bravo! ⭐');
-        else if (rating <= 2) Scene.say('Bazı oturumlar zor geçer, sorun değil. Kısa bir mola ver, sonra daha iyi olacak 💛');
-      } else if (manual) toast('📝', 'Çalışman eklendi', `${U.fmtMin(minutes)} · ${Store.subject(target.subjectId).name}`);
-      afterDataChange();
-    });
-    $('#modal').classList.remove('hidden');
+        else if (rating <= 2) Scene.say('Bazı oturumlar zor geçer, sorun değil. Kısa 
   }
 
   let pendingDone = null; // açık bir pencere yüzünden bekleyen "oturum tamamlandı" penceresi
   let pendingWhere = null; // bekleyen "Neredeydin?" sorusu
   function closeModal() {
-    $('#modal').classList.add('hidden'); $('#modal-card').innerHTML = '';
-    if (pendingWhere) { const f = pendingWhere; pendingWhere = null; setTimeout(() => { if ($('#modal').classList.contains('hidden')) f(); else pendingWhere = f; }, 300); return; }
-    if (pendingDone) {
-      const s = pendingDone;
+    $('#modal').classList.add('hidden'); $('#modaldingDone;
       pendingDone = null;
       setTimeout(() => { if ($('#modal').classList.contains('hidden')) openSessionModal(s, { justDone: true }); else pendingDone = s; }, 300);
     }
@@ -645,11 +508,7 @@
   function startStudy({ subjectId, intent, kind } = {}) {
     const s = Timer.state();
     if (s.running && s.phase === 'focus') { toast('⏱️', 'Zaten bir oturum sürüyor', 'Önce onu bitir ya da duraklat'); return false; }
-    if (!s.fresh || s.phase !== 'focus') {
-      if (s.phase === 'focus' && s.elapsed > 120 && !confirm('Duraklatılmış oturum kaydedilmeden sıfırlansın mı?')) return false;
-      Timer.reset();
-    }
-    if (kind && kind !== Timer.state().kind) Timer.setKind(kind);
+    if (!tKind(kind);
     if (subjectId != null && (subjectId === '' || D().subjects.some((x) => x.id === subjectId))) Timer.setSubject(subjectId);
     if (intent) Timer.setIntent(intent);
     showTab('home');
@@ -1107,8 +966,9 @@
     const src = spotifyEmbed(D().settings.spotify);
     // "Spotify'da aç": telefonda uygulama yüklüyse doğrudan uygulamada açılır (önizleme yerine tam şarkılar)
     $('#spotify-frame').innerHTML = src
-      ? `<a class="btn primary sp-open" href="${U.esc(appUrl('spotify'))}" target="_blank" rel="noopener" data-app="spotify">Spotify'da dinle ↗</a>
-        <p class="hint">Liste ayrı açılır; cihazın destekliyorsa yüklü Spotify uygulamasına geçersin.</p>`
+      ? `<iframe title="Spotify oynatıcı" src="${U.esc(src)}" width="100%" height="352" style="border:0;border-radius:12px" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        <a class="btn soft sp-open" href="${U.esc(appUrl('spotify'))}" target="_blank" rel="noopener" data-app="spotify">Spotify'da dinle ↗</a>
+        <p class="hint">Burada oynatmak için ▶ düğmesine dokun. Spotify, hesabına ve tarayıcıya göre önizleme sunabilir. Tam dinleme için Spotify’da dinle seçeneğini kullanabilirsin.</p>`
       : '<p class="empty">Geçerli bir Spotify bağlantısı yapıştır.</p>';
     $$('#spotify-presets .chip').forEach((c) => c.classList.toggle('active', c.dataset.url === D().settings.spotify));
     const preset = PRESETS.find(([, u]) => u === D().settings.spotify);
@@ -1502,10 +1362,13 @@
   function bindLuna() {
     $('#feed-btn').addEventListener('click', () => {
       if (D().fish <= 0) { say('noFish'); return; }
+      const recipient = Scene.feed(kind => {
+        say(kind === 'vesper' ? 'vesperFed' : kind === 'kitten' ? 'kittenFed' : 'fed');
+        Sound.meow();
+      });
+      if (!recipient) return; // yemek sürerken ikinci balığı harcama
       D().fish--; D().fed++; save();
-      Scene.feed();
       renderHUD();
-      setTimeout(() => { say('fed'); Sound.meow(); }, 1800);
       checkBadges();
     });
   }

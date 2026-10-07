@@ -77,8 +77,71 @@ const Messages = (() => {
       'Ben Luna, senin çalışma arkadaşın ⭐', 'Balık var mı? 🐟',
     ],
     fed: [
-      'Nyam nyam! Teşekkürler 🐟💛', 'Mmm, en sevdiğim! Prrrr 😻', 'Doydum! Şimdi çalışmaya devam 💪',
-    ],
+      "Anneciğimm, bunu benim için mi ayırdın? Bıyıklarım mutluluktan titredi! 🐟",
+      "Bir lokma balık, kocaman bir teşekkür… Pırrr, iyi ki varsın 💜",
+      "Şu lezzete bak! Kuyruğum kendi kendine dans ediyor 😻",
+      "Önce bir koklayayım… Tamam, şefimiz yine harika yapmış! 🐾",
+      "Balığımı yedim, şimdi yanına sıcacık kıvrılabilirim anneciğim.",
+      "Benim tabağım doldu. Sen de kendine bir şeyler hazırladın mı? 🍽️",
+      "Miyav! Bu lokmanın yanında bir de başımı okşarsan tamamdır.",
+      "Çok ciddi bir tadım yaptım: on üzerinden yüz balık! 🐟",
+      "Az önceki suratımı unut… Karnım gurulduyormuş meğer 😼",
+      "Bana bakarken gülümsedin mi? Gördüm ben, gördüüüm! 💜",
+      "{name}, patilerimi dizine koydum. Teşekkürümü böyle söylüyorum.",
+      "Bir lokmayı yavaş yavaş yedim; güzel şeylerin tadı çıkarılır.",
+      "Bıyığımda kırıntı mı var? Söyleme kimseye anneciğim 🙈",
+      "Son lokmayı da yedim. Şimdi mutluluk mırıltısı başlıyor: pırrrr!",
+      "İçim sıcacık oldu. Beni düşünmen çok güzel anneciğim 🥹",
+      "Küçük bir ziyafet verdin bana! Ben de sana minik bir pati öpücüğü 😽",
+      "Tabağın başına uslu uslu oturdum… Pekiii, biraz acele ettim!",
+      "Bu kadar güzel balıktan sonra dünyaya biraz daha yumuşak bakıyorum 💜",
+      "Seninle bu küçük molaları seviyorum {name}. İyi geldi.",
+      "Balığım bitti, sevgim bitmedi anneciğim. Yanındayım 🐾"
+],
+    vesperFed: [
+      "Anneciğim, gece sofrasında bana da yer varmış… Teşekkür ederim 🌙",
+      "Sessizce geldim ama bu balığı görünce mırıldanmadan duramadım.",
+      "Yıldızları saymaya ara verdim; önce şu güzel lokma 🐟",
+      "Biraz serinlemiştim. Hem karnım hem içim ısındı şimdi.",
+      "Bu lokmayı yavaş yiyeceğim. Gece acele etmeyi sevmez 💜",
+      "{name}, tabağı yanıma bırakmışsın… Ne ince düşünmüşsün.",
+      "Karanlıkta bıyıklarım görünmüyor ama şu an gülümsüyorum 😽",
+      "Anneciğim, sen de akşam yemeğini yedin mi? Beraber mola verelim.",
+      "Beni de düşündüğünü görünce kuyruğum usulca kıpırdadı 🐾",
+      "Pırrr… Bu teşekkür biraz sessiz, ama kocaman.",
+      "Balığımı yedim. Pencere kenarındaki yerimi sana da ayırdım 🌙",
+      "Bu gece menü çok güzelmiş. Şefimize nazik bir pati selamı!",
+      "Bir lokma daha… Tamam, şimdi battaniyenin kenarına kıvrılabilirim.",
+      "Luna kokusunu almıştır bile. Ona da bir selam mırıltısı göndereyim.",
+      "Gece nöbetçisinin karnı doydu. Görevim: yanında huzurla oturmak.",
+      "Biraz dalgındım… Tabağımı görünce gözlerim parladı anneciğim ✨",
+      "Bıyıklarımı düzelttim. Böyle güzel bir sofraya özen göstermek gerekir.",
+      "Balık pek güzel, ama birlikte geçirdiğimiz bu an daha güzel 💜",
+      "Yedim anneciğim. Şimdi istersen biraz sessizliği paylaşalım.",
+      "Yıldızlara bir teşekkür, sana iki tane. İyi ki buradasın {name} 🌙"
+],
+    kittenFed: [
+      "Anneee! Bu minicik balık benim mii? Yaşasııın! 🐟",
+      "Nyam nyam… Bi dakka anneciğim, ağzım doluuu 🙈",
+      "Ben kendim yedim! Gördün mü, kocaman oldum ben! 🧡",
+      "Bıyığıma bulaştıı… Siler misin anneciğim?",
+      "Balığı görünce patilerim pıt pıt pıt yaptı! 🐾",
+      "Çok güzeeel! Sana da mınicik bir teşekkür öpücüğü 😽",
+      "Anneciğimm, karnım artık gur gur değil, pır pır ediyor!",
+      "Benim tabağım bu mu? Üstüne patimi koydum, tanıdım! 🧡",
+      "Bir lokma, iki lokma… Saymayı karıştırdım ama hepsini sevdim!",
+      "{name}, bak bak! Hiç düşürmeden yedim… Galiba bir kırıntı düştü.",
+      "Luna gibi uslu oturacaktım ama sevincim zıp diye çıktı!",
+      "Vesper uyuyor mu? Ona fısıldayayım: çok güzel balık vaaar 🌙",
+      "Anne, önce balık sonra kucak olur muu? Minicik kıvrılırım.",
+      "Beni de beslediin… Çok mutlu oldum anneciğim 🥹",
+      "Güçlü güç topladıı! Ama önce bir patilerimi yalayayım 🐾",
+      "Nyam! Bu balıkta sevgi tadı vaaar, ben anladım 🧡",
+      "Anneciğim sen de ye, tamam mı? Beraber büyüyelim… Ben büyüyeyim!",
+      "Tabağı bitirdim! Bana bakıp gülünce daha da sevindim 😻",
+      "Küçük karnım doydu, gözlerim yumuşacık oldu… Pırrr.",
+      "Son lokmayı da yuttum. Şimdi yanına sokuluyoruum anneciğim 🧡"
+],
     noFish: [
       'Balığımız kalmadı 🥺 Bir odak oturumu tamamlarsan bir balık kazanırsın!',
     ],
@@ -246,9 +309,9 @@ const Messages = (() => {
 
 
   function delivery(kind) {
-    const speaker = ['vesper','meetVesper','vesperSleepy'].includes(kind) ? 'vesper'
-      : ['kitten','kittenMiss','kittenHappy','kittenSleepy','meetKitten'].includes(kind) ? 'kitten' : 'luna';
-    const emotions = {proud:'proud',goal:'proud',done:'happy',fed:'happy',poke:'happy',
+    const speaker = ['vesper','meetVesper','vesperSleepy','vesperFed'].includes(kind) ? 'vesper'
+      : ['kittenFed','kitten','kittenMiss','kittenHappy','kittenSleepy','meetKitten'].includes(kind) ? 'kitten' : 'luna';
+    const emotions = {proud:'proud',goal:'proud',done:'happy',fed:'happy',vesperFed:'happy',kittenFed:'happy',poke:'happy',
       lowStudy:'tender',focusNudge:'tender',bedtime:'sleepy',late:'sleepy',vesperSleepy:'sleepy',kittenSleepy:'sleepy',
       kittenMiss:'tender',kittenHappy:'happy',kitten:'neutral',vesper:'neutral',
       checkIn:'neutral',checkInMorning:'happy',companion:'neutral',welcome:'neutral',
@@ -265,7 +328,7 @@ const Messages = (() => {
       const history = Array.isArray(state.replies[kind]) ? state.replies[kind] : [];
       const fresh = arr.filter((line) => !history.includes(line));
       const selected = U.pick(fresh.length ? fresh : arr);
-      state.replies[kind] = [...history, selected].slice(-Math.min(3, arr.length - 1 || 1));
+      state.replies[kind] = [...history, selected].slice(-Math.min(['fed','vesperFed','kittenFed'].includes(kind) ? 19 : 3, arr.length - 1 || 1));
       Store.save();
       let t = fill(selected);
       if (vars) for (const k of Object.keys(vars)) t = t.split('{' + k + '}').join(vars[k]);

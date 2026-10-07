@@ -126,12 +126,9 @@ const SpotifyLink = (() => {
     if (!el) return;
     const connected = !!(st.refresh || st.token);
     if (!connected) {
-      el.innerHTML = `<details class="sp-connect"><summary>🔗 Kendi çalma listelerini burada gör (isteğe bağlı)</summary>
-        <p class="hint">Bir kez kurulur; adımlar Ayarlar → Kılavuz → Müzik ve Spotify bölümünde. Redirect URI olarak şunu ekle:</p>
-        <code class="sp-uri">${U.esc(redirectUri())}</code>
-        ${secureOrigin() ? '' : '<p class="hint">⚠️ Spotify bağlantısı için uygulamayı https ile başlayan adresinden (ör. GitHub Pages) açmalısın.</p>'}
-        <div class="inline-form"><input data-sp="client" placeholder="Spotify Client ID" value="${U.esc(st.clientId)}" autocomplete="off" spellcheck="false"><button class="btn primary" data-sp="login" type="button">Spotify'a bağlan</button></div>
-      </details>`;
+      el.innerHTML = st.clientId
+        ? `<button class="btn primary" data-sp="login" type="button">Spotify ile giriş yap</button><p class="hint">Giriş Spotify'ın güvenli sayfasında tamamlanır; ardından listelerin burada görünür.</p>`
+        : '<p class="hint">Yukarıdaki oynatıcı için hesap bağlantısı gerekmez. Hazır bir liste seçebilir veya Spotify paylaşım bağlantını yapıştırabilirsin.</p>';
       return;
     }
     el.innerHTML = `<div class="sp-head"><span>👋 ${U.esc(st.user || 'Spotify')}</span>
@@ -150,8 +147,8 @@ const SpotifyLink = (() => {
       if (!b || b.tagName === 'INPUT') return;
       const act = b.dataset.sp;
       if (act === 'login') {
-        const id = el.querySelector('[data-sp="client"]').value.trim();
-        if (!/^[0-9a-f]{32}$/i.test(id)) { App.toast('🎧', 'Client ID 32 karakterlik bir koddur', 'Spotify Developer panelinden kopyala'); return; }
+        const id = st.clientId.trim();
+        if (!/^[0-9a-f]{32}$/i.test(id)) { App.toast('🎧', 'Hesap bağlantısı henüz hazır değil', 'Şimdilik yukarıdaki oynatıcıyı kullanabilirsin'); return; }
         st.clientId = id; persist(); login();
       } else if (act === 'logout') {
         st = { clientId: st.clientId, token: '', refresh: '', exp: 0, user: '', lists: [] }; persist(); render();

@@ -690,6 +690,7 @@ const Scene = (() => {
   let clouds = [], flies = [], particles = [], drops = [], shooting = null, nextShoot = 6;
   const splashes = Array.from({ length: 14 }, () => ({ x: 0, y: 0, t: 1 }));
   let weather = { kind: 'clear', intensity: 0 }, fx = null, wk = 0, starVis = 1, nextFlash = 12, flashT = 0;
+  let feedTurn = 0;
   let fishItem = null, yarn = null, play = null, nextPlay = U.rand(90, 240);
   let bubbleUntil = 0, bubbleOn = false, bubbleW = 0, bubbleH = 0, bubbleL = -1, bubbleB = -1, bubbleA = -1;
   let wrapH = 0, hudR = null; // saat kutusunun sağ alt köşesi (balon onun üstüne binmesin)
@@ -1574,20 +1575,20 @@ const Scene = (() => {
   }
 
   function eatFish(dt) {
-    const f = fishItem;
+    const f = fishItem, actor = f.actor || L;
     f.vy += 200 * dt;
     f.y = Math.min(groundY - 2, f.y + f.vy * dt);
-    if (L.state !== 'eat') {
-      const side = f.x + 3 >= L.x ? 1 : -1;
-      L.target = side > 0 ? f.x - 7 : f.x + 13;
-      L.speed = 18;
-      if (Math.abs(L.x - L.target) > 1) L.state = 'walk';
-      else if (f.y >= groundY - 2) { L.state = 'eat'; L.eatT = 2.2; L.dir = side; }
-      else { L.state = 'sit'; L.dir = side; }
+    if (actor.state !== 'eat') {
+      const side = f.x + 3 >= actor.x ? 1 : -1;
+      actor.target = side > 0 ? f.x - 7 : f.x + 13;
+      actor.speed = 18;
+      if (Math.abs(actor.x - actor.target) > 1) { actor.state = 'walk'; if (actor !== L) actor.x += Math.sign(actor.target - actor.x) * Math.min(Math.abs(actor.target - actor.x), actor.speed * dt); }
+      else if (f.y >= groundY - 2) { actor.state = 'eat'; actor.eatT = 2.2; actor.dir = side; }
+      else { actor.state = 'sit'; actor.dir = side; }
     } else {
-      L.eatT -= dt;
-      if (Math.random() < dt * 6) hearts(L.x, groundY - 18, 1);
-      if (L.eatT <= 0) { fishItem = null; L.state = 'happy'; L.wait = 4; hearts(L.x, groundY - 18, 5); }
+      actor.eatT -= dt;
+      if (Math.random() < dt * 6) hearts(actor.x, groundY - 18, 1);
+      if (actor.eatT <= 0) { fishItem = null; actor.state = 'happy'; actor.wait = 4; hearts(actor.x, groundY - 18, 5); if (f.onFed) f.onFed(f.kind); }
     }
   }
 
@@ -1896,11 +1897,13 @@ const Scene = (() => {
       if (f.state === 'walk') return (Math.floor(f.ft * 6) % 2 ? 'walkA' : 'walkB') + (blink ? 'B' : '');
       if (f.state === 'sleep') return 'sleep';
       if (f.state === 'happy') return 'happy';
+      if (f.state === 'eat') return Math.floor(f.ft * 6) % 2 ? 'loafAB' : 'loafA';
       if (f.state === 'loaf') return blink ? 'loafAB' : 'loafA';
       return blink ? 'sitUpB' : 'sitUp';
     }
     if (f.state === 'walk') return Math.floor(f.ft * 10) % 2 ? 'walkA' : 'walkB';
     if (f.state === 'sleep') return 'sleep';
+    if (f.state === 'eat') return Math.floor(f.ft * 6) % 2 ? 'sitB' : 'sit';
     return blink ? 'sitB' : 'sit';
   }
   function fgeom(f) {
@@ -1966,6 +1969,7 @@ const Scene = (() => {
       f.blinkIn -= dt;
       if (f.blinkIn <= 0) { f.blink = 0.15; f.blinkIn = U.rand(2.5, 6); }
       if (f.blink > 0) f.blink -= dt;
+      if (fishItem && fishItem.actor === f) continue;
       const st = f.steps[0];
       if (!st) { friends.splice(i, 1); continue; }
       if (st.do === 'walk' || st.do === 'leave') {
@@ -2320,12 +2324,20 @@ const Scene = (() => {
       positionBubble();
       return true;
     },
-    feed() {
+    feed(onFed) {
+      if (fishItem || !W) return null;
+      const present = [L, ...friends.filter(f => f.x >= 14 && f.x <= W - 14 && f.steps[0]?.do !== 'leave')];
+      const actor = present[feedTurn % present.length];
+      feedTurn++;
+      const kind = actor === L ? 'luna' : actor.kind;
       if (play) endPlay(true);
-      fishItem = { x: U.clamp(L.x + L.dir * 16, 36, Math.max(36, W - 42)), y: 0, vy: 0 };
+      fishItem = { actor, kind, onFed, x: U.clamp(actor.x + actor.dir * 16, 36, Math.max(36, W - 42)), y: 0, vy: 0 };
+      actor.emote = null;
+      actor.state = 'walk';
       L.nap = false;
       L.awake = 10;
-      L.state = 'walk';
+      if (actor !== L) { L.state = 'sit'; L.target = L.x; }
+      return kind;
     },
     celebrate() { sparkles(L.x, groundY - 16, 30); hearts(L.x, groundY - 20, 6); L.vy = -80; },
     sunInfo() { return solar(new Date()); }, // her seferinde güncel konumla (şehir değişince eski saat kalmasın)

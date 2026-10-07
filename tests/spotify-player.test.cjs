@@ -1,0 +1,12 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const read=p=>fs.readFileSync(path.join(__dirname,'../js',p),'utf8');
+const source=read('app.js'),nodes={'#spotify-frame':{},'#music-now':{}};
+const code=source.slice(source.indexOf('  function spotifyParts'),source.indexOf('  function renderMusic'));
+const state={settings:{spotify:'https://open.spotify.com/playlist/1234567890123456789012'}};
+const render=new Function('D','$','$$','U','appUrl',"let spotifyLoaded=false;const PRESETS=[];"+code+';return loadSpotify;')(()=>state,s=>nodes[s],()=>[],{esc:s=>s},()=>state.settings.spotify);
+render();assert.match(nodes['#spotify-frame'].innerHTML,/<iframe title="Spotify oynatıcı"/);
+assert.match(nodes['#spotify-frame'].innerHTML,/https:\/\/open.spotify.com\/embed\/playlist\/1234567890123456789012/);
+state.settings.spotify='javascript:alert(1)';render();assert.doesNotMatch(nodes['#spotify-frame'].innerHTML,/<iframe/);
+const account={};const spotify=new Function('document','localStorage','window','location',read('spotify.js')+';return SpotifyLink;')({getElementById:()=>account},{},{},{origin:'https://example.test',pathname:'/'});
+spotify.render();assert.doesNotMatch(account.innerHTML,/<input|Client ID/);assert.match(account.innerHTML,/hesap bağlantısı gerekmez/);
+console.log('Spotify embed URL, invalid input and no Client ID field checks passed');
