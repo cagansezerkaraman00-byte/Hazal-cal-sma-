@@ -59,6 +59,10 @@ const MiniTimer = (() => {
     lastCanvas=canvas;
     const g=canvas.getContext('2d'),now=new Date(),s=Timer.state(),picture=art(),theme=palette();
     if(pip&&!pip.closed)pip.document.body.style.background=theme.bg;
+    const oy=Math.max(0,((canvas.height||240)-240)/2);
+    g.setTransform(1,0,0,1,0,0);
+    g.fillStyle=theme.bg;g.fillRect(0,0,canvas.width||640,canvas.height||240);
+    if(oy){g.fillStyle=theme.panel;g.fillRect(0,0,232,canvas.height);g.translate(0,oy);}
     g.fillStyle=theme.bg;g.fillRect(0,0,640,240);
     g.fillStyle=theme.panel;g.fillRect(0,0,232,240);
     decorations(g,theme);
@@ -90,21 +94,35 @@ const MiniTimer = (() => {
      - video: sayaç tuvali → video akışı → video "resim içinde resim" (iPad/iPhone Safari, Android Chrome)
      İkisi de yoksa düğme ve tema seçimi hiç görünmez. Açık olup olmadığı her an canlı sorulur (isOpen);
      sayaca kalıcı bir işaret yazılmaz, böylece Tam odak yanlışlıkla kapanmaz. */
-  let mode=null, vid=null, vcanvas=null, vstream=null, vtick=null;
+  let mode=null, vid=null, vcanvas=null, vstream=null, vtick=null, vworker=null;
   const canDoc=()=>typeof window!=='undefined'&&'documentPictureInPicture' in window;
+  const isIOS=()=>typeof navigator!=='undefined'&&(/iP(hone|ad|od)/.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1));
+  const isIPad=()=>isIOS()&&!/iPhone|iPod/.test(navigator.userAgent||'');
+  const standalone=()=>{try{return navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;}catch(e){return false;}};
+  // iPad ana ekran uygulamasında mini pencere yerine Luna'nın penceresi küçültülür (Slide Over / Split View / pencere)
+  const iPadWindowGuide=()=>!canDoc()&&isIOS()&&standalone()&&isIPad();
   function canVideo() {
     try {
+      if(isIOS()&&standalone())return false; // iOS/iPadOS ana ekran uygulamasında video PiP çalışmıyor (WebKit 303885)
       if(typeof HTMLCanvasElement==='undefined'||!HTMLCanvasElement.prototype.captureStream)return false;
       const v=document.createElement('video');
       if(document.pictureInPictureEnabled&&typeof v.requestPictureInPicture==='function')return true;
       return typeof v.webkitSupportsPresentationMode==='function'&&v.webkitSupportsPresentationMode('picture-in-picture');
     } catch(e) {return false;}
   }
-  const supported=()=>canDoc()||canVideo();
+  const supported=()=>canDoc()||canVideo()||iPadWindowGuide();
   const videoInPip=()=>!!vid&&(document.pictureInPictureElement===vid||vid.webkitPresentationMode==='picture-in-picture');
   function isOpen() {return mode==='doc'?!!(pip&&!pip.closed):mode==='video'?videoInPip():false;}
   function cleanup() {if(tickId){clearInterval(tickId);tickId=null;}pip=null;away=false;lastCanvas=null;if(mode==='doc')mode=null;}
+  function startTick(fn) {
+    try {
+      const url=URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},1000)'],{type:'text/javascript'}));
+      vworker=new Worker(url);URL.revokeObjectURL(url);
+      vworker.onmessage=fn;
+    } catch(e) {vworker=null;vtick=setInterval(fn,1000);}
+  }
   function teardownVideo() {
+    if(vworker){try{vworker.terminate();}catch(e){}vworker=null;}
     if(vtick){clearInterval(vtick);vtick=null;}
     if(vstream){try{vstream.getTracks().forEach(t=>t.stop());}catch(e){}vstream=null;}
     if(vid){try{vid.pause();vid.srcObject=null;vid.remove();}catch(e){}vid=null;}
@@ -118,7 +136,7 @@ const MiniTimer = (() => {
   // video PiP için hazırlık: dokunuşun hemen başında (pointerdown) başlar ki "click"te PiP anında istenebilsin
   function prepareVideo() {
     if(vid)return vid;
-    vcanvas=document.createElement('canvas');vcanvas.width=640;vcanvas.height=240;
+    vcanvas=document.createElement('canvas');vcanvas.width=640;vcanvas.height=268; // 2,39:1, Android PiP sınırı
     render(vcanvas);
     vstream=vcanvas.captureStream(2);
     const v=document.createElement('video');
@@ -132,7 +150,7 @@ const MiniTimer = (() => {
     // PiP penceresindeki duraklat düğmesi görüntüyü dondurmasın
     v.addEventListener('pause',()=>{if(v===vid&&videoInPip())v.play().catch(()=>{});});
     vid=v;
-    vtick=setInterval(()=>{if(vcanvas)render(vcanvas);},1000);
+    startTick(()=>{if(vcanvas)render(vcanvas);});
     v.play().catch(()=>{});
     // açılmadan bırakılırsa bir dakika sonra temizle
     setTimeout(()=>{if(vid===v&&mode!=='video')teardownVideo();},60000);
@@ -146,6 +164,7 @@ const MiniTimer = (() => {
   }
   function openedVideo() {
     mode='video';away=document.hidden;
+    if(!Store.data.settings.miniUsed){Store.data.settings.miniUsed=true;Store.save();}
     app.allowExit('miniTimer');
     app.toast('🐾','Mini pencere açıldı','Başka uygulamaya geçince köşede kalır; Luna\'ya dönünce kapanır.');
   }
@@ -185,11 +204,22 @@ const MiniTimer = (() => {
     } catch(e) {app.toast('🐾','Mini pencere açılamadı','Bir kez daha dokunarak dene.');}
     finally {opening=false;}
   }
+  function windowGuide() {
+    app.openModal(`<h3>🐾 iPad'de mini pencere</h3>
+      <p class="muted">Ana ekrandaki uygulamalarda Apple küçük video penceresine izin vermiyor. Onun yerine Luna'nın kendi penceresini küçültüp YouTube ya da ChatGPT'nin yanına koyabilirsin; Luna görünür kaldığı için sayaç canlı akar ve durmaz.</p>
+      <ol class="install-steps">
+        <li><b>iPadOS 26:</b> Luna açıkken sağ alt köşedeki tutamaçtan pencereyi küçült, sonra diğer uygulamayı aç; iki pencere yan yana durur.</li>
+        <li><b>Daha eski iPadOS:</b> Luna açıkken ekranın altından Dock'u çek, YouTube'u sürükleyip yanına bırak (Split View) ya da kenara bırak (Slide Over).</li>
+        <li>Luna dar pencerede sade sayaç ekranını gösterir; ders bitince tam ekrana geri al.</li>
+      </ol>
+      <div class="modal-actions"><button class="btn primary" type="button" data-act="ok">Anladım 💛</button></div>`, (card) => card.querySelector('[data-act="ok"]').addEventListener('click', () => app.closeModal()));
+  }
   function open() {
     if(opening)return;
     if(isOpen()){if(mode==='doc'&&pip)pip.focus();return;}
     if(canDoc())return openDoc();
     if(canVideo())return openVideo();
+    if(iPadWindowGuide())return windowGuide();
     app.toast('🐾','Bu cihazda mini pencere yok','Sayaç Luna\'da çalışmaya devam eder.');
   }
   function init(a) {
@@ -201,10 +231,17 @@ const MiniTimer = (() => {
       // desteklemeyen cihazda hiç gösterme (işe yaramayan düğme kafa karıştırmasın)
       if(button)button.hidden=true;
       if(picker)picker.hidden=true;
+    } else if(iPadWindowGuide()) {
+      if(picker)picker.hidden=true; // renkler yalnızca küçük video penceresinde kullanılır
+      if(button){button.textContent='🐾 Mini pencere';button.title='iPad\'de Luna\'yı yan pencerede kullanma rehberi';button.addEventListener('click',open);}
     } else if(button) {
       button.textContent='🐾 Mini pencere';
       button.title='Başka uygulamaya geçmeden önce aç; Luna\'ya dönünce kapanır.';
-      if(!canDoc())button.addEventListener('pointerdown',()=>{if(canVideo()&&!isOpen())prepareVideo();});
+      if(!canDoc()){
+        button.addEventListener('pointerdown',()=>{if(canVideo()&&!isOpen())prepareVideo();});
+        // daha önce mini pencere kullandıysa sayaç başlarken hazırla: dokununca anında açılsın (iOS dokunuş süresi kısa)
+        document.querySelector('#btn-toggle')?.addEventListener('click',()=>{setTimeout(()=>{if(Store.data.settings.miniUsed&&canVideo()&&!isOpen()&&Timer.state().running)prepareVideo();},50);});
+      }
       button.addEventListener('click',open);
     }
     document.addEventListener('visibilitychange',()=>{

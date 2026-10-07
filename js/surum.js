@@ -10,7 +10,7 @@ const SURUMLER = /*SURUMLER*/[
     "tarih": "2026-10-07",
     "baslik": "Mini pencere iPad'de, Luna daha sevecen",
     "notlar": [
-      "🐾 Mini pencere artık iPad, iPhone ve Android'de de var: dokun, başka uygulamaya geçince sayaç köşede seninle kalsın; Luna'ya dönünce kapanır.",
+      "🐾 Mini pencere: Android'de ve Safari'de dokununca sayaç köşede küçük bir pencerede kalır. iPad'deki Luna uygulamasında düğme, Luna'yı YouTube'un yanında küçük pencerede kullanmayı adım adım anlatıyor; sayaç orada da durmadan akar.",
       "😊 Luna \"Bugün nasılsın?\" diye sorduğunda tek dokunuşla cevap verebilirsin; ona göre sana bir şey söylüyor.",
       "💬 Luna, Vesper ve Güçlü için yeni cümleler; sabah ayrı, akşam ayrı hal hatır. Gece sadece uykulu sözler.",
       "🌙 Vesper akşam bir kez gelir, bazen Luna'nın yanına kıvrılıp uyur. Kediler daha az ve yerinde konuşur.",
