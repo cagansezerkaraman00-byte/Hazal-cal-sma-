@@ -12,7 +12,7 @@ const LunaKurulum = (() => {
     } catch (e) { return false; }
   })();
   const oauthReturn = /[?&#](code|state|access_token|error)=/.test(location.search + location.hash); // Google/Spotify girişi dönüşü
-  const active = params.has('kurulum') || (!standalone && !oauthReturn && !params.has('app'));
+  const active = !standalone && (params.has('kurulum') || (!oauthReturn && !params.has('app')));
   if (!active) return { active: false };
 
   document.documentElement.classList.add('kurulum');
@@ -35,11 +35,11 @@ const LunaKurulum = (() => {
 
   const share = '<svg class="kr-share" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M8 7l4-4 4 4M6 11H5v10h14V11h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const STEPS = {
-    ios: `<ol><li><b>Paylaş</b> ${share} düğmesine dokun <small>(${isIPad ? 'sağ üstte' : 'altta'}; görmüyorsan önce <b>•••</b>)</small></li>
+    ios: `<p class="kr-note">${isIPad ? 'iPad' : 'iPhone'}'de indirme çubuğu bekleme; kurulumu Safari menüsünden tamamla:</p><ol><li><b>Paylaş</b> ${share} düğmesine dokun <small>(adres çubuğunun yanında; görmüyorsan önce <b>•••</b> / <b>Daha Fazla</b>)</small></li>
       <li>Listede <b>Ana Ekrana Ekle</b>'ye dokun <small>(gerekirse aşağı kaydır)</small></li>
-      <li><b>Web Uygulaması Olarak Aç</b> açıksa açık kalsın, <b>Ekle</b>'ye dokun</li>
+      <li><b>Web Uygulaması Olarak Aç</b> seçeneği varsa <b>aç</b>, ardından <b>Ekle</b>'ye dokun</li>
       <li>Ana ekrandaki <b>Luna</b>'ya dokun 💜</li></ol>
-      <p class="kr-note">Listede <b>Ana Ekrana Ekle</b> yoksa sayfayı önce <b>Safari</b>'de aç (WhatsApp'tan açtıysan sağ alttaki pusula simgesi).</p>`,
+      <p class="kr-note"><b>Ana Ekrana Ekle</b> görünmüyorsa paylaşım listesini aşağı kaydır; varsa <b>Eylemleri Düzenle</b>'den ekle. Başka uygulama içindeysen bağlantıyı kopyalayıp <b>Safari</b>'de aç.</p>`,
     iosOther: `<ol><li>Adres çubuğundaki <b>Paylaş</b> ${share} düğmesine dokun</li><li><b>Ana Ekrana Ekle</b> → <b>Ekle</b></li><li>Göremezsen bağlantıyı <b>Safari</b>'de aç</li></ol>`,
     inApp: `<ol><li>Bu sayfa başka bir uygulamanın içinde açıldı</li><li>Sağ üstteki <b>•••</b> menüsünden <b>${isIOS ? "Safari'de aç" : 'Tarayıcıda aç'}</b>'a dokun</li><li>Açılan sayfada <b>Luna'yı yükle</b>'ye yeniden dokun</li></ol>`,
     mac: '<ol><li>Üstteki menü çubuğunda <b>Dosya</b>\'ya tıkla</li><li><b>Dock\'a Ekle</b> → <b>Ekle</b></li><li>Luna Dock\'tan açılır 💜</li></ol>',
@@ -49,15 +49,15 @@ const LunaKurulum = (() => {
   };
 
   const $ = (s) => root && root.querySelector(s);
-  function showSteps(kind) {
+  function showSteps(kind, scroll = true) {
     const box = $('#kr-steps');
-    box.innerHTML = STEPS[kind] + (['inApp', 'firefox', 'iosOther'].includes(kind) ? '<button class="kr-copy" type="button" id="kr-copy">🔗 Bağlantıyı kopyala</button>' : '');
+    box.innerHTML = STEPS[kind] + (['ios', 'inApp', 'firefox', 'iosOther'].includes(kind) ? '<button class="kr-copy" type="button" id="kr-copy">🔗 Bağlantıyı kopyala</button>' : '');
     box.hidden = false;
     const arrow = $('.kr-arrow');
     arrow.hidden = !(kind === 'ios' && !iosOther && !inApp);
     arrow.classList.toggle('up', isIPad);
     root.classList.toggle('with-arrow', !arrow.hidden && !isIPad); // ok son adımın üstüne binmesin
-    try { box.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { /* eski tarayıcı */ }
+    if (scroll) try { box.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) { /* eski tarayıcı */ }
     const copy = $('#kr-copy');
     if (copy) copy.addEventListener('click', async () => {
       const url = location.origin + location.pathname;
@@ -74,6 +74,8 @@ const LunaKurulum = (() => {
     box.hidden = false;
   }
   async function install() {
+    if (inApp) return showSteps('inApp');
+    if (isIOS) return showSteps(iosOther ? 'iosOther' : 'ios');
     if (deferred) {
       const e = deferred; deferred = null;
       try {
@@ -84,14 +86,13 @@ const LunaKurulum = (() => {
       } catch (err) { showSteps(isAndroid ? 'android' : 'desktop'); }
       return;
     }
-    if (inApp) return showSteps('inApp');
-    if (isIOS) return showSteps(iosOther ? 'iosOther' : 'ios');
     if (isMacSafari) return showSteps('mac');
     if (isFirefox && !isAndroid) return showSteps('firefox');
     // Kurulum izni henüz gelmediyse kullanıcı adımları görür; sonraki dokunuş sistemi açar.
     showSteps(isAndroid ? 'android' : 'desktop');
   }
   function build() {
+    if (root || !document.body) return;
     root = document.createElement('section');
     root.id = 'kurulum';
     root.className = 'kurulum';
@@ -108,8 +109,13 @@ const LunaKurulum = (() => {
     document.body.prepend(root);
     $('.kr-btn').addEventListener('click', install);
     if(completed)done();
+    else if (isIOS) {
+      $('.kr-btn').textContent = 'Ana ekrana ekleme adımları';
+      showSteps(inApp ? 'inApp' : iosOther ? 'iosOther' : 'ios', false);
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build); else build();
-  return { active: true, install };
+  return { active: true, install, mount: build };
 })();
 window.LunaKurulum = LunaKurulum;
+

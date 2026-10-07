@@ -6,11 +6,13 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
-    "surum": "2.3.1",
+    "surum": "2.3.2",
     "gorunenSurum": "2.1.4",
     "tarih": "2026-10-07",
-    "baslik": "Kurulum ve bildirim düzeltmeleri",
+    "baslik": "iPad ve iPhone kurulumu düzeltildi",
     "notlar": [
+      "📱 iPhone ve iPad kurulum adımları artık beklemeden görünür. Safari → Paylaş → Ana Ekrana Ekle ile kurulur; varsa Web Uygulaması Olarak Aç seçeneği açılır.",
+      "⚡ Kurulum ekranı uygulama dosyalarını ve dış yazı tiplerini beklemeden hazırlanır. Ana ekran simgesi kurulum bağlantısından eklenmiş olsa da uygulama açılır.",
       "🔔 Bildirimlerde şeffaf kedi simgesi kullanılır; eski Luna bildirimleri güncellemede temizlenir.",
       "💜 Mor kurulum sayfası, yükleme isteği kabul edilince kapanmaz ve uygulamanın içini tarayıcıda açmaz. Kurulumdan sonra ana ekrandaki Luna simgesinden açılır.",
       "📲 Bildirime dokununca varsa ana ekrandan açılmış Luna penceresi tercih edilir. Kurulum simgeleri çevrimdışı önbelleğe eklendi.",

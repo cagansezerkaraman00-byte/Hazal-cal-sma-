@@ -16,7 +16,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" media="print" onload="this.media='all'" crossorigin="anonymous">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Luna">
   <meta property="og:description" content="Senin için hazırlandı 💜 Dokun ve yükle.">
@@ -26,6 +26,7 @@
   <script src="js/kurulum.js"></script>
 </head>
 <body>
+  <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
   <div class="update-banner hidden" id="update-banner" role="status" aria-live="polite"></div>
   <div id="app">
     <!-- Sahne -->
