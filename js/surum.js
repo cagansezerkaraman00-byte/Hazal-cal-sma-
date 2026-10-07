@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
+    "surum": "2.3",
+    "tarih": "2026-10-07",
+    "baslik": "Yeni kurulum sayfası",
+    "notlar": [
+      "💜 Luna'nın bağlantısı artık lila bir kurulum sayfası açıyor: ortada Luna, altında \"Luna'yı yükle\". Android ve bilgisayarda tek dokunuşla yüklenir, iPhone ve iPad'de adımları gösterir.",
+      "🎁 Uygulamanın içi yalnızca yüklenince görünür; tarayıcıda açan biri sadece kurulum sayfasını görür.",
+      "🔗 Bağlantı WhatsApp gibi uygulamalarda Luna'nın simgesiyle paylaşılır."
+    ]
+  },
+  {
     "surum": "2.2",
     "tarih": "2026-10-07",
     "baslik": "Mini pencere iPad'de, Luna daha sevecen",

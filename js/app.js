@@ -1647,6 +1647,7 @@
   window.App = App;
 
   function init() {
+    if (window.LunaKurulum && LunaKurulum.active) return; // tarayıcıda yalnızca kurulum sayfası (uygulama sürpriz kalsın)
     if (window.GAuth) GAuth.handleRedirect(); // Google dönüşü: modüller sonucu GAuth.lastReturn() ile okur
     // kaldırılan hesap eşitlemesinden kalmış olabilecek boş kayıtları bir kez temizle
     try { if (!localStorage.getItem('luna-temizlik-1')) { localStorage.removeItem('luna-sync-on'); if (window.indexedDB) indexedDB.deleteDatabase('luna-sync'); localStorage.setItem('luna-temizlik-1', '1'); } } catch (e) { /* yok say */ }

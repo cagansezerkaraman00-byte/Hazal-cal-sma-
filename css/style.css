@@ -1720,3 +1720,50 @@ button.stat-chip { font: inherit; color: inherit; cursor: pointer; }
 .mini-theme-option:focus-within{outline:2px solid var(--accent,#9673b6);outline-offset:2px}
 .mini-theme-option input{margin:0;accent-color:var(--accent,#9673b6)}
 .mini-theme-dot{width:20px;height:20px;flex-shrink:0;border-radius:50%;background:var(--swatch);box-shadow:inset 0 0 0 1px #0002}
+
+/* ---------- Kurulum sayfası (bağlantı tarayıcıda açılınca; uygulamanın içi gizli) ---------- */
+html.kurulum, html.kurulum body { min-height: 100%; background: linear-gradient(165deg, #e6d8fb 0%, #c9adf2 45%, #a988e3 100%); background-attachment: fixed; }
+html.kurulum body > *:not(#kurulum) { display: none !important; }
+html.kurulum body::before, html.kurulum body::after { display: none !important; }
+.kurulum {
+  position: fixed; inset: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+  padding: calc(28px + env(safe-area-inset-top)) 20px calc(36px + env(safe-area-inset-bottom));
+  font-family: 'Nunito', system-ui, sans-serif; color: #2b1d4d; text-align: center;
+}
+.kr-stars { position: fixed; inset: 0; pointer-events: none; opacity: .55;
+  background-image: radial-gradient(2px 2px at 12% 18%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 82% 12%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 70% 78%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 24% 72%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 50% 35%, #fff 50%, transparent 51%), radial-gradient(2px 2px at 90% 55%, #fff 50%, transparent 51%); }
+.kr-window {
+  position: relative; width: min(340px, 86vw); padding: 26px 22px 22px; border-radius: 30px;
+  background: rgba(255, 255, 255, .42); border: 1px solid rgba(255, 255, 255, .7);
+  box-shadow: 0 24px 60px -24px rgba(62, 30, 120, .55), inset 0 1px 0 rgba(255, 255, 255, .8);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+}
+.kr-icon { display: block; width: min(200px, 52vw); height: auto; aspect-ratio: 1; margin: 0 auto; border-radius: 22.5%; box-shadow: 0 16px 34px -14px rgba(62, 30, 120, .6); }
+.kr-title { margin: 16px 0 2px; font-size: 2.1rem; font-weight: 800; letter-spacing: .5px; }
+.kr-sub { margin: 0; font-weight: 700; color: #5b4683; }
+.kr-btn {
+  position: relative; min-width: min(300px, 80vw); padding: 17px 28px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 800 1.15rem 'Nunito', system-ui, sans-serif; color: #fff; background: linear-gradient(180deg, #8f63db, #6f44c4);
+  box-shadow: 0 14px 30px -12px rgba(70, 30, 140, .8), inset 0 1px 0 rgba(255, 255, 255, .35); touch-action: manipulation;
+}
+.kr-btn:active { transform: translateY(1px) scale(.99); }
+.kr-btn[hidden] { display: none; }
+.kr-steps { width: min(360px, 90vw); padding: 14px 18px; border-radius: 20px; background: rgba(255, 255, 255, .62); text-align: left; font-weight: 600; line-height: 1.45; }
+.kr-steps[hidden] { display: none; }
+.kr-steps ol { margin: 0; padding-left: 20px; }
+.kr-steps li { margin: 6px 0; }
+.kr-steps small { color: #5b4683; font-weight: 600; }
+.kr-note { margin: 8px 0 0; font-size: .9rem; color: #4a3a6b; }
+.kr-done { margin: 0; font-size: 1.25rem; font-weight: 800; text-align: center; }
+.kr-copy { margin-top: 10px; width: 100%; padding: 11px; border: 0; border-radius: 14px; font: 800 1rem 'Nunito', system-ui, sans-serif; color: #4b2a92; background: #fff; cursor: pointer; }
+.kr-share { width: 18px; height: 18px; vertical-align: -3px; color: #2f6fe0; }
+.kr-arrow { position: fixed; left: 50%; bottom: calc(6px + env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: 2.2rem; color: #2f6fe0; animation: krBob 1.2s ease-in-out infinite; pointer-events: none; }
+.kr-arrow.up { top: calc(4px + env(safe-area-inset-top)); bottom: auto; left: auto; right: 64px; transform: rotate(180deg); animation: none; }
+.kr-arrow[hidden] { display: none; }
+.kurulum.with-arrow { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+.kurulum.with-arrow .kr-steps { scroll-margin-bottom: calc(78px + env(safe-area-inset-bottom)); }
+@keyframes krBob { 50% { transform: translate(-50%, 8px); } }
+@media (max-height: 640px) { .kr-icon { width: min(130px, 34vw); } .kurulum { gap: 14px; justify-content: flex-start; } .kr-arrow { display: none; } }
+@media (prefers-reduced-motion: reduce) { .kr-arrow { animation: none; } }

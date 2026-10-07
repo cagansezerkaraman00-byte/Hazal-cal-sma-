@@ -8,6 +8,8 @@ Luna is a web app that installs like a native app (iPhone, iPad, Android, tablet
 
 ## Install (one link, about 20 seconds)
 
+Opening the link in a browser shows only a lilac install page with Luna's icon and a **Luna'yı yükle** button; the app itself appears once it is installed (it stays a surprise). On Android and desktop Chrome/Edge the button opens the system install dialog; on iPhone/iPad and Mac Safari it shows the steps, because Apple does not let websites install themselves. For development, add `?app` to the address to use the app in a normal browser tab.
+
 Open the link on the phone. A full-screen guide appears and walks through it:
 
 - **iPhone / iPad (Safari):** Share → *Add to Home Screen* → *Add*
