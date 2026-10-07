@@ -1,10 +1,10 @@
 {
-  "version": "2.3.6",
+  "version": "2.3.7",
   "files": {
-    "index.html": "ea5ec19bc488a1a00117c52042f1acb7ac3cc83f22f72830daa676123e76eaa8",
+    "index.html": "3314c40588606dd3a3f814a97a99a3d0dc460c7accc2c96f541d1b616cc7c2f1",
     "manifest.webmanifest": "19b9676d77ff7ea70d764e41f50b01941edc3e576d0f7e0d07f009ba7d59abb1",
     "css/style.css": "75a4a7d9f8abf22bde979243e7e5ce34c9581dd25f915e4ada4486f912f698e0",
-    "js/app.js": "663491ab48617756a70883deb1f21d458c9f809d6e3331b8234bf9b084360669",
+    "js/app.js": "20113487fb406151073b52452dcc5635216eaee1872e4baa96d88b8d3285a228",
     "js/audio.js": "3c128dda76389c581f0bc5caa37298f1746163ebb09537c9acfcf1e2caeb5cd5",
     "js/badges.js": "d867b61e305bfad3e6e03a8ff2f27f4c5fa68d29e5e9aaae8246e68d2d14ff46",
     "js/deneme.js": "768b670b88c992bfd5fa730243ca4c44b81f6ed7eaa51aff6ab0dfee467fbb2e",
@@ -26,7 +26,7 @@
     "js/spotify.js": "ff3bdd890cba862570687e9963926ede462f146e678bdcc50ecdb19be71c496b",
     "js/stats.js": "979d57b8e8ca382540e826cc667fa815e2ba247b144caebafd7df50a6ed9a36d",
     "js/storage.js": "fd3efedda6b8808991c696e7ec95671507c9b2ede4f18d3a7b3f80042588d892",
-    "js/surum.js": "907f29d649d06e0a9e9cef2ec98a4f53e0db444c9cf57fd1a7d2b2e1fe9ea802",
+    "js/surum.js": "712102b86818d778c0b14d75d84cee33d2993c638d5226cb00ade362620943a2",
     "js/takvim.js": "3f4792abfdd225ded4a85263a218581a829ce643d647f5aee19c1ba779b16d6e",
     "js/timer.js": "6603341514680c549084f5312f09028044586bfb0c1b15eaa2851352fa39dd67",
     "js/uni-ui.js": "38b400d9a639bda60b246ec5cbd27100a74732814c32ab3f0ec35aff8678d182",
