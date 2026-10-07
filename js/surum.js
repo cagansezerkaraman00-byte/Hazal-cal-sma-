@@ -6,6 +6,18 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.3.8",
+  "tarih": "2026-10-07",
+  "baslik": "Kurulum adımları cilalandı",
+  "notlar": [
+    "📱 iPad'de Paylaş düğmesinin yeri daha net (+ düğmesinin hemen solunda); Daha Fazla ve Eylemleri Düzenle de anlatılıyor.",
+    "🤖 Android'de Chrome'un yeni menü adı (Yükle ve kısayol oluştur) ve Firefox'un adımları güncellendi.",
+    "⏳ Kurulum sayfası, sen düğmeye dokunduktan sonra yeni sürüm gelse de yarıda yenilenmiyor.",
+    "⬇️ iPhone'daki mavi ok artık yazıların üstüne binmiyor; Bağlantıyı kopyala düğmesi kesilmeyen bağlantıyı kopyalıyor.",
+    "🔔 Güncelleme sırasında çalışan sayacın bildirimi kapanmıyor."
+  ]
+},
+{
   "surum": "2.3.7",
   "tarih": "2026-10-07",
   "baslik": "Güvenli güncelleme ve açılış onarımı",

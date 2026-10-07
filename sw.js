@@ -45,7 +45,7 @@ self.addEventListener('activate', (e) => {
     caches.keys()
       .then((keys) => Promise.all(keys.filter((k) => /^luna-\d/.test(k) && k !== VERSION && !keys.filter(x => /^luna-\d/.test(x)).sort((a,b) => b.localeCompare(a, undefined, {numeric:true})).slice(0, 3).includes(k)).map((k) => caches.delete(k))))
       .then(async () => {
-        try { for(const n of await self.registration.getNotifications())if(n.tag?.startsWith('luna-'))n.close(); } catch(e) {}
+        try { for (const n of await self.registration.getNotifications()) if (n.tag === 'luna-guncelleme') n.close(); } catch (e) {} // eski güncelleme haberi; sayaç bildirimi kalsın
         return self.clients.claim();
       })
   );

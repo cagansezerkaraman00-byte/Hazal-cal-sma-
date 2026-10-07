@@ -4,7 +4,7 @@ function setup(standalone=false, options={}){
 const events={},controls=new Map();let root;
 const cl={add(){},remove(){},toggle(){}};
 for(const key of ['.kr-btn','.kr-arrow','#kr-steps'])controls.set(key,{hidden:false,innerHTML:'',textContent:'Yükle',classList:cl,scrollIntoView(){},addEventListener(){}});
-const document={readyState:options.loading ? 'loading' : 'complete',addEventListener:(k,f)=>events[k]=f,documentElement:{classList:cl},querySelector:()=>null,createElement:()=>({id:'',innerHTML:'',classList:cl,setAttribute(){},querySelector:s=>controls.get(s)||null}),body:{prepend:n=>root=n}};
+const document={readyState:options.loading ? 'loading' : 'complete',addEventListener:(k,f)=>events[k]=f,documentElement:{classList:cl},querySelector:()=>null,createElement:()=>({id:'',innerHTML:'',classList:cl,setAttribute(){},addEventListener(){},querySelector:s=>controls.get(s)||null}),body:{prepend:n=>root=n}};
 const window={addEventListener:(k,f)=>events[k]=f};
 const timers=[];const ctx={URLSearchParams,window,document,setTimeout:(f)=>timers.push(f),navigator:{userAgent:'Android Chrome',webdriver:true,...options.navigator},location:{search:options.search || '',hash:'',origin:'https://example.test',pathname:'/Luna/'},matchMedia:(q)=>({matches:/display-mode/.test(q) ? standalone : !!options.coarse})};
 vm.createContext(ctx);vm.runInContext(source,ctx);return {api:window.LunaKurulum,events,controls,root:()=>root,timers};
@@ -44,7 +44,7 @@ assert.equal(setup(true,{search:'?kurulum'}).api.active,false,'installed app nev
 const tabletUA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
 const tab=setup(false,{navigator:{userAgent:tabletUA,maxTouchPoints:5},coarse:true});
 let tapped=tab.api.install(); tab.timers.forEach((f)=>f()); await tapped;
-assert.match(tab.controls.get('#kr-steps').innerHTML,/Ana ekrana ekle/); assert.doesNotMatch(tab.controls.get('#kr-steps').innerHTML,/⊕/);
+assert.match(tab.controls.get('#kr-steps').innerHTML,/Yükle ve kısayol oluştur/); assert.doesNotMatch(tab.controls.get('#kr-steps').innerHTML,/⊕/);
 const pc=setup(false,{navigator:{userAgent:tabletUA,maxTouchPoints:0}});
 tapped=pc.api.install(); pc.timers.forEach((f)=>f()); await tapped; assert.match(pc.controls.get('#kr-steps').innerHTML,/⊕/,'a Linux PC keeps desktop steps');
 // one tap: the prompt arriving while the tap waits opens the system dialog
@@ -61,7 +61,7 @@ assert.match(late.controls.get('#kr-steps').innerHTML,/bir kez daha dokun/);
 const samsung=setup(false,{navigator:{userAgent:'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/26.0 Chrome/122.0.0.0 Safari/537.36'}});
 tapped=samsung.api.install(); samsung.timers.forEach((f)=>f()); await tapped; assert.match(samsung.controls.get('#kr-steps').innerHTML,/Sayfa ekle/);
 const fxa=setup(false,{navigator:{userAgent:'Mozilla/5.0 (Android 14; Tablet; rv:131.0) Gecko/131.0 Firefox/131.0'}});
-await fxa.api.install(); assert.equal(fxa.timers.length,0,'Firefox never waits'); assert.match(fxa.controls.get('#kr-steps').innerHTML,/Yükle/); assert.doesNotMatch(fxa.controls.get('#kr-steps').innerHTML,/yükleyemiyor/);
+await fxa.api.install(); assert.equal(fxa.timers.length,0,'Firefox never waits'); assert.match(fxa.controls.get('#kr-steps').innerHTML,/Uygulamayı ana ekrana ekle/); assert.doesNotMatch(fxa.controls.get('#kr-steps').innerHTML,/yükleyemiyor/);
 const wv=setup(false,{navigator:{userAgent:'Mozilla/5.0 (Linux; Android 14; SM-X710 Build/UP1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0 Safari/537.36'}});
 await wv.api.install(); assert.match(wv.controls.get('#kr-steps').innerHTML,/Tarayıcıda aç/);
 // iPad: no arrow (Share moves with the window size); iPhone keeps it; bookmark launch explains the toggle

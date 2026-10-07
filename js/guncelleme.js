@@ -327,7 +327,7 @@ const Guncelleme = (() => {
       renderBanner();
       whatsNew();
       iconBadge(false); // açık sürüm en yenisi (yeni sürüm bulunursa yeniden yanar)
-      setTimeout(() => installScreen(false), 1200);
+      // tarayıcıda açılınca kurulumu js/kurulum.js'deki lila sayfa anlatır; eski tam ekran rehber kendiliğinden açılmaz
       askNotify();
       if (/#guncelleme$/.test(location.hash)) { App.showTab('settings'); history.replaceState(null, '', location.pathname + location.search); }
       if (!('serviceWorker' in navigator) || !location.protocol.startsWith('http')) return;

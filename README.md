@@ -4,19 +4,21 @@ A cozy, pixel-art study app built by **Çağan Sezer Karaman** for Hazal, starri
 
 Luna is a web app that installs like a native app (iPhone, iPad, Android, tablet). It needs no store and no account, works offline and updates itself in place. The app itself is in Turkish.
 
-**Install link:** <https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/>
+**Install link:** <https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/?yukle>
 
 ## Install (one link, about 20 seconds)
 
-Opening the link in a browser shows only a lilac install page with Luna's icon and a **Luna'yı yükle** button; the app itself appears once it is installed (it stays a surprise). On Android phones and tablets and desktop Chrome/Edge the button opens the system install dialog (it waits a few seconds for Chrome to allow it, so one tap is enough). iPhone/iPad, Samsung Internet, Firefox and Mac Safari get their own menu steps, because those browsers do not let websites install themselves. Android tablets that request the desktop site (Chrome's default on large tablets) are still recognised as Android. For development, add `?app` to the address to use the app in a normal browser tab.
+Opening the link in a browser shows only a lilac install page with Luna's icon and a **Luna'yı yükle** button; the app itself appears once it is installed (it stays a surprise). On Android phones and tablets and desktop Chrome/Edge the button opens the system install dialog (it waits a few seconds for Chrome to allow it, so one tap is enough). iPhone/iPad, Samsung Internet (when it offers no install prompt), Firefox and Mac Safari get their own menu steps, because those browsers do not let websites install themselves. Android tablets that request the desktop site (Chrome's default on large tablets) are still recognised as Android. For development, add `?app` to the address to use the app in a normal browser tab.
 
-When sharing the link in a message, send `https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/?yukle`: the repository name ends in a hyphen, and some Android link detectors cut a trailing `-/` when text follows it.
+Share the link with `?yukle` at the end (as above): the repository name ends in a hyphen, and some Android link detectors cut a trailing `-/` when text follows it. The page's copy-link button copies this form too.
 
-Open the link on the phone. A full-screen guide appears and walks through it:
+What the page tells each device (the exact Turkish steps live in `STEPS` in `js/kurulum.js`):
 
-- **iPhone / iPad (Safari):** Share → *Add to Home Screen* → *Add*
-- **Android (Chrome):** tap *Install* (or ⋮ → *Install app*)
-- **Opened inside Instagram/WhatsApp?** The guide asks to open the link in Safari or Chrome first.
+- **iPhone / iPad (Safari):** Paylaş → *Ana Ekrana Ekle* (on iOS/iPadOS 26 it may sit under *Daha Fazla*) → keep *Web Uygulaması Olarak Aç* on → *Ekle*. If the icon was saved as a bookmark it opens in Safari; the page notices this and explains how to re-add it.
+- **Android phones and tablets (Chrome):** the system install dialog; otherwise ⋮ → *Yükle ve kısayol oluştur* (older: *Ana ekrana ekle* / *Uygulamayı yükle*) → *Yükle*, not *Kısayol oluştur*.
+- **Samsung Internet:** the install icon in the address bar, or ≡ → *Sayfa ekle* → *Ana ekran*.
+- **Firefox for Android:** ⋮ → *Uygulamayı ana ekrana ekle*. **Edge for Android:** ••• → *Telefona ekle*.
+- **Opened inside Instagram/WhatsApp/another app?** The page asks to open the link in Safari or Chrome first.
 
 From then on Luna lives on the home screen with its own icon, opens full screen and works without internet. On first launch it asks once for notification permission, which is used for timer alerts and update notices.
 
