@@ -322,7 +322,7 @@
     else if (a.app && m >= 1) text = `${exitInfo(a.app).from} hoş geldin ${exitInfo(a.app).e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
     else if (!a.app && m >= 1 && !D().settings.pauseOnLeave) text = `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`;
     if (a.lunaNudge && !a.app) text = Messages.get('focusNudge') + (a.paused ? ' Sayaç durdu; hazır olduğunda Devam’a bas.' : '');
-    if (text) { Scene.say(text, { emotion: a.lunaNudge ? 'angry' : 'neutral' }); lastMsgAt = Date.now(); }
+    if (text && Scene.say(text, a.lunaNudge ? Messages.delivery('focusNudge') : { emotion: 'neutral' }) !== false) lastMsgAt = Date.now();
     return !!text;
   }
   // tam odakta dışarıda kalınca sayaç durdu: izinli bir uygulamadaysa o süre de çalışmaya sayılır
@@ -1312,10 +1312,14 @@
       if (!b) return;
       if (App.isFocusing()) { toast('🐾', 'Odaklanırken kediler seni rahatsız etmez', 'Molada çağırabilirsin'); return; }
       const k = b.dataset.visit;
-      if (k === 'vesper' && Scene.isVesperTime && !Scene.isVesperTime()) { toast('🌙', 'Vesper akşam gelir', 'Hava kararınca uğrar; şimdilik Güçlü\'yü çağırabilirsin'); return; }
+      if (k === 'vesper' && Scene.isVesperTime && !Scene.isVesperTime()) { toast('🌙', 'Vesper akşam gelir', 'Akşam 18:00\'den sonra, hava kararınca uğrar; şimdilik Güçlü\'yü çağırabilirsin'); return; }
       const came = Scene.visit(k);
       showTab('home');
-      if (came === false) toast('🐾', 'Kediler şu an meşgul', 'Biraz sonra yine dene');
+      if (came === false) {
+        const here = Scene.friendsHere ? Scene.friendsHere() : [];
+        if (here.length && (k === 'family' || here.includes(k))) toast('🐾', 'Zaten burada', 'Ana sayfada Luna\'nın yanında');
+        else toast('🐾', 'Kediler şu an meşgul', 'Biraz sonra yine dene');
+      }
     });
     $('#set-focusmode').addEventListener('change', (e) => { D().settings.focusMode = e.target.checked; save(); renderTimer(Timer.state()); });
     document.querySelectorAll('input[name="mini-theme"]').forEach(el => el.addEventListener('change', () => {
@@ -1512,7 +1516,7 @@
     if (kind === 'vesper') return night ? 'vesperSleepy' : 'vesper';
     if (night) return 'kittenSleepy';
     const ss = D().sessions, last = ss.length ? ss[ss.length - 1].start : 0;
-    if (!last || Date.now() - last > 3 * 864e5) return 'kittenMiss';
+    if (last && Date.now() - last > 3 * 864e5) return 'kittenMiss';
     return Stats.minutesOn(new Date()) > 0 ? 'kittenHappy' : 'kitten';
   }
   function sayCompanion(kind) {
@@ -1587,7 +1591,7 @@
       if (document.hidden) return;
       if (Messages.mood() === 'bedtime') sayCompanion('bedtime');
       else if (!Messages.companionState().checkedIn && h >= 5 && h < 23) sayCompanion('checkIn');
-      else if (ss.length && Date.now() - ss[ss.length - 1].start > 3 * 864e5) say('comeback');
+      else if (h >= 5 && h < 23 && ss.length && Date.now() - ss[ss.length - 1].start > 3 * 864e5) say('comeback');
       else if (fullMoon) { D().lastMoonGreet = today; save(); say('dolunay', { ms: 8000 }); }
       else { const m = Messages.mood(); sayCompanion(m === 'lowStudy' ? 'companion' : m); } // açılışta hep sıcak karşılama
     }, 1200);

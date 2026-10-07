@@ -35,7 +35,7 @@ const Messages = (() => {
     late: [
       'Saat çok geç oldu {name}... Beyin uykuda öğrendiklerini kaydeder, hadi yatalım 😴',
       'Ben uyuyorum, sen de uyu olur mu? Yarın daha taze olursun 💤',
-      'Gece yarısını geçtik. Yarınki sen, bu geceki uykun için sana teşekkür edecek 🌙',
+      'Saat epey ilerledi. Yarınki sen, bu geceki uykun için sana teşekkür edecek 🌙',
     ],
     start: [
       'Hadi başlıyoruz! Telefonu ters çevir, ben nöbetteyim 🐾',
@@ -154,19 +154,19 @@ const Messages = (() => {
   M.poke.push(...["Mırrr… Anneciğim beni mi çağırdı? 😽","Bir pati benden, bir soru senden. Anlaştık mı?","Buradayım {name}! Kulağımı sevdin, şimdi deftere dönelim 🐾","Minik bir miyav molası verdik. Hazırsan devam 💜"]);
 
   // Sabah "nasılsın" (öğleden önce "günün nasıl geçti" denmesin)
-  M.checkInMorning = ["Günaydın anneciğim! Uykunu alabildin mi? 🐾","Günaydın {name}! Bugün kendini nasıl hissediyorsun?","Sabah sabah seni görmek ne güzel 😽 Nasılsın bakalım?","Günaydııın! Kahvaltı tamam mı, keyfin yerinde mi?","Güneş de ben de uyandık anneciğim ☀️ Sen nasılsın?"];
+  M.checkInMorning = ["Günaydın anneciğim! Uykunu alabildin mi? 🐾","Günaydın {name}! Bugün kendini nasıl hissediyorsun?","Sabah sabah seni görmek ne güzel 😽 Nasılsın bakalım?","Günaydııın! Kahvaltı tamam mı, keyfin yerinde mi?","Ben uyandım anneciğim 🐾 Sen nasılsın?"];
   // "Nasılsın?" sorusuna Hazal'ın cevabı (karşılama kartındaki düğmeler)
   M.feelGood = ["Buna çok sevindim! 😻 Bu güzel enerjiyle küçük bir hedef seçelim mi?","Ohh, kuyruğum havaya kalktı! Bugün beraber güzel işler çıkarırız 🐾","Harika! İyi hissettiğin günler en güzel tekrar günleridir 💜","Seni böyle görünce mırlamaya başladım bile 😽 Hadi bakalım!"];
   M.feelTired = ["Anladım anneciğim 💜 Bugün 15 dakikalık minik bir oturum yeter, sonra dinleniriz.","Yorgunluk çok normal. Önce bir bardak su, sonra en kolay konudan başlarız 🐾","Biraz yavaş gidelim bugün. Ben yanında mırlarım, sen kendini zorlama.","Yorgun günlerde tekrar yapmak en iyisi: yeni konu yok, sadece hatırlamak 🌙"];
   M.feelHard = ["Gel buraya, yanına kıvrılayım 🤍 Zor günler geçer; bugün küçük bir adım bile çok değerli.","Seni duydum anneciğim. Önce biraz nefes alalım: 4 saniye al, 4 tut, 4 ver 🌙","Bugün kendine nazik ol, olur mu? Ders bekleyebilir; sen her şeyden önemlisin 💜","Zor günde de buradayım. İstersen sadece beş dakika yan yana oturalım, gerisine sonra bakarız 🐾"];
-  M.companion.push(...["Bugün bir şey öğrenirsen, yarın onu ben de bilmiş sayılırım 😸","Masanın köşesi benim, kalemler senin. Anlaştık mı? 🐾","Yavaş ama düzenli: kaplumbağalar da hedefe varır, kediler de 🐢🐱","Küçük bir tekrar yapalım mı? Dünkü konudan tek bir soru yeter.","Pencereden bakınca bugün hava sana çalışmak için selam veriyor 🌤️"]);
+  M.companion.push(...["Bugün bir şey öğrenirsen, yarın onu ben de bilmiş sayılırım 😸","Masanın köşesi benim, kalemler senin. Anlaştık mı? 🐾","Yavaş ama düzenli: kaplumbağalar da hedefe varır, kediler de 🐢🐱","Küçük bir tekrar yapalım mı? Dünkü konudan tek bir soru yeter.","Bugün de birlikteyiz; hadi küçük bir adım seçelim 🐾"]);
   M.proud.push(...["Bugün hedefini tamamladın! Patilerimle alkışlıyorum 👏🐾","Bu emek yarın sana teşekkür edecek anneciğim 💜","Yıldızlardan biri bugün senin için parlıyor ⭐"]);
   M.start.push(...["Hadi bakalım! Ben saati tutuyorum, sen sadece işine bak 🐾","Bir nefes al… ve başlıyoruz. Yanındayım anneciğim 💜","İlk dakika en zorudur, gerisi kendiliğinden akar 🌊"]);
   M.done.push(...["Harika bir oturumdu! Su içmeyi unutma 💧","Bir tuğla daha koyduk anneciğim; duvar yükseliyor 🧱🐾","Oturum bitti, ben de gururla mırlıyorum 😻"]);
   M.late.push(...["Ben çoktan battaniyedeyim… Sen de ışıkları kısar mısın anneciğim? 🌙","Yarın taze bir kafayla daha hızlı gideriz. Hadi uyku vakti 💤","Mırr… Gece çok güzel ama uykun daha güzel olacak 🌙"]);
   M.comeback.push(...["Geldin! 😻 Seni çok özledim anneciğim. Bugün minicik bir başlangıç yapalım mı?","Bak kim gelmiş! Kaldığımız yer seni bekliyor; acele yok 🐾"]);
   // gece Vesper ve Güçlü de uyku modunda: ders çağrısı yok
-  M.vesperSleepy = ["Vesper esniyor… 🌙 Gece nöbeti bitti, hadi sen de uyu anneciğim.","Vesper usulca yanına kıvrıldı. Işıkları kısalım mı? 💤","Gece mavisi gözlerim kapanıyor… Yarın yine buradayım."];
+  M.vesperSleepy = ["Haaah… esniyorum 🌙 Uyku vakti geldi, hadi sen de uyu anneciğim.","Usulca yanına kıvrıldım. Işıkları kısalım mı? 💤","Gece mavisi gözlerim kapanıyor… Yarın yine buradayım."];
   M.kittenSleepy = ["Anne… uykum geldiii… sen de uyu mu? 💤","Ben battaniyeye girdim anne, sen de gel 🧡","Annecim… yıldızlar uyudu, biz de uyuyalım mı? 🌙"];
 
   M.vesper = ["Anneciğimm, gece benimle mi çalışacaksın? Ben sessizce yanına oturayım 🌙","Hava karardı {name}, ben geldim. Bu gece hangi sayfada buluşuyoruz?","Gece nöbeti bende anneciğim. Sen çalış, ben yanında usul usul dururum.","Biraz yoruldun mu? İstersen son bir küçük tekrar, sonra dinlenelim.","Yıldızlar çıktı, ben de geldim. Nasılsın anneciğim?"];

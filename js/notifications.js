@@ -67,8 +67,9 @@ const LunaNotify = (() => {
     // Tam odakta izinsiz çıkışta sayaç 15 sn sonra durur: bitiş saati vaat etme
     const a=Store.data.timer&&Store.data.timer.away;
     const willPause=s.phase==='focus'&&Store.data.settings.pauseOnLeave&&a&&!a.app;
-    const body=willPause ? 'Tam odak: 15 sn içinde dönmezsen sayaç durur · Kalan '+U.fmtClock(s.countdown?s.remaining:s.elapsed)
-      : (end ? 'Bitiş '+U.hm(end)+' · Kalan '+U.fmtClock(s.remaining) : 'Geçen '+U.fmtClock(s.elapsed))+' · Dokunup güncel sayacı aç.';
+    const left=s.countdown?'Kalan '+U.fmtClock(s.remaining):'Geçen '+U.fmtClock(s.elapsed);
+    const body=willPause ? 'Tam odak: 15 sn içinde dönmezsen sayaç durur · '+left
+      : (end ? 'Bitiş '+U.hm(end)+' · ' : '')+left+' · Dokunup güncel sayacı aç.';
     const key=[s.firstStart,s.resumedAt,s.phase,willPause?1:0].join(':');
     if (!force && key===lastTimerKey) return false;
     const ok=await send('Luna · '+label+' sayacı',body,{tag:'luna-timer',silent:true,renotify:false,data:{tab:'home'}});

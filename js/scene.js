@@ -2254,6 +2254,7 @@ const Scene = (() => {
     // ziyaretçi çağır: 'vesper' | 'kitten' | 'nap' | 'family' (odaklanırken yok sayılır)
     visit(kind) { return startVisit(kind); },
     isVesperTime() { return vesperTime(); },
+    friendsHere() { return friends.filter((f) => f.x >= 0 && f.x <= W).map((f) => f.kind); },
     // bugünün mevsimi ve özel günleri (arayüz için)
     today() { return { season, events: events.slice() }; },
     // hemen bir ip oyunu başlat (odaklanırken yok sayılır)

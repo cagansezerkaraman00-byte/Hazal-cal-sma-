@@ -128,9 +128,15 @@ const MiniTimer = (() => {
     if(vid){try{vid.pause();vid.srcObject=null;vid.remove();}catch(e){}vid=null;}
     vcanvas=null;if(mode==='video')mode=null;away=false;
   }
+  // mini pencere başka uygulamadayken kapatıldıysa o andan sonrası izinli çıkış değil: Tam odak 15 sn sonra durdurur
+  function closedWhileAway() {
+    const a=Store.data.timer&&Store.data.timer.away;
+    if(document.hidden&&a&&a.app==='miniTimer'){a.app=null;a.at=Date.now();Store.save();}
+  }
   function onVideoLeave() {
     if(mode!=='video')return;
     teardownVideo();
+    closedWhileAway();
     if(document.hidden&&window.LunaNotify)LunaNotify.timerSnapshot();
   }
   // video PiP için hazırlık: dokunuşun hemen başında (pointerdown) başlar ki "click"te PiP anında istenebilsin
@@ -139,6 +145,8 @@ const MiniTimer = (() => {
     vcanvas=document.createElement('canvas');vcanvas.width=640;vcanvas.height=268; // 2,39:1, Android PiP sınırı
     render(vcanvas);
     vstream=vcanvas.captureStream(2);
+    render(vcanvas); // akış açıldıktan sonra bir kez daha çiz: ilk kare hemen gitsin, video hazır olsun
+    try{const tr=vstream.getVideoTracks()[0];if(tr&&tr.requestFrame)tr.requestFrame();}catch(e){}
     const v=document.createElement('video');
     v.muted=true;v.defaultMuted=true;v.playsInline=true;v.autoplay=true;
     v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','');v.setAttribute('muted','');v.setAttribute('aria-hidden','true');
@@ -152,8 +160,8 @@ const MiniTimer = (() => {
     vid=v;
     startTick(()=>{if(vcanvas)render(vcanvas);});
     v.play().catch(()=>{});
-    // açılmadan bırakılırsa bir dakika sonra temizle
-    setTimeout(()=>{if(vid===v&&mode!=='video')teardownVideo();},60000);
+    // sayaç çalıştıkça hazır kalsın (dokununca anında açılsın); sayaç durup pencere açılmadıysa temizle
+    const idle=setInterval(()=>{if(vid!==v){clearInterval(idle);return;}if(mode!=='video'&&!opening&&!Timer.state().running){clearInterval(idle);teardownVideo();}},60000);
     return v;
   }
   function enterVideoPip(v) {
@@ -165,17 +173,27 @@ const MiniTimer = (() => {
   function openedVideo() {
     mode='video';away=document.hidden;
     if(!Store.data.settings.miniUsed){Store.data.settings.miniUsed=true;Store.save();}
-    app.allowExit('miniTimer');
     app.toast('🐾','Mini pencere açıldı','Başka uygulamaya geçince köşede kalır; Luna\'ya dönünce kapanır.');
   }
   function openVideo() {
     const v=prepareVideo();
-    const fail=()=>{teardownVideo();app.toast('🐾','Mini pencere açılamadı','Bir kez daha dokun. Olmazsa cihazın Ayarlar → Genel → Resim İçinde Resim seçeneğini aç.');};
+    const tip=/Android/i.test(navigator.userAgent||'')?' Olmazsa Ayarlar → Uygulamalar → Chrome → Resim içinde resim iznini aç.':'';
+    const fail=(e)=>{
+      opening=false;
+      if(v!==vid)return; // eski bir denemenin cevabı
+      if(e&&(e.name==='NotAllowedError'||e.name==='InvalidStateError')){app.toast('🐾','Mini pencere hazır','Bir kez daha dokun, hemen açılacak.');return;} // video hazır kalsın
+      teardownVideo();app.toast('🐾','Mini pencere açılamadı','Bir kez daha dokun.'+tip);
+    };
+    const go=()=>{
+      opening=true;
+      let p;try{p=enterVideoPip(v);}catch(e){p=Promise.reject(e);}
+      p.then(()=>{opening=false;if(v===vid)openedVideo();},fail);
+    };
     // meta veri hazırsa PiP aynı dokunuşta istenir (iOS dokunuş gerektirir)
-    if(v.readyState>=1){enterVideoPip(v).then(openedVideo,fail);return;}
+    if(v.readyState>=1){go();return;}
     opening=true;
-    const t=setTimeout(()=>{opening=false;fail();},4000);
-    v.addEventListener('loadedmetadata',()=>{clearTimeout(t);opening=false;enterVideoPip(v).then(openedVideo,fail);},{once:true});
+    const t=setTimeout(()=>fail({name:'InvalidStateError'}),4000);
+    v.addEventListener('loadedmetadata',()=>{clearTimeout(t);if(v===vid)go();else opening=false;},{once:true});
   }
   function closeVideo() {
     try {
@@ -194,12 +212,11 @@ const MiniTimer = (() => {
     try {
       const next=await window.documentPictureInPicture.requestWindow({width:320,height:120,preferInitialWindowPlacement:true});
       pip=next;mode='doc';away=document.hidden;
-      app.allowExit('miniTimer');
       const style=next.document.createElement('style');style.textContent=css;next.document.head.append(style);
       const canvas=next.document.createElement('canvas');canvas.width=640;canvas.height=240;
       canvas.setAttribute('aria-label','Kucak kucağa uyuyan Luna, Vesper ve Güçlü; saat ve çalışma sayacı');
       next.document.body.append(canvas);next.document.title='Luna · Mini sayaç';
-      next.addEventListener('pagehide',()=>{if(pip===next){cleanup();if(document.hidden)LunaNotify.timerSnapshot();}},{once:true});
+      next.addEventListener('pagehide',()=>{if(pip===next){cleanup();closedWhileAway();if(document.hidden)LunaNotify.timerSnapshot();}},{once:true});
       render(canvas);tickId=setInterval(()=>render(canvas),1000);
     } catch(e) {app.toast('🐾','Mini pencere açılamadı','Bir kez daha dokunarak dene.');}
     finally {opening=false;}
@@ -240,7 +257,7 @@ const MiniTimer = (() => {
       if(!canDoc()){
         button.addEventListener('pointerdown',()=>{if(canVideo()&&!isOpen())prepareVideo();});
         // daha önce mini pencere kullandıysa sayaç başlarken hazırla: dokununca anında açılsın (iOS dokunuş süresi kısa)
-        document.querySelector('#btn-toggle')?.addEventListener('click',()=>{setTimeout(()=>{if(Store.data.settings.miniUsed&&canVideo()&&!isOpen()&&Timer.state().running)prepareVideo();},50);});
+        document.querySelector('#btn-toggle')?.addEventListener('click',()=>{setTimeout(()=>{if(canVideo()&&!isOpen()&&Timer.state().running)prepareVideo();},50);});
       }
       button.addEventListener('click',open);
     }
