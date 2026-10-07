@@ -6,8 +6,20 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
+    "surum": "2.3.3",
+    "tarih": "2026-10-07",
+    "baslik": "Tabletlerde kurulum düzeltildi",
+    "notlar": [
+      "📱 iPad: adımlar iPad'e göre yazıldı (Paylaş sağ üstte, gerekirse Daha Fazla). Yatay ekranda kart ve adımlar yan yana duruyor, üst kısım artık kesilmiyor.",
+      "🤖 Android tabletler artık bilgisayar sanılmıyor. Samsung Internet, Firefox ve Edge için kendi menü adımları eklendi.",
+      "⚡ Luna'yı yükle'ye erken dokunulursa birkaç saniye beklenir; yükleme penceresi aynı dokunuşla açılır.",
+      "🏠 Ana ekran simgesi yanlışlıkla yer imi olarak eklendiyse sayfa bunu fark edip nasıl düzeltileceğini anlatıyor.",
+      "🔔 Bildirimlerde yine renkli Luna simgesi görünüyor, sürüm numarası da doğru gösteriliyor.",
+      "🔗 Paylaşılan bağlantıda kedili önizleme çıkıyor; kurulum sayfası yeni sürüm gelince kendini yeniliyor."
+    ]
+  },
+  {
     "surum": "2.3.2",
-    "gorunenSurum": "2.1.4",
     "tarih": "2026-10-07",
     "baslik": "iPad ve iPhone kurulumu düzeltildi",
     "notlar": [

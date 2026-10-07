@@ -1726,10 +1726,12 @@ html.kurulum, html.kurulum body { min-height: 100%; background: linear-gradient(
 html.kurulum body > *:not(#kurulum) { display: none !important; }
 html.kurulum body::before, html.kurulum body::after { display: none !important; }
 .kurulum {
-  position: fixed; inset: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+  position: fixed; inset: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 22px;
   padding: calc(28px + env(safe-area-inset-top)) 20px calc(36px + env(safe-area-inset-bottom));
   font-family: 'Nunito', system-ui, sans-serif; color: #2b1d4d; text-align: center;
 }
+/* sığarsa ortada, sığmazsa üstten başlar (justify-content:center taşan üst kısmı kaydırılamaz hale getiriyordu) */
+.kurulum::before, .kurulum::after { content: ''; flex: 1 0 0; margin: -11px 0; }
 .kr-stars { position: fixed; inset: 0; pointer-events: none; opacity: .55;
   background-image: radial-gradient(2px 2px at 12% 18%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 82% 12%, #fff 50%, transparent 51%),
     radial-gradient(2px 2px at 70% 78%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 24% 72%, #fff 50%, transparent 51%),
@@ -1750,20 +1752,34 @@ html.kurulum body::before, html.kurulum body::after { display: none !important; 
 }
 .kr-btn:active { transform: translateY(1px) scale(.99); }
 .kr-btn[hidden] { display: none; }
-.kr-steps { width: min(360px, 90vw); padding: 14px 18px; border-radius: 20px; background: rgba(255, 255, 255, .62); text-align: left; font-weight: 600; line-height: 1.45; }
+.kr-steps { width: min(360px, 100%); padding: 14px 18px; border-radius: 20px; background: rgba(255, 255, 255, .62); text-align: left; font-weight: 600; line-height: 1.45; }
 .kr-steps[hidden] { display: none; }
 .kr-steps ol { margin: 0; padding-left: 20px; }
 .kr-steps li { margin: 6px 0; }
 .kr-steps small { color: #5b4683; font-weight: 600; }
 .kr-note { margin: 8px 0 0; font-size: .9rem; color: #4a3a6b; }
+.kr-steps > .kr-note:first-child { margin-top: 0; }
+.kr-warn { padding: 9px 11px; border-radius: 12px; background: #fff3d6; color: #5a3b00; }
 .kr-done { margin: 0; font-size: 1.25rem; font-weight: 800; text-align: center; }
 .kr-copy { margin-top: 10px; width: 100%; padding: 11px; border: 0; border-radius: 14px; font: 800 1rem 'Nunito', system-ui, sans-serif; color: #4b2a92; background: #fff; cursor: pointer; }
 .kr-share { width: 18px; height: 18px; vertical-align: -3px; color: #2f6fe0; }
-.kr-arrow { position: fixed; left: 50%; bottom: calc(6px + env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: 2.2rem; color: #2f6fe0; animation: krBob 1.2s ease-in-out infinite; pointer-events: none; }
-.kr-arrow.up { top: calc(4px + env(safe-area-inset-top)); bottom: auto; left: auto; right: 64px; transform: rotate(180deg); animation: none; }
+.kr-arrow { position: fixed; left: 50%; bottom: calc(6px + env(safe-area-inset-bottom)); transform: translateX(-50%); padding: 0 10px; border-radius: 999px; background: #b896ea; box-shadow: 0 4px 14px rgba(62, 30, 120, .35); font-size: 2.2rem; color: #2f6fe0; animation: krBob 1.2s ease-in-out infinite; pointer-events: none; }
 .kr-arrow[hidden] { display: none; }
 .kurulum.with-arrow { padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
 .kurulum.with-arrow .kr-steps { scroll-margin-bottom: calc(78px + env(safe-area-inset-bottom)); }
 @keyframes krBob { 50% { transform: translate(-50%, 8px); } }
-@media (max-height: 640px) { .kr-icon { width: min(130px, 34vw); } .kurulum { gap: 14px; justify-content: flex-start; } .kr-arrow { display: none; } }
-@media (prefers-reduced-motion: reduce) { .kr-arrow { animation: none; } }
+/* düğmeye yeniden dokununca adımlar kısaca parlar (iPhone/iPad'de adımlar zaten açık) */
+.kr-steps.kr-flash { animation: krFlash .9s ease 2; }
+@keyframes krFlash { 30% { box-shadow: 0 0 0 4px rgba(47, 111, 224, .7); } }
+@media (min-width: 700px) { .kr-steps { width: min(460px, 100%); } }
+@media (max-width: 360px) { .kr-btn { padding: 15px 18px; font-size: 1.05rem; } }
+@media (max-height: 640px) { .kr-icon { width: min(130px, 34vw); } .kurulum { gap: 14px; } .kr-arrow { display: none; } }
+/* yatay tablet ve dizüstü: kart solda, düğme ve adımlar sağda, kaydırmadan sığar */
+@media (orientation: landscape) and (min-width: 900px) and (max-height: 900px) {
+  .kurulum:has(> .kr-steps:not([hidden])) { display: grid; grid-template-columns: auto min(460px, 42vw); grid-template-rows: 1fr auto auto 1fr; justify-content: center; column-gap: 44px; row-gap: 16px; }
+  .kurulum:has(> .kr-steps:not([hidden]))::before, .kurulum:has(> .kr-steps:not([hidden]))::after { display: none; }
+  .kurulum:has(> .kr-steps:not([hidden])) .kr-window { grid-column: 1; grid-row: 1 / -1; align-self: center; }
+  .kurulum:has(> .kr-steps:not([hidden])) .kr-btn { grid-column: 2; grid-row: 2; justify-self: stretch; min-width: 0; }
+  .kurulum:has(> .kr-steps:not([hidden])) .kr-steps { grid-column: 2; grid-row: 3; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .kr-arrow, .kr-steps.kr-flash { animation: none; } }

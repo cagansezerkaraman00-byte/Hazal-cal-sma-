@@ -79,7 +79,7 @@ const Guncelleme = (() => {
   }
   async function systemNote(v) {
     if (!App.data().settings.notify || !('Notification' in window) || Notification.permission !== 'granted' || !reg) return;
-    try { await reg.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${versionLabel(v)}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/luna-notification-v2.png', location.href).href, badge: new URL('icons/luna-notification-v2.png', location.href).href, tag: 'luna-guncelleme' }); } catch (e) { /* desteklenmiyor */ }
+    try { await reg.showNotification('Luna güncellemesi hazır ✨', { body: `Sürüm ${versionLabel(v)}: ${v.baslik}. Dokun, güncelleyelim.`, icon: new URL('icons/icon-192.png', location.href).href, badge: new URL('icons/luna-notification-v2.png', location.href).href, tag: 'luna-guncelleme' }); } catch (e) { /* desteklenmiyor */ }
   }
   function dot(on) { const b = $('#tabs button[data-tab="settings"]'); if (b) b.classList.toggle('has-dot', on); }
 

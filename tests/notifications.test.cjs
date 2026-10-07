@@ -14,6 +14,6 @@ data.timer=null;data.sessions=[{end:+at(15),minutes:45}];assert.equal(n.choose(d
 data.tasks=[{done:false,due:key(at(18))}];assert.equal(n.choose(data,at(18)).kind,'remindTasks');
 data.tasks[0].done=true;data.sessions[0].minutes=180;assert.equal(n.choose(data,at(18),+at(12)).kind,'remindAway');
 data.settings.studyReminders=false;assert.equal(n.choose(data,at(18)),null);
-assert.equal(n.options('test').icon,'https://example.test/Hazal-cal-sma-/icons/luna-notification-v2.png');
+assert.equal(n.options('test').icon,'https://example.test/Hazal-cal-sma-/icons/icon-192.png'); // renkli Luna simgesi: açık temada da görünür
 assert.equal(n.options('test').badge,'https://example.test/Hazal-cal-sma-/icons/luna-notification-v2.png');
 (async()=>{assert.equal(await n.send('Luna','test'),true);assert.equal(delivered,1);ctx.Notification.permission='denied';assert.equal(await n.send('Luna','test'),false);assert.equal(delivered,1);console.log('14 notification assertions passed');})().catch(e=>{console.error(e);process.exitCode=1;});

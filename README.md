@@ -8,7 +8,9 @@ Luna is a web app that installs like a native app (iPhone, iPad, Android, tablet
 
 ## Install (one link, about 20 seconds)
 
-Opening the link in a browser shows only a lilac install page with Luna's icon and a **Luna'yı yükle** button; the app itself appears once it is installed (it stays a surprise). On Android and desktop Chrome/Edge the button opens the system install dialog; on iPhone/iPad and Mac Safari it shows the steps, because Apple does not let websites install themselves. For development, add `?app` to the address to use the app in a normal browser tab.
+Opening the link in a browser shows only a lilac install page with Luna's icon and a **Luna'yı yükle** button; the app itself appears once it is installed (it stays a surprise). On Android phones and tablets and desktop Chrome/Edge the button opens the system install dialog (it waits a few seconds for Chrome to allow it, so one tap is enough). iPhone/iPad, Samsung Internet, Firefox and Mac Safari get their own menu steps, because those browsers do not let websites install themselves. Android tablets that request the desktop site (Chrome's default on large tablets) are still recognised as Android. For development, add `?app` to the address to use the app in a normal browser tab.
+
+When sharing the link in a message, send `https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/?yukle`: the repository name ends in a hyphen, and some Android link detectors cut a trailing `-/` when text follows it.
 
 Open the link on the phone. A full-screen guide appears and walks through it:
 
