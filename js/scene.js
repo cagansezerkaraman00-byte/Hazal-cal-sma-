@@ -1915,10 +1915,10 @@ const Scene = (() => {
   }
   const vesperTime = () => (hour >= 18 || hour < 5) && !!sun && sun.elev < 0;
   function startVisit(kind) {
-    if (!W || mode === 'focus' || friends.length) return;
+    if (!W || mode === 'focus' || friends.length) return false;
     const side = L.x < W / 2 ? 1 : -1; // Luna'nın daha boş tarafı
     const from = Math.random() < 0.5 ? 1 : -1;
-    if (kind === 'vesper' && !vesperTime()) return;
+    if (kind === 'vesper' && !vesperTime()) return false;
     let k = kind || (vesperTime() ? (Math.random() < 0.6 ? 'vesper' : 'kitten') : 'kitten');
     if (!vesperTime() && (k === 'nap' || k === 'family')) k = 'kitten';
     if (k === 'vesper') {
@@ -1938,11 +1938,16 @@ const Scene = (() => {
       addFriend('vesper', [{ do: 'walk', x: () => spot(side, 38) }, { do: 'greet', t: 2 }, { do: 'sit', t: U.rand(16, 24) }, { do: 'leave' }], from);
       addFriend('kitten', [{ do: 'wait', t: 2 }, { do: 'walk', x: () => spot(-side, 26), hop: true, speed: 42 }, { do: 'greet', t: 2 }, { do: 'sleep', t: U.rand(14, 20) }, { do: 'leave', hop: true, speed: 46 }], -from);
     }
+    return friends.length > 0;
   }
+  // akşam Vesper ziyareti gece başına bir kez (05:00'e kadar "bu gece"); iPad uygulamayı yeniden yükleyince tekrar gelmesin
+  const nightOf = () => U.dateKey(new Date(Date.now() - 5 * 3600e3));
+  const eveningVisitDone = () => { try { return localStorage.getItem('luna-aksam-ziyaret') === nightOf(); } catch (e) { return eveningVisitDay === nightOf(); } };
+  function markEveningVisit() { eveningVisitDay = nightOf(); try { localStorage.setItem('luna-aksam-ziyaret', eveningVisitDay); } catch (e) { /* gizli mod */ } }
   function updateFriends(dt) {
-    const today = U.dateKey(new Date());
-    if (vesperTime() && eveningVisitDay !== today && mode !== 'focus' && !friends.length && !play && !fishItem) {
-      startVisit('vesper'); eveningVisitDay = today; nextVisit = U.rand(240,480);
+    if (vesperTime() && !eveningVisitDone() && mode !== 'focus' && !friends.length && !play && !fishItem) {
+      // bazen Vesper (ve Güçlü) Luna'nın yanına kıvrılıp uyur
+      startVisit(Math.random() < 0.4 ? 'nap' : 'vesper'); markEveningVisit(); nextVisit = U.rand(240,480);
     }
     if (mode === 'focus') {
       // odakta sahne sakin: yürüyenler sessizce çıkar, uyuyanlar uyumaya devam eder
@@ -2087,6 +2092,7 @@ const Scene = (() => {
   function positionBubble() {
     if (!bubbleOn || !W) return;
     const actor = bubbleSpeaker === 'luna' ? null : friends.find(f=>f.kind===bubbleSpeaker && f.x >= 0 && f.x <= W);
+    if (bubbleSpeaker !== 'luna' && !actor) { bubbleEl.classList.add('hidden'); bubbleOn = false; bubbleUntil = 0; return; }
     const g = actor ? fgeom(actor) : lunaGeom();
     const cx = (actor ? actor.x : L.x) * scale;
     let left = Math.round(U.clamp(cx - bubbleW / 2, 8, wrapW - bubbleW - 8));
@@ -2246,7 +2252,8 @@ const Scene = (() => {
       applyWeather();
     },
     // ziyaretçi çağır: 'vesper' | 'kitten' | 'nap' | 'family' (odaklanırken yok sayılır)
-    visit(kind) { startVisit(kind); },
+    visit(kind) { return startVisit(kind); },
+    isVesperTime() { return vesperTime(); },
     // bugünün mevsimi ve özel günleri (arayüz için)
     today() { return { season, events: events.slice() }; },
     // hemen bir ip oyunu başlat (odaklanırken yok sayılır)
@@ -2288,10 +2295,10 @@ const Scene = (() => {
     },
     say(text, opts) {
       opts = opts || {};
-      if (!bubbleEl || !text) return;
+      if (!bubbleEl || !text) return false;
       const speaker = ['luna','vesper','kitten'].includes(opts.speaker) ? opts.speaker : 'luna';
       const actor = speaker === 'luna' ? L : friends.find(f=>f.kind===speaker && f.x >= 0 && f.x <= W);
-      if (!actor) return; // sahnede olmayan karakterin sesi Luna'nın üstünden çıkmasın
+      if (!actor) return false; // sahnede olmayan karakterin sesi Luna'nın üstünden çıkmasın
       bubbleSpeaker = speaker;
       const label = speaker === 'vesper' ? 'Vesper' : speaker === 'kitten' ? 'Güçlü' : 'Luna';
       bubbleEl.dataset.speaker = speaker;
@@ -2310,6 +2317,7 @@ const Scene = (() => {
       bubbleL = bubbleB = bubbleA = -1;
       bubbleUntil = performance.now() + (opts.ms || Math.max(5000, text.length * 85));
       positionBubble();
+      return true;
     },
     feed() {
       if (play) endPlay(true);

@@ -6,8 +6,19 @@
 
 const SURUMLER = /*SURUMLER*/[
   {
+    "surum": "2.2",
+    "tarih": "2026-10-07",
+    "baslik": "Mini pencere iPad'de, Luna daha sevecen",
+    "notlar": [
+      "🐾 Mini pencere artık iPad, iPhone ve Android'de de var: dokun, başka uygulamaya geçince sayaç köşede seninle kalsın; Luna'ya dönünce kapanır.",
+      "😊 Luna \"Bugün nasılsın?\" diye sorduğunda tek dokunuşla cevap verebilirsin; ona göre sana bir şey söylüyor.",
+      "💬 Luna, Vesper ve Güçlü için yeni cümleler; sabah ayrı, akşam ayrı hal hatır. Gece sadece uykulu sözler.",
+      "🌙 Vesper akşam bir kez gelir, bazen Luna'nın yanına kıvrılıp uyur. Kediler daha az ve yerinde konuşur.",
+      "🛠️ Odak, hatırlatma ve bildirim düzeltmeleri; güncellemeler artık çok daha küçük iniyor."
+    ]
+  },
+  {
     "surum": "2.1.7",
-    "gorunenSurum": "2.1.4",
     "tarih": "2026-10-07",
     "baslik": "Luna · Birlikte çalışıyoruz",
     "notlar": [
@@ -77,6 +88,39 @@ const SURUMLER = /*SURUMLER*/[
       "Drive'a yükleme yarıda kalırsa dosya cihazda kalıyor, hiçbir şey kaybolmuyor.",
       "Kaynakçada tireli isimler ve kitap bölümleri doğru yazılıyor.",
       "Üniversite modunda devamsızlık saati, ikinci vize notu ve geçmiş dönem ortalaması düzeldi."
+    ]
+  },
+  {
+    "surum": "1.2",
+    "tarih": "2026-10-05",
+    "baslik": "Üniversite, KPSS ve yüksek lisans",
+    "notlar": [
+      "Eğitim modu: YKS'den sonra üniversite, KPSS ya da yüksek lisans. YKS verilerin silinmiyor, her modun kendi ders listesi var.",
+      "Dönem ekranı: dersler, haftalık program, sınav ve ödev takvimi, devamsızlık, not ortalaması ve GANO, telefon takvimine aktarma.",
+      "Telefonda daha derli toplu ekranlar, daha hızlı açılış ve daha az pil kullanımı."
+    ]
+  },
+  {
+    "surum": "1.1",
+    "tarih": "2026-10-04",
+    "baslik": "Kitaplık büyüdü",
+    "notlar": [
+      "Tam odak ve izinli uygulamalar; yavru kedinin adı artık Güçlü.",
+      "Depo: ders fotoğrafları ve PDF'ler, uygulama içinde PDF görüntüleyici, isteğe bağlı Google Drive.",
+      "Hata defteri: yanlış yaptığın soruların fotoğrafı ve aralıklı yeniden çözme.",
+      "Kaynaklar: makale arama, DOI ve ISBN ile ekleme, APA 7 / Vancouver / IEEE kaynakça.",
+      "Tanılama bölümü: bir şey çalışmazsa nedenini gösteriyor."
+    ]
+  },
+  {
+    "surum": "1.0",
+    "tarih": "2026-10-04",
+    "baslik": "Luna ile Çalış",
+    "notlar": [
+      "Luna, canlı gökyüzü, gerçek ay ve güneş, mevsimler ve özel günler.",
+      "Pomodoro ve serbest sayaç, sade odak ekranı.",
+      "YKS planı ve konu takibi, deneme netleri, notlar ve bilgi kartları.",
+      "İlerleme raporu, rozetler, Spotify ve ortam sesleri."
     ]
   }
 ]/*SURUMLER*/;

@@ -408,6 +408,8 @@
             <summary>❓ Sık sorulanlar</summary>
             <ul>
               <li><b>Sayfayı kapatırsam sayaç durur mu?</b> Hayır; geri geldiğinde doğru süreyi gösterir. Ama <b>tam odak</b> açıksa (varsayılan) uygulamadan çıkınca 15 saniye sonra durur; geri gelince "Devam" demen yeterli. İzinli uygulamalarda (ChatGPT, Gemini, YouTube, Spotify) çalışırken sayaç durmaz: odak ekranındaki düğmeden açarsan hiç sormam, başka yoldan geçtiysen dönüşte "Neredeydin?" diye sorarım. Ayarlar → Odak'tan kapatabilir ya da izinli uygulamaları seçebilirsin.</li>
+              <li><b>Mini pencere:</b> Sayaç çalışırken <b>🐾 Mini pencere</b>'ye dokun; YouTube ya da ChatGPT'ye geçince sayaç köşede küçük bir pencerede seninle kalır, sayaç durmaz. Luna'ya dönünce kendiliğinden kapanır. iPad ve iPhone'da Ayarlar → Genel → Resim İçinde Resim açık olmalı.</li>
+              <li><b>Luna "nasılsın?" diye sorunca</b> ana sayfadaki üç düğmeden birine dokun; sana göre bir şey söyler.</li>
               <li><b>Bildirim gelmiyor?</b> Ayarlar → Odak → Bildirim'i aç ve izin ver. iPhone'da bildirimler için uygulamayı Ana Ekrana eklemiş olman gerekir.</li>
               <li><b>Bir şey çalışmıyor mu (hava durumu, Spotify…)?</b> Ayarlar → <b>Tanılama</b>'yı aç: neyin neden çalışmadığını orada yazarım. <b>Bağlantıları test et</b> ile internetin hangi servislere ulaştığını görebilir, <b>Raporu kopyala</b> ile durumu paylaşabilirsin.</li>
               <li><b>Luna çok konuşuyor / hiç konuşmuyor?</b> Ayarlar → Odak'tan konuşma sıklığını değiştir; odaklanırken zaten sessizim.</li>
@@ -495,8 +497,7 @@
             </fieldset>
             <label class="switch"><input type="checkbox" id="set-notify"> Bildirim gönder (uygulama arka plandayken)</label>
             <label class="switch"><input type="checkbox" id="set-reminders"> Luna çalışma ve hedef hatırlatmaları</label>
-            <button class="btn soft" type="button" id="test-notification">🔔 Bildirim ve logoyu test et</button>
-            <p class="hint">Hatırlatmalar 09–22 arasında, en az 90 dakika arayla ve günde en fazla üç kez gönderilir. Web sürümünde uygulama tamamen kapalıyken veya cihaz arka planı durdurduğunda gönderim garanti değildir. Sayaç bildirimi canlı saniyeler yerine bitiş saatini gösterir. iPhone/iPad’de bildirim için ana ekrana kurulum ve izin gerekir.</p>
+            <p class="hint">Luna günde en fazla 3 kez, 09–22 arası nazikçe hatırlatır; çoğunlukla uygulamayı açınca kendisi söyler.</p>
             <label class="field">Luna molada/boşta ne sıklıkla konuşsun? (dakika, 0 = hiç) <input type="number" id="set-msg" min="0" max="240"></label>
           </div>
           <div class="card">
@@ -548,6 +549,7 @@
           <details class="card wide-card diag-card" id="diag-card">
             <summary><span>🔧 Tanılama</span><span class="muted small">hava, Spotify, bağlantı ve hata kayıtları</span></summary>
             <div id="diag-root" class="diag-root"></div>
+            <button class="btn soft" type="button" id="test-notification">🔔 Bildirim ve logoyu test et</button>
           </details>
         </div>
         <p class="footer"></p>

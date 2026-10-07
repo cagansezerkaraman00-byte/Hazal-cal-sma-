@@ -31,8 +31,9 @@
   }
 
   function say(kind, opts) {
-    Scene.say(Messages.get(kind), { ...Messages.delivery(kind), ...opts });
-    lastMsgAt = Date.now();
+    const shown = Scene.say(Messages.get(kind), { ...Messages.delivery(kind), ...opts });
+    if (shown !== false) lastMsgAt = Date.now();
+    return shown !== false;
   }
   function sayLove() {
     const n = Messages.love();
@@ -883,8 +884,11 @@
       : nextEx && Uni.daysLeft(nextEx.date) <= 7 ? Messages.daily('exam', { what: examClause(nextEx) })
       : prog ? Messages.daily('uni')
       : Messages.daily(Messages.timeOfDay());
+    const conv = Messages.companionState(), hNow = new Date().getHours();
+    const askFeel = conv.checkedIn && !conv.feeling && hNow >= 5 && hNow < 23;
     $('#welcome').innerHTML = `<div class="welcome-title">${U.esc(Messages.greeting())}</div>
       <div class="welcome-msg">${U.esc(msg)}</div>
+      ${askFeel ? `<div class="feel-row" role="group" aria-label="Luna soruyor: bugün nasılsın?"><span class="feel-q">🐾 Luna soruyor: bugün nasılsın?</span><span class="feel-chips"><button type="button" class="chip" data-feel="Good">😊 İyiyim</button><button type="button" class="chip" data-feel="Tired">😴 Yorgunum</button><button type="button" class="chip" data-feel="Hard">😣 Zor bir gün</button></span></div>` : ''}
       ${chips.length ? `<div class="stat-chips">${chips.map(([ic, v, l, cls, tab]) => {
         const inner = `<span class="ic">${ic}</span><b class="v">${U.esc(v)}</b><small class="l">${U.esc(l)}</small>`;
         return tab ? `<button class="stat-chip ${cls}" data-tab="${tab}" type="button">${inner}</button>` : `<div class="stat-chip ${cls}">${inner}</div>`;
@@ -1144,7 +1148,7 @@
       const link = e.target.closest('a[data-app="spotify"]');
       if (!link) return;
       link.href = appUrl('spotify');
-      if (allowedApps().includes('spotify')) allowExit = { app: 'spotify', at: Date.now() };
+      allowExit = { app: 'spotify', at: Date.now() }; // Luna'nın kendi müzik düğmesi: Tam odakta sayacı durdurmaz
     });
     // müzik paneli ilk açıldığında yüklenir (sayfa açılışını yavaşlatmasın)
     $('#music-card').addEventListener('toggle', () => { if ($('#music-card').open) renderMusic(); });
@@ -1307,8 +1311,11 @@
       const b = e.target.closest('button[data-visit]');
       if (!b) return;
       if (App.isFocusing()) { toast('🐾', 'Odaklanırken kediler seni rahatsız etmez', 'Molada çağırabilirsin'); return; }
-      Scene.visit(b.dataset.visit);
+      const k = b.dataset.visit;
+      if (k === 'vesper' && Scene.isVesperTime && !Scene.isVesperTime()) { toast('🌙', 'Vesper akşam gelir', 'Hava kararınca uğrar; şimdilik Güçlü\'yü çağırabilirsin'); return; }
+      const came = Scene.visit(k);
       showTab('home');
+      if (came === false) toast('🐾', 'Kediler şu an meşgul', 'Biraz sonra yine dene');
     });
     $('#set-focusmode').addEventListener('change', (e) => { D().settings.focusMode = e.target.checked; save(); renderTimer(Timer.state()); });
     document.querySelectorAll('input[name="mini-theme"]').forEach(el => el.addEventListener('change', () => {
@@ -1499,12 +1506,24 @@
     });
   }
 
+  // Vesper ve Güçlü'nün sözü: gece uykulu; Güçlü "özledim"i yalnızca uzun aradan sonra, çalışılan günde mutlu
+  function friendLine(kind) {
+    const h = new Date().getHours(), night = h >= 23 || h < 5 || Messages.companionState().bedtime;
+    if (kind === 'vesper') return night ? 'vesperSleepy' : 'vesper';
+    if (night) return 'kittenSleepy';
+    const ss = D().sessions, last = ss.length ? ss[ss.length - 1].start : 0;
+    if (!last || Date.now() - last > 3 * 864e5) return 'kittenMiss';
+    return Stats.minutesOn(new Date()) > 0 ? 'kittenHappy' : 'kitten';
+  }
   function sayCompanion(kind) {
     const c = Messages.companionState();
     if (kind === 'checkIn') c.checkedIn = true;
     if (kind === 'bedtime') c.bedtime = true;
+    if (kind === 'lowStudy') c.lowStudySaid = true;
     save();
-    say(kind, { ms: 9000 });
+    // öğleden önce "günün nasıl geçti" yerine sabah sorusu
+    say(kind === 'checkIn' && new Date().getHours() < 12 ? 'checkInMorning' : kind, { ms: 9000 });
+    if (kind === 'checkIn') renderHome(); // karşılama kartında cevap düğmeleri çıksın
   }
 
   function dailyCheckIn() {
@@ -1537,6 +1556,8 @@
     setTimeout(dailyCheckIn, 15000);
     if (welcomedBack) return; // dönüş mesajı (ya da "Neredeydin?") zaten konuştu
     const conversation = Messages.companionState();
+    // 2.1'den gelen (oturumu olan) kullanıcı Luna'yı zaten tanıyor: "ilk oturumu başlatalım" denmesin
+    if (!conversation.introduced && ss.length) { conversation.introduced = true; save(); }
     if (!conversation.introduced) {
       setTimeout(() => {
         if (document.hidden) return;
@@ -1568,7 +1589,7 @@
       else if (!Messages.companionState().checkedIn && h >= 5 && h < 23) sayCompanion('checkIn');
       else if (ss.length && Date.now() - ss[ss.length - 1].start > 3 * 864e5) say('comeback');
       else if (fullMoon) { D().lastMoonGreet = today; save(); say('dolunay', { ms: 8000 }); }
-      else sayCompanion(Messages.mood());
+      else { const m = Messages.mood(); sayCompanion(m === 'lowStudy' ? 'companion' : m); } // açılışta hep sıcak karşılama
     }, 1200);
     // emek birikti ama bir aydır yedek yok: iki haftada en fazla bir kez nazik hatırlatma
     const month = 30 * 864e5, now = Date.now();
@@ -1590,8 +1611,10 @@
     save,
     toast,
     esc: U.esc,
-    say(kind, vars) { Scene.say(Messages.get(kind, vars), Messages.delivery(kind)); lastMsgAt = Date.now(); },
-    sayText(text, opts) { Scene.say(text, opts); lastMsgAt = Date.now(); },
+    say(kind, vars) { if (Scene.say(Messages.get(kind, vars), Messages.delivery(kind)) !== false) lastMsgAt = Date.now(); },
+    sayText(text, opts) { if (Scene.say(text, opts) !== false) lastMsgAt = Date.now(); },
+    // Luna son ms içinde konuştu mu (hatırlatmalar onun sözünü ezmesin)
+    quietFor(ms) { return Date.now() - lastMsgAt < ms; },
     openModal,
     closeModal,
     startStudy,
@@ -1625,8 +1648,13 @@
     try { if (!localStorage.getItem('luna-temizlik-1')) { localStorage.removeItem('luna-sync-on'); if (window.indexedDB) indexedDB.deleteDatabase('luna-sync'); localStorage.setItem('luna-temizlik-1', '1'); } } catch (e) { /* yok say */ }
     Scene.init($('#sky'), $('#bubble'), {
       onPoke() { Sound.meow(); say('poke'); },
-      onFriend(kind) { Sound.meow(); say(kind === 'vesper' ? 'vesper' : U.pick(['kitten','kittenMiss','kittenHappy'])); },
+      onFriend(kind) { Sound.meow(); say(friendLine(kind)); },
       onFriendArrival(kind) {
+        // gelişte konuşma: Luna'nın konuşma sıklığı 0 ise hiç, değilse her kedi gecede bir kez
+        if (!D().settings.msgInterval) return;
+        const c = Messages.companionState();
+        if (!c.friendSaid || typeof c.friendSaid !== 'object') c.friendSaid = {};
+        if (c.friendSaid[kind]) return;
         let tries = 0;
         const speak = () => {
           if (App.isFocusing()) return;
@@ -1634,7 +1662,7 @@
             if (++tries < 7) setTimeout(speak, 1500);
             return;
           }
-          say(kind === 'vesper' ? 'vesper' : U.pick(['kitten','kittenMiss','kittenHappy']));
+          if (say(friendLine(kind))) { c.friendSaid[kind] = true; save(); }
         };
         speak();
       },
@@ -1692,6 +1720,14 @@
       if (b && window.Badges) Badges.openDetail(b.dataset.id);
     });
     $('#welcome').addEventListener('click', (e) => {
+      const f = e.target.closest('[data-feel]');
+      if (f) {
+        const c = Messages.companionState();
+        c.feeling = f.dataset.feel; save();
+        say('feel' + f.dataset.feel, { ms: 9000 });
+        renderHome();
+        return;
+      }
       const b = e.target.closest('[data-tab]');
       if (!b) return;
       const [tab, view] = b.dataset.tab.split(':'); // ör. notes:hata → Notlar'ın Hatalar bölümü
@@ -1746,7 +1782,7 @@
       const focusing = s.running && s.phase === 'focus';
       if (document.hidden) {
         if (!focusing) return;
-        const app = s.miniBackground ? 'miniTimer' : allowExit && Date.now() - allowExit.at < 15000 ? allowExit.app : null;
+        const app = window.MiniTimer && MiniTimer.isOpen() ? 'miniTimer' : allowExit && Date.now() - allowExit.at < 15000 ? allowExit.app : null;
         allowExit = null;
         D().timer.away = { at: Date.now(), app }; // sayfa arka planda kapatılsa da açılışta değerlendirilir
         save();

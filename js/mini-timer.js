@@ -18,7 +18,7 @@ const MiniTimer = (() => {
     if(!family && typeof Image!=='undefined') {
       family=new Image();
       family.onload=()=>{if(lastCanvas)render(lastCanvas);};
-      family.src=new URL('assets/sleeping-family.png',document.baseURI).href;
+      family.src=new URL('assets/sleeping-family.jpg',document.baseURI).href;
     }
     return family;
   }
@@ -81,23 +81,100 @@ const MiniTimer = (() => {
     g.fillStyle=theme.accent;g.fillRect(252,165,366*Math.max(0,Math.min(1,s.progress||0)),5);
     const chip=document.querySelector('#hud-weather');
     const weather=chip&&!chip.classList.contains('hidden')?chip.textContent.trim():'Birlikte, sakince.';
-    g.font='20px system-ui';g.fillStyle=theme.muted;g.fillText(weather,252,207);
+    // bitiş saati: telefon arka planda çizimi dondursa bile pencere doğru bilgi versin
+    const end=s.running&&s.countdown?'Bitiş '+U.hm(new Date(Date.now()+Math.max(0,s.remaining)*1000))+' · ':'';
+    g.font='20px system-ui';g.fillStyle=theme.muted;g.fillText(end+weather,252,207,366);
   }
-  function cleanup() {if(tickId){clearInterval(tickId);tickId=null;}pip=null;away=false;lastCanvas=null;}
-  function close() {if(pip&&!pip.closed)pip.close();cleanup();}
-  async function open() {
-    if(opening)return;
-    if(!('documentPictureInPicture' in window)) {
-      app.toast('🐾','Bu cihazda dış mini pencere desteklenmiyor','Luna içinde kart açılmayacak. Uygulamadan çıkınca sayaç bildirimi için bildirimleri aç.');
-      if(Store.data.timer){Store.data.timer.miniBackground=true;Store.save();}
-      return;
-    }
+  /* Mini pencere iki yolla açılır:
+     - doc:   Document Picture-in-Picture (bilgisayarda Chrome/Edge)
+     - video: sayaç tuvali → video akışı → video "resim içinde resim" (iPad/iPhone Safari, Android Chrome)
+     İkisi de yoksa düğme ve tema seçimi hiç görünmez. Açık olup olmadığı her an canlı sorulur (isOpen);
+     sayaca kalıcı bir işaret yazılmaz, böylece Tam odak yanlışlıkla kapanmaz. */
+  let mode=null, vid=null, vcanvas=null, vstream=null, vtick=null;
+  const canDoc=()=>typeof window!=='undefined'&&'documentPictureInPicture' in window;
+  function canVideo() {
+    try {
+      if(typeof HTMLCanvasElement==='undefined'||!HTMLCanvasElement.prototype.captureStream)return false;
+      const v=document.createElement('video');
+      if(document.pictureInPictureEnabled&&typeof v.requestPictureInPicture==='function')return true;
+      return typeof v.webkitSupportsPresentationMode==='function'&&v.webkitSupportsPresentationMode('picture-in-picture');
+    } catch(e) {return false;}
+  }
+  const supported=()=>canDoc()||canVideo();
+  const videoInPip=()=>!!vid&&(document.pictureInPictureElement===vid||vid.webkitPresentationMode==='picture-in-picture');
+  function isOpen() {return mode==='doc'?!!(pip&&!pip.closed):mode==='video'?videoInPip():false;}
+  function cleanup() {if(tickId){clearInterval(tickId);tickId=null;}pip=null;away=false;lastCanvas=null;if(mode==='doc')mode=null;}
+  function teardownVideo() {
+    if(vtick){clearInterval(vtick);vtick=null;}
+    if(vstream){try{vstream.getTracks().forEach(t=>t.stop());}catch(e){}vstream=null;}
+    if(vid){try{vid.pause();vid.srcObject=null;vid.remove();}catch(e){}vid=null;}
+    vcanvas=null;if(mode==='video')mode=null;away=false;
+  }
+  function onVideoLeave() {
+    if(mode!=='video')return;
+    teardownVideo();
+    if(document.hidden&&window.LunaNotify)LunaNotify.timerSnapshot();
+  }
+  // video PiP için hazırlık: dokunuşun hemen başında (pointerdown) başlar ki "click"te PiP anında istenebilsin
+  function prepareVideo() {
+    if(vid)return vid;
+    vcanvas=document.createElement('canvas');vcanvas.width=640;vcanvas.height=240;
+    render(vcanvas);
+    vstream=vcanvas.captureStream(2);
+    const v=document.createElement('video');
+    v.muted=true;v.defaultMuted=true;v.playsInline=true;v.autoplay=true;
+    v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','');v.setAttribute('muted','');v.setAttribute('aria-hidden','true');
+    v.className='mini-pip-video';v.disablePictureInPicture=false;
+    v.srcObject=vstream;
+    document.body.appendChild(v);
+    v.addEventListener('leavepictureinpicture',onVideoLeave);
+    v.addEventListener('webkitpresentationmodechanged',()=>{if(v===vid&&v.webkitPresentationMode!=='picture-in-picture'&&mode==='video')onVideoLeave();});
+    // PiP penceresindeki duraklat düğmesi görüntüyü dondurmasın
+    v.addEventListener('pause',()=>{if(v===vid&&videoInPip())v.play().catch(()=>{});});
+    vid=v;
+    vtick=setInterval(()=>{if(vcanvas)render(vcanvas);},1000);
+    v.play().catch(()=>{});
+    // açılmadan bırakılırsa bir dakika sonra temizle
+    setTimeout(()=>{if(vid===v&&mode!=='video')teardownVideo();},60000);
+    return v;
+  }
+  function enterVideoPip(v) {
+    if(v.paused)v.play().catch(()=>{});
+    if(document.pictureInPictureEnabled&&typeof v.requestPictureInPicture==='function')return v.requestPictureInPicture();
+    v.webkitSetPresentationMode('picture-in-picture');
+    return Promise.resolve();
+  }
+  function openedVideo() {
+    mode='video';away=document.hidden;
+    app.allowExit('miniTimer');
+    app.toast('🐾','Mini pencere açıldı','Başka uygulamaya geçince köşede kalır; Luna\'ya dönünce kapanır.');
+  }
+  function openVideo() {
+    const v=prepareVideo();
+    const fail=()=>{teardownVideo();app.toast('🐾','Mini pencere açılamadı','Bir kez daha dokun. Olmazsa cihazın Ayarlar → Genel → Resim İçinde Resim seçeneğini aç.');};
+    // meta veri hazırsa PiP aynı dokunuşta istenir (iOS dokunuş gerektirir)
+    if(v.readyState>=1){enterVideoPip(v).then(openedVideo,fail);return;}
+    opening=true;
+    const t=setTimeout(()=>{opening=false;fail();},4000);
+    v.addEventListener('loadedmetadata',()=>{clearTimeout(t);opening=false;enterVideoPip(v).then(openedVideo,fail);},{once:true});
+  }
+  function closeVideo() {
+    try {
+      if(document.pictureInPictureElement===vid&&document.exitPictureInPicture)document.exitPictureInPicture().catch(()=>{});
+      else if(vid&&vid.webkitPresentationMode==='picture-in-picture')vid.webkitSetPresentationMode('inline');
+    } catch(e) {}
+    teardownVideo();
+  }
+  function close() {
+    if(mode==='video'){closeVideo();return;}
+    if(pip&&!pip.closed)pip.close();cleanup();
+  }
+  async function openDoc() {
     if(pip&&!pip.closed){pip.focus();return;}
     opening=true;
     try {
       const next=await window.documentPictureInPicture.requestWindow({width:320,height:120,preferInitialWindowPlacement:true});
-      pip=next;away=document.hidden;
-      if(Store.data.timer){Store.data.timer.miniBackground=true;Store.save();}
+      pip=next;mode='doc';away=document.hidden;
       app.allowExit('miniTimer');
       const style=next.document.createElement('style');style.textContent=css;next.document.head.append(style);
       const canvas=next.document.createElement('canvas');canvas.width=640;canvas.height=240;
@@ -105,19 +182,37 @@ const MiniTimer = (() => {
       next.document.body.append(canvas);next.document.title='Luna · Mini sayaç';
       next.addEventListener('pagehide',()=>{if(pip===next){cleanup();if(document.hidden)LunaNotify.timerSnapshot();}},{once:true});
       render(canvas);tickId=setInterval(()=>render(canvas),1000);
-    } catch(e) {app.toast('🐾','Mini pencere açılamadı','Destekleyen tarayıcıda Mini pencere düğmesine dokunarak açabilirsin.');}
+    } catch(e) {app.toast('🐾','Mini pencere açılamadı','Bir kez daha dokunarak dene.');}
     finally {opening=false;}
+  }
+  function open() {
+    if(opening)return;
+    if(isOpen()){if(mode==='doc'&&pip)pip.focus();return;}
+    if(canDoc())return openDoc();
+    if(canVideo())return openVideo();
+    app.toast('🐾','Bu cihazda mini pencere yok','Sayaç Luna\'da çalışmaya devam eder.');
   }
   function init(a) {
     app=a;
+    if(Store.data.timer&&'miniBackground' in Store.data.timer){delete Store.data.timer.miniBackground;Store.save();} // eski sürümün kalıcı işareti
     const button=document.querySelector('#mini-timer-open');
-    if(button){button.textContent='🐾 Mini pencere';button.title='Uygulamadan ayrılmadan önce aç; geri döndüğünde kapanır.';button.addEventListener('click',open);}
+    const picker=document.querySelector('.mini-theme-picker');
+    if(!supported()) {
+      // desteklemeyen cihazda hiç gösterme (işe yaramayan düğme kafa karıştırmasın)
+      if(button)button.hidden=true;
+      if(picker)picker.hidden=true;
+    } else if(button) {
+      button.textContent='🐾 Mini pencere';
+      button.title='Başka uygulamaya geçmeden önce aç; Luna\'ya dönünce kapanır.';
+      if(!canDoc())button.addEventListener('pointerdown',()=>{if(canVideo()&&!isOpen())prepareVideo();});
+      button.addEventListener('click',open);
+    }
     document.addEventListener('visibilitychange',()=>{
-      if(document.hidden){away=true;return;}
-      if(away&&pip)close();
+      if(document.hidden){if(isOpen())away=true;return;}
+      if(away&&isOpen())close();
     });
-    window.addEventListener('focus',()=>{if(pip&&away&&!document.hidden)close();});
+    window.addEventListener('focus',()=>{if(away&&isOpen()&&!document.hidden)close();});
   }
-  return {init,open,close,render,refreshTheme,palette,themes};
+  return {init,open,close,render,refreshTheme,palette,themes,isOpen,supported};
 })();
 if(typeof window!=='undefined')window.MiniTimer=MiniTimer;

@@ -22,7 +22,7 @@ Geliştiren: **Çağan Sezer Karaman**.
 
 This release combines expressive companions, contextual reminders, notification branding, the compact sleeping-family timer window, five decorative color themes selectable in Settings, and mobile layout fixes. Preferences remain saved. External mini windows require browser support and a user gesture; closed-app reminders still require additional push infrastructure.
 
-The visible release is **2.1.4**. The internal update identifier remains monotonic so devices that already installed 2.1.5 or 2.1.6 can receive this package. User-facing version labels use `gorunenSurum` when present; update checks and caches continue to use `surum`.
+Versions use one number that only goes up (2.1.7 → 2.2 → 2.3 …): installed apps offer an update only when the new top entry in `js/surum.js` is higher than theirs. Push work in progress freely; add a new entry once a batch is finished and tested, so Hazal sees one update per batch. `tests/version-order.test.cjs` fails if the list is out of order.
 
 ## Updates (like the App Store, without downloads)
 

@@ -486,6 +486,7 @@ select option { background: var(--surface); color: var(--text); }
 .subject-row select { flex: 1; }
 .controls { display: flex; align-items: center; gap: 14px; margin-top: 2px; flex-wrap: wrap; justify-content: center; }
 #mini-timer-open { order: 1; white-space: nowrap; }
+#mini-timer-open[hidden], .mini-theme-picker[hidden] { display: none !important; } /* mini pencereyi desteklemeyen cihaz */
 
 /* ---------- Sade odak ekranı (sayaç çalışırken) ---------- */
 body.focusing .tabs, body.focusing .tab:not(#tab-home) { display: none !important; }
@@ -542,6 +543,11 @@ body.focusing .timer-card > .park { order: 7; }
 .welcome-title { font-size: clamp(1.2rem, 3.6vw, 1.5rem); font-weight: 800; line-height: 1.25; padding-right: 48px; }
 .welcome-msg { margin-top: 4px; color: var(--text); font-weight: 600; opacity: .9; max-width: 640px; }
 .stat-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.feel-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 12px; padding: 10px 12px; border-radius: 14px; background: var(--surface-3); border: 1px solid var(--line); }
+.feel-q { font-weight: 800; font-size: .9rem; }
+.feel-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.feel-chips .chip { min-height: 40px; }
+.mini-pip-video { position: fixed; left: 0; bottom: 0; width: 2px; height: 2px; opacity: .01; pointer-events: none; z-index: -1; }
 .stat-chip {
   display: inline-flex; align-items: baseline; gap: 6px;
   background: var(--surface); border: 1px solid var(--line); border-radius: 999px;

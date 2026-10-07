@@ -22,34 +22,39 @@ const LunaNotify = (() => {
       return true;
     } catch (e) { return false; }
   }
-  function choose(data, now = new Date(), sessionStarted = started) {
-    const hour = now.getHours();
-    if (hour < 9 || hour >= 22 || !data.settings.studyReminders) return null;
+  // uygun hatırlatmalar öncelik sırasıyla; bugün gönderilmiş tür atlanır (biri gönderildi diye diğerleri tıkanmasın)
+  function candidates(data, now = new Date(), sessionStarted = started) {
+    const hour = now.getHours(), out = [];
+    if (hour < 9 || hour >= 22 || !data.settings.studyReminders) return out;
     const timer = data.timer;
-    if (timer && timer.running) return null; // çalışma ve molayı bölme
+    if (timer && timer.running) return out; // çalışma ve molayı bölme
     const today = day(now);
     const minutes = data.sessions.reduce((n,s) => n + (day(new Date(s.start || s.end)) === today ? Math.max(0,+s.minutes || 0) : 0),0);
     const pending = data.tasks.filter(t => !t.done && t.due && t.due <= today);
-    if (pending.length && hour >= 17) return {kind:'remindTasks',vars:{count:pending.length}};
+    if (pending.length && hour >= 17) out.push({kind:'remindTasks',vars:{count:pending.length}});
     if (timer && timer.phase === 'focus' && timer.accum > 0 && timer.pausedAt && +now - timer.pausedAt >= 30*60000)
-      return {kind:'remindPaused'};
-    if (minutes === 0 && hour >= 17) return {kind:'remindStart'};
+      out.push({kind:'remindPaused'});
+    if (minutes === 0 && hour >= 17) out.push({kind:'remindStart'});
     const goal = Math.max(0,+data.settings.dailyGoal || 0);
-    if (goal > minutes && minutes > 0 && hour >= 18) return {kind:'remindGoal',vars:{minutes:Math.ceil(goal-minutes)}};
+    if (goal > minutes && minutes > 0 && hour >= 18) out.push({kind:'remindGoal',vars:{minutes:Math.ceil(goal-minutes)}});
     const last = Math.max(sessionStarted,...data.sessions.map(s=>+s.end || +s.start || 0));
-    if (+now-last >= 120*60000) return {kind:'remindAway'};
-    return null;
+    if (+now-last >= 120*60000) out.push({kind:'remindAway'});
+    return out;
   }
+  function choose(data, now = new Date(), sessionStarted = started) { return candidates(data, now, sessionStarted)[0] || null; }
   async function check() {
-    if (checking || !app || !Store.data.settings.notify) return;
+    // uygulama içindeki (Luna'nın söylediği) hatırlatma bildirim izni istemez; sistem bildirimi send() içinde izne bakar
+    if (checking || !app) return;
     checking = true;
     try {
-    const now=new Date(), m=memory(now), item=choose(Store.data,now);
-    if (!item || m.count>=3 || m.sent.includes(item.kind) || (m.lastAt && +now-m.lastAt<90*60000)) return;
+    const now=new Date(), m=memory(now), item=candidates(Store.data,now).find(c=>!m.sent.includes(c.kind));
+    if (!item || m.count>=3 || (m.lastAt && +now-m.lastAt<90*60000)) return;
     const body=Messages.get(item.kind,item.vars);
     let delivered=false;
     if (document.hidden) delivered=await send('Luna seni çağırıyor 🐾',body,{tag:'luna-study-reminder'});
-    else if (!app.isBusy()) { app.sayText(body,{emotion:'tender'}); delivered=true; }
+    // Luna az önce konuştuysa (ör. dönüşte "sayaç durdu") onun sözünü ezme; sonraki dakikada yeniden dene
+    // açılıştan sonraki ilk 10 dakika Luna'nın kendi karşılaması yeter; hatırlatma üst üste binmesin
+    else if (!app.isBusy() && !(app.quietFor && app.quietFor(60000)) && Date.now() - started > 10 * 60000) { app.sayText(body,{emotion:'tender'}); delivered=true; }
     if (delivered) {m.sent.push(item.kind);m.count++;m.lastAt=+now;Store.save();}
     } finally { checking = false; }
   }
@@ -59,9 +64,12 @@ const LunaNotify = (() => {
     if (!s.running) {await clearTimer(); return false;}
     const end=s.countdown?new Date(Date.now()+s.remaining*1000):null;
     const label=s.phase==='focus'?'Odak':'Mola';
-    const body=(end ? 'Bitiş '+U.hm(end)+' · Kalan '+U.fmtClock(s.remaining) : 'Geçen '+U.fmtClock(s.elapsed))+
-      ' · Dokunup güncel sayacı aç.';
-    const key=[s.firstStart,s.resumedAt,s.phase].join(':');
+    // Tam odakta izinsiz çıkışta sayaç 15 sn sonra durur: bitiş saati vaat etme
+    const a=Store.data.timer&&Store.data.timer.away;
+    const willPause=s.phase==='focus'&&Store.data.settings.pauseOnLeave&&a&&!a.app;
+    const body=willPause ? 'Tam odak: 15 sn içinde dönmezsen sayaç durur · Kalan '+U.fmtClock(s.countdown?s.remaining:s.elapsed)
+      : (end ? 'Bitiş '+U.hm(end)+' · Kalan '+U.fmtClock(s.remaining) : 'Geçen '+U.fmtClock(s.elapsed))+' · Dokunup güncel sayacı aç.';
+    const key=[s.firstStart,s.resumedAt,s.phase,willPause?1:0].join(':');
     if (!force && key===lastTimerKey) return false;
     const ok=await send('Luna · '+label+' sayacı',body,{tag:'luna-timer',silent:true,renotify:false,data:{tab:'home'}});
     if(ok)lastTimerKey=key;
@@ -90,6 +98,6 @@ const LunaNotify = (() => {
       if(e.data?.type==='luna-open-tab')app.showTab(e.data.tab==='settings'?'settings':'home');
     });
   }
-  return {init,send,check,choose,options,timerSnapshot,clearTimer};
+  return {init,send,check,choose,candidates,options,timerSnapshot,clearTimer};
 })();
 if(typeof window!=='undefined')window.LunaNotify=LunaNotify;

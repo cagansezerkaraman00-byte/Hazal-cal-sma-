@@ -37,7 +37,7 @@ const Diag = (() => {
 
   async function appInfo() {
     let ver = '—', persisted = null, usage = null;
-    if (window.SURUMLER) ver = 'Sürüm ' + (SURUMLER[0].gorunenSurum || SURUMLER[0].surum);
+    if (window.SURUMLER) { const v = SURUMLER[0]; ver = 'Sürüm ' + (v.gorunenSurum || v.surum) + (v.gorunenSurum && v.gorunenSurum !== v.surum ? ' (yapı ' + v.surum + ')' : '') + ' · ' + v.tarih; }
     try { if (window.caches && !(await caches.keys()).some((k) => k === 'luna-' + (window.SURUMLER ? SURUMLER[0].surum : ''))) ver += ' (önbellek henüz yok)'; } catch (e) { /* yok say */ }
     try { if (navigator.storage && navigator.storage.persisted) persisted = await navigator.storage.persisted(); } catch (e) { /* yok say */ }
     try { if (navigator.storage && navigator.storage.estimate) usage = (await navigator.storage.estimate()).usage; } catch (e) { /* yok say */ }
