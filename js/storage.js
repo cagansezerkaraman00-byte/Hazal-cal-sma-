@@ -198,7 +198,7 @@ const Store = (() => {
     const num = (v, max) => { const n = Math.round(Number(v) || 0); return n > 0 ? Math.min(n, max) : 0; };
     it.id = clean(String(it.id)) || 'p' + U.uid();
     if (it.del) return { id: it.id, del: true, updated: +it.updated || 0 };
-    it.title = String(it.title == null ? '' : it.title).slice(0, 120);
+    it.title = (typeof it.title === 'string' ? it.title : typeof it.title === 'number' ? String(it.title) : '').slice(0, 120); // metin değilse boş (String() bazı nesnelerde hata verir)
     it.subjectId = clean(it.subjectId); it.topicId = clean(it.topicId); it.src = clean(it.src);
     it.min = num(it.min, 600); it.q = num(it.q, 999);
     it.done = !!it.done; it.doneAt = +it.doneAt || 0; it.counted = !!it.counted;
@@ -266,7 +266,7 @@ const Store = (() => {
       if (hasIds(b) && (hasIds(a) || !a.length)) {
         const byId = new Map(a.map((x, i) => [x.id, i]));
         for (const x of b) {
-          if (!byId.has(x.id)) { a.push(x); added++; continue; }
+          if (!byId.has(x.id)) { a.push(x); if (!x.del) added++; continue; } // silinmiş plan maddesinin izi kayıt sayılmaz
           const i = byId.get(x.id); // ikisinde de varsa daha yeni düzenlenen kalsın (notlar gibi)
           if (+x.updated > +(a[i].updated || 0)) a[i] = x;
         }

@@ -360,6 +360,7 @@ const Planlar = (() => {
     const st = stats(list('day', day)), band = bandOf(st);
     if (slot === 'sabah' && st.total === 0) return null; // boş ya da tamamen taşınmış gün için sabah özeti yok
     if (band === 'bos' && (slot !== 'aksam' || !usedRecently(now))) return null; // plan defterini kullanmayana hiç, gece de değil
+    if (band === 'bos' && list('day', shift('day', day, 1)).length) return null; // yarının planı zaten yazılmış: "yazalım mı?" denmez
     if (band === 'hepsiTasindi' && slot === 'sabah') return null;
     slot = softSlot(slot, band, now);
     return { day, slot, band, stats: st, target: slot === 'sabah' ? today : shift('day', day, 1), vars: varsOf(st, day) };

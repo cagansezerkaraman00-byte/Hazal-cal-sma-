@@ -125,6 +125,11 @@ ctx.__junk = 'string';
 run('Store.importJSON({ ...JSON.parse(JSON.stringify(Store.data)), plans: __junk })');
 eq(get('Store.data.plans'), EMPTY, 'non-object plans becomes the empty structure');
 eq(get('Store.data.sessions').length, 2, 'other data untouched by a broken plans value');
+// başlık metin değilse (JSON'dan gelen { "toString": 1 } gibi) normalleştirme hata vermez, diğer maddeler korunur
+ctx.__odd = { day: { '2026-10-09': [{ id: 'o1', title: { toString: 1 } }, { id: 'o2', title: 7 }, valid] } };
+run('Store.importJSON({ ...JSON.parse(JSON.stringify(Store.data)), plans: __odd })');
+eq(get('Store.loadError'), '', 'odd title value never throws');
+eq(get("Store.data.plans.day['2026-10-09'].map((x) => x.title)"), ['', '7', 'Geçerli madde'], 'non-text title becomes empty, numbers become text, valid items kept');
 
 // ======================================================================
 // C. Anahtarlar
@@ -382,6 +387,10 @@ eq([bo.band, bo.slot], ['bos', 'aksam'], 'empty day in the evening when planner 
 eq(due(2026, 9, 9, 22, 30), null, 'empty day never at night');
 eq(due(2026, 9, 10, 10, 0), null, 'no morning recap for an empty day');
 eq(due(2027, 0, 20, 20, 30), null, 'empty day not mentioned when the planner was not used recently');
+const tmr = get('Planlar.add("day", "2026-10-10", { title: "yarın için yazdım" }).id');
+eq(due(2026, 9, 9, 20, 30), null, 'empty day: no "shall we write tomorrow\'s plan?" when tomorrow is already planned');
+run(`Planlar.remove("${tmr}")`);
+eq(due(2026, 9, 9, 20, 30).band, 'bos', 'tomorrow empty again → the gentle empty-day line is back');
 // yorgun: akşam yumuşak gece dili
 run('delete Store.data.plans.eod["2026-10-07"]; Store.data.lunaConversation = { introduced: true, day: "2026-10-07", checkedIn: true, feeling: "Tired" };');
 eq(due(2026, 9, 7, 20, 30).slot, 'gece', 'Tired + az in the evening → gentle night wording');
@@ -464,6 +473,7 @@ ctx.__backup.plans.day['2026-10-07'] = [
   { id: 'L1', title: 'eski', done: false, updated: 50 },
   { id: 'L2', title: 'silinmişti', done: false, updated: 10 },
   { id: 'N1', title: 'yedekten yeni', done: false, updated: 30 },
+  { id: 'N5', del: true, updated: 40 }, // diğer cihazda eklenip silinmiş: iz gelir ama eklenen sayılmaz
 ];
 ctx.__backup.plans.day['2026-10-30'] = [{ id: 'N2', title: 'yeni gün', updated: 1 }, { id: 'N3', title: 'yeni gün 2', updated: 1 }, { id: 'N4', del: true, updated: 1 }];
 const added = run('Store.mergeJSON(JSON.parse(JSON.stringify(__backup)))');

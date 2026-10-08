@@ -141,7 +141,7 @@ const PlanlarUI = (() => {
         : [`Aylık hedefler ${own.done}/${own.total}`, `Haftalık ${r.weeks.done}/${r.weeks.total}`, `Günlük ${r.days.done}/${r.days.total}`];
       if (r.all.total) parts.push(`Toplam %${r.all.pct}`);
       if (own.moved) parts.push(`${own.moved} madde taşındı`);
-      const w = key <= cur ? sessionsIn(scope, key) : null;
+      const w0 = key <= cur ? sessionsIn(scope, key) : null, w = w0 && w0.minutes > 0 ? w0 : null; // "0 dk çalıştın" yazılmaz
       rollLine = `<p class="mp-roll">${parts.join(' · ')}${w ? `<br>⏱️ ${key === cur ? n.cur : scope === 'week' ? 'O hafta' : 'O ay'} ${U.fmtMin(w.minutes)} çalıştın${w.questions ? ` · ${w.questions} soru` : ''}` : ''}</p>`;
     }
     const remaining = own.remaining.length;
@@ -205,7 +205,7 @@ const PlanlarUI = (() => {
     const when = eve ? 'Bugün' : day === yesterday ? 'Dün' : 'O gün';
     const writeLabel = eve ? 'Yarının' : next === today ? 'Bugünün' : 'Ertesi günün';
     return `<div class="mp-eod"><div class="mp-eod-head">${ring}
-      <div><b>🌙 Gün sonu</b><small>${nums}</small><small>⏱️ ${when} ${U.fmtMin(w.minutes)} çalıştın${w.questions ? ` · ${w.questions} soru` : ''}</small></div></div>
+      <div><b>🌙 Gün sonu</b><small>${nums}</small>${w.minutes > 0 ? `<small>⏱️ ${when} ${U.fmtMin(w.minutes)} çalıştın${w.questions ? ` · ${w.questions} soru` : ''}</small>` : ''}</div></div>
       ${v.showText ? `<p class="mp-eod-text"><b>🐾 Luna:</b> ${esc(v.showText)}</p>` : ''}
       <div class="mp-tools">${st.remaining.length ? `<button type="button" class="btn primary small-btn" data-mp="carry" data-scope="day" data-key="${esc(day)}" data-to="${esc(to)}" data-hedef="${hw}">↪ Kalan ${st.remaining.length} maddeyi ${hw} taşı</button>` : ''}
         <button type="button" class="btn soft small-btn" data-mp="day" data-key="${esc(next)}" data-focus="1">✍️ ${writeLabel} planını yaz</button></div></div>`;

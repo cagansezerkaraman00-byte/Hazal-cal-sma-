@@ -683,9 +683,10 @@ p.mp-prog { justify-content: center; }
 .mp-eod-text { margin: 10px 0 0; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
 .mp-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); border: 1px solid var(--accent-line); font-size: .85rem; font-weight: 700; }
 .mp-strip .grow { flex: 1 1 160px; }
-.mp-strip-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.mp-strip-acts { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; }
+.mp-strip-acts .btn { flex: 1 1 auto; }
 .mp-mini { margin-top: 14px; padding-top: 4px; border-top: 1px dashed var(--line-strong); }
-@media (max-width: 420px) { .mp-days { gap: 4px; } .mp-day { padding: 6px 1px; } .mp-cal-cell { min-height: 40px; } .mp-tools .btn { flex: 1 1 100%; } .mp-strip .grow { flex-basis: 100%; } .mp-strip-acts { flex: 1 1 100%; } .mp-strip-acts .btn { flex: 1 1 auto; } }
+@media (max-width: 420px) { .mp-days { gap: 4px; } .mp-day { padding: 6px 1px; } .mp-cal-cell { min-height: 40px; } .mp-tools .btn { flex: 1 1 100%; } .mp-strip .grow { flex-basis: 100%; } .mp-strip-acts { flex: 1 1 100%; } }
 @media (pointer: coarse) { .mp-day, .mp-cal-cell { min-height: 44px; } }
 .love-card { align-self: start; }
 
