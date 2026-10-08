@@ -808,9 +808,9 @@
     renderWelcome(mins, pct);
     const tp = $('#today-plan');
     // plan kartındaki bir hata ana sayfayı (ve açılışı) bozmasın: kart sade bir notla kalır, kayıtlar yerinde
-    const safe = (f) => { try { f(); } catch (e) { ErrLog.add('Bugünün planı: ' + ((e && e.message) || e), 'planlar-ui.js'); tp.innerHTML = '<h2>🗓️ Bugünün planı</h2><p class="muted small">Plan şu an gösterilemedi; kayıtların güvende.</p>'; } };
-    if (programMode()) { tp.classList.remove('hidden'); UniUI.renderToday(tp); if (window.PlanlarUI) safe(() => PlanlarUI.appendToday(tp)); }
-    else if (window.PlanlarUI) { tp.classList.remove('hidden'); safe(() => PlanlarUI.renderToday(tp)); }
+    const safePlan = (f) => { try { f(); } catch (e) { ErrLog.add('Bugünün planı: ' + ((e && e.message) || e), 'planlar-ui.js'); tp.innerHTML = '<h2>🗓️ Bugünün planı</h2><p class="muted small">Plan şu an gösterilemedi; kayıtların güvende.</p>'; } };
+    if (programMode()) { tp.classList.remove('hidden'); UniUI.renderToday(tp); if (window.PlanlarUI) safePlan(() => PlanlarUI.appendToday(tp)); }
+    else if (window.PlanlarUI) { tp.classList.remove('hidden'); safePlan(() => PlanlarUI.renderToday(tp)); }
     else tp.classList.add('hidden');
   }
 
@@ -1657,12 +1657,19 @@
   };
   window.App = App;
 
+  // Ana akış dışındaki bir parça (sahne, mini sayaç, bildirimler…) hata verse de uygulamanın kalanı açılır; hata Tanılama'ya yazılır
+  function safe(name, fn) {
+    try { return fn(); } catch (e) {
+      console.error('Luna ' + name + ':', e);
+      try { ErrLog.add(name + ': ' + ((e && e.message) || e), 'app.js'); } catch (x) { /* yok say */ }
+    }
+  }
   function init() {
     if (window.LunaKurulum && LunaKurulum.active) return; // tarayıcıda yalnızca kurulum sayfası (uygulama sürpriz kalsın)
     if (window.GAuth) GAuth.handleRedirect(); // Google dönüşü: modüller sonucu GAuth.lastReturn() ile okur
     // kaldırılan hesap eşitlemesinden kalmış olabilecek boş kayıtları bir kez temizle
     try { if (!localStorage.getItem('luna-temizlik-1')) { localStorage.removeItem('luna-sync-on'); if (window.indexedDB) indexedDB.deleteDatabase('luna-sync'); localStorage.setItem('luna-temizlik-1', '1'); } } catch (e) { /* yok say */ }
-    Scene.init($('#sky'), $('#bubble'), {
+    safe('Sahne', () => Scene.init($('#sky'), $('#bubble'), {
       onPoke() { Sound.meow(); say('poke'); },
       onFriend(kind) { Sound.meow(); say(friendLine(kind)); },
       onFriendArrival(kind) {
@@ -1692,20 +1699,20 @@
 
         checkBadges();
       },
-    });
-    Scene.portrait($('#report-luna'));
+    }));
+    safe('Rapor portresi', () => Scene.portrait($('#report-luna')));
     // modüller sayaçtan önce: sayfa kapalıyken biten bir oturum açılışta işlenirken hazır olsunlar
-    if (window.PlanUI) PlanUI.init(App);
-    if (window.PlanlarUI) { try { PlanlarUI.init(App); } catch (e) { ErrLog.add('Planlar: ' + ((e && e.message) || e), 'planlar-ui.js'); } }
-    if (window.UniUI) UniUI.init(App);
-    if (window.DenemeUI) DenemeUI.init(App);
-    if (window.NotesUI) NotesUI.init(App);
-    if (window.DepoUI) DepoUI.init(App);
-    if (window.HataUI) HataUI.init(App);
-    if (window.KaynakUI) KaynakUI.init(App);
-    if (window.Badges) Badges.init(App);
-    if (window.SpotifyLink) SpotifyLink.init(App);
-    if (window.Diag) Diag.init(App);
+    if (window.PlanUI) safe('Plan', () => PlanUI.init(App));
+    if (window.PlanlarUI) safe('Planlar', () => PlanlarUI.init(App));
+    if (window.UniUI) safe('Dönem', () => UniUI.init(App));
+    if (window.DenemeUI) safe('Deneme', () => DenemeUI.init(App));
+    if (window.NotesUI) safe('Notlar', () => NotesUI.init(App));
+    if (window.DepoUI) safe('Kütüphane', () => DepoUI.init(App));
+    if (window.HataUI) safe('Hata defteri', () => HataUI.init(App));
+    if (window.KaynakUI) safe('Kaynaklar', () => KaynakUI.init(App));
+    if (window.Badges) safe('Rozetler', () => Badges.init(App));
+    if (window.SpotifyLink) safe('Spotify', () => SpotifyLink.init(App));
+    if (window.Diag) safe('Tanılama', () => Diag.init(App));
     renderSubjectSelects();
     Timer.init(timerHandlers);
     renderAllowApps();
@@ -1820,9 +1827,9 @@
     checkBadges();
     if (Store.loadError) setTimeout(() => toast('🛟', 'Verilerin okunamadı', 'Bozulmasın diye kopyası alındı: Ayarlar → Veriler', 9000), 1500);
 
-    LunaNotify.init(App);
-    MiniTimer.init(App,()=>weatherNow);
-    if (window.Guncelleme) Guncelleme.init(App); // güncellemeler, yenilikler ve ana ekrana ekleme
+    safe('Bildirimler', () => LunaNotify.init(App));
+    safe('Mini sayaç', () => MiniTimer.init(App,()=>weatherNow));
+    if (window.Guncelleme) safe('Güncelleme', () => Guncelleme.init(App)); // güncellemeler, yenilikler ve ana ekrana ekleme
     // ana ekrana eklenmiş uygulamada tarayıcıdan verilerin kalıcı saklanmasını iste (izin penceresi çıkmaz)
     if (navigator.storage && navigator.storage.persist && (matchMedia('(display-mode: standalone)').matches || navigator.standalone)) {
       navigator.storage.persisted().then((p) => p || navigator.storage.persist()).catch(() => {});

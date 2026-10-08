@@ -40,8 +40,11 @@ Versions use one number that only goes up (2.1.7 → 2.2 → 2.3 …): installed
 ### Publishing a new version
 
 1. Make the change and test it locally (`python3 -m http.server 8000`).
-2. Add a new entry at the **top** of the list in `js/surum.js`: version (e.g. `2.2`), date, a short title and notes. The cache version comes from this file, so `sw.js` never needs editing.
-3. Push to `claude/luna-study-app-1xt2uk` (the branch GitHub Pages publishes). Pages redeploys in a minute or two and every installed copy offers the update.
+2. Add a new entry at the **top** of the list in `js/surum.js`: version (e.g. `2.2`), date, a short title and notes. The cache version comes from this file, so `sw.js` never needs editing. A fix always needs a new, higher version: installed copies never re-download a version they already have.
+3. Run `node scripts/build-release.cjs` (stamps `?v=` and `data-surum` in `index.html`, runs `tests/release-integrity.test.cjs`, and writes `release-manifest.json` only if every file is complete), then `for t in tests/*.cjs; do node "$t"; done` and, where Playwright is installed, `node scripts/smoke.cjs`. `git config core.hooksPath .githooks` runs all of this before every `git push`.
+4. Push to `claude/luna-study-app-1xt2uk` (the branch GitHub Pages publishes). Pages redeploys in a minute or two and every installed copy offers the update.
+
+**Safety net.** Pages publishes whatever is pushed; the "Yayın denetimi" workflow only warns (to block a broken push, switch Settings → Pages → Source to "GitHub Actions" and add a deploy job). On the phone, the service worker installs a release only when every file matches `release-manifest.json`. If a new version still fails to start, Luna reopens the last version that started fine on that device (her data is never touched), says so once, and moves on by itself when a newer version is published. With nothing to fall back to, a "Luna biraz uykulu" screen offers a retry and a backup download.
 
 ### When ÖSYM announces the exam date
 

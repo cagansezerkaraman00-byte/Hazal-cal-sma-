@@ -6,6 +6,18 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4",
+  "tarih": "2026-10-08",
+  "baslik": "Planlarını sen yazıyorsun",
+  "notlar": [
+    "🗓️ Plan sekmesinde günlük, haftalık ve aylık planlar var. Rastgele program yok: maddeleri sen eklersin, işaretlersin, bitmeyenleri tek dokunuşla sonraki güne taşırsın.",
+    "💬 Akşam Luna günün planına bakıyor: yüzde kaçını bitirdiğini söylüyor ve küçük bir sonraki adım öneriyor. O akşam açmadıysan ertesi sabah anlatıyor.",
+    "🏠 Ana ekrandaki Bugünün planı artık senin maddelerini gösteriyor; derse bağlı maddeye dokununca çalışma başlıyor.",
+    "🛟 Bir güncelleme bu cihazda açılamazsa Luna kendiliğinden çalışan bir önceki sürümle açılıyor. Kayıtların ve ayarların yerinde kalıyor.",
+    "🌙 Gökyüzü, Luna ve yıldızlar tek bir hata yüzünden kaybolmuyor; bozuk bir dosya artık yayınlanamıyor."
+  ]
+},
+{
   "surum": "2.3.8",
   "tarih": "2026-10-07",
   "baslik": "Kurulum adımları cilalandı",

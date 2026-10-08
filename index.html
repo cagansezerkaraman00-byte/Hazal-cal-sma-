@@ -1,26 +1,83 @@
 <!doctype html>
-<html lang="tr" data-theme="light">
+<html lang="tr" data-theme="light" data-surum="2.4">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Luna</title>
   <script>
+  // Açılış koruması: Luna açılamazsa (yarım/bozuk bir güncelleme) kayıtlara dokunmadan bu cihazda sorunsuz açılmış
+  // önceki sürüme döner; o da yoksa onarım ekranını gösterir. Bu betik sayfanın içinde durur: başka dosya bozuk olsa da çalışır.
+  // Tarayıcıdaki kurulum sayfasında (js/kurulum.js) hiçbir şey yapmaz: orada uygulama zaten başlamaz.
   window.LunaBoot = (() => {
-    let ready=false, problem='', shown=false;
-    function show(){
-      if(ready || shown || !document.body)return;
-      shown=true;const box=document.createElement('section');box.id='luna-boot-repair';
-      box.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#eee5ff;color:#30234f;display:grid;place-content:center;padding:28px;font:17px system-ui';
-      box.innerHTML='<h2>Luna tam açılamadı 💜</h2><p>Dosyalar eksik yüklenmiş olabilir. Kayıtlarını silmeden yeniden deneyelim.</p><p id="luna-boot-error"></p><p><button id="luna-boot-retry" style="padding:14px">Yeniden dene</button></p><a href="repair.html?guncel=repair">Güvenli onarımı aç</a>';
-      document.body.appendChild(box);box.querySelector('#luna-boot-error').textContent=problem;
-      box.querySelector('#luna-boot-retry').onclick=()=>location.reload();
+    const VERSION = document.documentElement.dataset.surum || '';
+    let ready = false, problem = '', shown = false, rollbackTried = false;
+    const sw = 'serviceWorker' in navigator ? navigator.serviceWorker : null;
+    const gate = () => !!(window.LunaKurulum && LunaKurulum.active);
+    const ask = (msg) => new Promise((res) => {
+      const c = sw && sw.controller; if (!c) return res(null);
+      const ch = new MessageChannel(), t = setTimeout(() => res(null), 3000);
+      ch.port1.onmessage = (e) => { clearTimeout(t); res(e.data); };
+      c.postMessage(msg, [ch.port2]);
+    });
+    const saved = () => { try { return localStorage.getItem('luna-study-v1'); } catch (e) { return null; } };
+    const note = () => { try { return JSON.parse(localStorage.getItem('luna-geri-donus') || 'null'); } catch (e) { return null; } };
+    async function backup() { // onarım ekranından bile yedek alınabilsin (yalnızca okur): telefonda paylaşım menüsü, olmazsa indirme
+      const raw = saved(); if (!raw) return;
+      const d = new Date(), name = 'luna-yedek-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '.json';
+      const blob = new Blob([raw], { type: 'application/json' });
+      try {
+        if (matchMedia('(pointer: coarse)').matches && navigator.canShare && window.File) {
+          const file = new File([blob], name, { type: 'application/json' });
+          if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Luna yedeği' }); return; }
+        }
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+      try {
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      } catch (e) { /* yok say */ }
     }
-    function fail(error){problem=String(error?.message || 'Bir uygulama dosyası yüklenemedi.');show();}
-    window.addEventListener('error',e=>{if(!ready){if(e.target?.tagName==='SCRIPT')fail(new Error('Uygulama dosyası yüklenemedi.'));else if(e.message)fail(new Error(e.message));}},true);
-    document.addEventListener('DOMContentLoaded',()=>{if(problem)show();});
-    setTimeout(()=>{if(!ready)show();},25000);
-    window.addEventListener('load',()=>{if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});});
-    return {fail,ready(){ready=true;document.getElementById('luna-boot-repair')?.remove();}};
+    function show() {
+      if (ready || shown || !document.body || gate()) return;
+      shown = true; const box = document.createElement('section'); box.id = 'luna-boot-repair';
+      box.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#eee5ff;color:#30234f;display:grid;place-content:center;padding:28px;font:17px system-ui;overflow:auto';
+      box.innerHTML = '<h2>Luna biraz uykulu 💜</h2><p>Bu sefer açılamadı. Çalışmaların, notların ve ayarların yerinde duruyor.</p><p><button id="luna-boot-retry" style="padding:14px">Yeniden dene</button>' + (saved() ? ' <button id="luna-boot-backup" style="padding:14px">Yedeğimi indir</button>' : '') + '</p><p><a href="repair.html?guncel=repair">Güvenli onarımı aç</a></p><details><summary style="font-size:14px">Ayrıntı</summary><small id="luna-boot-error"></small></details>';
+      document.body.appendChild(box); box.querySelector('#luna-boot-error').textContent = problem;
+      box.querySelector('#luna-boot-retry').onclick = () => location.reload();
+      const b = box.querySelector('#luna-boot-backup'); if (b) b.onclick = backup;
+    }
+    // Karar tek yerde: sayfa yüklendiğinde uygulama hâlâ hazır değilse açılış gerçekten başarısızdır (önceki hatalar yalnızca not edilir).
+    // 25 sn güvenlik zamanlayıcısı yalnızca ekranı gösterir; geri dönüşü yalnızca kesin başarısızlık başlatır (sürüm başına sekmede bir kez).
+    async function failed(mayRollBack) {
+      if (ready || gate()) return;
+      let tried = true;
+      if (mayRollBack && !rollbackTried) { rollbackTried = true; try { tried = sessionStorage.getItem('luna-geri-' + VERSION) === '1'; sessionStorage.setItem('luna-geri-' + VERSION, '1'); } catch (e) { /* gizli mod */ } }
+      if (!tried && VERSION) {
+        const r = await ask({ type: 'LUNA_ROLLBACK', version: VERSION });
+        if (r && r.ok && !ready) { try { localStorage.setItem('luna-geri-donus', JSON.stringify({ bad: VERSION, good: r.to, at: Date.now() })); } catch (e) { /* yok say */ } location.reload(); return; }
+      }
+      show();
+    }
+    function fail(error) { if (!problem) problem = String((error && error.message) || error || ''); }
+    window.addEventListener('error', (e) => { if (!ready && !problem) problem = e.target && e.target.tagName === 'SCRIPT' ? 'Bir uygulama dosyası yüklenemedi: ' + (e.target.src || '') : String(e.message || ''); }, true);
+    window.addEventListener('load', () => {
+      setTimeout(() => { if (!ready) failed(true); }, 0);
+      if (sw) sw.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
+    });
+    setTimeout(() => { if (!ready) failed(false); }, 25000);
+    // onarım ekranı açıkken düzeltilmiş sürüm gelirse kendiliğinden yenile
+    if (sw) sw.addEventListener('controllerchange', () => { if (!ready && shown) location.reload(); });
+    return {
+      fail,
+      ready() {
+        ready = true; document.getElementById('luna-boot-repair')?.remove();
+        if (gate()) return; // kurulum sayfası uygulamayı başlatmaz: bu sürümü "bu cihazda sorunsuz açıldı" sayma
+        const c = sw && sw.controller; if (c && VERSION) c.postMessage({ type: 'LUNA_GOOD', version: VERSION });
+        const g = note(); if (g && g.good !== VERSION) try { localStorage.removeItem('luna-geri-donus'); } catch (e) { /* yok say */ }
+      },
+      // bu cihazda açılamayıp geri dönülen sürüm: { bad, good, at, told }
+      rolledBack: note,
+      told() { const g = note(); if (g) try { localStorage.setItem('luna-geri-donus', JSON.stringify({ ...g, told: true })); } catch (e) { /* yok say */ } },
+    };
   })();
   </script>
 
@@ -45,8 +102,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css?v=2.3.8">
-  <script src="js/kurulum.js?v=2.3.8"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.4">
+  <script src="js/kurulum.js?v=2.4"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -605,36 +662,36 @@
   </div>
   <div class="toasts" id="toasts"></div>
 
-  <script src="js/storage.js?v=2.3.8"></script>
-  <script src="js/surum.js?v=2.3.8"></script>
-  <script src="js/messages.js?v=2.3.8"></script>
-  <script src="js/audio.js?v=2.3.8"></script>
-  <script src="js/takvim.js?v=2.3.8"></script>
-  <script src="js/scene.js?v=2.3.8"></script>
-  <script src="js/timer.js?v=2.3.8"></script>
-  <script src="js/stats.js?v=2.3.8"></script>
-  <script src="js/weather.js?v=2.3.8"></script>
-  <script src="js/yks.js?v=2.3.8"></script>
-  <script src="js/plan.js?v=2.3.8"></script>
-  <script src="js/planlar.js?v=2.3.8"></script>
-  <script src="js/planlar-ui.js?v=2.3.8"></script>
-  <script src="js/deneme.js?v=2.3.8"></script>
-  <script src="js/notes.js?v=2.3.8"></script>
-  <script src="js/giris.js?v=2.3.8"></script>
-  <script src="js/depo.js?v=2.3.8"></script>
-  <script src="js/depo-ui.js?v=2.3.8"></script>
-  <script src="js/hata.js?v=2.3.8"></script>
-  <script src="js/kaynak.js?v=2.3.8"></script>
-  <script src="js/kaynak-ui.js?v=2.3.8"></script>
-  <script src="js/badges.js?v=2.3.8"></script>
-  <script src="js/spotify.js?v=2.3.8"></script>
-  <script src="js/uni.js?v=2.3.8"></script>
-  <script src="js/uni-ui.js?v=2.3.8"></script>
-  <script src="js/diag.js?v=2.3.8"></script>
-  <script src="js/guncelleme.js?v=2.3.8"></script>
-  <script src="js/notifications.js?v=2.3.8"></script>
-  <script src="js/mini-timer.js?v=2.3.8"></script>
-  <script src="js/app.js?v=2.3.8"></script>
+  <script src="js/storage.js?v=2.4"></script>
+  <script src="js/surum.js?v=2.4"></script>
+  <script src="js/messages.js?v=2.4"></script>
+  <script src="js/audio.js?v=2.4"></script>
+  <script src="js/takvim.js?v=2.4"></script>
+  <script src="js/scene.js?v=2.4"></script>
+  <script src="js/timer.js?v=2.4"></script>
+  <script src="js/stats.js?v=2.4"></script>
+  <script src="js/weather.js?v=2.4"></script>
+  <script src="js/yks.js?v=2.4"></script>
+  <script src="js/plan.js?v=2.4"></script>
+  <script src="js/planlar.js?v=2.4"></script>
+  <script src="js/planlar-ui.js?v=2.4"></script>
+  <script src="js/deneme.js?v=2.4"></script>
+  <script src="js/notes.js?v=2.4"></script>
+  <script src="js/giris.js?v=2.4"></script>
+  <script src="js/depo.js?v=2.4"></script>
+  <script src="js/depo-ui.js?v=2.4"></script>
+  <script src="js/hata.js?v=2.4"></script>
+  <script src="js/kaynak.js?v=2.4"></script>
+  <script src="js/kaynak-ui.js?v=2.4"></script>
+  <script src="js/badges.js?v=2.4"></script>
+  <script src="js/spotify.js?v=2.4"></script>
+  <script src="js/uni.js?v=2.4"></script>
+  <script src="js/uni-ui.js?v=2.4"></script>
+  <script src="js/diag.js?v=2.4"></script>
+  <script src="js/guncelleme.js?v=2.4"></script>
+  <script src="js/notifications.js?v=2.4"></script>
+  <script src="js/mini-timer.js?v=2.4"></script>
+  <script src="js/app.js?v=2.4"></script>
 </body>
 </html>
 

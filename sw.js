@@ -12,6 +12,36 @@ const FILES = [
   'icons/luna-notification-v2.png', 'icons/icon-512-maskable.png', 'icons/notification-badge.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-48.png',
 ];
 const SHELL = new Set(FILES.map((f) => new URL(f, self.registration.scope).href));
+const INDEX = new URL('index.html', self.registration.scope).href;
+// Açılışı bozuk çıkmış sürümler: önbellekleri silinir, hiçbir zaman geri dönülmez.
+const BOZUK = ['2.3.4', '2.3.5', '2.3.6'];
+// Küçük kayıt defteri (Cache Storage, sayfa verilerinden ayrı): bu cihazda sorunsuz açılmış sürümler ve geri dönüş iğnesi
+const META = 'luna-meta';
+async function meta(key, value) {
+  const c = await caches.open(META), url = new URL('__meta/' + key, self.registration.scope).href;
+  if (value === undefined) { const r = await c.match(url); return r ? r.json().catch(() => null) : null; }
+  return value === null ? c.delete(url) : c.put(url, new Response(JSON.stringify(value)));
+}
+const byNewest = (a, b) => b.localeCompare(a, undefined, { numeric: true });
+// Sayfalar hangi sürümün index.html'ini alsın: normalde bu sürüm; bu sürüm bu cihazda açılamadıysa son sağlam sürüm
+async function shellCache() {
+  const pin = await meta('pin');
+  if (pin && pin.bad === SURUMLER[0].surum && await caches.has('luna-' + pin.good)) return 'luna-' + pin.good;
+  return VERSION;
+}
+async function rollback(bad) {
+  if (bad !== SURUMLER[0].surum) return null;                 // yalnızca en yeni sürüm için
+  const good = (await meta('good')) || {};
+  if (good[bad]) return null;                                  // bu sürüm burada daha önce açıldı: güncelleme sorunu değil
+  const names = await caches.keys();
+  let to = null;
+  for (const v of Object.keys(good).filter((x) => x !== bad && !BOZUK.includes(x) && names.includes('luna-' + x)).sort(byNewest)) {
+    if (await caches.match(INDEX, { cacheName: 'luna-' + v })) { to = v; break; } // sayfası önbellekte duran en yeni sağlam sürüm
+  }
+  if (!to) return null;
+  await meta('pin', { bad, good: to, at: Date.now() });
+  return to;
+}
 
 // A release is usable only when every code file matches the published digest.
 async function installRelease() {
@@ -37,13 +67,31 @@ async function installRelease() {
 }
 self.addEventListener('install', e => e.waitUntil(installRelease()));
 self.addEventListener('message', e => {
-  if (e.data?.type === 'LUNA_VERSION') e.ports?.[0]?.postMessage({ version: SURUMLER[0].surum });
+  const d = e.data || {}, reply = (x) => e.ports?.[0]?.postMessage(x);
+  if (d.type === 'LUNA_VERSION') e.waitUntil(meta('pin').then((pin) => reply({ version: SURUMLER[0].surum, pin: pin && pin.bad === SURUMLER[0].surum ? pin : null })));
+  if (d.type === 'LUNA_GOOD' && /^\d+(?:\.\d+)+$/.test(d.version)) e.waitUntil(meta('good').then((g) => meta('good', { ...(g || {}), [d.version]: Date.now() })));
+  if (d.type === 'LUNA_ROLLBACK') e.waitUntil(rollback(d.version).then((to) => reply({ ok: !!to, to })).catch(() => reply({ ok: false })));
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => /^luna-\d/.test(k) && k !== VERSION && !keys.filter(x => /^luna-\d/.test(x)).sort((a,b) => b.localeCompare(a, undefined, {numeric:true})).slice(0, 3).includes(k)).map((k) => caches.delete(k))))
+      .then(async (keys) => {
+        const rel = keys.filter((k) => /^luna-\d/.test(k)), ver = (k) => k.slice(5);
+        let good = (await meta('good')) || {}, pin = await meta('pin');
+        // ilk kez: açılışını kendisi bildiremeyen eski bir sürüm (sayfasında data-surum yok, 2.3.8 ve öncesi) bu cihazda
+        // kullanılıyorduysa sağlam sayılır. Kendini bildirebilen bir sürüm hiç "sağlam" demediyse açılamamıştır: sayılmaz.
+        if (!Object.keys(good).length) {
+          const prev = rel.filter((k) => k !== VERSION && !BOZUK.includes(ver(k))).sort(byNewest)[0];
+          const page = prev && await caches.match(INDEX, { cacheName: prev });
+          if (page && !/\bdata-surum=/.test(await page.text())) await meta('good', good = { [ver(prev)]: Date.now() });
+        }
+        if (pin && pin.bad !== SURUMLER[0].surum) await meta('pin', pin = null); // yeni (düzeltilmiş) sürüm geldi: iğne kalkar
+        const lastGood = Object.keys(good).filter((v) => !BOZUK.includes(v) && rel.includes('luna-' + v)).sort(byNewest)[0];
+        const keep = new Set([VERSION, ...rel.filter((k) => !BOZUK.includes(ver(k))).sort(byNewest).slice(0, 3), lastGood && 'luna-' + lastGood, pin && 'luna-' + pin.good]);
+        await Promise.all(rel.filter((k) => !keep.has(k)).map((k) => caches.delete(k)));
+      })
+      .catch(() => {}) // defter okunamasa/yazılamasa da yeni sürüm etkinleşsin ve açık sayfaları devralsın
       .then(async () => {
         try { for (const n of await self.registration.getNotifications()) if (n.tag === 'luna-guncelleme') n.close(); } catch (e) {} // eski güncelleme haberi; sayaç bildirimi kalsın
         return self.clients.claim();
@@ -70,9 +118,9 @@ self.addEventListener('fetch', (e) => {
     if (url.searchParams.has('guncel')) { e.respondWith(fetch(req, { cache: 'no-store' })); return; }
     // sayfa gezintisi (Spotify/Google dönüşündeki ?code= ve #… dahil): sürümün index.html'i
     if (req.mode === 'navigate') {
-      e.respondWith(caches.match(new URL('index.html', self.registration.scope).href, { cacheName: VERSION })
+      e.respondWith(shellCache().then((name) => caches.match(INDEX, { cacheName: name }))
         .then((r) => r || fetch(req))
-        .catch(() => caches.match('index.html')));
+        .catch(() => caches.match(INDEX, { cacheName: VERSION }).then((r) => r || Response.error()))); // başka sürümün sayfası asla
       return;
     }
     if (url.pathname.includes('/vendor/')) { e.respondWith(cacheFirst(req, VENDOR, url.origin + url.pathname)); return; }
@@ -81,7 +129,7 @@ self.addEventListener('fetch', (e) => {
       const requested = url.searchParams.get('v');
       const version = requested && /^\d+(?:\.\d+)+$/.test(requested) ? 'luna-' + requested : VERSION;
       // A missing old file must never be replaced with a different release's code.
-      e.respondWith(version === VERSION ? cacheFirst(req, version, key) : caches.open(version).then(c => c.match(key)).then(r => r || new Response('Release expired; reopen Luna', {status:503})));
+      e.respondWith(version === VERSION ? cacheFirst(req, version, key) : caches.has(version).then((ok) => ok && caches.match(key, { cacheName: version })).then(r => r || new Response('Bu sürüm artık yok; Luna’yı yeniden aç', {status:503})));
       return;
     }
     // diğer dosyalar: önce ağ, olmazsa önbellek

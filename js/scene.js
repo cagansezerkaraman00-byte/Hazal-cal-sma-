@@ -677,7 +677,8 @@ const Scene = (() => {
   const THREAD = '#e27fb1';
 
   // ---------- Durum ----------
-  let cv, ctx, wrap, bubbleEl, onPoke = null;
+  let cv, ctx, vctx, buf, wrap, bubbleEl, onPoke = null;
+  let faults = 0, faultMsg = ''; // art arda hatalı kare sayısı (sahne kendini toparlasın)
   let W = 0, H = 0, scale = 4, horizon = 60, groundY = 80, wrapW = 0;
   let mode = 'idle'; // idle | focus | break
   let sun = null, light = 1, night = 0, dusk = 0, hour = 12, sunPos = null, moonPos = null;
@@ -1062,15 +1063,15 @@ const Scene = (() => {
     const w = Math.ceil(rect.width / sc), h = Math.ceil(rect.height / sc);
     if (w === W && h === H && sc === scale) return;
     scale = sc; W = w; H = h;
-    cv.width = W; cv.height = H;
-    ctx.imageSmoothingEnabled = false;
+    cv.width = buf.width = W; cv.height = buf.height = H;
+    ctx.imageSmoothingEnabled = false; vctx.imageSmoothingEnabled = false;
     horizon = Math.round(H * 0.68);
     groundY = H - 7;
     L.x = U.clamp(L.x, 30, roamMax());
     if (yarn) yarn.x = U.clamp(yarn.x, 1, W - 6);
     buildWorld();
     bgDirty = true;
-    if (raf) render(0);
+    if (raf) { try { render(0); } catch (e) { fault(e); } }
   }
 
   // ---------- Hava durumu ----------
@@ -2151,6 +2152,22 @@ const Scene = (() => {
       bubbleOn = false;
     }
     positionBubble();
+    vctx.drawImage(buf, 0, 0); // kare yalnızca tamamen çizildiyse ekrana geçer: yarım kare (kedisiz gökyüzü) görünmez
+  }
+
+  // Aynı hata tekrarlanırsa anlık durum (ziyaretçiler, oyun, balık, parçacıklar, Luna'nın pozu) sıfırlanır;
+  // yine geçmezse döngü durur, son sağlam kare ekranda kalır ve uygulama dönünce sahne yeniden denenir.
+  function recover() {
+    friends = []; play = null; yarn = null; fishItem = null; particles = []; shooting = null;
+    Object.assign(L, { y: 0, vy: 0, state: 'walk', wait: 0, eatT: 0, nap: false, emote: null });
+    bgDirty = true; dayKey = ''; sunT = 99;
+  }
+  function fault(e) {
+    faults++;
+    const m = String((e && e.message) || e);
+    if (m !== faultMsg) { faultMsg = m; try { if (window.ErrLog) ErrLog.add('Sahne: ' + m, 'scene.js'); } catch (x) { /* yok say */ } }
+    if (faults === 2) { try { recover(); } catch (x) { /* yok say */ } }
+    if (faults >= 60 && raf) { cancelAnimationFrame(raf); raf = 0; }
   }
 
   function frame(now) {
@@ -2163,7 +2180,7 @@ const Scene = (() => {
     if (acc < (reducedMotion ? 0.083 : mode === 'focus' ? 0.05 : 0.028)) return;
     const step = Math.min(acc, 0.1);
     acc = 0;
-    render(step);
+    try { render(step); faults = 0; } catch (e) { fault(e); }
   }
 
   const rmq = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
@@ -2174,7 +2191,7 @@ const Scene = (() => {
   function wake() {
     const on = visible && !document.hidden && !!cv;
     if (on && !raf) {
-      lastT = 0; acc = 0; sunT = 99;
+      lastT = 0; acc = 0; sunT = 99; faults = 0;
       raf = requestAnimationFrame(frame);
     } else if (!on && raf) {
       cancelAnimationFrame(raf);
@@ -2218,7 +2235,11 @@ const Scene = (() => {
   return {
     init(canvas, bubble, opts = {}) {
       cv = canvas; wrap = canvas.parentElement; bubbleEl = bubble;
-      ctx = cv.getContext('2d', { alpha: false });
+      vctx = cv.getContext('2d', { alpha: false });
+      buf = document.createElement('canvas');
+      ctx = buf.getContext('2d', { alpha: false });
+      // iPhone'da tuval belleği dolunca getContext null döner: sahne olmadan da uygulama açılsın
+      if (!vctx || !ctx) throw new Error('Gökyüzü tuvali açılamadı');
       onPoke = opts.onPoke;
       onFriend = opts.onFriend || null;
       onFriendSeen = opts.onFriendSeen || null;

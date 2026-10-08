@@ -29,7 +29,10 @@ const Guncelleme = (() => {
   }
 
   let reg = null, remote = null, swReady = false, checking = false, applying = false, bannerHidden = false, installEvt = null, lastCheck = 0;
-  const latest = () => (remote && newer(remote[0].surum, current().surum) ? remote[0] : null);
+  // bu cihazda açılamayıp geri dönülen sürüm yeniden önerilmesin (düzeltilmiş daha yeni sürüm önerilir)
+  const rolledBack = () => { const g = window.LunaBoot && LunaBoot.rolledBack && LunaBoot.rolledBack(); return g && g.good === current().surum ? g : null; };
+  const skipped = () => { const g = rolledBack(); return g ? g.bad : null; };
+  const latest = () => (remote && newer(remote[0].surum, current().surum) && remote[0].surum !== skipped() ? remote[0] : null);
   const fresh = () => (remote ? remote.filter((v) => newer(v.surum, current().surum)) : []);
   const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   const isIOS = () => /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -128,6 +131,14 @@ const Guncelleme = (() => {
       });
     };
     setTimeout(show, 1600);
+  }
+
+  // Yeni sürüm bu cihazda açılamadıysa Luna bir önceki sürümle açılır (index.html'deki açılış koruması); bunu bir kez, sakince söyle
+  function rollbackNote() {
+    const g = rolledBack();
+    if (!g || g.told) return;
+    LunaBoot.told();
+    setTimeout(() => App.toast('💜', 'Luna bir önceki sürümle açıldı', 'Yeni güncelleme bu cihazda açılamadı. Kayıtların ve ayarların yerinde; düzeltilmiş sürüm gelince kendiliğinden güncellenir.', 9000), 1200);
   }
 
   // ---------- Kurulum (ana ekrana ekle) ----------
@@ -326,6 +337,7 @@ const Guncelleme = (() => {
       renderCard();
       renderBanner();
       whatsNew();
+      rollbackNote();
       iconBadge(false); // açık sürüm en yenisi (yeni sürüm bulunursa yeniden yanar)
       // tarayıcıda açılınca kurulumu js/kurulum.js'deki lila sayfa anlatır; eski tam ekran rehber kendiliğinden açılmaz
       askNotify();
