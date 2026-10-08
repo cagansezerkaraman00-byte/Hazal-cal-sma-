@@ -10,7 +10,7 @@ fs.writeFileSync(htmlPath,html);
 // Liste eski kalınca servis çalışanı bu dosyaları kurmaz (özet tutmaz), telefondaki Luna çalışan sürümde kalır.
 const check=require('node:child_process').spawnSync(process.execPath,[path.join(root,'tests/release-integrity.test.cjs')],{stdio:'inherit'});
 if(check.status!==0){console.error('Release '+version+' NOT built: release-manifest.json was left unchanged. Fix the problems above, then run this again.');process.exit(1);}
-const files=['index.html','manifest.webmanifest','css/style.css',...fs.readdirSync(path.join(root,'js')).filter(x=>x.endsWith('.js')).map(x=>'js/'+x)];
+const files=['index.html','manifest.webmanifest','css/style.css',...fs.readdirSync(path.join(root,'js')).filter(x=>x.endsWith('.js')).map(x=>'js/'+x),'assets/meows/cat-voice.mp3','assets/meows/kitten.mp3','assets/meows/cat-meow.mp3'];
 const manifest={version,files:Object.fromEntries(files.map(p=>[p,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex')]))};
 fs.writeFileSync(path.join(root,'release-manifest.json'),JSON.stringify(manifest,null,2)+'\n');
-console.log('Release '+version+': '+files.length+' code files checked and hashed');
+console.log('Release '+version+': '+files.length+' code and recorded audio files checked and hashed');

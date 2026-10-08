@@ -6,6 +6,17 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.2",
+  "tarih": "2026-10-08",
+  "baslik": "TYT, AYT ve Luna'nın bitiş miyavları",
+  "notlar": [
+    "⏱️ Çalış ekranında Serbest kronometre, TYT (165 dk), AYT (180 dk) ve kendi süreni girebildiğin geri sayım bir arada. 25/35/60 dakika kısayolları kaldırıldı.",
+    "🐈 Süre dolunca eklenen üç gerçek kedi kaydından seçtiğin miyav çalar. Beş doğal ses bölümü ve beş titreşim ritmi Ayarlar'dan seçilip denenebilir; sesler çevrimdışı da saklanır.",
+    "📳 Titreşim destekleyen cihazlarda çalışır. iPhone/iPad'de ses ve ekrandaki bitiş uyarısı kullanılır; arka planda askıya alınan uygulamanın uyarısı gecikebilir.",
+    "🛠️ Duraklatma ve yeniden açmada sınav süresi korunur. Erken bitirmede süre doldu alarmı çalmaz; biten oturum ikinci kez kaydedilmez."
+  ]
+},
+{
   "surum": "2.4.1",
   "tarih": "2026-10-08",
   "baslik": "Geri sayım, kronometre ve kesintisiz rozetler",

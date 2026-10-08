@@ -1,17 +1,115 @@
-/* Web Audio ile üretilen sesler: zil, miyav-blip ve odak ortam sesleri (dosya gerektirmez). */
+/* Gerçek kedi kayıtları; zil ve odak ortam sesleri Web Audio ile üretilir. */
 
 const Sound = (() => {
   let ctx = null;
   const ambient = {};
+  const alarmVoices = new Set();
+  const recordings = new Map();
+  let alarmEpoch = 0;
+  const MEOWS = Object.freeze([
+    { id: 'luna', label: 'Luna · tatlı miyav', file: 'assets/meows/cat-voice.mp3', offset: .9, duration: 1 },
+    { id: 'vesper', label: 'Vesper · sakin miyav', file: 'assets/meows/cat-meow.mp3', offset: .9, duration: 1.2 },
+    { id: 'guclu', label: 'Güçlü · yavru miyavı', file: 'assets/meows/kitten.mp3', offset: .05, duration: .85 },
+    { id: 'merak', label: 'Meraklı · uzun miyav', file: 'assets/meows/cat-voice.mp3', offset: 2.35, duration: 1.4 },
+    { id: 'uykucu', label: 'Minik patiler · çift miyav', file: 'assets/meows/kitten.mp3', offset: 1.35, duration: 2.45 },
+  ].map(Object.freeze));
+  const VIBRATIONS = Object.freeze([
+    { id: 'double', label: 'Çift pati', pattern: [220, 160, 220] },
+    { id: 'triple', label: 'Üç minik pati', pattern: [100, 110, 100, 110, 100] },
+    { id: 'heartbeat', label: 'Kalp atışı', pattern: [100, 90, 250, 380, 100, 90, 250] },
+    { id: 'wave', label: 'Dalga', pattern: [120, 130, 240, 130, 420] },
+    { id: 'insistent', label: 'Beni fark et', pattern: [400, 200, 400, 200, 400] },
+  ].map(v => Object.freeze({ ...v, pattern: Object.freeze(v.pattern) })));
+  const vibrationSupported = () => typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+  function vibrate(pattern) {
+    try { return vibrationSupported() && navigator.vibrate(pattern) === true; } catch (e) { return false; }
+  }
 
   function ac() {
-    if (!ctx) {
-      const C = window.AudioContext || window.webkitAudioContext;
-      if (!C) return null;
-      ctx = new C();
+    try {
+      if (!ctx || ctx.state === 'closed') {
+        const C = window.AudioContext || window.webkitAudioContext;
+        if (!C) return null;
+        ctx = new C();
+      }
+      if (ctx.state === 'suspended') Promise.resolve(ctx.resume()).catch(() => {});
+      return ctx;
+    } catch (e) { return null; }
+  }
+
+  async function resumeAudio() {
+    const c = ac(); if (!c) return false;
+    try { if (c.state === 'suspended') await c.resume(); return c.state === 'running'; } catch (e) { return false; }
+  }
+  const selectedMeow = () => MEOWS.find(v => v.id === Store.data.settings.timerMeow) || MEOWS[0];
+  async function recording(c, file) {
+    if (recordings.has(file)) return recordings.get(file);
+    const pending = (async () => {
+      const version = typeof SURUMLER !== 'undefined' ? SURUMLER[0].surum : '';
+      const response = await fetch(file + (version ? '?v=' + encodeURIComponent(version) : ''));
+      if (!response.ok) throw new Error('Kedi kaydı yüklenemedi');
+      const bytes = await response.arrayBuffer();
+      // Safari'nin callback biçimi de desteklenir; kayıt özgün hızında çözülür.
+      return new Promise((resolve, reject) => {
+        const decoded = c.decodeAudioData(bytes, resolve, reject);
+        if (decoded && decoded.catch) decoded.catch(reject);
+      });
+    })();
+    recordings.set(file, pending);
+    try { return await pending; } catch (e) { recordings.delete(file); throw e; }
+  }
+  async function unlock() {
+    const ready = await resumeAudio();
+    if (ready && Store.data.settings.sound) {
+      // Sayaç başlarken kayıtları hazırla; bitiş anında ağ beklenmesin.
+      await Promise.allSettled([...new Set(MEOWS.map(v => v.file))].map(file => recording(ctx, file)));
     }
-    if (ctx.state === 'suspended') ctx.resume();
-    return ctx;
+    return ready;
+  }
+  function catRecording(c, buffer, voice, delay = 0, tracked = false) {
+    let source, gain;
+    const cleanup = () => { try { source?.disconnect(); gain?.disconnect(); } catch (e) {} alarmVoices.delete(record); };
+    const record = { stop() { try { source?.stop(); } catch (e) {} cleanup(); } };
+    try {
+      const t = c.currentTime + delay, d = Math.min(voice.duration, buffer.duration - voice.offset);
+      if (!(d > .05)) return false;
+      source = c.createBufferSource(); source.buffer = buffer; source.playbackRate.value = 1;
+      gain = c.createGain();
+      // Kesim sınırlarında tık oluşmasın; perdesi ve konuşma hızı değiştirilmez.
+      gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(.9, t + .01);
+      gain.gain.setValueAtTime(.9, t + d - .015); gain.gain.linearRampToValueAtTime(0, t + d);
+      source.connect(gain).connect(c.destination); source.onended = cleanup;
+      if (tracked) alarmVoices.add(record);
+      source.start(t, voice.offset, d);
+      return true;
+    } catch (e) { record.stop(); return false; }
+  }
+  function stopTimerAlarm() {
+    alarmEpoch++;
+    [...alarmVoices].forEach(v => v.stop());
+    vibrate(0);
+  }
+  async function timerEnd() {
+    stopTimerAlarm();
+    const epoch = alarmEpoch;
+    const settings = Store.data.settings;
+    const voice = selectedMeow();
+    const rhythm = VIBRATIONS.find(v => v.id === settings.timerVibration) || VIBRATIONS[0];
+    const result = { sound: false, vibration: settings.timerVibrate !== false && vibrate([...rhythm.pattern]), vibrationSupported: vibrationSupported(), cancelled: false };
+    if (settings.sound) {
+      try {
+        if (await resumeAudio()) {
+          const c = ctx, buffer = await recording(c, voice.file);
+          if (epoch !== alarmEpoch || !Store.data.settings.sound) return { ...result, cancelled: true };
+          if (c.state === 'running') {
+            const count = Math.max(1, Math.min(3, Math.floor(5.5 / (voice.duration + .45))));
+            for (let i = 0; i < count; i++) result.sound = catRecording(c, buffer, voice, i * (voice.duration + .45), true) || result.sound;
+          }
+        }
+      } catch (e) { /* Ses yüklenemese bile titreşim ve bitiş kaydı çalışmaya devam eder. */ }
+    }
+    result.cancelled = epoch !== alarmEpoch;
+    return result;
   }
 
   function tone(freq, start, dur, type = 'triangle', vol = 0.18) {
@@ -113,6 +211,9 @@ const Sound = (() => {
   };
 
   return {
+    meows: MEOWS,
+    vibrations: VIBRATIONS.map(({ id, label }) => Object.freeze({ id, label })),
+    unlock, timerEnd, stopTimerAlarm, vibrationSupported,
     chime() {
       if (!Store.data.settings.sound) return;
       [659.25, 783.99, 987.77, 1318.5].forEach((f, i) => tone(f, i * 0.14, 0.9));
@@ -121,20 +222,13 @@ const Sound = (() => {
       if (!Store.data.settings.sound) return;
       tone(880, 0, 0.25, 'sine', 0.08);
     },
-    meow() {
+    async meow() {
       if (!Store.data.settings.sound) return;
-      const c = ac(); if (!c) return;
-      const o = c.createOscillator(), g = c.createGain(), f = c.createBiquadFilter();
-      o.type = 'sawtooth'; f.type = 'bandpass'; f.frequency.value = 1400; f.Q.value = 3;
-      const t = c.currentTime;
-      o.frequency.setValueAtTime(520, t);
-      o.frequency.linearRampToValueAtTime(820, t + 0.12);
-      o.frequency.linearRampToValueAtTime(480, t + 0.42);
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.12, t + 0.05);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
-      o.connect(f).connect(g).connect(c.destination);
-      o.start(t); o.stop(t + 0.5);
+      try {
+        if (!(await resumeAudio())) return;
+        const c = ctx, voice = selectedMeow(), buffer = await recording(c, voice.file);
+        if (Store.data.settings.sound && c.state === 'running') catRecording(c, buffer, voice);
+      } catch (e) { /* Kayıt hatası besleme ve sahne etkileşimini durdurmasın. */ }
     },
     setAmbient(kind, vol) {
       const c = ac(); if (!c) return;

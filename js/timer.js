@@ -2,13 +2,15 @@
 
 const Timer = (() => {
   let h = {};
+  const EXAM_MINUTES = Object.freeze({ tyt: 165, ayt: 180 });
 
   const st = () => Store.data.timer || (Store.data.timer = fresh()); // sıfırlama/içe aktarma sonrası boş kalmasın
   const S = () => Store.data.settings;
 
   function fresh(kind = 'countdown', keep = {}) {
     return {
-      kind,                 // pomodoro | free
+      kind,                 // countdown | free (pomodoro: eski kayıtlar)
+      exam: kind === 'countdown' && Object.hasOwn(EXAM_MINUTES, keep.exam) ? keep.exam : null,
       targetSeconds: null,
       continuousStart: null,
       continuousBest: 0,
@@ -26,6 +28,7 @@ const Timer = (() => {
   function duration(phase = st().phase) {
     const s = S();
     if (phase === 'focus' && st().targetSeconds) return st().targetSeconds;
+    if (phase === 'focus' && st().exam) return EXAM_MINUTES[st().exam] * 60;
     return (phase === 'focus' ? s.focus : phase === 'short' ? s.short : s.long) * 60;
   }
   function elapsed() {
@@ -50,14 +53,14 @@ const Timer = (() => {
     const x = st();
     x.running = true;
     x.continuousStart = at;
-    if (x.phase === 'focus' && !x.targetSeconds) x.targetSeconds = Math.max(1, Math.min(900, Number(S().focus) || 25)) * 60;
+    if (x.phase === 'focus' && !x.targetSeconds) x.targetSeconds = Math.max(60, Math.min(54000, Number(duration()) || 1500));
     x.resumedAt = at;
     x.pausedAt = null;
     if (!x.firstStart) x.firstStart = at;
     persist();
   }
 
-  function finishFocus(sec, endTime) {
+  function finishFocus(sec, endTime, endReason = 'manual') {
     const x = st();
     rememberContinuous(endTime);
     const session = {
@@ -67,9 +70,11 @@ const Timer = (() => {
       subjectId: x.subjectId,
       intent: x.intent || '',
       kind: x.kind,
+      exam: x.exam || null,
+      endReason,
       continuousSeconds: Math.min(sec, continuous(endTime)),
     };
-    const keep = { cycle: x.cycle + 1, subjectId: x.subjectId };
+    const keep = { cycle: x.cycle + 1, subjectId: x.subjectId, exam: x.exam };
     const kind = x.kind;
     Store.data.timer = fresh(kind, keep);
     if (kind === 'pomodoro') {
@@ -99,7 +104,7 @@ const Timer = (() => {
       // tam odak: bitirmeden önce uygulama dışında geçen süre kontrol edilsin (sayaç duraklatılabilir)
       if (x.phase === 'focus' && h.beforeFinish && h.beforeFinish()) { h.onTick && h.onTick(api.state()); return; }
       const endTime = x.resumedAt + (duration() * 1000 - x.accum);
-      if (x.phase === 'focus') finishFocus(duration(), endTime);
+      if (x.phase === 'focus') finishFocus(duration(), endTime, 'elapsed');
       else finishBreak(endTime);
     }
     h.onTick && h.onTick(api.state());
@@ -109,6 +114,7 @@ const Timer = (() => {
     init(handlers) {
       h = handlers;
       if (!st() || !st().phase) Store.data.timer = fresh();
+      if (!Object.hasOwn(EXAM_MINUTES, st().exam) || st().kind !== 'countdown') st().exam = null;
       if (st().kind === 'pomodoro') {
         if (st().phase === 'focus') st().kind = 'countdown';
         else Store.data.timer = fresh('countdown', {subjectId:st().subjectId});
@@ -135,6 +141,7 @@ const Timer = (() => {
     },
     toggle() {
       const x = st();
+      if (x.running && countdown() && remaining() <= 0) { tick(); return; }
       if (x.running) {
         rememberContinuous();
         x.continuousStart = null;
@@ -186,6 +193,7 @@ const Timer = (() => {
     // "Bitir": odakta oturumu kaydeder; molada molayı bitirir
     finish() {
       const x = st();
+      if (x.running && countdown() && remaining() <= 0) { tick(); return; }
       if (x.phase === 'focus') {
         const sec = elapsed();
         if (sec < 60) { h.onTooShort && h.onTooShort(); api.reset(); return; }
@@ -199,23 +207,24 @@ const Timer = (() => {
     reset() {
       rememberContinuous();
       const x = st();
-      Store.data.timer = fresh(x.kind, { cycle: x.cycle, subjectId: x.subjectId, intent: x.intent });
+      Store.data.timer = fresh(x.kind, { cycle: x.cycle, subjectId: x.subjectId, intent: x.intent, exam: x.exam });
       persist();
       h.onReset && h.onReset();
       tick();
     },
-    setKind(kind) {
+    setKind(kind, exam = null) {
       if (!['countdown','free'].includes(kind)) return;
+      if (exam != null && (kind !== 'countdown' || !Object.hasOwn(EXAM_MINUTES, exam))) return;
       rememberContinuous();
       const x = st();
-      Store.data.timer = fresh(kind, { subjectId: x.subjectId, intent: x.intent });
+      Store.data.timer = fresh(kind, { subjectId: x.subjectId, intent: x.intent, exam });
       persist();
       tick();
     },
     setCountdownMinutes(value) {
       const minutes = Number(value);
       if (!Number.isInteger(minutes) || minutes < 1 || minutes > 900 || !api.state().fresh) return false;
-      S().focus = minutes; st().targetSeconds = null; persist(); tick(); return true;
+      S().focus = minutes; st().targetSeconds = null; st().exam = null; persist(); tick(); return true;
     },
     setSubject(id) { st().subjectId = id; persist(); },
     setIntent(text) { st().intent = String(text || '').slice(0, 80); persist(); },

@@ -1856,4 +1856,15 @@ html.kurulum body::before, html.kurulum body::after { display: none !important; 
 
 
 /* Countdown controls and hour display */
-.countdown-setup{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:14px 0}.countdown-setup[hidden]{display:none}.countdown-setup input{width:84px;padding:10px;border:1px solid var(--border,#ddd);border-radius:12px;font:inherit;background:var(--card,#fff);color:inherit}.timer-time.has-hours{font-size:clamp(1.6rem,7vw,2.8rem)}#timer-duration-label{margin-top:8px;font-family:system-ui,sans-serif;font-size:.85rem}.field:has(#set-short),.field:has(#set-long),.field:has(#set-every),.switch:has(#set-autobreak),.switch:has(#set-autofocus){display:none}
+#kind-seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(360px, 100%); }
+#kind-seg button { padding: 9px 10px; line-height: 1.3; }
+#kind-seg small { display: block; font-size: .72rem; font-weight: 600; opacity: .8; margin-top: 3px; }
+.timer-alarm-settings { border: 1px solid var(--line); border-radius: 16px; margin: 16px 0; padding: 14px; min-width: 0; }
+.timer-alarm-settings legend { font-weight: 800; padding: 0 6px; }
+.timer-alarm-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.timer-end-alert { position: fixed; z-index: 65; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(460px, calc(100% - 24px)); display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 18px; border: 2px solid var(--accent-line); background: var(--surface); color: var(--text); box-shadow: 0 8px 28px rgba(40, 20, 70, .25); font-weight: 800; }
+.timer-end-alert[hidden] { display: none; }
+.timer-end-alert span { flex: 1; }
+.timer-end-alert button { flex: 0 0 auto; }
+body.focusing .countdown-setup { display: none; }
+.countdown-setup{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:14px 0}.countdown-setup[hidden]{display:none}.countdown-setup input{width:84px;padding:10px;border:1px solid var(--border,#ddd);border-radius:12px;font:inherit;background:var(--card,#fff);color:inherit}.ring-wrap{container-type:inline-size}.timer-time.has-hours,body.focusing .timer-time.has-hours{font-size:20px;font-size:clamp(12px,10cqw,26px);letter-spacing:0}#timer-duration-label{margin-top:8px;max-width:85%;text-align:center;font-family:system-ui,sans-serif;font-size:.85rem;font-size:clamp(.6rem,5cqw,.85rem)}.field:has(#set-short),.field:has(#set-long),.field:has(#set-every),.switch:has(#set-autobreak),.switch:has(#set-autofocus){display:none}

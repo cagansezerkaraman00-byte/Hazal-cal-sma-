@@ -336,22 +336,24 @@
   let timerKey = '', continuousHour = -1;
   function renderTimer(s) {
     // sayaç saniyede 4 kez sorar; ekran yalnızca görünen bir şey değişince güncellenir
-    const key = [Math.floor(s.countdown ? s.remaining : s.elapsed), s.running, s.phase, s.kind, s.fresh, s.cycle, s.subjectId, s.intent, focusDismissed, D().settings.focusMode, D().settings.pauseOnLeave, (D().settings.allowedApps || []).length, D().settings.longEvery].join('|');
+    const shown = Math.max(0, s.countdown ? Math.ceil(s.remaining) : Math.floor(s.elapsed));
+    const key = [shown, s.running, s.phase, s.kind, s.exam, s.fresh, s.cycle, s.subjectId, s.intent, focusDismissed, D().settings.focusMode, D().settings.pauseOnLeave, (D().settings.allowedApps || []).length, D().settings.longEvery].join('|');
     if (key === timerKey) return;
     timerKey = key;
-    $$('#kind-seg button').forEach((b) => b.classList.toggle('active', b.dataset.kind === s.kind));
+    $$('#kind-seg button').forEach((b) => {
+      const selected = b.dataset.kind === s.kind && (b.dataset.exam || null) === (s.exam || null);
+      b.classList.toggle('active', selected); b.setAttribute('aria-pressed', String(selected));
+    });
     const isBreak = s.phase !== 'focus';
-    const label = s.kind === 'free' && !isBreak ? 'SERBEST ODAK' : PHASE_NAME[s.phase];
+    const label = !isBreak && s.exam ? s.exam.toUpperCase() + ' GERİ SAYIM' : s.kind === 'free' && !isBreak ? 'SERBEST ODAK' : PHASE_NAME[s.phase];
     $('#phase-label').textContent = label;
     $('#phase-label').classList.toggle('break', isBreak);
-    const shown = s.countdown ? s.remaining : s.elapsed;
     $('#timer-time').textContent = U.fmtClock(shown);
     $('#timer-time').classList.toggle('has-hours', shown >= 3600);
     $('#timer-duration-label').textContent = shown >= 3600 ? `${Math.floor(shown / 3600)} saat ${U.pad(Math.floor(shown / 60) % 60)} dk ${U.pad(Math.floor(shown) % 60)} sn` : '';
-    $('#countdown-setup').hidden = s.kind !== 'countdown';
+    $('#countdown-setup').hidden = s.kind !== 'countdown' || !!s.exam;
     $('#countdown-minutes').disabled = !s.fresh;
     if (document.activeElement !== $('#countdown-minutes')) $('#countdown-minutes').value = D().settings.focus;
-    $$('[data-duration]').forEach(b => {b.disabled = !s.fresh;b.classList.toggle('active', +b.dataset.duration === D().settings.focus);});
     const completedHour = Math.floor((s.continuousSeconds || 0) / 3600);
     if (completedHour !== continuousHour) {continuousHour = completedHour;if (completedHour > 0) checkBadges();}
     const subj = Store.subject(s.subjectId).name;
@@ -405,6 +407,8 @@
   const timerHandlers = {
     onTick: renderTimer,
     onStart(phase, resumed) {
+      dismissTimerAlarm();
+      Sound.unlock();
       if (!resumed) focusDismissed = false;
       syncSceneMode();
       if (phase === 'focus') {
@@ -418,15 +422,19 @@
     beforeFinish: () => checkAway(),
     onFocusDone(session) {
       lockScreen(false);
-      Sound.chime();
       session.id = U.uid();
       session.note = session.intent || ''; session.hard = ''; session.rating = null; session.mood = '';
       D().sessions.push(session);
       if (session.minutes >= 10) D().fish++;
       save();
+      if (session.endReason === 'elapsed') {
+        Sound.timerEnd();
+        $('#timer-end-message').textContent = `${session.exam ? session.exam.toUpperCase() : 'Geri sayım'} bitti! ${U.fmtMin(session.minutes)} tamamlandı 🐾`;
+        $('#timer-end-alert').hidden = false;
+      } else Sound.chime();
       if (window.PlanlarUI) { try { PlanlarUI.onSession(session); } catch (e) { ErrLog.add('Planlar: ' + ((e && e.message) || e), 'planlar-ui.js'); } }
       if (window.UniUI) UniUI.onSession(session);
-      notify('Oturum tamamlandı! 🎉', `${U.fmtMin(session.minutes)} ${Store.subject(session.subjectId).name} çalıştın. Mola zamanı!`);
+      notify(session.exam && session.endReason === 'elapsed' ? `${session.exam.toUpperCase()} süresi doldu! 🐈` : 'Oturum tamamlandı! 🎉', `${U.fmtMin(session.minutes)} ${Store.subject(session.subjectId).name} çalıştın. Mola zamanı!`);
       say('done');
       // başka bir pencere açıksa (yarım not, kart, deneme…) üstüne yazma: kapanınca göster
       if ($('#modal').classList.contains('hidden')) openSessionModal(session, { justDone: true });
@@ -446,12 +454,20 @@
       if (running) lockScreen(true);
     },
   };
+  function dismissTimerAlarm() {
+    Sound.stopTimerAlarm();
+    $('#timer-end-alert').hidden = true;
+  }
   function bindTimer() {
     const setDuration = value => {
       if (!Timer.setCountdownMinutes(value)) { toast('⏳', 'Süre değişmedi', 'Başlamadan önce 1–900 arasında tam dakika seç.'); $('#countdown-minutes').value = D().settings.focus; }
     };
     $('#countdown-minutes').addEventListener('change', e => setDuration(e.target.value));
-    $$('[data-duration]').forEach(b => b.addEventListener('click', () => setDuration(b.dataset.duration)));
+    $('#countdown-minutes').addEventListener('input', e => {
+      const value = Number(e.target.value);
+      if (Number.isInteger(value) && value >= 1 && value <= 900) Timer.setCountdownMinutes(value);
+    });
+    $('#dismiss-timer-alarm').addEventListener('click', dismissTimerAlarm);
     $('#btn-toggle').addEventListener('click', () => Timer.toggle());
     $('#btn-finish').addEventListener('click', () => Timer.finish());
     $('#btn-reset').addEventListener('click', () => {
@@ -462,9 +478,11 @@
     });
     $$('#kind-seg button').forEach((b) => b.addEventListener('click', () => {
       const s = Timer.state();
-      if (s.kind === b.dataset.kind) return;
+      const exam = b.dataset.exam || null;
+      if (s.kind === b.dataset.kind && (s.exam || null) === exam) return;
       if (!s.fresh && !confirm('Mevcut sayaç sıfırlanacak. Devam edilsin mi?')) return;
-      Timer.setKind(b.dataset.kind);
+      dismissTimerAlarm();
+      Timer.setKind(b.dataset.kind, exam);
       syncSceneMode();
     }));
     $('#subject-select').addEventListener('change', (e) => Timer.setSubject(e.target.value));
@@ -1145,6 +1163,12 @@
     $('#set-autobreak').checked = s.autoBreak;
     $('#set-autofocus').checked = s.autoFocus;
     $('#set-sound').checked = s.sound;
+    $('#set-timer-meow').innerHTML = Sound.meows.map(m => `<option value="${m.id}">${U.esc(m.label)}</option>`).join('');
+    $('#set-timer-meow').value = Sound.meows.some(m => m.id === s.timerMeow) ? s.timerMeow : 'luna';
+    $('#set-timer-vibrate').checked = s.timerVibrate !== false;
+    $('#set-timer-vibration').innerHTML = Sound.vibrations.map(v => `<option value="${v.id}">${U.esc(v.label)}</option>`).join('');
+    $('#set-timer-vibration').value = Sound.vibrations.some(v => v.id === s.timerVibration) ? s.timerVibration : 'double';
+    $('#timer-vibration-support').textContent = Sound.vibrationSupported() ? 'Titreşim cihazın ve sessiz mod ayarlarının izin verdiği ölçüde çalışır. “Uyarıyı dene” ile kontrol et.' : 'Bu cihaz veya tarayıcı titreşimi desteklemiyor. iPhone ve iPad’de miyav sesi ve ekrandaki bitiş uyarısı kullanılabilir.';
     document.querySelectorAll('input[name="mini-theme"]').forEach(el => { el.checked = el.value === (s.miniTheme || 'cream'); });
     $('#set-reminders').checked = !!s.studyReminders;
     $('#set-notify').checked = s.notify && 'Notification' in window && Notification.permission === 'granted';
@@ -1248,7 +1272,20 @@
     const bool = (id, key) => $(id).addEventListener('change', (e) => { D().settings[key] = e.target.checked; save(); });
     bool('#set-autobreak', 'autoBreak');
     bool('#set-autofocus', 'autoFocus');
-    bool('#set-sound', 'sound');
+    $('#set-sound').addEventListener('change', e => { D().settings.sound = e.target.checked; save(); Sound.stopTimerAlarm(); if (e.target.checked) Sound.unlock(); });
+    $('#set-timer-vibrate').addEventListener('change', e => { D().settings.timerVibrate = e.target.checked; save(); Sound.stopTimerAlarm(); });
+    for (const [id, key, choices] of [['#set-timer-meow', 'timerMeow', Sound.meows], ['#set-timer-vibration', 'timerVibration', Sound.vibrations]]) {
+      $(id).addEventListener('change', e => { if (!choices.some(c => c.id === e.target.value)) return; D().settings[key] = e.target.value; save(); Sound.stopTimerAlarm(); $('#timer-alarm-test-result').textContent = 'Seçimin kaydedildi. Dinlemek için “Uyarıyı dene”ye dokun.'; });
+    }
+    $('#test-timer-alarm').addEventListener('click', async () => {
+      $('#timer-alarm-test-result').textContent = 'Gerçek kedi kaydı hazırlanıyor…';
+      const result = await Sound.timerEnd();
+      if (result.cancelled) return;
+      const sound = !D().settings.sound ? 'Sesler kapalı.' : result.sound ? 'Seçtiğin gerçek kedi kaydı çalıyor.' : 'Kayıt çalınamadı; yeniden dene, cihaz sesini ve tarayıcı iznini kontrol et.';
+      const vibration = D().settings.timerVibrate === false ? 'Titreşim kapalı.' : !result.vibrationSupported ? 'Bu cihazda titreşim desteklenmiyor.' : result.vibration ? 'Titreşim isteği gönderildi.' : 'Cihaz titreşime izin vermedi.';
+      $('#timer-alarm-test-result').textContent = sound + ' ' + vibration;
+    });
+    $('#stop-timer-alarm').addEventListener('click', () => { Sound.stopTimerAlarm(); $('#timer-alarm-test-result').textContent = 'Deneme durduruldu.'; });
     bool('#set-quiet', 'quietFocus');
     $('#set-pauseleave').addEventListener('change', (e) => {
       D().settings.pauseOnLeave = e.target.checked; save();

@@ -7,6 +7,7 @@ const VERSION = 'luna-' + SURUMLER[0].surum;
 const VENDOR = 'luna-vendor-1'; // büyük ve değişmeyen kütüphaneler (PDF.js), yazı tipleri
 const FILES = [
   'assets/sleeping-family.jpg', './', 'index.html', 'css/style.css', 'manifest.webmanifest',
+  'assets/meows/cat-voice.mp3', 'assets/meows/kitten.mp3', 'assets/meows/cat-meow.mp3',
   'js/kurulum.js', 'js/notifications.js', 'js/mini-timer.js', 'js/storage.js', 'js/surum.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
   'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/planlar.js', 'js/planlar-ui.js', 'js/deneme.js', 'js/notes.js', 'js/giris.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify.js', 'js/uni.js', 'js/uni-ui.js', 'js/diag.js', 'js/guncelleme.js', 'js/app.js',
   'icons/luna-notification-v2.png', 'icons/icon-512-maskable.png', 'icons/notification-badge.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-48.png',
@@ -43,7 +44,7 @@ async function rollback(bad) {
   return to;
 }
 
-// A release is usable only when every code file matches the published digest.
+// A release is usable only when every code file and recorded alarm matches the published digest.
 async function installRelease() {
   const mr = await fetch('release-manifest.json', { cache: 'no-store' });
   if (!mr.ok) throw new Error('Release manifest unavailable');
@@ -53,7 +54,7 @@ async function installRelease() {
     const response = await fetch(new Request(file, { cache: 'reload' }));
     if (!response.ok) throw new Error('Release file unavailable: ' + file);
     const key = file === './' ? 'index.html' : file;
-    if (/\.(js|css|html|webmanifest)$/.test(key)) {
+    if (/\.(js|css|html|webmanifest|mp3)$/.test(key)) {
       if (!manifest.files[key]) throw new Error('Missing release digest: ' + key);
       const bytes = await response.clone().arrayBuffer();
       const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');

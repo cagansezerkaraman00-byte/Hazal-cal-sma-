@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr" data-theme="light" data-surum="2.4.1">
+<html lang="tr" data-theme="light" data-surum="2.4.2">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -101,8 +101,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css?v=2.4.1">
-  <script src="js/kurulum.js?v=2.4.1"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.4.2">
+  <script src="js/kurulum.js?v=2.4.2"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -145,8 +145,10 @@
           <div class="card timer-card">
             <button class="focus-exit" id="focus-exit" type="button" title="Sayaç çalışmaya devam eder; sahnedeki küçük sayaca dokununca geri dönersin">Diğer ekranlar ↗</button>
             <div class="seg" id="kind-seg">
-              <button data-kind="countdown">⏳ Geri sayım</button>
-              <button data-kind="free">⏱️ Kronometre</button>
+              <button type="button" data-kind="free">⏱️ Serbest<small>Kronometre</small></button>
+              <button type="button" data-kind="countdown">⏳ Geri sayım<small>Süreyi sen belirle</small></button>
+              <button type="button" data-kind="countdown" data-exam="tyt">TYT<small>165 dakika</small></button>
+              <button type="button" data-kind="countdown" data-exam="ayt">AYT<small>180 dakika</small></button>
             </div>
             <div class="phase" id="phase-label">ODAK</div>
             <div class="ring-wrap">
@@ -162,7 +164,7 @@
             <div class="dots" id="cycle-dots"></div>
             <div class="focus-intent" id="focus-intent"></div>
             <div class="allow-apps hidden" id="allow-apps" aria-label="Sayacı durdurmadan açılabilen uygulamalar"></div>
-            <div id="countdown-setup" class="countdown-setup"><label for="countdown-minutes">Geri sayım süresi</label><div><input id="countdown-minutes" type="number" min="1" max="900" step="1" value="25" inputmode="numeric" aria-label="Geri sayım dakikası"><span> dakika</span></div><div><button type="button" class="chip" data-duration="25">25 dk</button> <button type="button" class="chip" data-duration="35">35 dk</button> <button type="button" class="chip" data-duration="60">60 dk</button></div></div>
+            <div id="countdown-setup" class="countdown-setup"><label for="countdown-minutes">Geri sayım süresi</label><div><input id="countdown-minutes" type="number" min="1" max="900" step="1" value="25" inputmode="numeric" aria-label="Geri sayım dakikası"><span> dakika</span></div></div>
             <div class="setup" id="timer-setup">
               <div class="subject-row">
                 <select id="subject-select" aria-label="Ders"></select>
@@ -557,6 +559,18 @@
               <div class="chips" id="allow-chips"></div>
             </div>
             <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
+            <fieldset class="timer-alarm-settings">
+              <legend>🐾 Sayaç bitiş uyarısı</legend>
+              <p class="muted small">Geri sayım, TYT veya AYT süresi dolunca Luna haber versin.</p>
+              <p class="hint">Beş farklı gerçek kedi miyavı arasından seç. Sesleri internet olmadan da dinleyebilirsin.</p>
+              <label class="field">Miyav sesi <select id="set-timer-meow"></select></label>
+              <label class="switch"><input type="checkbox" id="set-timer-vibrate"> Süre dolunca titreştir</label>
+              <label class="field">Titreşim ritmi <select id="set-timer-vibration"></select></label>
+              <p class="hint" id="timer-vibration-support"></p>
+              <div class="timer-alarm-actions"><button class="btn soft" type="button" id="test-timer-alarm">🐈 Uyarıyı dene</button><button class="btn ghost" type="button" id="stop-timer-alarm">Durdur</button></div>
+              <p class="hint" id="timer-alarm-test-result" role="status"></p>
+              <p class="hint">Miyav için “Sesler açık” olmalı. Uygulama kapatılırsa veya cihaz arka planda askıya alırsa uyarı gecikebilir; sınav sırasında uygulamayı açık tut.</p>
+            </fieldset>
             <fieldset class="mini-theme-picker">
               <legend>Mini pencere rengi</legend>
               <p class="muted">Uyuyan kedilerin yanındaki sayaç için bir renk seç.</p>
@@ -647,36 +661,37 @@
     <div class="vw-body" id="vw-body"></div>
   </div>
   <div class="toasts" id="toasts"></div>
-  <script src="js/storage.js?v=2.4.1"></script>
-  <script src="js/surum.js?v=2.4.1"></script>
-  <script src="js/messages.js?v=2.4.1"></script>
-  <script src="js/audio.js?v=2.4.1"></script>
-  <script src="js/takvim.js?v=2.4.1"></script>
-  <script src="js/scene.js?v=2.4.1"></script>
-  <script src="js/timer.js?v=2.4.1"></script>
-  <script src="js/stats.js?v=2.4.1"></script>
-  <script src="js/weather.js?v=2.4.1"></script>
-  <script src="js/yks.js?v=2.4.1"></script>
-  <script src="js/plan.js?v=2.4.1"></script>
-  <script src="js/planlar.js?v=2.4.1"></script>
-  <script src="js/planlar-ui.js?v=2.4.1"></script>
-  <script src="js/deneme.js?v=2.4.1"></script>
-  <script src="js/notes.js?v=2.4.1"></script>
-  <script src="js/giris.js?v=2.4.1"></script>
-  <script src="js/depo.js?v=2.4.1"></script>
-  <script src="js/depo-ui.js?v=2.4.1"></script>
-  <script src="js/hata.js?v=2.4.1"></script>
-  <script src="js/kaynak.js?v=2.4.1"></script>
-  <script src="js/kaynak-ui.js?v=2.4.1"></script>
-  <script src="js/badges.js?v=2.4.1"></script>
-  <script src="js/spotify.js?v=2.4.1"></script>
-  <script src="js/uni.js?v=2.4.1"></script>
-  <script src="js/uni-ui.js?v=2.4.1"></script>
-  <script src="js/diag.js?v=2.4.1"></script>
-  <script src="js/guncelleme.js?v=2.4.1"></script>
-  <script src="js/notifications.js?v=2.4.1"></script>
-  <script src="js/mini-timer.js?v=2.4.1"></script>
-  <script src="js/app.js?v=2.4.1"></script>
+  <div id="timer-end-alert" class="timer-end-alert" role="status" hidden><span id="timer-end-message"></span><button type="button" class="btn soft" id="dismiss-timer-alarm">Tamam</button></div>
+  <script src="js/storage.js?v=2.4.2"></script>
+  <script src="js/surum.js?v=2.4.2"></script>
+  <script src="js/messages.js?v=2.4.2"></script>
+  <script src="js/audio.js?v=2.4.2"></script>
+  <script src="js/takvim.js?v=2.4.2"></script>
+  <script src="js/scene.js?v=2.4.2"></script>
+  <script src="js/timer.js?v=2.4.2"></script>
+  <script src="js/stats.js?v=2.4.2"></script>
+  <script src="js/weather.js?v=2.4.2"></script>
+  <script src="js/yks.js?v=2.4.2"></script>
+  <script src="js/plan.js?v=2.4.2"></script>
+  <script src="js/planlar.js?v=2.4.2"></script>
+  <script src="js/planlar-ui.js?v=2.4.2"></script>
+  <script src="js/deneme.js?v=2.4.2"></script>
+  <script src="js/notes.js?v=2.4.2"></script>
+  <script src="js/giris.js?v=2.4.2"></script>
+  <script src="js/depo.js?v=2.4.2"></script>
+  <script src="js/depo-ui.js?v=2.4.2"></script>
+  <script src="js/hata.js?v=2.4.2"></script>
+  <script src="js/kaynak.js?v=2.4.2"></script>
+  <script src="js/kaynak-ui.js?v=2.4.2"></script>
+  <script src="js/badges.js?v=2.4.2"></script>
+  <script src="js/spotify.js?v=2.4.2"></script>
+  <script src="js/uni.js?v=2.4.2"></script>
+  <script src="js/uni-ui.js?v=2.4.2"></script>
+  <script src="js/diag.js?v=2.4.2"></script>
+  <script src="js/guncelleme.js?v=2.4.2"></script>
+  <script src="js/notifications.js?v=2.4.2"></script>
+  <script src="js/mini-timer.js?v=2.4.2"></script>
+  <script src="js/app.js?v=2.4.2"></script>
 </body>
 </html>
 

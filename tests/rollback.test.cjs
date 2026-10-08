@@ -34,7 +34,7 @@ async function digest(text) { return Array.from(new Uint8Array(await crypto.subt
 
 async function worker(v) {
   const files = {};
-  for (const f of FILES) { const k = f === './' ? 'index.html' : f; if (/\.(js|css|html|webmanifest)$/.test(k)) files[k] = await digest(body(v, f, true)); }
+  for (const f of FILES) { const k = f === './' ? 'index.html' : f; if (/\.(js|css|html|webmanifest|mp3)$/.test(k)) files[k] = await digest(body(v, f, true)); }
   const handlers = {}; let claimed = 0;
   const ctx = {
     crypto, URL, Response, TextEncoder, location: { origin: 'https://example.test' }, SURUMLER: [{ surum: v }], importScripts() {}, caches,
