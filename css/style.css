@@ -1853,3 +1853,7 @@ html.kurulum body::before, html.kurulum body::after { display: none !important; 
 }
 @media (prefers-reduced-motion: reduce) { .kr-arrow, .kr-steps.kr-flash { animation: none; } }
 
+
+
+/* Countdown controls and hour display */
+.countdown-setup{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;margin:14px 0}.countdown-setup[hidden]{display:none}.countdown-setup input{width:84px;padding:10px;border:1px solid var(--border,#ddd);border-radius:12px;font:inherit;background:var(--card,#fff);color:inherit}.timer-time.has-hours{font-size:clamp(1.6rem,7vw,2.8rem)}#timer-duration-label{margin-top:8px;font-family:system-ui,sans-serif;font-size:.85rem}.field:has(#set-short),.field:has(#set-long),.field:has(#set-every),.switch:has(#set-autobreak),.switch:has(#set-autofocus){display:none}

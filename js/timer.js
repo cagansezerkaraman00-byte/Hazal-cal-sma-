@@ -6,9 +6,12 @@ const Timer = (() => {
   const st = () => Store.data.timer || (Store.data.timer = fresh()); // sıfırlama/içe aktarma sonrası boş kalmasın
   const S = () => Store.data.settings;
 
-  function fresh(kind = 'pomodoro', keep = {}) {
+  function fresh(kind = 'countdown', keep = {}) {
     return {
       kind,                 // pomodoro | free
+      targetSeconds: null,
+      continuousStart: null,
+      continuousBest: 0,
       phase: 'focus',       // focus | short | long
       running: false,
       accum: 0,             // önceki çalışma parçalarının ms toplamı
@@ -22,20 +25,32 @@ const Timer = (() => {
 
   function duration(phase = st().phase) {
     const s = S();
+    if (phase === 'focus' && st().targetSeconds) return st().targetSeconds;
     return (phase === 'focus' ? s.focus : phase === 'short' ? s.short : s.long) * 60;
   }
   function elapsed() {
     const x = st();
     return (x.accum + (x.running ? Date.now() - x.resumedAt : 0)) / 1000;
   }
-  const countdown = () => st().kind === 'pomodoro' || st().phase !== 'focus';
+  const countdown = () => st().kind === 'countdown' || st().kind === 'pomodoro' || st().phase !== 'focus';
   const remaining = () => duration() - elapsed();
 
   function persist() { Store.save(); }
+  function continuous(at = Date.now()) {
+    const x = st();
+    return Math.max(x.continuousBest || 0, x.running && x.phase === 'focus' && x.continuousStart != null ? Math.max(0, (at - x.continuousStart) / 1000) : 0);
+  }
+  function rememberContinuous(at = Date.now()) {
+    const x = st(); x.continuousBest = continuous(at);
+    const stats = Store.data.stats || (Store.data.stats = {});
+    stats.longestContinuousSeconds = Math.max(stats.longestContinuousSeconds || 0, x.continuousBest);
+  }
 
   function startPhase(at = Date.now()) {
     const x = st();
     x.running = true;
+    x.continuousStart = at;
+    if (x.phase === 'focus' && !x.targetSeconds) x.targetSeconds = Math.max(1, Math.min(900, Number(S().focus) || 25)) * 60;
     x.resumedAt = at;
     x.pausedAt = null;
     if (!x.firstStart) x.firstStart = at;
@@ -44,6 +59,7 @@ const Timer = (() => {
 
   function finishFocus(sec, endTime) {
     const x = st();
+    rememberContinuous(endTime);
     const session = {
       start: x.firstStart || endTime - sec * 1000,
       end: endTime,
@@ -51,6 +67,7 @@ const Timer = (() => {
       subjectId: x.subjectId,
       intent: x.intent || '',
       kind: x.kind,
+      continuousSeconds: Math.min(sec, continuous(endTime)),
     };
     const keep = { cycle: x.cycle + 1, subjectId: x.subjectId };
     const kind = x.kind;
@@ -92,6 +109,13 @@ const Timer = (() => {
     init(handlers) {
       h = handlers;
       if (!st() || !st().phase) Store.data.timer = fresh();
+      if (st().kind === 'pomodoro') {
+        if (st().phase === 'focus') st().kind = 'countdown';
+        else Store.data.timer = fresh('countdown', {subjectId:st().subjectId});
+      }
+      // Historical sessions have no interruption record; begin measuring now.
+      if (st().running && st().continuousStart == null) st().continuousStart = Date.now();
+      persist();
       setInterval(tick, 250);
       tick();
     },
@@ -101,6 +125,7 @@ const Timer = (() => {
       return {
         ...x,
         elapsed: elapsed(),
+        continuousSeconds: continuous(),
         remaining: countdown() ? Math.max(0, remaining()) : null,
         total,
         progress: total ? U.clamp(elapsed() / total, 0, 1) : (elapsed() % 3600) / 3600,
@@ -111,6 +136,8 @@ const Timer = (() => {
     toggle() {
       const x = st();
       if (x.running) {
+        rememberContinuous();
+        x.continuousStart = null;
         x.accum += Date.now() - x.resumedAt;
         x.running = false;
         x.resumedAt = null;
@@ -131,6 +158,9 @@ const Timer = (() => {
       t = Math.min(t, Date.now());
       const run = Math.max(0, t - x.resumedAt);
       if (countdown() && duration() * 1000 - (x.accum + run) <= 0) return false;
+      rememberContinuous(t);
+      x.previousContinuousStart = x.continuousStart;
+      x.continuousStart = null;
       x.accum += run;
       x.running = false;
       x.resumedAt = null;
@@ -147,6 +177,7 @@ const Timer = (() => {
       if (x.running || x.phase !== 'focus' || !x.pausedAt || !(x.accum > 0)) return false;
       x.running = true;
       x.resumedAt = Math.min(t, Date.now());
+      x.continuousStart = x.previousContinuousStart ?? x.resumedAt;
       x.pausedAt = null;
       persist();
       tick();
@@ -166,6 +197,7 @@ const Timer = (() => {
       tick();
     },
     reset() {
+      rememberContinuous();
       const x = st();
       Store.data.timer = fresh(x.kind, { cycle: x.cycle, subjectId: x.subjectId, intent: x.intent });
       persist();
@@ -173,10 +205,17 @@ const Timer = (() => {
       tick();
     },
     setKind(kind) {
+      if (!['countdown','free'].includes(kind)) return;
+      rememberContinuous();
       const x = st();
       Store.data.timer = fresh(kind, { subjectId: x.subjectId, intent: x.intent });
       persist();
       tick();
+    },
+    setCountdownMinutes(value) {
+      const minutes = Number(value);
+      if (!Number.isInteger(minutes) || minutes < 1 || minutes > 900 || !api.state().fresh) return false;
+      S().focus = minutes; st().targetSeconds = null; persist(); tick(); return true;
     },
     setSubject(id) { st().subjectId = id; persist(); },
     setIntent(text) { st().intent = String(text || '').slice(0, 80); persist(); },

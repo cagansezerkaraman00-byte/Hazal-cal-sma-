@@ -11,6 +11,7 @@ const Badges = (() => {
     ['sure', '⏳ Çalışma süresi'],
     ['seri', '🔥 Seriler ve hedefler'],
     ['odak', '🎯 Odak'],
+    ['kesintisiz', '⏱️ Kesintisiz çalışma'],
     ['yks', '📚 Konular ve plan'],
     ['deneme', '📝 Denemeler'],
     ['ozel', '🐾 Luna ve özel günler'],
@@ -46,6 +47,22 @@ const Badges = (() => {
     { id: 'goal', cat: 'seri', e: '🎯', n: 'Hedef Avcısı', d: 'Günlük hedefe ulaş', prog: (c) => c.goalDays, max: 1, msg: 'Günlük hedef tamam 🎯 Bugün kendinle gurur duy; ben zaten duyuyorum.' },
     { id: 'goal7', cat: 'seri', e: '🏹', n: 'Keskin Nişancı', d: '7 gün günlük hedefe ulaş', prog: (c) => c.goalDays, max: 7, msg: '7 gün hedefini tutturdun 🏹 Söz verdiğini yapan, kalbi güzel kız.' },
     { id: 'goal30', cat: 'seri', e: '🥇', n: 'Hedef Ustası', d: '30 gün günlük hedefe ulaş', prog: (c) => c.goalDays, max: 30, msg: '30 hedef günü! Sen hedeflerine, ben sana bağlıyım 💛' },
+
+    { id: 'continuous1', cat: 'kesintisiz', e: '⭐', n: 'İlk Akış', d: 'Duraklatmadan 1 saat çalış', prog: c => c.continuousSeconds, max: 3600, msg: '1 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous2', cat: 'kesintisiz', e: '⭐', n: 'Odak Çemberi', d: 'Duraklatmadan 2 saat çalış', prog: c => c.continuousSeconds, max: 7200, msg: '2 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous3', cat: 'kesintisiz', e: '⭐', n: 'Üç Yıldız', d: 'Duraklatmadan 3 saat çalış', prog: c => c.continuousSeconds, max: 10800, msg: '3 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous4', cat: 'kesintisiz', e: '⭐', n: 'Sakin Güç', d: 'Duraklatmadan 4 saat çalış', prog: c => c.continuousSeconds, max: 14400, msg: '4 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous5', cat: 'kesintisiz', e: '⭐', n: 'Beşinci Işık', d: 'Duraklatmadan 5 saat çalış', prog: c => c.continuousSeconds, max: 18000, msg: '5 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous6', cat: 'kesintisiz', e: '⭐', n: 'Derin Yolculuk', d: 'Duraklatmadan 6 saat çalış', prog: c => c.continuousSeconds, max: 21600, msg: '6 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous7', cat: 'kesintisiz', e: '⭐', n: 'Yedi Renk', d: 'Duraklatmadan 7 saat çalış', prog: c => c.continuousSeconds, max: 25200, msg: '7 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous8', cat: 'kesintisiz', e: '⭐', n: 'Odak Atlası', d: 'Duraklatmadan 8 saat çalış', prog: c => c.continuousSeconds, max: 28800, msg: '8 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous9', cat: 'kesintisiz', e: '⭐', n: 'Dokuz Işık', d: 'Duraklatmadan 9 saat çalış', prog: c => c.continuousSeconds, max: 32400, msg: '9 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous10', cat: 'kesintisiz', e: '⭐', n: 'Onuncu Zirve', d: 'Duraklatmadan 10 saat çalış', prog: c => c.continuousSeconds, max: 36000, msg: '10 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous11', cat: 'kesintisiz', e: '⭐', n: 'Yıldız Rotası', d: 'Duraklatmadan 11 saat çalış', prog: c => c.continuousSeconds, max: 39600, msg: '11 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous12', cat: 'kesintisiz', e: '⭐', n: 'Zaman Ustası', d: 'Duraklatmadan 12 saat çalış', prog: c => c.continuousSeconds, max: 43200, msg: '12 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous13', cat: 'kesintisiz', e: '⭐', n: 'Kutup Yıldızı', d: 'Duraklatmadan 13 saat çalış', prog: c => c.continuousSeconds, max: 46800, msg: '13 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous14', cat: 'kesintisiz', e: '⭐', n: 'Gökyüzü Haritası', d: 'Duraklatmadan 14 saat çalış', prog: c => c.continuousSeconds, max: 50400, msg: '14 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
+    { id: 'continuous15', cat: 'kesintisiz', e: '⭐', n: 'Luna Takımyıldızı', d: 'Duraklatmadan 15 saat çalış', prog: c => c.continuousSeconds, max: 54000, msg: '15 saatlik kesintisiz çalışman kaydedildi. Emeğini gördüm anneciğim 💜' },
 
     // Odak
     { id: 'focus50', cat: 'odak', e: '🧘‍♀️', n: 'Derin Odak', d: 'Tek oturumda 50+ dakika', prog: (c) => c.maxSession, max: 50, msg: '50 dakika kesintisiz odak 🧘‍♀️ O kahve gözlerdeki derinlik başka hiçbir yerde yok.' },
@@ -147,10 +164,11 @@ const Badges = (() => {
     }
     if (window.YKS && YKS.field()) subjFull = YKS.subjectKeys().some((k) => { const p = YKS.subjectProgress(k); return p.count && p.done === p.count; });
     const st = s.stats || {};
+    const continuousSeconds = Math.max(Number(st.longestContinuousSeconds) || 0, s.sessions.reduce((best,x) => Math.max(best, Number(x.continuousSeconds) || 0),0), typeof Timer !== 'undefined' ? Timer.state().continuousSeconds || 0 : 0);
     return {
       sessions: s.sessions.length,
       hours: total / 60,
-      maxSession, pomo, shine, early, owl, weekend, goalDays, maxPomoDay, maxSubjDay, special,
+      continuousSeconds, maxSession, pomo, shine, early, owl, weekend, goalDays, maxPomoDay, maxSubjDay, special,
       streak: window.Stats ? Stats.bestStreak() : 0,
       topics: window.YKS ? YKS.doneCount() : 0,
       subjFull,

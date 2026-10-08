@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr" data-theme="light" data-surum="2.4">
+<html lang="tr" data-theme="light" data-surum="2.4.1">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -80,7 +80,6 @@
     };
   })();
   </script>
-
   <meta name="description" content="Luna ile ders çalış: sayaç, plan, deneme, notlar ve kütüphane">
   <meta name="theme-color" content="#f6f1ff">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -102,8 +101,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css?v=2.4">
-  <script src="js/kurulum.js?v=2.4"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.4.1">
+  <script src="js/kurulum.js?v=2.4.1"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -129,7 +128,6 @@
       <div id="mini-timer" class="mini-timer hidden" role="button" tabindex="0" title="Sayaca dön"></div>
       <div id="bubble" class="bubble hidden"></div>
     </header>
-
     <!-- Sekmeler -->
     <nav class="tabs" id="tabs">
       <button data-tab="home" class="active"><span>🏠</span><b>Çalış</b></button>
@@ -139,18 +137,16 @@
       <button data-tab="progress"><span>📈</span><b>İlerleme</b></button>
       <button data-tab="settings"><span>⚙️</span><b>Ayarlar</b></button>
     </nav>
-
     <main>
       <!-- ÇALIŞ -->
       <section class="tab active" id="tab-home">
         <div class="grid">
           <div class="card welcome wide-card" id="welcome"></div>
-
           <div class="card timer-card">
             <button class="focus-exit" id="focus-exit" type="button" title="Sayaç çalışmaya devam eder; sahnedeki küçük sayaca dokununca geri dönersin">Diğer ekranlar ↗</button>
             <div class="seg" id="kind-seg">
-              <button data-kind="pomodoro">🍅 Pomodoro</button>
-              <button data-kind="free">⏱️ Serbest</button>
+              <button data-kind="countdown">⏳ Geri sayım</button>
+              <button data-kind="free">⏱️ Kronometre</button>
             </div>
             <div class="phase" id="phase-label">ODAK</div>
             <div class="ring-wrap">
@@ -159,13 +155,14 @@
                 <circle cx="100" cy="100" r="88" class="ring-fg" id="ring-fg"/>
               </svg>
               <div class="ring-inner">
-                <div id="timer-time" class="timer-time">25:00</div>
+                <div id="timer-time" class="timer-time">25:00</div><div id="timer-duration-label" class="small muted" aria-live="off"></div>
                 <div id="timer-sub" class="timer-sub"></div>
               </div>
             </div>
             <div class="dots" id="cycle-dots"></div>
             <div class="focus-intent" id="focus-intent"></div>
             <div class="allow-apps hidden" id="allow-apps" aria-label="Sayacı durdurmadan açılabilen uygulamalar"></div>
+            <div id="countdown-setup" class="countdown-setup"><label for="countdown-minutes">Geri sayım süresi</label><div><input id="countdown-minutes" type="number" min="1" max="900" step="1" value="25" inputmode="numeric" aria-label="Geri sayım dakikası"><span> dakika</span></div><div><button type="button" class="chip" data-duration="25">25 dk</button> <button type="button" class="chip" data-duration="35">35 dk</button> <button type="button" class="chip" data-duration="60">60 dk</button></div></div>
             <div class="setup" id="timer-setup">
               <div class="subject-row">
                 <select id="subject-select" aria-label="Ders"></select>
@@ -184,7 +181,6 @@
               <button class="btn soft">Sonraya</button>
             </form>
           </div>
-
           <div class="card today-card">
             <h2>Bugün</h2>
             <div class="goal">
@@ -204,11 +200,8 @@
             </details>
             <button class="btn soft wide" id="btn-manual">＋ Çalışmamı elle ekle</button>
           </div>
-
           <div class="card love-card" id="love-card"></div>
-
           <div class="card today-plan" id="today-plan"></div>
-
           <details class="card wide-card music-card" id="music-card">
             <summary><span>🎧 Müzik ve odak sesleri</span><span class="muted small" id="music-now"></span></summary>
             <div class="music-body">
@@ -226,7 +219,6 @@
           </details>
         </div>
       </section>
-
       <!-- İLERLEME -->
       <section class="tab" id="tab-progress">
         <div class="report-head card">
@@ -281,7 +273,6 @@
           </div>
         </div>
       </section>
-
       <!-- PLAN -->
       <section class="tab" id="tab-plan">
         <div id="planner-root"></div>
@@ -312,19 +303,15 @@
           </div>
         </div>
       </section>
-
       <!-- NOTLAR & KARTLAR -->
       <section class="tab" id="tab-notes">
         <div id="notes-root"></div>
       </section>
-
       <!-- DENEME -->
       <section class="tab" id="tab-deneme">
         <div id="deneme-root"></div>
       </section>
-
       <!-- AYARLAR -->
-
       <section class="tab" id="tab-settings">
         <div class="card guide">
           <details class="guide-all" id="guide-all">
@@ -333,7 +320,7 @@
           <details>
             <summary>🏠 Çalış ekranı</summary>
             <ul>
-              <li><b>Pomodoro</b> 25 dk odak + 5 dk mola düzenidir (süreleri Ayarlar → Zamanlayıcı'dan değiştirebilirsin). <b>Serbest</b> ise kronometre gibi sayar; deneme çözerken idealdir.</li>
+              <li><b>Geri sayım</b> seçtiğin dakikadan sıfıra iner; süre bitince oturum kaydedilir. <b>Kronometre</b> geçen süreyi sayar ve bir saatten sonra saat, dakika, saniye gösterir. Süreyi başlamadan önce ayarlayabilirsin.</li>
               <li><b>🎯 Bu oturumda ne yapacağım?</b> satırına hedefini yaz; oturum bitince otomatik olarak notuna geçer.</li>
               <li><b>Başla</b>'ya basınca sade odak ekranı açılır: sadece ben, sayaç ve hedefin. Sayaç sayfa kapansa da doğru sayar.</li>
               <li><b>💭 Aklına başka bir şey mi geldi?</b> Yaz, Plan sekmesine kaydedeyim; sen derse dön.</li>
@@ -552,7 +539,7 @@
           <div class="card">
             <h2>🍅 Zamanlayıcı</h2>
             <div class="row3">
-              <label class="field">Odak <input type="number" id="set-focus" min="1" max="180"></label>
+              <label class="field">Geri sayım (dakika) <input type="number" id="set-focus" min="1" max="900"></label>
               <label class="field">Kısa mola <input type="number" id="set-short" min="1" max="60"></label>
               <label class="field">Uzun mola <input type="number" id="set-long" min="1" max="90"></label>
             </div>
@@ -642,7 +629,6 @@
       </section>
     </main>
   </div>
-
   <!-- Modal -->
   <div class="modal hidden" id="modal" role="dialog" aria-modal="true">
     <div class="modal-card" id="modal-card"></div>
@@ -661,37 +647,36 @@
     <div class="vw-body" id="vw-body"></div>
   </div>
   <div class="toasts" id="toasts"></div>
-
-  <script src="js/storage.js?v=2.4"></script>
-  <script src="js/surum.js?v=2.4"></script>
-  <script src="js/messages.js?v=2.4"></script>
-  <script src="js/audio.js?v=2.4"></script>
-  <script src="js/takvim.js?v=2.4"></script>
-  <script src="js/scene.js?v=2.4"></script>
-  <script src="js/timer.js?v=2.4"></script>
-  <script src="js/stats.js?v=2.4"></script>
-  <script src="js/weather.js?v=2.4"></script>
-  <script src="js/yks.js?v=2.4"></script>
-  <script src="js/plan.js?v=2.4"></script>
-  <script src="js/planlar.js?v=2.4"></script>
-  <script src="js/planlar-ui.js?v=2.4"></script>
-  <script src="js/deneme.js?v=2.4"></script>
-  <script src="js/notes.js?v=2.4"></script>
-  <script src="js/giris.js?v=2.4"></script>
-  <script src="js/depo.js?v=2.4"></script>
-  <script src="js/depo-ui.js?v=2.4"></script>
-  <script src="js/hata.js?v=2.4"></script>
-  <script src="js/kaynak.js?v=2.4"></script>
-  <script src="js/kaynak-ui.js?v=2.4"></script>
-  <script src="js/badges.js?v=2.4"></script>
-  <script src="js/spotify.js?v=2.4"></script>
-  <script src="js/uni.js?v=2.4"></script>
-  <script src="js/uni-ui.js?v=2.4"></script>
-  <script src="js/diag.js?v=2.4"></script>
-  <script src="js/guncelleme.js?v=2.4"></script>
-  <script src="js/notifications.js?v=2.4"></script>
-  <script src="js/mini-timer.js?v=2.4"></script>
-  <script src="js/app.js?v=2.4"></script>
+  <script src="js/storage.js?v=2.4.1"></script>
+  <script src="js/surum.js?v=2.4.1"></script>
+  <script src="js/messages.js?v=2.4.1"></script>
+  <script src="js/audio.js?v=2.4.1"></script>
+  <script src="js/takvim.js?v=2.4.1"></script>
+  <script src="js/scene.js?v=2.4.1"></script>
+  <script src="js/timer.js?v=2.4.1"></script>
+  <script src="js/stats.js?v=2.4.1"></script>
+  <script src="js/weather.js?v=2.4.1"></script>
+  <script src="js/yks.js?v=2.4.1"></script>
+  <script src="js/plan.js?v=2.4.1"></script>
+  <script src="js/planlar.js?v=2.4.1"></script>
+  <script src="js/planlar-ui.js?v=2.4.1"></script>
+  <script src="js/deneme.js?v=2.4.1"></script>
+  <script src="js/notes.js?v=2.4.1"></script>
+  <script src="js/giris.js?v=2.4.1"></script>
+  <script src="js/depo.js?v=2.4.1"></script>
+  <script src="js/depo-ui.js?v=2.4.1"></script>
+  <script src="js/hata.js?v=2.4.1"></script>
+  <script src="js/kaynak.js?v=2.4.1"></script>
+  <script src="js/kaynak-ui.js?v=2.4.1"></script>
+  <script src="js/badges.js?v=2.4.1"></script>
+  <script src="js/spotify.js?v=2.4.1"></script>
+  <script src="js/uni.js?v=2.4.1"></script>
+  <script src="js/uni-ui.js?v=2.4.1"></script>
+  <script src="js/diag.js?v=2.4.1"></script>
+  <script src="js/guncelleme.js?v=2.4.1"></script>
+  <script src="js/notifications.js?v=2.4.1"></script>
+  <script src="js/mini-timer.js?v=2.4.1"></script>
+  <script src="js/app.js?v=2.4.1"></script>
 </body>
 </html>
 

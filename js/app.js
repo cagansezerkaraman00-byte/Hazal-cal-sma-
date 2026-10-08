@@ -1,24 +1,20 @@
 /* Luna — arayüz ve her şeyi birbirine bağlayan kod. */
-
 (() => {
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => [...el.querySelectorAll(s)];
   const D = () => Store.data;
   const save = () => Store.save();
-
   let progressDays = 7;
   let focusDismissed = false; // odak ekranından geçici çıkış
   let lastMsgAt = Date.now();
   let wakeLock = null;
   let currentTab = 'home';
   let spotifyLoaded = false;
-
   // Rozetler: badges.js (her rozetin bir sevgi notu var)
   function checkBadges() {
     if (!window.Badges) return;
     if (Badges.check().length && currentTab === 'progress') renderBadges();
   }
-
   // ======================================================================
   // Genel yardımcılar
   // ======================================================================
@@ -29,7 +25,6 @@
     $('#toasts').appendChild(el);
     setTimeout(() => { el.style.transition = 'opacity .4s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, ms);
   }
-
   function say(kind, opts) {
     const shown = Scene.say(Messages.get(kind), { ...Messages.delivery(kind), ...opts });
     if (shown !== false) lastMsgAt = Date.now();
@@ -43,12 +38,10 @@
     lastMsgAt = Date.now();
     return true;
   }
-
   async function notify(title, body) {
     if (!document.hidden) return;
     await LunaNotify.send(title,body,{tag:'luna-session'});
   }
-
   async function lockScreen(on) {
     try {
       if (on && 'wakeLock' in navigator && !wakeLock) {
@@ -60,20 +53,16 @@
       }
     } catch (e) { wakeLock = null; }
   }
-
   const fmtDayMin = (m) => `${U.pad(Math.floor(((m % 1440) + 1440) % 1440 / 60))}:${U.pad(Math.floor(((m % 60) + 60) % 60))}`;
-
   function subjectOptions(sel) {
     return D().subjects.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')
       + `<option value="" ${!sel ? 'selected' : ''}>Genel</option>`;
   }
-
   function ratingColor(r) {
     if (!r) return 'var(--unrated)';
     const i = U.clamp(Math.round(r), 1, 5);
     return `var(--r${i})`;
   }
-
   // ======================================================================
   // HUD (saat, tarih, güneş)
   // ======================================================================
@@ -104,7 +93,6 @@
     $('#hud-streak').classList.toggle('hidden', sk < 1);
     applyTheme();
   }
-
   // ======================================================================
   // Tema (açık / koyu / gün batımında otomatik)
   // ======================================================================
@@ -117,7 +105,6 @@
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = dark ? '#0d1236' : '#f6f1ff';
   }
-
   // ======================================================================
   // Hava durumu
   // ======================================================================
@@ -191,7 +178,6 @@
     });
   }
 
-
   // ======================================================================
   // Sekmeler
   // ======================================================================
@@ -219,7 +205,6 @@
     const n = Uni.daysLeft(e.date);
     return n >= 2 ? `${Uni.evLeft(e, n)} kaldı` : Uni.evLeft(e, n);
   }
-
   function showTab(name) {
     currentTab = name;
     $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
@@ -232,7 +217,6 @@
     if (name === 'home') renderHome();
     try { localStorage.setItem('luna-tab', name); } catch (e) { /* yok say */ }
   }
-
   // ======================================================================
   // Zamanlayıcı arayüzü
   // ======================================================================
@@ -247,7 +231,6 @@
     '🪟 Pencereyi aç, temiz hava al',
     '🍎 Hafif bir atıştırmalık iyi gelir',
   ];
-
   // ======================================================================
   // Tam odak: izinli uygulamalar (ChatGPT, Gemini, YouTube, Spotify)
   // ======================================================================
@@ -297,7 +280,6 @@
     if (away && away.lunaCounted) save();
     if (nudge) notify('Luna dersine çağırıyor 🐾', Messages.get('focusNudge'));
   }
-
   function checkAway() {
     checkLunaAway();
     const x = D().timer, a = x && x.away;
@@ -351,8 +333,7 @@
     if ($('#modal').classList.contains('hidden')) ask();
     else pendingWhere = ask; // başka bir pencere açıksa o kapanınca sorulur
   }
-
-  let timerKey = '';
+  let timerKey = '', continuousHour = -1;
   function renderTimer(s) {
     // sayaç saniyede 4 kez sorar; ekran yalnızca görünen bir şey değişince güncellenir
     const key = [Math.floor(s.countdown ? s.remaining : s.elapsed), s.running, s.phase, s.kind, s.fresh, s.cycle, s.subjectId, s.intent, focusDismissed, D().settings.focusMode, D().settings.pauseOnLeave, (D().settings.allowedApps || []).length, D().settings.longEvery].join('|');
@@ -365,6 +346,14 @@
     $('#phase-label').classList.toggle('break', isBreak);
     const shown = s.countdown ? s.remaining : s.elapsed;
     $('#timer-time').textContent = U.fmtClock(shown);
+    $('#timer-time').classList.toggle('has-hours', shown >= 3600);
+    $('#timer-duration-label').textContent = shown >= 3600 ? `${Math.floor(shown / 3600)} saat ${U.pad(Math.floor(shown / 60) % 60)} dk ${U.pad(Math.floor(shown) % 60)} sn` : '';
+    $('#countdown-setup').hidden = s.kind !== 'countdown';
+    $('#countdown-minutes').disabled = !s.fresh;
+    if (document.activeElement !== $('#countdown-minutes')) $('#countdown-minutes').value = D().settings.focus;
+    $$('[data-duration]').forEach(b => {b.disabled = !s.fresh;b.classList.toggle('active', +b.dataset.duration === D().settings.focus);});
+    const completedHour = Math.floor((s.continuousSeconds || 0) / 3600);
+    if (completedHour !== continuousHour) {continuousHour = completedHour;if (completedHour > 0) checkBadges();}
     const subj = Store.subject(s.subjectId).name;
     $('#timer-sub').textContent = s.running
       ? (isBreak ? BREAK_TIPS[s.cycle % BREAK_TIPS.length] : `${subj} çalışılıyor…`)
@@ -403,7 +392,6 @@
       document.title = 'Luna';
     }
   }
-
   function syncSceneMode() {
     const s = Timer.state();
     Scene.setMode(s.running ? (s.phase === 'focus' ? 'focus' : 'break') : 'idle');
@@ -414,7 +402,6 @@
       t.querySelector('.st-play').textContent = t.dataset.id === live ? '●' : '▶';
     });
   }
-
   const timerHandlers = {
     onTick: renderTimer,
     onStart(phase, resumed) {
@@ -459,8 +446,12 @@
       if (running) lockScreen(true);
     },
   };
-
   function bindTimer() {
+    const setDuration = value => {
+      if (!Timer.setCountdownMinutes(value)) { toast('⏳', 'Süre değişmedi', 'Başlamadan önce 1–900 arasında tam dakika seç.'); $('#countdown-minutes').value = D().settings.focus; }
+    };
+    $('#countdown-minutes').addEventListener('change', e => setDuration(e.target.value));
+    $$('[data-duration]').forEach(b => b.addEventListener('click', () => setDuration(b.dataset.duration)));
     $('#btn-toggle').addEventListener('click', () => Timer.toggle());
     $('#btn-finish').addEventListener('click', () => Timer.finish());
     $('#btn-reset').addEventListener('click', () => {
@@ -524,13 +515,11 @@
       Timer.toggle();
     });
   }
-
   function renderSubjectSelects() {
     const cur = (D().timer && D().timer.subjectId) || '';
     $('#subject-select').innerHTML = subjectOptions(cur);
     $('#task-subject').innerHTML = subjectOptions('');
   }
-
   // ======================================================================
   // Oturum penceresi (bitince not + verim, ya da elle ekleme / düzenleme)
   // ======================================================================
@@ -544,7 +533,6 @@
       ? `${U.fmtMin(s.minutes)} çalıştın, harikasın ${U.esc(D().settings.name)}! ${s.minutes >= 10 ? 'Luna sana bir balık verdi 🐟' : ''}`
       : manual ? 'Uygulama dışında çalıştıysan buraya ekleyebilirsin.' : `${startD.toLocaleDateString('tr-TR')} ${U.hm(startD)}`;
     let rating = s.rating || 0, mood = s.mood || '';
-
     // temiz kutu: önceki pencerelerin dinleyicileri bu pencereye taşınmasın
     const oldCard = $('#modal-card');
     oldCard.replaceWith(oldCard.cloneNode(false));
@@ -631,7 +619,6 @@
     });
     $('#modal').classList.remove('hidden');
   }
-
   let pendingDone = null; // açık bir pencere yüzünden bekleyen "oturum tamamlandı" penceresi
   let pendingWhere = null; // bekleyen "Neredeydin?" sorusu
   function closeModal() {
@@ -693,7 +680,6 @@
       .sort((a, b) => b.rating - a.rating)
       .map((h) => h.hour);
   }
-
   // Modüller (Plan, Deneme) için genel pencere
   function openModal(html, mount) {
     // her açılışta yeni bir kutu: önceki pencerenin dinleyicileri taşınmasın
@@ -714,7 +700,6 @@
     if (modalDirty && !confirm('Yazdıkların kaydedilmedi. Pencere kapatılsın mı?')) return;
     closeModal();
   }
-
   // ======================================================================
   // Veri değişince
   // ======================================================================
@@ -732,7 +717,6 @@
       }, 2500);
     }
   }
-
   function afterDataChange() {
     checkGoal();
     checkBadges();
@@ -746,7 +730,6 @@
     if (currentTab === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (currentTab === 'notes' && window.NotesUI) NotesUI.render();
   }
-
   // ======================================================================
   // Ana sayfa
   // ======================================================================
@@ -763,14 +746,12 @@
       <div class="right">${U.fmtMin(s.minutes)}<div class="meta">${+s.questions ? `${+s.questions} soru · ` : ''}${s.rating ? '⭐'.repeat(Math.min(5, +s.rating || 0)) : ''} ${U.esc(s.mood || '')}</div></div>
     </li>`;
   }
-
   function loveNoteOfDay() {
     const notes = D().loveNotes.filter((x) => x.trim());
     if (!notes.length) return null;
     const dayNum = Math.floor(U.dayStart(new Date()).getTime() / 864e5);
     return notes[dayNum % notes.length];
   }
-
   function renderHome() {
     const goal = D().settings.dailyGoal;
     const mins = Stats.minutesOn(new Date());
@@ -788,7 +769,6 @@
     $('#today-list').innerHTML = today.length ? today.map((s) => sessionItem(s)).join('') : '<li class="empty" style="display:block">Bugün henüz oturum yok. Luna seni bekliyor 🐾</li>';
     $('#day-timeline').innerHTML = timelineHtml(new Date(), true);
     renderSubjectTiles(today);
-
     // Gizli not
     const note = loveNoteOfDay();
     const partner = D().settings.partner;
@@ -804,7 +784,6 @@
         <div class="lock"><span>🔒</span><div><b>${from} bir not bıraktı!</b><div class="muted small">Günlük hedefine ulaşınca açılacak.</div></div></div>
         <div class="progress"><i style="width:${pct}%"></i></div>`;
     }
-
     renderWelcome(mins, pct);
     const tp = $('#today-plan');
     // plan kartındaki bir hata ana sayfayı (ve açılışı) bozmasın: kart sade bir notla kalır, kayıtlar yerinde
@@ -813,7 +792,6 @@
     else if (window.PlanlarUI) { tp.classList.remove('hidden'); safePlan(() => PlanlarUI.renderToday(tp)); }
     else tp.classList.add('hidden');
   }
-
   // 24 saatlik zaman çizelgesi (YPT tarzı): oturumlar gerçek saatlerinde renkli bloklar
   function timelineHtml(date, withNow) {
     const start = U.dayStart(date).getTime(), span = 864e5, end = start + span;
@@ -841,7 +819,6 @@
     $('#subject-tiles').innerHTML = D().subjects.map((x) => `<button class="subj-tile ${live === x.id ? 'active' : ''}" data-id="${x.id}" type="button" style="--c:${x.color}">
       <span class="st-name">${U.esc(x.name)}</span><b class="st-min">${per[x.id] ? U.fmtMin(per[x.id]) : '—'}</b><span class="st-play" aria-hidden="true">${live === x.id ? '●' : '▶'}</span></button>`).join('');
   }
-
   // Açılışta başarıyı gösteren, hep olumlu karşılama kartı
   function weekMinutes() {
     const today = U.dayStart(new Date());
@@ -899,7 +876,6 @@
         return tab ? `<button class="stat-chip ${cls}" data-tab="${tab}" type="button">${inner}</button>` : `<div class="stat-chip ${cls}">${inner}</div>`;
       }).join('')}</div>` : ''}`;
   }
-
   // ======================================================================
   // İstatistik
   // ======================================================================
@@ -911,7 +887,6 @@
     renderCharts();
     renderBadges();
   }
-
   function renderCharts() {
     const sm = Stats.summary(progressDays);
     // günlük çubuklar
@@ -925,21 +900,18 @@
         ${d.minutes && n === 7 ? `<em>${U.fmtMin(d.minutes)}</em>` : ''}
         <i class="${d.minutes >= goal ? 'goal-hit' : ''}" style="height:${(d.minutes / max) * 100}%"></i><span>${lbl}</span></div>`;
     }).join('');
-
     // saatler
     const hours = Stats.byHour(sm.list);
     const hmax = Math.max(...hours.map((h) => h.minutes), 1);
     $('#hour-chart').innerHTML = hours.map((h) => `<div class="h" title="${U.pad(h.hour)}:00 · ${U.fmtMin(h.minutes)}${h.rating ? ' · ' + U.dec(h.rating) + '⭐' : ''}">
       <i style="height:${(h.minutes / hmax) * 100}%;background:${h.minutes ? ratingColor(h.rating) : '#ffffff10'}"></i>
       <span>${h.hour % 3 === 0 ? h.hour : ''}</span></div>`).join('');
-
     // dersler
     const subs = Stats.bySubject(sm.list);
     const smax = Math.max(...subs.map((s) => s.minutes), 1);
     $('#subject-bars').innerHTML = subs.length ? subs.map((s) => `<div class="sbar">
       <div class="top"><span>${U.esc(s.subject.name)}</span><span>${U.fmtMin(s.minutes)}${s.rating ? ' · ' + U.dec(s.rating) + '⭐' : ''}</span></div>
       <div class="track"><i style="width:${(s.minutes / smax) * 100}%;background:${s.subject.color}"></i></div></div>`).join('') : '<p class="empty">Henüz veri yok</p>';
-
     // haftanın günleri (Pzt'den başla)
     const wd = Stats.byWeekday(sm.list);
     const order = [1, 2, 3, 4, 5, 6, 0];
@@ -948,17 +920,14 @@
       const w = wd[i];
       return `<div class="b" title="${U.DAYS[i]} · ortalama ${U.fmtMin(w.avg)}"><i style="height:${(w.avg / wmax) * 100}%;${w.rating ? 'background:' + ratingColor(w.rating) : ''}"></i><span>${U.DAYS_SHORT[i]}</span></div>`;
     }).join('');
-
     renderCalendar();
     $('#week-timeline').innerHTML = Array.from({ length: 7 }, (_, i) => {
       const d = U.addDays(U.dayStart(new Date()), i - 6);
       return `<div class="wt-row"><span class="wt-day">${U.DAYS_SHORT[d.getDay()]}</span><div class="timeline">${timelineHtml(d, i === 6)}</div></div>`;
     }).join('');
-
     const hist = sm.list.slice().sort((a, b) => b.start - a.start).slice(0, 200);
     $('#history').innerHTML = hist.length ? hist.map((s) => sessionItem(s, true)).join('') : '<li class="empty" style="display:block">Bu dönemde oturum yok. Oturum sonunda yazdığın notlar burada birikir.</li>';
   }
-
   function renderCalendar() {
     const goal = D().settings.dailyGoal;
     const map = {};
@@ -978,7 +947,6 @@
     }
     $('#calendar').innerHTML = html;
   }
-
   function renderReport() {
     const r = Stats.report(progressDays);
     const name = D().settings.name || 'canım';
@@ -992,7 +960,6 @@
     $('#rep-improve').innerHTML = li(r.improve);
     $('#rep-tips').innerHTML = li(r.tips);
   }
-
   function renderReview() {
     const list = D().review.slice().sort((a, b) => a.done - b.done || b.created - a.created);
     $('#review-list').innerHTML = list.length ? list.map((r) => {
@@ -1004,11 +971,9 @@
         <button class="x" title="Sil">✕</button></li>`;
     }).join('') : '<li class="empty" style="display:block">Tekrar listesi boş ✨</li>';
   }
-
   function renderBadges() {
     if (window.Badges) Badges.render($('#badges'));
   }
-
 
   // ======================================================================
   // Görevler & sınavlar
@@ -1031,12 +996,10 @@
       ${dueTxt ? `<span class="due ${late ? 'late' : ''}">${dueTxt}</span>` : ''}
       <button class="x" title="Sil">✕</button></li>`;
   }
-
   function renderTasks() {
     const list = D().tasks.slice().sort(taskSort);
     $('#task-list').innerHTML = list.length ? list.map(taskItem).join('') : '<li class="empty" style="display:block">Henüz görev yok. Küçük ve net görevler yaz: "10 paragraf sorusu" gibi.</li>';
   }
-
   function bindTasks() {
     $('#task-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -1089,7 +1052,6 @@
       save(); renderReview(); checkBadges();
     });
   }
-
   // ======================================================================
   // Müzik
   // ======================================================================
@@ -1162,7 +1124,6 @@
       if (e.target.dataset.kind) Sound.setAmbient(e.target.dataset.kind, e.target.value / 100);
     });
   }
-
   // ======================================================================
   // Ayarlar
   // ======================================================================
@@ -1170,7 +1131,6 @@
     ['İstanbul', 41.01, 28.97], ['Ankara', 39.93, 32.86], ['İzmir', 38.42, 27.14], ['Bursa', 40.19, 29.06],
     ['Antalya', 36.9, 30.7], ['Eskişehir', 39.78, 30.52], ['Konya', 37.87, 32.48], ['Trabzon', 41.0, 39.72],
   ];
-
   function renderSettings() {
     const s = D().settings;
     $('#set-name').value = s.name;
@@ -1201,7 +1161,6 @@
     renderBackupInfo();
     renderAllowApps();
   }
-
   const LEVEL_HINT = {
     yks: 'Plan sekmesinde YKS konuların, Deneme sekmesinde netlerin. Üniversiteye başlayınca "Üniversite"ye dokun: YKS verilerin silinmez, istediğin an geri dönebilirsin.',
     uni: 'Plan sekmesi artık Dönem: dersler, ders programı, sınav takvimi, devamsızlık, not ortalaması ve derslere göre günlük çalışma planı.',
@@ -1240,7 +1199,6 @@
       App.sayText(U.pick(['Yeni bir sayfa açıyoruz! Ben yine yanındayım 🐾', 'Kocaman bir adım daha! Seninle gurur duyuyorum 💛']));
     }
   }
-
   // son yedek ne zaman alındı (yedek, verinin tek güvencesi)
   function markBackup() { D().lastBackup = Date.now(); save(); renderBackupInfo(); }
   function renderBackupInfo() {
@@ -1252,14 +1210,12 @@
     const days = Math.round((U.dayStart(new Date()) - U.dayStart(t)) / 864e5); // takvim günü (23:30'daki yedek ertesi gün "dün")
     el.textContent = `✅ Son yedek: ${days < 1 ? 'bugün' : days === 1 ? 'dün' : days + ' gün önce'} (${new Date(t).toLocaleDateString('tr-TR')})`;
   }
-
   function renderSubjectEdit() {
     $('#subject-edit').innerHTML = D().subjects.map((s) => `<li data-id="${s.id}">
       <input type="color" value="${s.color}" data-f="color">
       <input value="${U.esc(s.name)}" data-f="name" maxlength="30">
       <button class="icon-btn" data-f="del" title="Sil">🗑️</button></li>`).join('');
   }
-
   function bindSettings() {
     const num = (id, key, min, max) => $(id).addEventListener('change', (e) => {
       const n = parseInt(e.target.value, 10); // 0 geçerli bir değer olabilir (ör. Luna'nın mesajları: 0 = hiç)
@@ -1269,7 +1225,7 @@
     });
     num('#set-goal', 'dailyGoal', 10, 900);
     num('#set-msg', 'msgInterval', 0, 240);
-    num('#set-focus', 'focus', 1, 180);
+    num('#set-focus', 'focus', 1, 900);
     num('#set-short', 'short', 1, 60);
     num('#set-long', 'long', 1, 90);
     num('#set-every', 'longEvery', 2, 10);
@@ -1475,11 +1431,9 @@
       Store.reset(); location.reload();
     });
   }
-
   function renderFooter() {
     $('.footer').textContent = `${D().settings.name || 'Sana'} için sevgiyle yapıldı ✨🐾`;
   }
-
   // ======================================================================
   // Luna etkileşimleri ve periyodik mesajlar
   // ======================================================================
@@ -1504,7 +1458,6 @@
     });
     window.addEventListener('scroll', drop, { passive: true });
   }
-
   function bindLuna() {
     $('#feed-btn').addEventListener('click', () => {
       if (D().fish <= 0) { say('noFish'); return; }
@@ -1518,7 +1471,6 @@
       checkBadges();
     });
   }
-
   // Vesper ve Güçlü'nün sözü: gece uykulu; Güçlü "özledim"i yalnızca uzun aradan sonra, çalışılan günde mutlu
   function friendLine(kind) {
     const h = new Date().getHours(), night = h >= 23 || h < 5 || Messages.companionState().bedtime;
@@ -1538,7 +1490,6 @@
     say(kind === 'checkIn' && new Date().getHours() < 12 ? 'checkInMorning' : kind, { ms: 9000 });
     if (kind === 'checkIn') renderHome(); // karşılama kartında cevap düğmeleri çıksın
   }
-
   function dailyCheckIn() {
     if (document.hidden || !$('#modal').classList.contains('hidden')) return false;
     const s = Timer.state(), c = Messages.companionState();
@@ -1547,7 +1498,6 @@
     sayCompanion('checkIn');
     return true;
   }
-
   function periodic() {
     if (dailyCheckIn()) return;
     // gün sonu: akşam 20:00'den sonra (ya da ertesi gün ilk açılışta) Luna planın nasıl geçtiğini söyler, günde bir kez
@@ -1564,7 +1514,6 @@
     else if (s.running) say('breakStart');
     else sayCompanion(Messages.mood());
   }
-
   let welcomedBack = false;
   function greetOnOpen() {
     const ss = D().sessions;
@@ -1616,7 +1565,6 @@
       }, 20000);
     }
   }
-
   // ======================================================================
   // Başlat
   // ======================================================================
@@ -1656,7 +1604,6 @@
     },
   };
   window.App = App;
-
   // Ana akış dışındaki bir parça (sahne, mini sayaç, bildirimler…) hata verse de uygulamanın kalanı açılır; hata Tanılama'ya yazılır
   function safe(name, fn) {
     try { return fn(); } catch (e) {
@@ -1696,7 +1643,6 @@
         st.seen[kind] = Date.now();
         if (st.seen.vesper && st.seen.kitten) st.friendsMet = true;
         save();
-
         checkBadges();
       },
     }));
@@ -1719,7 +1665,6 @@
     welcomedBack = welcomeBack(); // uygulama dışındayken sayfa kapanmışsa (iOS) dönüşte değerlendir
     syncSceneMode();
     if (Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
-
     $$('#tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
     $('#period-seg').addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
@@ -1771,7 +1716,6 @@
     $('#today-list').addEventListener('click', openSession);
     $('#history').addEventListener('click', openSession);
     $('#btn-manual').addEventListener('click', () => openSessionModal(null));
-
     bindTimer();
     bindTasks();
     bindMusic();
@@ -1779,7 +1723,6 @@
     bindLuna();
     bindWeather();
     bindTapTips();
-
     applyTheme();
     applyMode();
     renderClock();
@@ -1819,14 +1762,12 @@
       welcomeBack();
       if (Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
     });
-
     let saved = 'home';
     try { saved = localStorage.getItem('luna-tab') || 'home'; } catch (e) { /* yok say */ }
     if ($('#tab-' + saved)) showTab(saved);
     greetOnOpen();
     checkBadges();
     if (Store.loadError) setTimeout(() => toast('🛟', 'Verilerin okunamadı', 'Bozulmasın diye kopyası alındı: Ayarlar → Veriler', 9000), 1500);
-
     safe('Bildirimler', () => LunaNotify.init(App));
     safe('Mini sayaç', () => MiniTimer.init(App,()=>weatherNow));
     if (window.Guncelleme) safe('Güncelleme', () => Guncelleme.init(App)); // güncellemeler, yenilikler ve ana ekrana ekleme
@@ -1835,7 +1776,6 @@
       navigator.storage.persisted().then((p) => p || navigator.storage.persist()).catch(() => {});
     }
   }
-
   document.addEventListener('DOMContentLoaded', () => {
     try { init(); if (window.LunaBoot) LunaBoot.ready(); }
     catch (error) { console.error('Luna startup:', error); if (window.LunaBoot) LunaBoot.fail(error); }

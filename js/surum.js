@@ -6,6 +6,17 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.1",
+  "tarih": "2026-10-08",
+  "baslik": "Geri sayım, kronometre ve kesintisiz rozetler",
+  "notlar": [
+    "⏳ Pomodoro yerine 1–900 dakika arasında ayarlanabilir geri sayım; 25, 35 ve 60 dakika kısayolları.",
+    "⏱️ Kronometre bir saatten sonra saat, dakika ve saniyeyi gösterir.",
+    "⭐ 1 saatten 15 saate kadar 15 kesintisiz çalışma rozeti; duraklatılan parçalar birbirine eklenmez.",
+    "🛠️ Güvenli güncelleme ve açılış onarımı korunur."
+  ]
+},
+{
   "surum": "2.4",
   "tarih": "2026-10-08",
   "baslik": "Planlarını sen yazıyorsun",
