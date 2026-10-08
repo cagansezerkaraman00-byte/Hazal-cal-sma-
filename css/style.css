@@ -619,6 +619,74 @@ body.focusing .timer-card > .park { order: 7; }
   .plan-go { padding: 6px 10px; }
   .plan-go .pg-t { display: none; }
 }
+
+/* ---------- Planlarım (elle yazılan günlük / haftalık / aylık planlar) ---------- */
+#planner-root .mp-card { margin-bottom: 14px; }
+.mp-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.mp-head h2 { margin: 0; }
+.mp-nav { display: grid; grid-template-columns: 40px minmax(0, 1fr) 40px; align-items: center; gap: 8px; margin: 12px 0 8px; }
+.mp-title { text-align: center; min-width: 0; }
+.mp-title b { display: block; font-size: 1rem; overflow-wrap: anywhere; }
+.mp-title small { color: var(--muted); font-weight: 700; font-size: .78rem; }
+.mp-title .chip { margin-left: 6px; padding: 2px 10px; font-size: .75rem; }
+.mp-prog { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 12px; }
+.mp-prog .track { flex: 1 1 140px; }
+.mp-pct { font-weight: 800; font-size: .85rem; }
+p.mp-prog { justify-content: center; }
+.mp-track { margin: 4px 0 10px; }
+.mp-roll { color: var(--muted); font-size: .78rem; font-weight: 700; margin: -6px 0 12px; }
+.mp-roll .link-btn { font-size: inherit; }
+.mp-links { margin: 10px 0 0; }
+.mp-edit { all: unset; display: block; min-width: 0; cursor: pointer; border-radius: 8px; }
+.mp-edit:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 2px; }
+.mp-edit .plan-text, .mp-edit .plan-sub { display: block; }
+.mp-item .plan-acts { display: flex; align-items: center; gap: 8px; }
+.mp-item.moved { opacity: .78; background: transparent; border-style: dashed; }
+.mp-item.moved .plan-text { color: var(--muted); font-weight: 700; }
+.mp-item.reached .check { border-color: var(--mint); box-shadow: 0 0 0 3px var(--mint-soft); }
+.mp-tag { display: inline-block; font-size: .7rem; font-weight: 800; padding: 2px 8px; border-radius: 99px; background: var(--surface-3); color: var(--muted); border: 1px solid var(--line); white-space: nowrap; }
+.mp-tag.ok { background: var(--mint-soft); color: var(--mint-ink); border-color: transparent; }
+.mp-more { list-style: none; text-align: center; }
+.mp-add { margin: 12px 0 4px; }
+.mp-add input { min-width: 0; }
+.mp-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.mp-tools .small-btn, .mp-strip .small-btn, .mp-order .small-btn { margin-top: 0; }
+.mp-order { align-items: center; margin-top: 4px; }
+.mp-up { margin-top: 12px; }
+.mp-up summary { cursor: pointer; font-weight: 800; font-size: .88rem; }
+.mp-up .plan-list { margin-top: 8px; }
+.mp-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
+.mp-day { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 7px 2px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; font-size: .72rem; font-weight: 800; cursor: pointer; }
+.mp-day b { font-size: .9rem; }
+.mp-day small { color: var(--muted); font-weight: 700; font-size: .68rem; }
+.mp-day i { display: block; width: 80%; height: 4px; border-radius: 99px; background: var(--track); overflow: hidden; }
+.mp-day i::after { content: ''; display: block; height: 100%; width: calc(var(--p, 0) * 1%); background: var(--mint); }
+.mp-day.today { background: var(--accent-soft); border-color: var(--accent-line); }
+.mp-day.full { border-color: var(--mint); }
+.mp-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 12px; }
+.mp-cal-h { text-align: center; font-size: .68rem; font-weight: 800; color: var(--muted); }
+.mp-cal-cell { min-height: 44px; padding: 4px 2px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: inherit; font-size: .8rem; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; min-width: 0; }
+.mp-cal-cell small { font-size: .62rem; font-weight: 700; color: var(--muted); }
+.mp-cal-cell.out { opacity: .4; }
+.mp-cal-cell.today { background: var(--accent-soft); border-color: var(--accent-line); }
+.mp-cal-cell.part small { color: var(--accent-ink); }
+.mp-cal-cell.full { background: var(--mint-soft); border-color: transparent; }
+.mp-cal-cell.full small { color: var(--mint-ink); }
+.mp-cal-cell.today.full { border-color: var(--accent-line); }
+.mp-eod { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--accent-soft); border: 1px solid var(--accent-line); }
+.mp-eod-head { display: flex; align-items: center; gap: 12px; }
+.mp-eod-head small { display: block; color: var(--muted); font-weight: 700; font-size: .78rem; }
+.mp-ring { --p: 0; width: 54px; height: 54px; border-radius: 50%; flex: none; position: relative; display: grid; place-items: center; background: conic-gradient(var(--ring) calc(var(--p) * 1%), var(--track) 0); }
+.mp-ring::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: var(--surface); }
+.mp-ring b { position: relative; font-size: .78rem; }
+.mp-ring.full { background: conic-gradient(var(--mint) 100%, transparent 0); }
+.mp-eod-text { margin: 10px 0 0; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
+.mp-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); border: 1px solid var(--accent-line); font-size: .85rem; font-weight: 700; }
+.mp-strip .grow { flex: 1 1 160px; }
+.mp-strip-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.mp-mini { margin-top: 14px; padding-top: 4px; border-top: 1px dashed var(--line-strong); }
+@media (max-width: 420px) { .mp-days { gap: 4px; } .mp-day { padding: 6px 1px; } .mp-cal-cell { min-height: 40px; } .mp-tools .btn { flex: 1 1 100%; } .mp-strip .grow { flex-basis: 100%; } .mp-strip-acts { flex: 1 1 100%; } .mp-strip-acts .btn { flex: 1 1 auto; } }
+@media (pointer: coarse) { .mp-day, .mp-cal-cell { min-height: 44px; } }
 .love-card { align-self: start; }
 
 /* ---------- Not kartı ---------- */

@@ -243,6 +243,129 @@ const Messages = (() => {
   M.remindStart = ["Masada sana minik bir yer ayırdım annem. Beş dakikayla başlayalım mı? 🐾","Anneciğim, ben buradayım 🐾 Hazır olduğunda beş dakikayla başlarız."];
   M.remindGoal = ["Bugünkü hedefe {minutes} dakika kaldı. Yorulmadıysan küçük bir oturum daha yapalım mı?","Anneciğim, {minutes} dakikalık yolumuz kaldı. Hedefi küçültebilir veya beraber devam edebiliriz."];
   M.remindAway = ["Seni göremeyeli biraz oldu annem. Nasılsın? Hazırsan kısa bir çalışma yapalım.","Pati yoklaması! Ben buradayım, sen de müsaitsen yan yana çalışalım 🐾"];
+  // Gün sonu: Hazal'ın kendi yazdığı planın yorumu (kurallara dayalı; ağ ve yapay zekâ yok).
+  // M'nin dışında durur: Messages.get bunları hiçbir zaman kendiliğinden seçemez.
+  // Türkçe kuralı: değişkenden sonra ek ya da kesme işareti gelmez ("%60'ını" bazı sayılarda yanlış olur); sayıdan sonra
+  // ayrı bir kelime ("{toplam} maddeden", "{yapilan} tanesi") ya da noktalama gelir, madde adı tırnak içinde ve ardından " ile", " için" gelir.
+  const PLAN_EOD = {
+    tam: [
+      'Bugünkü planın %{yuzde} tamam! {toplam} maddenin hepsini bitirdin anneciğim 😻 Şimdi gönül rahatlığıyla dinlenme vakti.',
+      'Patiler havaya! Planında tiksiz satır kalmadı, %{yuzde} 🐾 Yarın için 2-3 madde yazmak istersen buradayım; istemezsen sadece dinlen.',
+      '{name}, bugün kendine verdiğin sözü tuttun: plan %{yuzde} tamam 🌟 Su iç, omuzlarını gevşet, gerisi yarına.',
+      '{toplam} maddenin {toplam} tanesi tamam, yani %{yuzde} 💜 Bugünkü emeğinle çok gurur duyuyorum anneciğim.',
+    ],
+    tamSabah: [
+      'Dünkü planın %{yuzde} tamamdı anneciğim 🌟 Aynı güzel ritimle bugün de küçük adımlarla gidelim.',
+      'Dün {toplam} maddenin hepsini bitirmiştin, %{yuzde} 😻 Bugünün planına da birkaç küçük madde yazalım mı?',
+      'Dünkü listede tiksiz satır kalmamıştı, %{yuzde} 🐾 Bugün de yanındayım, hazır olduğunda planına bakalım.',
+      '{name}, dün planın %{yuzde} tamamdı 💜 Bugün kendine hafif ve güzel bir plan yaz, ben takipteyim.',
+    ],
+    tamTasindi: [
+      'Bugün planda kalan her şeyi bitirdin, %{yuzde} 🌟 Taşıdığın {tasinan} madde yarın seni bekliyor; şimdi gönül rahatlığıyla dinlen.',
+      '{yapilan} maddenin hepsi tamam, %{yuzde} 😻 Yarına aldığın {tasinan} madde de sırasını bekliyor. Çok güzel bir denge kurdun anneciğim.',
+      'Listede tik atılmamış madde kalmadı: %{yuzde} 🐾 Ertelediklerin yarının listesinde. Bugünlük paydos {name}!',
+    ],
+    tamTasindiSabah: [
+      'Dün plandakilerin hepsini bitirmiştin, %{yuzde} 🌟 Taşıdığın {tasinan} madde seni bekliyor.',
+      'Dünkü planın %{yuzde} tamamdı anneciğim 😻 Ertelediğin {tasinan} maddeye bugün küçük bir adımla başlayalım mı?',
+      '{name}, dün planda kalan her şeyi bitirmiştin, %{yuzde} 🐾 Bugün de aynı sakin ritimle gidelim.',
+    ],
+    cok: [
+      'Bugün planındaki {toplam} maddeden {yapilan} tanesi tamam, yani %{yuzde} 🌟 Çok güzel bir gün! Kalan {kalan} maddeyi tek dokunuşla yarına taşıyabiliriz.',
+      '%{yuzde}! Neredeyse hepsi bitti anneciğim 😻 Kalan {kalan} madde yarının ilk işi olsun; şimdi dinlenmeyi hak ettin.',
+      '{name}, bugünkü planın %{yuzde} tamam, harika bir oran 🐾 Kalanları yarına taşı; yarın “{kucuk}” ile hızlıca başlarsın.',
+      'Bugün {yapilan} madde bitirdin, plan %{yuzde} tamam 💜 Kalan {kalan} madde kaçmıyor; yarına alalım, sonra güzelce dinlen.',
+    ],
+    cokSabah: [
+      'Dünkü planın %{yuzde} tamamdı anneciğim 🌟 Kalan {kalan} maddeyi tek dokunuşla bugüne alabiliriz.',
+      'Dün {toplam} maddeden {yapilan} tanesini bitirmiştin, %{yuzde} 😻 Bugün “{kucuk}” ile başlarsan dünden kalanlar da hemen biter.',
+      'Dün çok güzel gitti: %{yuzde} 🐾 Kalan {kalan} madde bugüne gelsin mi? Plan kartında tek dokunuş yeter.',
+      '{name}, dünkü planın %{yuzde} tamamdı 💜 Kalanları bugüne alıp küçük bir adımla güne başlayalım mı?',
+    ],
+    orta: [
+      'Bugün planındaki {toplam} maddeden {yapilan} tanesi tamam, %{yuzde} 🐾 Güzel yol aldın! İstersen “{kucuk}” için kısa bir oturum yaparız, istersen kalanları yarına taşırız.',
+      'Plan bugün %{yuzde} tamam anneciğim 💜 Kalanların en küçüğü “{kucuk}”; ona 15 dakika ayırmak ister misin? Yorgunsan yarına taşımak da çok doğru bir seçim.',
+      '%{yuzde}! {yapilan} maddeyi bitirdin, bu emek gerçekten sayılır 🌟 Kalan {kalan} maddeyi tek dokunuşla yarına alabiliriz.',
+      '{name}, bugünkü planın %{yuzde} tamam. Yarın kalanlara “{kucuk}” gibi küçük bir maddeyle başlarsan çok rahat gider 🐾',
+    ],
+    ortaGece: [
+      'Bugünkü planın %{yuzde} tamam anneciğim 💜 Kalan {kalan} maddeyi yarına taşıyalım, şimdi uyku vakti 🌙',
+      '{toplam} maddeden {yapilan} tanesi tamam, %{yuzde} 🐾 Gerisi yarın taze bir kafayla çok daha kolay olur. İyi dinlen.',
+      'Bugün planda %{yuzde} yol aldın {name} 🌟 Kalanları tek dokunuşla yarına alabiliriz; yarın “{kucuk}” ile başlarız.',
+    ],
+    ortaSabah: [
+      'Dünkü planın %{yuzde} tamamdı anneciğim 🐾 Kalan {kalan} maddeyi bugüne alalım mı? “{kucuk}” ile başlamak çok kolay olur.',
+      'Dün {toplam} maddeden {yapilan} tanesini bitirmiştin, %{yuzde} 💜 Bugün kalanlardan birini seçip küçük bir oturumla başlayalım mı?',
+      'Dün güzel yol aldın: %{yuzde} 🌟 Dünden kalan {kalan} madde bugünün planına tek dokunuşla eklenebilir.',
+      '{name}, dünkü planın %{yuzde} tamamdı. Bugün en küçük maddeyle, “{kucuk}” ile ısınmaya ne dersin? 🐾',
+    ],
+    az: [
+      'Bugün planındaki {toplam} maddeden {yapilan} tanesi tamam, %{yuzde} 🐾 Başlamış olman çok değerli! İstersen “{kucuk}” için 15 dakika birlikte otururuz, istersen kalanları yarına taşırız.',
+      '%{yuzde} bile bir adım anneciğim 💜 Bugün yoğun geçmiş olabilir. Kalan {kalan} maddeyi yarına alalım; yarın en küçüğünden başlarız.',
+      '{name}, bugün {yapilan} madde bitti, plan %{yuzde} 🌱 Yarın için listeyi biraz küçültmek güzel olur: 2-3 madde yeter.',
+      'Bugünkü plan %{yuzde} tamam 🐾 Her tik sayılır! Kalanları tek dokunuşla yarına taşıyabiliriz; ilk iş “{kucuk}” olsun mu?',
+    ],
+    azGece: [
+      'Bugünkü plan %{yuzde} tamam anneciğim 🌙 Kalanları yarına taşıyalım, şimdi dinlenmek en iyisi.',
+      '{yapilan} madde bitirdin, plan %{yuzde} 💜 Yarın taze bir kafayla “{kucuk}” ile başlarız. İyi geceler.',
+      'Bugün plan %{yuzde} oldu 🐾 Hiç dert etme; yarın listeyi 2-3 küçük maddeye indirip rahatça ilerleriz.',
+    ],
+    azSabah: [
+      'Dünkü plan %{yuzde} tamamdı anneciğim 🌱 Kalan {kalan} maddeyi bugüne alalım mı? En küçüğünden, “{kucuk}” ile başlarız.',
+      'Dün {yapilan} madde bitirmiştin, plan %{yuzde} 🐾 Bugün yeni bir sayfa: kalanlardan 2-3 tanesini planına ekleyelim mi?',
+      'Dünkü plan %{yuzde} tamamdı 💜 Bugün listeyi biraz hafifletelim; küçük maddeler daha kolay tik alır.',
+      '{name}, dünkü plan %{yuzde} tamamdı ve {kalan} madde seni bekliyor. Hepsini değil, en kolay birkaçını bugüne almak bile çok iyi olur 🌟',
+    ],
+    sifir: [
+      'Bugünkü plan henüz %{yuzde}, sorun değil anneciğim 🐾 İstersen “{kucuk}” için 10 dakika birlikte otururuz; istersen hepsini yarına taşırız.',
+      'Plan bugün %{yuzde} kaldı; bazı günler böyle geçer, bu çok normal 💜 Kalan {kalan} maddeyi tek dokunuşla yarına alabiliriz; yarın en küçüğünden başlarız.',
+      '{name}, bugünkü plan %{yuzde} ama gün henüz bitmedi 🌙 Küçücük bir adım istersen “{kucuk}” tam uygun. Yorgunsan dinlenmek de planın parçası.',
+      'Bugün plan %{yuzde} ama sen buradasın, bu da bir başlangıç 🐾 Yarın için listeyi 2-3 küçük maddeye indirelim mi?',
+    ],
+    sifirGece: [
+      'Bugünkü plan %{yuzde} kaldı anneciğim, hiç dert etme 🌙 Maddeleri yarına taşıyalım, sen şimdi güzelce dinlen.',
+      'Plan bugün %{yuzde}; bazı günler böyle geçer {name} 💜 Kalan {kalan} maddeyi yarına alalım, yarın “{kucuk}” ile yavaşça başlarız.',
+      'Bugün plan %{yuzde} kaldı, sorun değil 🐾 Yarın daha küçük bir listeyle başlarız. İyi geceler anneciğim.',
+    ],
+    sifirSabah: [
+      'Dünkü plan %{yuzde} kalmıştı ama bugün yeni bir gün anneciğim 🌱 Dünden kalan {kalan} maddeden 2-3 tanesini bugüne alalım mı?',
+      'Dün plan %{yuzde} kaldı, olur böyle 💜 Bugün “{kucuk}” gibi küçük bir maddeyle başlamak çok iyi gelir.',
+      '{name}, dünkü plan %{yuzde} kalmıştı; maddeler seni bekliyor ama acele yok 🐾 İstersen tek dokunuşla bugüne alırız, istersen yeni bir plan yazarız.',
+      'Yeni gün, temiz sayfa 🌟 Dünkü plan %{yuzde} olarak kaldı; bugün tek bir küçük maddeyle başlamak bile harika olur.',
+    ],
+    hepsiTasindi: [
+      'Bugünün maddelerini yarına taşıdın 🐾 Bazen ertelemek en doğru karar; yarın {tasinan} madde seni bekliyor, şimdi dinlen.',
+      'Plan bugün yarına kaldı, hiç dert etme anneciğim 💜 Yarın “{kucuk}” ile yavaşça başlarız.',
+      '{name}, bugün kendine nazik davranıp planı yarına aldın 🌙 Bu da bir plan becerisi. Yarın birlikte bakarız.',
+    ],
+    bos: [
+      'Bugün için plan yazmamıştık anneciğim 🐾 Yarın için 2-3 küçük madde yazalım mı? Sabah hazır bulursun.',
+      '{name}, yarının planını şimdiden yazarsan sabah ilk işin hazır olur 💜 Plan sekmesinde birlikte yazalım mı?',
+      'Bugün plansız bir gündü, bu da olur 🌙 Yarın için tek bir madde bile yazmak güzel bir başlangıç.',
+      'Planlar defteri bugün boş kaldı 🐾 Yarına küçük bir hedef koyalım mı?',
+    ],
+    bosCalisti: [
+      'Bugün plan yazmamıştık ama {sure} çalıştın 🌟 Yarın için 2-3 madde yazarsan akşam birlikte bakarız.',
+      '{name}, plansız bir günde bile {sure} çalıştın 💜 Yarının planını şimdiden yazalım mı?',
+      'Bugün {sure} emek verdin anneciğim 🐾 Yarın bu emeği küçük bir planla takip edelim mi?',
+    ],
+  };
+  const PLAN_EOD_EMOTION = { tam: 'proud', cok: 'happy', orta: 'happy', az: 'tender', sifir: 'tender', bos: 'neutral', hepsiTasindi: 'tender' };
+  // band: tam | cok | orta | az | sifir | bos | hepsiTasindi; slot: aksam | gece | sabah.
+  // Cümle sırayla seçilir (seqMap[liste] % uzunluk): her söyleyişten sonra sayaç bir artar, böylece cümleler hep döner.
+  function planComment(band, slot, vars = {}, seqMap = {}) {
+    let key;
+    if (band === 'bos') key = vars.dakika > 0 ? 'bosCalisti' : 'bos';
+    else if (band === 'hepsiTasindi') key = 'hepsiTasindi';
+    else if (band === 'tam') key = (vars.tasinan > 0 ? 'tamTasindi' : 'tam') + (slot === 'sabah' ? 'Sabah' : '');
+    else if (band === 'cok') key = slot === 'sabah' ? 'cokSabah' : 'cok';
+    else key = band + (slot === 'sabah' ? 'Sabah' : slot === 'gece' ? 'Gece' : '');
+    const list = PLAN_EOD[key] || PLAN_EOD[band] || PLAN_EOD.bos;
+    let t = fill(list[(Number((seqMap || {})[key]) || 0) % list.length]);
+    for (const k of Object.keys(vars)) t = t.split('{' + k + '}').join(String(vars[k]));
+    return { key, text: t, emotion: PLAN_EOD_EMOTION[band] || 'neutral' };
+  }
+
   function fill(t) {
     return t.replace(/\{name\}/g, Store.data.settings.name || 'canım').replace(/\{kitten\}/g, 'Güçlü');
   }
@@ -320,7 +443,7 @@ const Messages = (() => {
   }
 
   return {
-    companionState, mood, departure, delivery, nightKey,
+    companionState, mood, departure, delivery, nightKey, planComment, PLAN_EOD,
     get(kind, vars) {
       const arr = M[kind] || M.poke;
       const state = companionState();

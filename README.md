@@ -60,7 +60,7 @@ Edit `sinav-tarihleri.json`: set `yks.tarih` to the official date and `kesin` to
 
 **🗓️ YKS plan.**
 - Field choice (SAY / EA / SÖZ / DİL), countdown, and topic tracking weighted by how many questions each topic gets in YKS (2018–2025 data, sources listed in the app).
-- An automatic weekly program, and today's plan on the home screen with one-tap start.
+- Manual daily, weekly and monthly plans that Hazal writes herself (nothing generated), with progress, carry-over, copy-previous and Luna's rule-based end-of-day comment; today's plan on the home screen with one-tap start.
 
 **🎓 University, KPSS and master's modes.** Courses, weekly schedule, exam calendar, attendance, GPA, an automatic spaced-review plan and calendar export (.ics). YKS data is kept when switching.
 
@@ -119,7 +119,8 @@ Luna already installs and updates like a store app, for free, from a single link
 | `js/storage.js` | Local data, backup, import and merge |
 | `js/scene.js`, `js/takvim.js`, `js/weather.js` | Sky, sun and moon math, seasons and holidays, weather (Open-Meteo) |
 | `js/timer.js`, `js/stats.js` | Timer, statistics and Luna's report |
-| `js/yks.js`, `js/plan.js`, `js/deneme.js` | YKS topics and weights, study plan, practice exams |
+| `js/yks.js`, `js/plan.js`, `js/deneme.js` | YKS topics and weights, countdown and topic tracking, practice exams |
+| `js/planlar.js`, `js/planlar-ui.js` | Manual daily / weekly / monthly plans and the end-of-day comment |
 | `js/uni.js`, `js/uni-ui.js` | University / KPSS / master's mode |
 | `js/notes.js` | Notes and flashcards |
 | `js/depo.js`, `js/depo-ui.js`, `js/giris.js` | Library: device or Google Drive storage, PDF, photo and video viewer |

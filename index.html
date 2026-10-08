@@ -227,6 +227,7 @@
 
       <!-- PLAN -->
       <section class="tab" id="tab-plan">
+        <div id="planner-root"></div>
         <div id="plan-root"></div>
         <div id="uni-root" class="hidden"></div>
         <div class="grid">
@@ -285,13 +286,16 @@
             </ul>
           </details>
           <details>
-            <summary>🗓️ Plan ve YKS programı</summary>
+            <summary>🗓️ Planlarım ve YKS konuları</summary>
             <ul>
               <li>Önce <b>alanını</b> (SAY / EA / SÖZ / DİL) seç; derslerin buna göre ayarlanır.</li>
               <li><b>Konu takibi:</b> konuya dokundukça durumu değişir: ○ başlamadım → 📖 çalışıyorum → 🔁 tekrar → ✅ tamam.</li>
               <li><b>≈ sayılar</b> o konudan YKS'de yılda ortalama kaç soru geldiğini gösterir (2018–2025 sınavlarından derlendi; kaynaklar sayfanın altında). Yüzdeler de bu ağırlığa göre: soru getiren konuyu bitirmek daha çok sayılır.</li>
-              <li><b>Haftalık program</b> her pazartesi kendiliğinden hazırlanır ve hafta boyunca karışmaz. Konuların soru ağırlığına, işaretlediğin durumlara, denemelerdeki eksiklerine ve son günlerde hangi dersi çalışmadığına bakar. Her gün paragraf + problem rutini, pazar günleri deneme günüdür. <b>↻ Yenile</b> haftayı yeniden karar.</li>
-              <li><b>Bugünün planı</b> ana ekranda da durur. <b>Başla ▶</b> sayacı o konuyla başlatır; oturum bitince madde kendiliğinden işaretlenir.</li>
+              <li><b>Planlarım:</b> Günlük, Haftalık ve Aylık planlarını sen yazarsın; uygulama kendiliğinden ya da rastgele plan oluşturmaz. ‹ › ile önceki ve sonraki güne, haftaya, aya geçersin.</li>
+              <li>Bir maddeye istersen <b>ders</b>, <b>hedef dakika</b> ve <b>hedef soru</b> ekleyebilir, YKS konularından seçebilirsin. Maddeye dokunarak düzenler, silersin.</li>
+              <li><b>Bugünün planı</b> ana ekranda da durur. <b>Başla ▶</b> sayacı o maddeyle başlatır; hedefi olmayan madde, oturum bitince kendiliğinden işaretlenir. Hedefli maddelerde o dersin dakika ve soru sayısı görünür, işareti sen koyarsın.</li>
+              <li><b>↪ Taşı:</b> biten maddeler kalır, kalanları tek dokunuşla ertesi güne (haftaya, aya) taşırsın. <b>⧉ Kopyala</b> önceki listeyi başlangıç olarak ekler; sen dokunmadan hiçbir şey eklenmez.</li>
+              <li><b>Gün sonu:</b> akşam 20:00'den sonra Luna günün planına bakar, yüzde kaçını bitirdiğini ve sıradaki küçük adımı söyler. Akşam uygulamayı açmadıysan ertesi gün ilk açılışta dünü özetler.</li>
               <li>Sınav tarihi şimdilik tahmini; ÖSYM açıklayınca kendiliğinden güncellenir, geri sayım ve plan da ona uyar. İstersen Plan sekmesinden kendi tarihini seçebilirsin.</li>
             </ul>
           </details>
@@ -612,6 +616,8 @@
   <script src="js/weather.js?v=2.3.8"></script>
   <script src="js/yks.js?v=2.3.8"></script>
   <script src="js/plan.js?v=2.3.8"></script>
+  <script src="js/planlar.js?v=2.3.8"></script>
+  <script src="js/planlar-ui.js?v=2.3.8"></script>
   <script src="js/deneme.js?v=2.3.8"></script>
   <script src="js/notes.js?v=2.3.8"></script>
   <script src="js/giris.js?v=2.3.8"></script>

@@ -130,6 +130,7 @@ const Store = (() => {
     refs: [],       // kaynaklar: {id, type, title, authors:[{family, given}|{literal}], year, container, volume, issue, pages, doi, url, …}
     files: [],      // depo: {id, src: drive|local, rid, name, mime, size, subjectId, kind, note, created}
     cards: [],      // bilgi kartları: {id, subjectId, front, back, box (1-5), due (YYYY-AA-GG), created}
+    plans: { day: {}, week: {}, month: {}, eod: {}, eodSeq: {} }, // Planlarım: Hazal'ın elle yazdığı planlar (gün / hafta / ay) ve gün sonu notları
     stats: { planItems: 0, planFull: 0, planFullDates: [], cardReviews: 0, friendsMet: false, seen: {} },
     badges: {},     // id -> timestamp
     tasksDone: 0,
@@ -165,6 +166,8 @@ const Store = (() => {
     out.stats = { ...def.stats, ...(isObj(obj.stats) ? obj.stats : {}) };
     if (!Array.isArray(out.stats.planFullDates)) out.stats.planFullDates = [];
     if (!isObj(out.stats.seen)) out.stats.seen = {};
+    // planlar: bozuk bir kayıt bütün verinin sıfırlanmasına yol açmasın (hata günlüğe yazılır, veri olduğu gibi kalır)
+    try { out.plans = normPlans(obj.plans); } catch (e) { out.plans = isObj(obj.plans) ? obj.plans : def.plans; try { ErrLog.add('Planlar okunamadı: ' + ((e && e.message) || e), 'storage.js'); } catch (e2) { /* yok say */ } }
     tidy(out);
     return out;
   }
@@ -185,6 +188,44 @@ const Store = (() => {
     for (const k of ['courses', 'events', 'calendar']) each(out.uni[k]);
     for (const e of out.denemeler) if (isObj(e) && !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) e.date = U.dateKey(new Date());
     for (const x of out.sessions) if (isObj(x) && x.mood && !MOODS.has(x.mood)) x.mood = '';
+  }
+
+  // Planlarım: anahtarlar (YYYY-AA-GG / YYYY-AA) ve maddeler beklenen biçimde kalır; geçerli kayıtlara dokunulmaz.
+  // Silinen maddeler { id, del: true, updated } olarak kalır: eski bir yedek birleştirilince geri gelmesinler.
+  const PLAN_DAY = /^\d{4}-\d{2}-\d{2}$/, PLAN_MONTH = /^\d{4}-\d{2}$/;
+  function normPlanItem(it) {
+    const clean = (v) => (typeof v === 'string' ? v.replace(/[^\w:.-]/g, '') : '');
+    const num = (v, max) => { const n = Math.round(Number(v) || 0); return n > 0 ? Math.min(n, max) : 0; };
+    it.id = clean(String(it.id)) || 'p' + U.uid();
+    if (it.del) return { id: it.id, del: true, updated: +it.updated || 0 };
+    it.title = String(it.title == null ? '' : it.title).slice(0, 120);
+    it.subjectId = clean(it.subjectId); it.topicId = clean(it.topicId); it.src = clean(it.src);
+    it.min = num(it.min, 600); it.q = num(it.q, 999);
+    it.done = !!it.done; it.doneAt = +it.doneAt || 0; it.counted = !!it.counted;
+    const pk = (v) => (typeof v === 'string' && (PLAN_DAY.test(v) || PLAN_MONTH.test(v)) ? v : '');
+    it.moved = pk(it.moved); it.from = pk(it.from);
+    it.created = +it.created || 0; it.updated = +it.updated || 0;
+    return it;
+  }
+  function normPlans(p) {
+    const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
+    const out = { day: {}, week: {}, month: {}, eod: {}, eodSeq: {}, ...(isObj(p) ? p : {}) }; // ileride eklenecek alanlar korunur
+    for (const [scope, re] of [['day', PLAN_DAY], ['week', PLAN_DAY], ['month', PLAN_MONTH]]) {
+      const src = isObj(out[scope]) ? out[scope] : {}, m = {};
+      for (const k of Object.keys(src)) {
+        if (!re.test(k) || !Array.isArray(src[k])) continue;
+        m[k] = src[k].filter((it) => isObj(it) && (typeof it.id === 'string' || typeof it.id === 'number')).map(normPlanItem);
+      }
+      out[scope] = m;
+    }
+    if (!isObj(out.eod)) out.eod = {};
+    for (const k of Object.keys(out.eod)) {
+      const e = out.eod[k];
+      if (!PLAN_DAY.test(k) || !isObj(e)) { delete out.eod[k]; continue; }
+      e.text = typeof e.text === 'string' ? e.text.slice(0, 400) : '';
+    }
+    if (!isObj(out.eodSeq)) out.eodSeq = {};
+    return out;
   }
 
   // Veri okunamazsa sessizce sıfırlanmasın: ham veri kurtarma kopyasına alınır, uygulama haber verir
@@ -234,12 +275,16 @@ const Store = (() => {
       for (const x of b) if (!a.some((y) => JSON.stringify(y) === JSON.stringify(x))) { a.push(x); if (typeof x !== 'string') added++; }
       return a;
     };
-    const obj2 = (a, b, key) => {
+    const obj2 = (a, b, key, parent) => {
       for (const k of Object.keys(b)) {
         const x = a[k], y = b[k];
-        if (x === undefined || x === null) { a[k] = y; if (key === 'badges' || key === 'topics') added++; }
+        if (x === undefined || x === null) {
+          a[k] = y;
+          if (key === 'badges' || key === 'topics') added++;
+          else if (parent === 'plans' && (key === 'day' || key === 'week' || key === 'month') && Array.isArray(y)) added += y.filter((it) => isObj(it) && !it.del).length; // yedekte olup burada olmayan bir günün maddeleri
+        }
         else if (Array.isArray(x) && Array.isArray(y)) a[k] = list(x, y);
-        else if (isObj(x) && isObj(y)) obj2(x, y, k);
+        else if (isObj(x) && isObj(y)) obj2(x, y, k, key);
         else if (typeof x === 'number' && typeof y === 'number') {
           if (key === 'badges' || key === 'seen') a[k] = Math.min(x, y);       // ilk kazanılan / ilk görülen an
           else if (COUNTERS.has(k) || key === 'topics') a[k] = Math.max(x, y); // sayaçlar ve konu ilerlemesi
