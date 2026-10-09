@@ -1079,6 +1079,11 @@
   function loadSpotify() {
     const p = spotifyParts(D().settings.spotify);
     const src = spotifyEmbed(D().settings.spotify);
+    if (window.SpotifyPlayback?.mountEmbed(D().settings.spotify)) {
+      spotifyLoaded = true;
+      $('#music-now').textContent = 'Şarkını seç';
+      return;
+    }
     // "Spotify'da aç": telefonda uygulama yüklüyse doğrudan uygulamada açılır (önizleme yerine tam şarkılar)
     $('#spotify-frame').innerHTML = src
       ? `<iframe title="Spotify oynatıcı" src="${U.esc(src)}" width="100%" height="352" style="border:0;border-radius:12px" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>

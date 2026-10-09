@@ -199,7 +199,6 @@ const SpotifyLink = (() => {
       else if (act === 'more') refreshLists(true);
       else if (act === 'play') {
         App.playSpotify('https://open.spotify.com/playlist/' + b.dataset.id);
-        if (window.SpotifyPlayback && SpotifyPlayback.status().ready) SpotifyPlayback.playSelected();
         el.querySelectorAll('.sp-item').forEach((x) => x.classList.toggle('active', x === b));
       }
     });
