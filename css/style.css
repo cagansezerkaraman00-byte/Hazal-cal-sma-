@@ -2005,3 +2005,8 @@ body.focusing #countdown-error { display: none; }
 #sp-song-list .sp-song-rows{max-height:680px}
 #sp-song-list .sp-song-pick{min-height:68px}
 @media(max-width:540px){.sp-native-view .spotify-frame iframe{height:740px}#sp-song-list .sp-song-rows{max-height:540px}}
+
+/* Native Spotify player and its own song list. */
+#sp-native-view .spotify-frame{border-radius:12px}
+#sp-native-view .spotify-frame iframe{height:900px;width:100%}
+@media(max-width:540px){#sp-native-view .spotify-frame iframe{height:740px}}

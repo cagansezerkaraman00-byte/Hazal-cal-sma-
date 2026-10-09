@@ -178,21 +178,17 @@ const SpotifyPlayback = (() => {
     if(!root||!selection||!config?.hasAccess())return false;
     const epoch=++embedEpoch;picked='';
     try{embedController?.destroy();}catch(e){/* Old embed already removed. */}embedController=null;
-    root.hidden=false;root.innerHTML='<h3 class="sub-h">Spotify liste önizlemesi</h3><div id="sp-song-picker"></div>';
+    root.hidden=false;root.innerHTML='<div id="sp-song-picker"></div>';
     embedApi().then(api=>{
       if(epoch!==embedEpoch||!config.hasAccess())return;
       const target=root.querySelector('#sp-song-picker');if(!target)return;
-      api.createController(target,{uri:selection.uri,width:'100%',height:900,theme:0},controller=>{
+      api.createController(target,{uri:selection.uri,width:'100%',height:900},controller=>{
         if(epoch!==embedEpoch){controller.destroy();return;}embedController=controller;
-        controller.addListener('playback_started',event=>{
-          const selected=uri(event?.data?.playingURI);
-          if(epoch!==embedEpoch||!config.hasAccess()||selected?.type!=='track')return;
-          picked=selected.uri;render();transferQueue=transferQueue.catch(()=>{}).then(()=>epoch===embedEpoch&&picked===selected.uri?transferPicked():false);transferQueue.catch(()=>fail('Şarkı seçildi. Üstteki çal düğmesine dokun.'));
-        });
+
       });
     }).catch(()=>{
       if(epoch!==embedEpoch)return;
-      root.innerHTML=`<p class="hint">Şarkı seçme bağlantısı kurulamadı. Listeyi yeniden açarak tekrar deneyebilirsin.</p><iframe title="Spotify oynatıcı" src="https://open.spotify.com/embed/${selection.type}/${selection.uri.split(':')[2]}?theme=0" width="100%" height="900" style="border:0;border-radius:12px" allow="autoplay; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
+      root.innerHTML=`<p class="hint">Şarkı seçme bağlantısı kurulamadı. Listeyi yeniden açarak tekrar deneyebilirsin.</p><iframe title="Spotify oynatıcı" src="https://open.spotify.com/embed/${selection.type}/${selection.uri.split(':')[2]}?" width="100%" height="900" style="border:0;border-radius:12px" allow="autoplay; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
     });return true;
   }
   function reset(){++selectionSequence;selectionPending=null;seekHold=null;selectionWork=Promise.resolve();++embedEpoch;picked='';try{embedController?.destroy();}catch(e){}embedController=null;++generation;++seekSequence;stopClock();seekBusy=false;position=0;duration=0;if(player)player.disconnect();player=null;device='';pending=null;connecting=false;track=null;playing=false;message='';if(config?.restoreEmbed)config.restoreEmbed();render();}
