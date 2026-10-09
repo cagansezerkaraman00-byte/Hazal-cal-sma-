@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.11",
+  "tarih": "2026-10-10",
+  "baslik": "Spotify şarkı seçimi açıklaması",
+  "notlar": [
+    "🎧 Şarkı satırından seçim ve Spotify liste önizlemesi birbirinden ayrıldı. Dinlemek istediğin şarkıyı listeden seçip Luna oynatıcısında kontrol edebilirsin."
+  ]
+},
+{
   "surum": "2.4.10",
   "tarih": "2026-10-10",
   "baslik": "Listeden tek tek şarkı seçimi",

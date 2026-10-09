@@ -67,7 +67,7 @@ const SpotifyPlayback = (() => {
     if(!enabled)return;
     root.innerHTML=`<div class="sp-live-heading"><b>🎧 Spotify · Luna oynatıcı</b><span>${device?'Bu cihaz':'Premium'}</span></div>
       <p class="sp-live-track">${track?esc(track.name):'Müziğin burada, Luna’nın yanında.'}</p>
-      <p class="hint">${track?esc((track.artists||[]).map(a=>a.name).join(' · ')):'Alttaki Spotify penceresinden istediğin şarkıya dokun.'}</p>
+      <p class="hint">${track?esc((track.artists||[]).map(a=>a.name).join(' · ')):'Alttaki şarkı listesinden istediğin şarkıya dokun.'}</p>
       ${track?`<div class="sp-live-timeline"><input type="range" data-live-seek min="0" max="${duration||1}" step="1000" value="${Math.round(currentPosition())}" aria-label="Şarkıda dinlemek istediğin saniye" ${!device||!seekAllowed||duration<=0?'disabled':''}><div class="sp-live-times"><span data-live-elapsed>${fmt(currentPosition())}</span><span data-live-total>${fmt(duration)}</span></div></div>`:''}
       <div class="sp-live-controls">${device?`<button class="btn soft sp-live-skip" type="button" data-live="previous" aria-label="Önceki şarkı" title="Önceki şarkı">${icon('previous')}</button><button class="btn primary sp-live-toggle" type="button" data-live="toggle" aria-label="${playing?'Duraklat':track?'Devam et':'Luna’da dinle'}">${icon(playing?'pause':'play')}</button><button class="btn soft sp-live-skip" type="button" data-live="next" aria-label="Sonraki şarkı" title="Sonraki şarkı">${icon('next')}</button><button class="btn soft sp-live-selected" type="button" data-live="selected">${picked?'Seçtiğim şarkıyı Luna’da çal':'Seçtiğim listeyi çal'}</button>`:`<button class="btn primary" type="button" data-live="connect" ${connecting?'disabled':''}>${connecting?'Oynatıcı hazırlanıyor…':'Luna oynatıcısını aç'}</button>`}</div>
       <p class="hint" role="status">${esc(message||(!seekAllowed&&track?'Spotify bu içerikte ileri veya geri sarmaya izin vermiyor.':'Çalışma sayacın müzikten bağımsız devam eder.'))}</p>`;
@@ -153,7 +153,7 @@ const SpotifyPlayback = (() => {
     if(!root||!selection||!config?.hasAccess())return false;
     const epoch=++embedEpoch;picked='';
     try{embedController?.destroy();}catch(e){/* Old embed already removed. */}embedController=null;
-    root.hidden=false;root.innerHTML='<h3 class="sub-h">Şarkını buradan seç</h3><div id="sp-song-picker"></div><p class="hint" role="status">Listede istediğin şarkıya dokun. Seçtiğin şarkı üstteki Luna oynatıcısında açılır.</p>';
+    root.hidden=false;root.innerHTML='<h3 class="sub-h">Spotify liste önizlemesi</h3><div id="sp-song-picker"></div><p class="hint" role="status">Luna’da dinlemek için aşağıdaki şarkı satırlarından istediğini seç.</p>';
     embedApi().then(api=>{
       if(epoch!==embedEpoch||!config.hasAccess())return;
       const target=root.querySelector('#sp-song-picker');if(!target)return;
