@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.6",
+  "tarih": "2026-10-09",
+  "baslik": "Spotify oynatıcı görünürlük düzeltmesi",
+  "notlar": [
+    "🎧 Şarkı adı, sanatçı ve süre yazılarının gece temasında kaybolması düzeltildi. Spotify kartı ve metinleri seçilen temaya birlikte uyum sağlar."
+  ]
+},
+{
   "surum": "2.4.5",
   "tarih": "2026-10-09",
   "baslik": "Spotify hesabınla Luna içinde dinle",
