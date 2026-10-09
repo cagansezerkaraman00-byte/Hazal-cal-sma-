@@ -17,7 +17,8 @@ const SpotifyLink = (() => {
         if(b.dataset.song==='more'){showSongs(songs.url,true);return;}
         if(b.dataset.song==='retry'){showSongs(songs.url,false,true);return;}
         if(b.dataset.song==='play'&&songs.items.some(t=>t.uri===b.dataset.uri)){
-          b.disabled=true;try{await window.SpotifyPlayback?.chooseTrack(b.dataset.uri);}finally{b.disabled=false;}
+          const selected=songs.items.find(t=>t.uri===b.dataset.uri);
+          b.disabled=true;try{await window.SpotifyPlayback?.chooseTrack(b.dataset.uri,selected);}finally{b.disabled=false;}
         }
       });
   }
@@ -53,7 +54,7 @@ const SpotifyLink = (() => {
       if(!json||!page||!Array.isArray(page.items)){
         songs.error=status===403||json?'Spotify bu listenin şarkılarını Luna’ya vermedi. Şarkı seçimi için kendi oluşturduğun veya ortak düzenlediğin bir listeyi aç.':status===401?ERR.auth:ERR.net;
       }else{
-        const rows=page.items.map(x=>x?.item||x?.track||x).filter(t=>t&&/^spotify:track:[A-Za-z0-9]{10,40}$/.test(t.uri||'')&&!t.is_local&&t.is_playable!==false).map(t=>({uri:t.uri,name:t.name||'Şarkı',artist:(t.artists||[]).map(a=>a.name).join(' · ')}));
+        const rows=page.items.map(x=>x?.item||x?.track||x).filter(t=>t&&/^spotify:track:[A-Za-z0-9]{10,40}$/.test(t.uri||'')&&!t.is_local&&t.is_playable!==false).map(t=>({uri:t.uri,name:t.name||'Şarkı',artists:t.artists||[],duration_ms:t.duration_ms||0,artist:(t.artists||[]).map(a=>a.name).join(' · ')}));
         songs.items=more?[...songs.items,...rows]:rows;songs.name=json.name||songs.name;songs.next=page.next&&songPath(page.next)?page.next:'';
       }
     }catch(e){if(epoch===songEpoch)songs.error=ERR.net;}

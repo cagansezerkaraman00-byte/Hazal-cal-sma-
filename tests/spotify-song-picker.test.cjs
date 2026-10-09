@@ -15,7 +15,7 @@ async function main(){
  embedEvents.playback_started({data:{playingURI:'spotify:track:2222222222222222222222'}});
  for(let i=0;i<12;i++)await Promise.resolve();
  assert.deepEqual(calls[0],{uris:['spotify:track:2222222222222222222222']},'exact tapped song is transferred');assert(paused>0,'embed preview is stopped before Luna playback');
- assert.match(root.innerHTML,/Seçtiğim şarkıyı Luna’da çal/);
+ assert.match(root.innerHTML,/Seçilen şarkıyı yeniden dene/);
  embedEvents.playback_started({data:{playingURI:'javascript:alert(1)'}});await Promise.resolve();assert.equal(calls.length,1,'invalid embed URI cannot play');
  const stale=embedEvents.playback_started;playback.reset();access=false;stale({data:{playingURI:'spotify:track:3333333333333333333333'}});
  for(let i=0;i<6;i++)await Promise.resolve();assert.equal(calls.length,1,'old iframe cannot play after logout');assert(destroyed>0);

@@ -1087,7 +1087,7 @@
     }
     // "Spotify'da aç": telefonda uygulama yüklüyse doğrudan uygulamada açılır (önizleme yerine tam şarkılar)
     $('#spotify-frame').innerHTML = src
-      ? `<iframe title="Spotify oynatıcı" src="${U.esc(src)}" width="100%" height="352" style="border:0;border-radius:12px" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+      ? `<iframe title="Spotify oynatıcı" src="${U.esc(src)}" width="100%" height="620" style="border:0;border-radius:12px" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
         <a class="btn soft sp-open" href="${U.esc(appUrl('spotify'))}" target="_blank" rel="noopener" data-app="spotify">Spotify'da dinle ↗</a>
         <p class="hint">Burada oynatmak için ▶ düğmesine dokun. Spotify, hesabına ve tarayıcıya göre önizleme sunabilir. Tam dinleme için Spotify’da dinle seçeneğini kullanabilirsin.</p>`
       : '<p class="empty">Geçerli bir Spotify bağlantısı yapıştır.</p>';
@@ -1108,6 +1108,9 @@
     if (!spotifyLoaded) loadSpotify();
   }
   function bindMusic() {
+    $('#sp-native-view')?.addEventListener('toggle',()=>{
+      if ($('#sp-native-view').open && window.SpotifyPlayback) SpotifyPlayback.pauseForEmbed();
+    });
     $('#spotify-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const v = $('#spotify-input').value.trim();
