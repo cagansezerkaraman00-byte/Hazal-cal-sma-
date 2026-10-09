@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.7",
+  "tarih": "2026-10-09",
+  "baslik": "Spotify kütüphanesi",
+  "notlar": [
+    "🎧 Kaydedilen ve oluşturulan Spotify listeleri oynatıcının üstüne taşındı. İlk 50 listenin ardından Daha fazla liste ile devam edilebilir. Liste yükleme hataları ve yanlış hesap durumu daha açık gösterilir."
+  ]
+},
+{
   "surum": "2.4.6",
   "tarih": "2026-10-09",
   "baslik": "Spotify oynatıcı görünürlük düzeltmesi",

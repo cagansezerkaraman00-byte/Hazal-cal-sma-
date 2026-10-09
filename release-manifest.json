@@ -1,7 +1,7 @@
 {
-  "version": "2.4.6",
+  "version": "2.4.7",
   "files": {
-    "index.html": "0a9f627935051ebdfd5f52d8633165a51f31937941f07fde3c9d96700f0de49f",
+    "index.html": "5fb1ddb59b46dce14bd42dbe5d94dd499ea5697955469a1ce88d743273bcb1f6",
     "manifest.webmanifest": "19b9676d77ff7ea70d764e41f50b01941edc3e576d0f7e0d07f009ba7d59abb1",
     "css/style.css": "2cb6688eab28ad8cb8e3736d5b859e5b7a078779dde0c35a38ec1f82d252201d",
     "js/app.js": "1ba3d54aea30f1ed8b05c454907955bd0828fc8bcaffa4ccd014e7f3cb53e4b0",
@@ -27,10 +27,10 @@
     "js/scene.js": "b08f4f100d9b7330872c5eb7f7b0553b5153ded221b0c27c617320b7dff976cd",
     "js/spotify-config.js": "66fdbb5e64271002740e7a6f0fe157209e11cb927ad21291d051470643d58813",
     "js/spotify-playback.js": "355b826ec6f6b1590de7a4b5d991852401bc7d4a0210d566b4b102199ffb31e6",
-    "js/spotify.js": "34d4127127fd7080e91eec15d00405e610ac0478440fcce7d632a12160967edc",
+    "js/spotify.js": "98deec564a05e5331f4a19ec9d48cdf1f871329d20060e1801f158ab6dc6fb36",
     "js/stats.js": "979d57b8e8ca382540e826cc667fa815e2ba247b144caebafd7df50a6ed9a36d",
     "js/storage.js": "ae65be940783e4ba2c9b91b37d02c5e46bed33476743189e704a5d8d61a00d4b",
-    "js/surum.js": "343a40f944fd1a7e290ac1820f34b7ea46fa26cdafd551ac800cf40e6853c5ff",
+    "js/surum.js": "2b2ffbd4b901dce51842a6ab0b33fc41713a5b577d10191f02ee9045189aa68a",
     "js/takvim.js": "3f4792abfdd225ded4a85263a218581a829ce643d647f5aee19c1ba779b16d6e",
     "js/timer.js": "551f1e233b2a9f6603214a0bd970160c9df718a6245bf835e211dc0ff38617c0",
     "js/uni-ui.js": "38b400d9a639bda60b246ec5cbd27100a74732814c32ab3f0ec35aff8678d182",

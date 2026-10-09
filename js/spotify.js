@@ -8,7 +8,7 @@ const SpotifyLink = (() => {
   const SCOPE = 'playlist-read-private playlist-read-collaborative streaming user-read-private user-read-email user-modify-playback-state';
   let App = null;
   let st = { clientId: '', token: '', refresh: '', exp: 0, user: '', lists: [] };
-  let busy = false;
+  let busy = false, libraryEpoch = 0;
 
   function load() {
     try { st = { ...st, ...(JSON.parse(localStorage.getItem(KEY) || '{}') || {}) }; } catch (e) { /* yok say */ }
@@ -110,23 +110,48 @@ const SpotifyLink = (() => {
     const card = document.getElementById('music-card');
     if (card) card.open = true;
   }
-  async function refreshLists() {
+  function playlistPath(next) {
+    try {
+      const u = new URL(next);
+      return u.origin === 'https://api.spotify.com' && u.pathname === '/v1/me/playlists'
+        ? u.pathname.slice(3) + u.search : '';
+    } catch (e) { return ''; }
+  }
+  async function refreshLists(more = false) {
     if (busy) return;
+    const path = more ? playlistPath(st.next) : '/me/playlists?limit=50';
+    if (!path) return;
+    const run = libraryEpoch;
     busy = true;
     render();
-    const [me, pl] = await Promise.all([api('/me'), api('/me/playlists?limit=50')]);
-    busy = false;
-    st.err = me || pl ? '' : lastStatus === 403 ? 'forbidden' : lastStatus === 401 ? 'auth' : 'net';
-    if (me) st.user = me.display_name || me.id || '';
-    if (pl && Array.isArray(pl.items)) {
-      st.lists = pl.items.filter(Boolean).map((x) => ({
-        id: x.id, name: x.name || 'Liste',
-        img: x.images && x.images.length ? x.images[x.images.length - 1].url : '',
-        n: (x.items && x.items.total) ?? (x.tracks && x.tracks.total) ?? null, // Şubat 2026: tracks -> items
-      }));
+    try {
+      // A successful profile request must not hide an error loading playlists.
+      const pl = await api(path);
+      const playlistStatus = lastStatus;
+      if (run !== libraryEpoch) return;
+      st.err = pl && Array.isArray(pl.items) ? '' : playlistStatus === 403 ? 'forbidden' : playlistStatus === 401 ? 'auth' : 'net';
+      if (pl && Array.isArray(pl.items)) {
+        const found = pl.items.filter(x => x && x.id).map(x => ({
+          id: x.id, name: x.name || 'Liste',
+          img: x.images?.length ? x.images[x.images.length - 1].url : '',
+          n: (x.items && x.items.total) ?? (x.tracks && x.tracks.total) ?? null,
+          owner: x.owner?.display_name || '',
+        }));
+        // Followed playlists may contain metadata only. Never filter them by owner or item count.
+        st.lists = Array.from(new Map([...(more ? st.lists : []), ...found].map(x => [x.id, x])).values());
+        st.next = playlistPath(pl.next) ? pl.next : '';
+        st.total = pl.total;
+        st.listedAt = Date.now();
+      }
+      if (!more) {
+        const me = await api('/me');
+        if (run !== libraryEpoch) return;
+        if (me) st.user = me.display_name || me.id || '';
+      }
+      persist();
+    } finally {
+      if (run === libraryEpoch) { busy = false; render(); }
     }
-    persist();
-    render();
   }
 
   function render() {
@@ -141,12 +166,15 @@ const SpotifyLink = (() => {
       return;
     }
     el.innerHTML = `<div class="sp-head"><span>👋 ${U.esc(st.user || 'Spotify')}</span>
-        <span><button class="chip" data-sp="reload" type="button">${busy ? '…' : '↻'}</button> <button class="chip" data-sp="logout" type="button">Bağlantıyı kes</button></span></div>
+        <span><button class="chip" data-sp="reload" type="button" aria-label="Spotify listelerini yenile" ${busy ? 'disabled' : ''}>${busy ? '…' : '↻'}</button> <button class="chip" data-sp="logout" type="button">Bağlantıyı kes</button></span></div>
       ${!hasPlaybackAccess() ? '<button class="btn primary" data-sp="login" type="button">Müzik çalma izniyle yeniden bağlan</button>' : ''}
+      <h3 class="sub-h">Kütüphanemdeki listeler</h3><p class="hint">Spotify’da kaydettiğin ve oluşturduğun çalma listeleri burada. Listeye dokunarak seç; Luna oynatıcısı açıkken çalar.</p>
+      ${st.err ? `<p class="hint" role="status">${ERR[st.err]}</p>` : ''}
       ${st.lists.length ? `<div class="sp-lists">${st.lists.map((l) => `<button class="sp-item ${App.data().settings.spotify.includes(l.id) ? 'active' : ''}" data-sp="play" data-id="${U.esc(l.id)}" type="button">
           ${l.img ? `<img src="${U.esc(l.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="sp-noimg">🎵</span>'}
-          <span class="sp-name">${U.esc(l.name)}</span><small>${l.n != null ? l.n + ' şarkı' : 'Çalma listesi'}</small></button>`).join('')}</div>`
-        : `<p class="hint">${busy ? 'Listelerin yükleniyor…' : ERR[st.err] || 'Çalma listesi bulunamadı.'}</p>`}`;
+          <span class="sp-name">${U.esc(l.name)}</span><small>${l.n != null ? l.n + ' şarkı' : U.esc(l.owner || 'Kaydedilmiş liste')}</small></button>`).join('')}</div>`
+        : `<p class="hint">${busy ? 'Listelerin yükleniyor…' : ERR[st.err] || 'Bu hesapta Spotify’dan gelen liste yok. Doğru hesapla giriş yaptığını kontrol et ve listeleri yenile.'}</p>`}
+      ${st.next ? `<button class="btn soft" data-sp="more" type="button" ${busy ? 'disabled' : ''}>${busy ? 'Listeler yükleniyor…' : 'Daha fazla liste'}</button>` : ''}`;
     if (window.SpotifyPlayback) SpotifyPlayback.render();
   }
 
@@ -164,9 +192,11 @@ const SpotifyLink = (() => {
         if (!/^[0-9a-f]{32}$/i.test(id)) { App.toast('🎧', 'Hesap bağlantısı henüz hazır değil', 'Şimdilik yukarıdaki oynatıcıyı kullanabilirsin'); return; }
         st.clientId = id; persist(); login();
       } else if (act === 'logout') {
+        ++libraryEpoch; busy = false;
         if (window.SpotifyPlayback) SpotifyPlayback.reset();
         st = { clientId: st.clientId, token: '', refresh: '', exp: 0, user: '', lists: [] }; persist(); render();
       } else if (act === 'reload') refreshLists();
+      else if (act === 'more') refreshLists(true);
       else if (act === 'play') {
         App.playSpotify('https://open.spotify.com/playlist/' + b.dataset.id);
         if (window.SpotifyPlayback && SpotifyPlayback.status().ready) SpotifyPlayback.playSelected();
@@ -185,7 +215,6 @@ const SpotifyLink = (() => {
       handleRedirect().catch(() => App.toast('🎧', 'Spotify bağlantısı tamamlanamadı', 'Yeniden giriş yapabilirsin'));
       // bağlıysa listeleri arada bir tazele (en fazla günde bir)
       if ((st.refresh || st.token) && (!st.lists.length || Date.now() - (st.listedAt || 0) > 864e5)) {
-        st.listedAt = Date.now();
         refreshLists();
       }
     },
