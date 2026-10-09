@@ -1,7 +1,7 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const read=p=>fs.readFileSync(path.join(__dirname,'../js',p),'utf8');
 async function main(){
- const nodes={'sp-playback':{addEventListener:(type,fn)=>nodes['sp-playback'].click=fn},'spotify-frame':{}},calls=[];
+ const nodes={'sp-playback':{addEventListener:(type,fn)=>{if(type==='click')nodes['sp-playback'].click=fn;}},'spotify-frame':{}},calls=[];
  let instance,response=204,selection='https://open.spotify.com/playlist/1234567890123456789012',access=true;
  class Player{constructor(){instance=this;this.events={};this.activated=0;}addListener(k,f){this.events[k]=f;}async connect(){this.events.ready({device_id:'luna-device'});return true;}disconnect(){this.disconnected=true;}async activateElement(){this.activated++;}async togglePlay(){this.toggled=true;}async nextTrack(){this.next=true;}async previousTrack(){this.prev=true;}}
  const playback=new Function('window','document','U','fetch',read('spotify-playback.js')+';return SpotifyPlayback;')({Spotify:{Player}}, {getElementById:k=>nodes[k]}, {esc:s=>s},async(url,opt)=>{calls.push({url,opt});return{ok:response===204,status:response};});

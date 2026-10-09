@@ -2,22 +2,76 @@
 const SpotifyPlayback = (() => {
   let config, player=null, device='', pending=null, sdkPromise=null, generation=0;
   let message='', playing=false, track=null, position=0, duration=0, connecting=false;
+  let clock=null, observedAt=Date.now(), dragging=false, draft=0, seekBusy=false, seekSequence=0, seekAllowed=true, syncBusy=false, ticks=0;
   const el=()=>document.getElementById('sp-playback');
   const esc=s=>U.esc(String(s||''));
+  const icon=name=>{
+    const paths={
+      play:'<path d="M9 5.5c0-1 1.1-1.6 2-1.1l10 6.3c.9.6.9 2 0 2.6l-10 6.3c-.9.5-2-.1-2-1.1z"/>',
+      pause:'<rect x="7" y="5" width="4" height="14" rx="1.8"/><rect x="15" y="5" width="4" height="14" rx="1.8"/>',
+      previous:'<rect x="5" y="5" width="3" height="14" rx="1.5"/><path d="M18 5.7c.9-.6 2 .1 2 1.1v10.4c0 1-1.1 1.7-2 1.1l-7.8-5.2c-.8-.5-.8-1.7 0-2.2z"/>',
+      next:'<rect x="18" y="5" width="3" height="14" rx="1.5"/><path d="M8 5.7c-.9-.6-2 .1-2 1.1v10.4c0 1 1.1 1.7 2 1.1l7.8-5.2c.8-.5.8-1.7 0-2.2z"/>'
+    };
+    return `<svg viewBox="0 0 26 24" aria-hidden="true" focusable="false" fill="currentColor">${paths[name]}</svg>`;
+  };
+  const fmt=n=>`${Math.floor(Math.max(0,n)/60000)}:${String(Math.floor(Math.max(0,n)/1000)%60).padStart(2,'0')}`;
+  const trackKey=()=>track?.id||track?.uri||track?.name||'';
+  function currentPosition(){return Math.min(duration,Math.max(0,position+(playing&&!seekBusy?Date.now()-observedAt:0)));}
+  function paintTimeline(){
+    const root=el(),input=root?.querySelector?.('[data-live-seek]');if(!input)return;
+    const value=dragging?draft:currentPosition();
+    input.value=String(Math.round(value));input.max=String(duration||1);
+    input.disabled=!device||!track||duration<=0||!seekAllowed||seekBusy;
+    input.setAttribute('aria-valuetext',`${fmt(value)} / ${fmt(duration)}`);
+    input.style.setProperty('--sp-progress',`${duration?Math.min(100,value/duration*100):0}%`);
+    const elapsed=root.querySelector('[data-live-elapsed]'),total=root.querySelector('[data-live-total]');
+    if(elapsed)elapsed.textContent=fmt(value);if(total)total.textContent=fmt(duration);
+  }
+  function acceptState(state){
+    const previous=trackKey();track=state?.track_window?.current_track||null;
+    playing=!!state&&!state.paused;position=state?.position||0;duration=state?.duration||0;observedAt=Date.now();
+    seekAllowed=!state?.disallows?.seeking;
+    if(previous!==trackKey()||!track){dragging=false;seekBusy=false;++seekSequence;}
+    if(track&&message==='Müzik Luna’da başlatılıyor…')message='';
+    if(dragging)paintTimeline();else render();
+  }
+  function stopClock(){if(clock!==null)clearInterval(clock);clock=null;ticks=0;syncBusy=false;dragging=false;}
+  function startClock(){
+    stopClock();clock=setInterval(async()=>{
+      if(document.hidden)return;paintTimeline();
+      if(++ticks%5||dragging||seekBusy||syncBusy||!player?.getCurrentState)return;
+      const current=player,run=generation;syncBusy=true;
+      try{const state=await current.getCurrentState();if(run===generation&&current===player&&!dragging&&!seekBusy)acceptState(state);}
+      catch(e){/* A temporary state refresh failure must not interrupt music. */}
+      finally{if(run===generation)syncBusy=false;}
+    },1000);
+  }
+  async function seekTo(value){
+    const target=Number(value);if(!Number.isFinite(target)||!player||!device||!track||duration<=0||!seekAllowed||seekBusy)return false;
+    const run=generation,current=player,key=trackKey(),sequence=++seekSequence,old=currentPosition();
+    const ms=Math.round(Math.min(Math.max(0,target),Math.max(0,duration-1)));
+    dragging=false;seekBusy=true;position=ms;observedAt=Date.now();paintTimeline();
+    try{await current.seek(ms);if(run!==generation||current!==player||key!==trackKey()||sequence!==seekSequence)return false;
+      position=ms;observedAt=Date.now();message='';return true;
+    }catch(e){if(run===generation&&key===trackKey()&&sequence===seekSequence){position=old;observedAt=Date.now();message='Şarkının bu saniyesine gidilemedi. Yeniden deneyebilirsin.';}return false;}
+    finally{if(run===generation&&sequence===seekSequence){seekBusy=false;render();}}
+  }
   function fail(text){message=text;render();}
   function render(){
     const root=el();if(!root||!config)return;
+    const restoreSeekFocus=document.activeElement?.matches?.('[data-live-seek]');
     const enabled=config.hasAccess();
     root.hidden=!enabled;
     const embed=document.getElementById('spotify-frame');if(embed){embed.hidden=!!device;if(device&&embed.innerHTML)embed.innerHTML='';}
     if(!enabled)return;
-    const fmt=n=>`${Math.floor(n/60000)}:${String(Math.floor(n/1000)%60).padStart(2,'0')}`;
     root.innerHTML=`<div class="sp-live-heading"><b>🎧 Spotify · Luna oynatıcı</b><span>${device?'Bu cihaz':'Premium'}</span></div>
       <p class="sp-live-track">${track?esc(track.name):'Müziğin burada, Luna’nın yanında.'}</p>
       <p class="hint">${track?esc((track.artists||[]).map(a=>a.name).join(' · ')):'Aşağıdaki listelerden veya kendi Spotify bağlantından müzik seç.'}</p>
-      ${track?`<p class="hint">${fmt(position)} / ${fmt(duration)}</p>`:''}
-      <div class="sp-live-controls">${device?`<button class="btn soft" type="button" data-live="previous" aria-label="Önceki şarkı">⏮</button><button class="btn primary" type="button" data-live="toggle">${playing?'Duraklat':track?'Devam et':'Luna’da dinle'}</button><button class="btn soft" type="button" data-live="next" aria-label="Sonraki şarkı">⏭</button><button class="btn soft" type="button" data-live="selected">Seçtiğim listeyi çal</button>`:`<button class="btn primary" type="button" data-live="connect" ${connecting?'disabled':''}>${connecting?'Oynatıcı hazırlanıyor…':'Luna oynatıcısını aç'}</button>`}</div>
-      <p class="hint" role="status">${esc(message||'Çalışma sayacın müzikten bağımsız devam eder.')}</p>`;
+      ${track?`<div class="sp-live-timeline"><input type="range" data-live-seek min="0" max="${duration||1}" step="1000" value="${Math.round(currentPosition())}" aria-label="Şarkıda dinlemek istediğin saniye" ${!device||!seekAllowed||duration<=0?'disabled':''}><div class="sp-live-times"><span data-live-elapsed>${fmt(currentPosition())}</span><span data-live-total>${fmt(duration)}</span></div></div>`:''}
+      <div class="sp-live-controls">${device?`<button class="btn soft sp-live-skip" type="button" data-live="previous" aria-label="Önceki şarkı" title="Önceki şarkı">${icon('previous')}</button><button class="btn primary sp-live-toggle" type="button" data-live="toggle" aria-label="${playing?'Duraklat':track?'Devam et':'Luna’da dinle'}">${icon(playing?'pause':'play')}</button><button class="btn soft sp-live-skip" type="button" data-live="next" aria-label="Sonraki şarkı" title="Sonraki şarkı">${icon('next')}</button><button class="btn soft sp-live-selected" type="button" data-live="selected">Seçtiğim listeyi çal</button>`:`<button class="btn primary" type="button" data-live="connect" ${connecting?'disabled':''}>${connecting?'Oynatıcı hazırlanıyor…':'Luna oynatıcısını aç'}</button>`}</div>
+      <p class="hint" role="status">${esc(message||(!seekAllowed&&track?'Spotify bu içerikte ileri veya geri sarmaya izin vermiyor.':'Çalışma sayacın müzikten bağımsız devam eder.'))}</p>`;
+    paintTimeline();
+    if(restoreSeekFocus)root.querySelector?.('[data-live-seek]')?.focus?.({preventScroll:true});
   }
   function sdk(){
     if(window.Spotify?.Player)return Promise.resolve();
@@ -46,13 +100,13 @@ const SpotifyPlayback = (() => {
       try{await sdk();if(run!==generation)return false;
         if(player){player.disconnect();player=null;}
         const current=new window.Spotify.Player({name:'Luna · çalışma müziği',volume:.6,enableMediaSession:true,getOAuthToken:cb=>config.getToken().then(t=>cb(t)).catch(()=>cb(''))});player=current;
-        current.addListener('player_state_changed',s=>{if(run!==generation)return;track=s?.track_window?.current_track||null;playing=!!s&&!s.paused;position=s?.position||0;duration=s?.duration||0;render();});
-        current.addListener('not_ready',()=>{if(run===generation){device='';fail('Oynatıcı bağlantısı kesildi. Yeniden açabilirsin.');}});
+        current.addListener('player_state_changed',s=>{if(run===generation)acceptState(s);});
+        current.addListener('not_ready',()=>{if(run===generation){device='';stopClock();fail('Oynatıcı bağlantısı kesildi. Yeniden açabilirsin.');}});
         current.addListener('autoplay_failed',()=>{if(run===generation)fail('Sesi başlatmak için “Devam et” düğmesine dokun.');});
         const ready=new Promise((resolve,reject)=>{
           const timer=setTimeout(()=>reject(Error('READY_TIMEOUT')),15000);
           stopWaiting=()=>clearTimeout(timer);
-          current.addListener('ready',({device_id})=>{clearTimeout(timer);const valid=run===generation&&player===current;if(valid){device=device_id;render();}resolve(valid);});
+          current.addListener('ready',({device_id})=>{clearTimeout(timer);const valid=run===generation&&player===current;if(valid){device=device_id;startClock();render();}resolve(valid);});
           for(const name of ['initialization_error','authentication_error','account_error','playback_error'])current.addListener(name,()=>{clearTimeout(timer);reject(Error(name==='account_error'?'PREMIUM':name==='authentication_error'?'AUTH':'PLAYBACK'));});
         });
         // Attach a rejection handler before connect to avoid an unhandled SDK error.
@@ -70,15 +124,21 @@ const SpotifyPlayback = (() => {
     // Must be invoked directly from a tap for iOS audio activation.
     try{await player.activateElement();await request('/me/player/play?device_id='+encodeURIComponent(device),selection.type==='track'?{uris:[selection.uri]}:{context_uri:selection.uri});message='Müzik Luna’da başlatılıyor…';render();return true;}catch(e){error(e);return false;}
   }
-  function reset(){++generation;if(player)player.disconnect();player=null;device='';pending=null;connecting=false;track=null;playing=false;message='';if(config?.restoreEmbed)config.restoreEmbed();render();}
+  function reset(){++generation;++seekSequence;stopClock();seekBusy=false;position=0;duration=0;if(player)player.disconnect();player=null;device='';pending=null;connecting=false;track=null;playing=false;message='';if(config?.restoreEmbed)config.restoreEmbed();render();}
   return {
-    init(options){config=options;const root=el();if(!root)return;root.addEventListener('click',async e=>{const b=e.target.closest('[data-live]');if(!b)return;try{
+    init(options){config=options;const root=el();if(!root)return;
+      root.addEventListener('pointerdown',e=>{if(e.target.matches?.('[data-live-seek]')&&!seekBusy){dragging=true;draft=Number(e.target.value);}});
+      root.addEventListener('input',e=>{if(!e.target.matches?.('[data-live-seek]')||seekBusy)return;dragging=true;draft=Number(e.target.value);paintTimeline();});
+      root.addEventListener('change',async e=>{if(e.target.matches?.('[data-live-seek]'))await seekTo(e.target.value);});
+      root.addEventListener('pointercancel',()=>{dragging=false;paintTimeline();});
+      root.addEventListener('focusout',()=>{if(dragging){dragging=false;paintTimeline();}});
+      root.addEventListener('click',async e=>{const b=e.target.closest('[data-live]');if(!b)return;try{
       if(b.dataset.live==='connect'){await connect();return;}
       if(!player||!device)return;
       if(b.dataset.live==='selected'){await playSelected();return;}
       if(b.dataset.live==='toggle'){if(!track){await playSelected();return;}const activated=player.activateElement();await activated;await player.togglePlay();}
       else if(b.dataset.live==='next')await player.nextTrack();else if(b.dataset.live==='previous')await player.previousTrack();
-    }catch(err){error(err);}});render();},render,reset,playSelected,uri,
+    }catch(err){error(err);}});render();},render,reset,playSelected,seekTo,uri,
     status(){return {ready:!!device,connecting,playing,track:track?.name||''};}
   };
 })();

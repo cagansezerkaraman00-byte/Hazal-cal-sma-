@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.8",
+  "tarih": "2026-10-10",
+  "baslik": "Spotify şarkı kaydırma ve tatlı düğmeler",
+  "notlar": [
+    "🎧 Pembe kaydırma çubuğuyla şarkıda istediğin saniyeye git. Geçen ve toplam süre gösterilir; yuvarlak önceki, sonraki ve oynat/duraklat düğmeleri mor ve lavanta temalarıyla uyumludur."
+  ]
+},
+{
   "surum": "2.4.7",
   "tarih": "2026-10-09",
   "baslik": "Spotify kütüphanesi",
