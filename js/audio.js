@@ -89,6 +89,11 @@ const Sound = (() => {
     [...alarmVoices].forEach(v => v.stop());
     vibrate(0);
   }
+  function testVibration() {
+    stopTimerAlarm();
+    const rhythm = VIBRATIONS.find(v => v.id === Store.data.settings.timerVibration) || VIBRATIONS[0];
+    return { vibrationSupported: vibrationSupported(), vibration: vibrate([...rhythm.pattern]) };
+  }
   async function timerEnd() {
     stopTimerAlarm();
     const epoch = alarmEpoch;
@@ -213,7 +218,7 @@ const Sound = (() => {
   return {
     meows: MEOWS,
     vibrations: VIBRATIONS.map(({ id, label }) => Object.freeze({ id, label })),
-    unlock, timerEnd, stopTimerAlarm, vibrationSupported,
+    unlock, timerEnd, stopTimerAlarm, vibrationSupported, testVibration,
     chime() {
       if (!Store.data.settings.sound) return;
       [659.25, 783.99, 987.77, 1318.5].forEach((f, i) => tone(f, i * 0.14, 0.9));

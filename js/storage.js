@@ -112,6 +112,7 @@ const Store = (() => {
       { id: 's4', name: 'Biyoloji', color: '#7ee0a1' },
       { id: 's5', name: 'Türkçe', color: '#ff9eb5' },
     ],
+    questionLogs: [], // Gün sonunda girilen gerçek soru sayıları; süre ve rozet üretmez.
     sessions: [],   // {id, start, end, minutes, subjectId, note, hard, rating, mood, kind}
     tasks: [],      // {id, text, subjectId, due, done, doneAt, created}
     exams: [],      // {id, name, date}
@@ -155,7 +156,7 @@ const Store = (() => {
     out.settings.profile = { ...def.settings.profile, ...(isObj(out.settings.profile) ? out.settings.profile : {}) };
     if (!Array.isArray(out.settings.allowedApps)) out.settings.allowedApps = def.settings.allowedApps.slice();
     delete out.settings.kittenName; // yavrunun adı sabit: Güçlü
-    for (const k of ['subjects', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files', 'mistakes', 'refs']) {
+    for (const k of ['subjects', 'questionLogs', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files', 'mistakes', 'refs']) {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }
     if (!isObj(out.badges)) out.badges = {};
@@ -203,7 +204,7 @@ const Store = (() => {
     if (it.del) return { id: it.id, del: true, updated: +it.updated || 0 };
     it.title = (typeof it.title === 'string' ? it.title : typeof it.title === 'number' ? String(it.title) : '').slice(0, 120); // metin değilse boş (String() bazı nesnelerde hata verir)
     it.subjectId = clean(it.subjectId); it.topicId = clean(it.topicId); it.src = clean(it.src);
-    it.min = num(it.min, 600); it.q = num(it.q, 999);
+    it.min = num(it.min, 44640); it.q = num(it.q, 999);
     it.done = !!it.done; it.doneAt = +it.doneAt || 0; it.counted = !!it.counted;
     const pk = (v) => (typeof v === 'string' && (PLAN_DAY.test(v) || PLAN_MONTH.test(v)) ? v : '');
     it.moved = pk(it.moved); it.from = pk(it.from);

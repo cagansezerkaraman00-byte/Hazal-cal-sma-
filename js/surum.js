@@ -6,6 +6,18 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.3",
+  "tarih": "2026-10-09",
+  "baslik": "Lavanta, dengeli sayaç ve soru günlüğü",
+  "notlar": [
+    "🪻 Lavanta ve pembe görünüm; gece temasında sakin yıldızlar. Sayaç halkası pembe.",
+    "⏱️ Sayaç çemberi büyütüldü; rakamlar telefon, tablet ve küçük yatay pencerede çembere göre ölçeklenir.",
+    "🗓️ Plan hedefleri saat olarak girilir (1,5 saat gibi). Hedef soru alanı kaldırıldı; her maddenin ders veya genel plan için olduğu açıklandı.",
+    "✍️ Plan → Günlük içinde soru günlüğü: gün, ders, konu ve çözülen soru sayısı. Kayıtları düzenleyebilir, silebilir ve yedekleyebilirsin; çalışma süresini değiştirmez.",
+    "📳 Sesten bağımsız titreşim denemesi ve cihaz desteğine göre yardım. Gerçek miyav kayıtları korunur."
+  ]
+},
+{
   "surum": "2.4.2",
   "tarih": "2026-10-08",
   "baslik": "TYT, AYT ve Luna'nın bitiş miyavları",

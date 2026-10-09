@@ -103,7 +103,7 @@
     if (document.documentElement.dataset.theme === v) return;
     document.documentElement.dataset.theme = v;
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = dark ? '#0d1236' : '#f6f1ff';
+    if (meta) meta.content = dark ? '#21182f' : '#f3ecfb';
   }
   // ======================================================================
   // Hava durumu
@@ -781,8 +781,8 @@
     $('#goal-text').textContent = pct >= 100 ? `Hedef (${U.fmtMin(goal)}) tamam! 🎉` : `Hedefe ${U.fmtMin(goal - mins)} kaldı`;
     const todayKey = U.dateKey(new Date());
     const today = D().sessions.filter((s) => U.dateKey(s.start) === todayKey).sort((a, b) => b.start - a.start);
-    const qToday = today.reduce((n, s) => n + (+s.questions || 0), 0);
-    $('#today-sessions-count').textContent = today.length ? `${today.length} oturum${qToday ? ` · ${qToday} soru ✍️` : ''}` : '';
+    const qToday = today.reduce((n, s) => n + (+s.questions || 0), 0) + Planlar.questionEntries('day', U.dateKey(new Date())).reduce((n, x) => n + x.questions, 0);
+    $('#today-sessions-count').textContent = today.length || qToday ? `${today.length} oturum${qToday ? ` · ${qToday} soru ✍️` : ''}` : '';
     $('#today-sessions-label').textContent = today.length ? `Bugünün oturumları (${today.length})` : 'Bugünün oturumları';
     $('#today-list').innerHTML = today.length ? today.map((s) => sessionItem(s)).join('') : '<li class="empty" style="display:block">Bugün henüz oturum yok. Luna seni bekliyor 🐾</li>';
     $('#day-timeline').innerHTML = timelineHtml(new Date(), true);
@@ -1168,7 +1168,7 @@
     $('#set-timer-vibrate').checked = s.timerVibrate !== false;
     $('#set-timer-vibration').innerHTML = Sound.vibrations.map(v => `<option value="${v.id}">${U.esc(v.label)}</option>`).join('');
     $('#set-timer-vibration').value = Sound.vibrations.some(v => v.id === s.timerVibration) ? s.timerVibration : 'double';
-    $('#timer-vibration-support').textContent = Sound.vibrationSupported() ? 'Titreşim cihazın ve sessiz mod ayarlarının izin verdiği ölçüde çalışır. “Uyarıyı dene” ile kontrol et.' : 'Bu cihaz veya tarayıcı titreşimi desteklemiyor. iPhone ve iPad’de miyav sesi ve ekrandaki bitiş uyarısı kullanılabilir.';
+    $('#timer-vibration-support').textContent = Sound.vibrationSupported() ? 'Tarayıcın titreşim isteğini destekliyor; cihazın gerçekten titrediğini ölçemeyiz. Aşağıdaki ayrı düğmeyle sesi açmadan dene.' : 'Bu cihaz veya tarayıcı titreşimi desteklemiyor. iPhone ve iPad’de miyav sesi ve ekrandaki bitiş uyarısı kullanılabilir.';
     document.querySelectorAll('input[name="mini-theme"]').forEach(el => { el.checked = el.value === (s.miniTheme || 'cream'); });
     $('#set-reminders').checked = !!s.studyReminders;
     $('#set-notify').checked = s.notify && 'Notification' in window && Notification.permission === 'granted';
@@ -1282,8 +1282,12 @@
       const result = await Sound.timerEnd();
       if (result.cancelled) return;
       const sound = !D().settings.sound ? 'Sesler kapalı.' : result.sound ? 'Seçtiğin gerçek kedi kaydı çalıyor.' : 'Kayıt çalınamadı; yeniden dene, cihaz sesini ve tarayıcı iznini kontrol et.';
-      const vibration = D().settings.timerVibrate === false ? 'Titreşim kapalı.' : !result.vibrationSupported ? 'Bu cihazda titreşim desteklenmiyor.' : result.vibration ? 'Titreşim isteği gönderildi.' : 'Cihaz titreşime izin vermedi.';
+      const vibration = D().settings.timerVibrate === false ? 'Titreşim kapalı.' : !result.vibrationSupported ? 'Bu cihazda titreşim desteklenmiyor.' : result.vibration ? 'Titreşim isteği gönderildi; hissetmediysen aşağıdaki yardım adımlarına bak.' : 'Cihaz titreşime izin vermedi.';
       $('#timer-alarm-test-result').textContent = sound + ' ' + vibration;
+    });
+    $('#test-timer-vibration').addEventListener('click', () => {
+      const r = Sound.testVibration();
+      $('#timer-alarm-test-result').textContent = !r.vibrationSupported ? 'Bu tarayıcıda titreşim desteklenmiyor. Miyav ve ekrandaki bitiş uyarısını kullanabilirsin.' : r.vibration ? 'Seçtiğin titreşim ritmi istendi. Hissetmediysen “Titreşimi hissetmedim” adımlarını kontrol et. Bu deneme ses çalmaz ve ayarını değiştirmez.' : 'Titreşim isteği kabul edilmedi. Uygulamayı açık tutup yardım adımlarından sonra tekrar dene.';
     });
     $('#stop-timer-alarm').addEventListener('click', () => { Sound.stopTimerAlarm(); $('#timer-alarm-test-result').textContent = 'Deneme durduruldu.'; });
     bool('#set-quiet', 'quietFocus');

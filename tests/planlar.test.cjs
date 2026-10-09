@@ -90,7 +90,7 @@ const bad = {
   day: {
     x: [{ id: 'a', title: 't' }],
     '2026-10-08': 'notarray',
-    '2026-10-09': [{ title: 'kimliksiz' }, { id: 'ok1', title: 'A'.repeat(500), subjectId: '<b>x</b>', min: 9999, q: -3, moved: 'bad', done: 1 }, valid, { id: 'd1', del: true, updated: 9, title: 'gitmeli' }],
+    '2026-10-09': [{ title: 'kimliksiz' }, { id: 'ok1', title: 'A'.repeat(500), subjectId: '<b>x</b>', min: 99999, q: -3, moved: 'bad', done: 1 }, valid, { id: 'd1', del: true, updated: 9, title: 'gitmeli' }],
   },
   week: [],
   month: null,
@@ -107,7 +107,7 @@ const d9 = get("Store.data.plans.day['2026-10-09']");
 eq(d9.length, 3, 'item without id dropped');
 eq(d9[0].title.length, 120, 'title clipped to 120');
 eq(d9[0].subjectId, 'bxb', 'subjectId cleaned to safe characters');
-eq(d9[0].min, 600, 'min clamped');
+eq(d9[0].min, 44640, 'min clamped');
 eq(d9[0].q, 0, 'negative q becomes 0');
 eq(d9[0].moved, '', 'bad moved key cleared');
 eq(d9[0].done, true, 'done coerced to boolean');

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr" data-theme="light" data-surum="2.4.2">
+<html lang="tr" data-theme="light" data-surum="2.4.3">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -101,8 +101,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css?v=2.4.2">
-  <script src="js/kurulum.js?v=2.4.2"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.4.3">
+  <script src="js/kurulum.js?v=2.4.3"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -338,8 +338,8 @@
               <li><b>Konu takibi:</b> konuya dokundukça durumu değişir: ○ başlamadım → 📖 çalışıyorum → 🔁 tekrar → ✅ tamam.</li>
               <li><b>≈ sayılar</b> o konudan YKS'de yılda ortalama kaç soru geldiğini gösterir (2018–2025 sınavlarından derlendi; kaynaklar sayfanın altında). Yüzdeler de bu ağırlığa göre: soru getiren konuyu bitirmek daha çok sayılır.</li>
               <li><b>Planlarım:</b> Günlük, Haftalık ve Aylık planlarını sen yazarsın; uygulama kendiliğinden ya da rastgele plan oluşturmaz. ‹ › ile önceki ve sonraki güne, haftaya, aya geçersin.</li>
-              <li>Bir maddeye istersen <b>ders</b>, <b>hedef dakika</b> ve <b>hedef soru</b> ekleyebilir, YKS konularından seçebilirsin. Maddeye dokunarak düzenler, silersin.</li>
-              <li><b>Bugünün planı</b> ana ekranda da durur. <b>Başla ▶</b> sayacı o maddeyle başlatır; hedefi olmayan madde, oturum bitince kendiliğinden işaretlenir. Hedefli maddelerde o dersin dakika ve soru sayısı görünür, işareti sen koyarsın.</li>
+              <li>Bir maddeye istersen <b>ders</b>, <b>saat cinsinden hedef süre</b> ekleyebilir, YKS konularından seçebilirsin. Maddeye dokunarak düzenler, silersin.</li>
+              <li><b>Bugünün planı</b> ana ekranda da durur. <b>Başla ▶</b> sayacı o maddeyle başlatır; hedefi olmayan madde, oturum bitince kendiliğinden işaretlenir. Hedefli maddelerde o derste çalıştığın süre görünür, işareti sen koyarsın.</li>
               <li><b>↪ Taşı:</b> biten maddeler kalır, kalanları tek dokunuşla ertesi güne (haftaya, aya) taşırsın. <b>⧉ Kopyala</b> önceki listeyi başlangıç olarak ekler; sen dokunmadan hiçbir şey eklenmez.</li>
               <li><b>Gün sonu:</b> akşam 20:00'den sonra Luna günün planına bakar, yüzde kaçını bitirdiğini ve sıradaki küçük adımı söyler. Akşam uygulamayı açmadıysan ertesi gün ilk açılışta dünü özetler.</li>
               <li>Sınav tarihi şimdilik tahmini; ÖSYM açıklayınca kendiliğinden güncellenir, geri sayım da ona uyar. İstersen Plan sekmesinden kendi tarihini seçebilirsin.</li>
@@ -497,11 +497,11 @@
           <div class="card">
             <h2>🎨 Görünüm</h2>
             <div class="seg" id="theme-seg">
-              <button data-theme="light">☀️ Açık</button>
-              <button data-theme="dark">🌙 Koyu</button>
+              <button data-theme="light">🪻 Lavanta</button>
+              <button data-theme="dark">🌙 Gece</button>
               <button data-theme="auto">🌗 Otomatik</button>
             </div>
-            <p class="hint">Otomatik: gün batımında koyu temaya geçer.</p>
+            <p class="hint">Lavanta ve pembe tonları. Gece görünümünde fonda hafif yıldızlar; otomatik seçersen gün batımında geçiş yapar.</p>
           </div>
           <div class="card">
             <h2>👤 Kişisel</h2>
@@ -566,8 +566,8 @@
               <label class="field">Miyav sesi <select id="set-timer-meow"></select></label>
               <label class="switch"><input type="checkbox" id="set-timer-vibrate"> Süre dolunca titreştir</label>
               <label class="field">Titreşim ritmi <select id="set-timer-vibration"></select></label>
-              <p class="hint" id="timer-vibration-support"></p>
-              <div class="timer-alarm-actions"><button class="btn soft" type="button" id="test-timer-alarm">🐈 Uyarıyı dene</button><button class="btn ghost" type="button" id="stop-timer-alarm">Durdur</button></div>
+              <p class="hint" id="timer-vibration-support"></p><details class="vibration-help"><summary>Titreşimi hissetmedim</summary><p>Android’de telefonun Ses ve titreşim ayarlarından titreşimi aç. Sessiz veya Rahatsız Etmeyin modunu kapatıp uygulama açıkken tekrar dene. Miyav için medya sesini de kontrol et.</p><p>Tarayıcı isteği kabul etse bile fiziksel titreşimi ölçemeyiz. iPhone/iPad web uygulamasında titreşim desteklenmez; miyav ve ekrandaki bitiş uyarısı çalışır.</p></details>
+              <div class="timer-alarm-actions"><button class="btn soft" type="button" id="test-timer-alarm">🐈 Uyarıyı dene</button><button class="btn soft" type="button" id="test-timer-vibration">📳 Yalnızca titreşimi dene</button><button class="btn ghost" type="button" id="stop-timer-alarm">Durdur</button></div>
               <p class="hint" id="timer-alarm-test-result" role="status"></p>
               <p class="hint">Miyav için “Sesler açık” olmalı. Uygulama kapatılırsa veya cihaz arka planda askıya alırsa uyarı gecikebilir; sınav sırasında uygulamayı açık tut.</p>
             </fieldset>
@@ -662,36 +662,36 @@
   </div>
   <div class="toasts" id="toasts"></div>
   <div id="timer-end-alert" class="timer-end-alert" role="status" hidden><span id="timer-end-message"></span><button type="button" class="btn soft" id="dismiss-timer-alarm">Tamam</button></div>
-  <script src="js/storage.js?v=2.4.2"></script>
-  <script src="js/surum.js?v=2.4.2"></script>
-  <script src="js/messages.js?v=2.4.2"></script>
-  <script src="js/audio.js?v=2.4.2"></script>
-  <script src="js/takvim.js?v=2.4.2"></script>
-  <script src="js/scene.js?v=2.4.2"></script>
-  <script src="js/timer.js?v=2.4.2"></script>
-  <script src="js/stats.js?v=2.4.2"></script>
-  <script src="js/weather.js?v=2.4.2"></script>
-  <script src="js/yks.js?v=2.4.2"></script>
-  <script src="js/plan.js?v=2.4.2"></script>
-  <script src="js/planlar.js?v=2.4.2"></script>
-  <script src="js/planlar-ui.js?v=2.4.2"></script>
-  <script src="js/deneme.js?v=2.4.2"></script>
-  <script src="js/notes.js?v=2.4.2"></script>
-  <script src="js/giris.js?v=2.4.2"></script>
-  <script src="js/depo.js?v=2.4.2"></script>
-  <script src="js/depo-ui.js?v=2.4.2"></script>
-  <script src="js/hata.js?v=2.4.2"></script>
-  <script src="js/kaynak.js?v=2.4.2"></script>
-  <script src="js/kaynak-ui.js?v=2.4.2"></script>
-  <script src="js/badges.js?v=2.4.2"></script>
-  <script src="js/spotify.js?v=2.4.2"></script>
-  <script src="js/uni.js?v=2.4.2"></script>
-  <script src="js/uni-ui.js?v=2.4.2"></script>
-  <script src="js/diag.js?v=2.4.2"></script>
-  <script src="js/guncelleme.js?v=2.4.2"></script>
-  <script src="js/notifications.js?v=2.4.2"></script>
-  <script src="js/mini-timer.js?v=2.4.2"></script>
-  <script src="js/app.js?v=2.4.2"></script>
+  <script src="js/storage.js?v=2.4.3"></script>
+  <script src="js/surum.js?v=2.4.3"></script>
+  <script src="js/messages.js?v=2.4.3"></script>
+  <script src="js/audio.js?v=2.4.3"></script>
+  <script src="js/takvim.js?v=2.4.3"></script>
+  <script src="js/scene.js?v=2.4.3"></script>
+  <script src="js/timer.js?v=2.4.3"></script>
+  <script src="js/stats.js?v=2.4.3"></script>
+  <script src="js/weather.js?v=2.4.3"></script>
+  <script src="js/yks.js?v=2.4.3"></script>
+  <script src="js/plan.js?v=2.4.3"></script>
+  <script src="js/planlar.js?v=2.4.3"></script>
+  <script src="js/planlar-ui.js?v=2.4.3"></script>
+  <script src="js/deneme.js?v=2.4.3"></script>
+  <script src="js/notes.js?v=2.4.3"></script>
+  <script src="js/giris.js?v=2.4.3"></script>
+  <script src="js/depo.js?v=2.4.3"></script>
+  <script src="js/depo-ui.js?v=2.4.3"></script>
+  <script src="js/hata.js?v=2.4.3"></script>
+  <script src="js/kaynak.js?v=2.4.3"></script>
+  <script src="js/kaynak-ui.js?v=2.4.3"></script>
+  <script src="js/badges.js?v=2.4.3"></script>
+  <script src="js/spotify.js?v=2.4.3"></script>
+  <script src="js/uni.js?v=2.4.3"></script>
+  <script src="js/uni-ui.js?v=2.4.3"></script>
+  <script src="js/diag.js?v=2.4.3"></script>
+  <script src="js/guncelleme.js?v=2.4.3"></script>
+  <script src="js/notifications.js?v=2.4.3"></script>
+  <script src="js/mini-timer.js?v=2.4.3"></script>
+  <script src="js/app.js?v=2.4.3"></script>
 </body>
 </html>
 

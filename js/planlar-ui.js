@@ -20,7 +20,7 @@ const PlanlarUI = (() => {
   const N = {
     day: { seg: 'Günlük', prev: 'Önceki gün', next: 'Sonraki gün', cur: 'Bugün', empty: 'Bu gün için henüz plan yok.', unit: 'maddeyi',
       hedef: ['bugüne', 'yarına', 'ertesi güne'], tag: ['→ bugüne taşındı', '→ yarına taşındı'], from: '↪ dünden', when: ['bugün', 'o gün'],
-      kaynak: ['Dünün planını', 'Bugünün planını', 'Önceki günün planını'], ph: ['Örn: 20 paragraf sorusu', 'Örn: 2. ünite tekrarı'] },
+      kaynak: ['Dünün planını', 'Bugünün planını', 'Önceki günün planını'], ph: ['Örn: Paragraf çalışıp yanlışlarımı incele', 'Örn: 2. ünite tekrarı'] },
     week: { seg: 'Haftalık', prev: 'Önceki hafta', next: 'Sonraki hafta', cur: 'Bu hafta', empty: 'Bu hafta için henüz hedef yok.', unit: 'hedefi',
       hedef: ['bu haftaya', 'gelecek haftaya', 'sonraki haftaya'], tag: ['→ bu haftaya taşındı', '→ gelecek haftaya taşındı'], from: '↪ geçen haftadan', when: ['bu hafta', 'o hafta'],
       kaynak: ['Geçen haftanın hedeflerini', 'Bu haftanın hedeflerini', 'Önceki haftanın hedeflerini'], ph: ['Örn: Türev konusunu bitir', 'Örn: Ödev taslağını bitir'] },
@@ -43,6 +43,7 @@ const PlanlarUI = (() => {
     const { from, to } = Planlar.range(scope, key);
     let minutes = 0, questions = 0;
     for (const s of D().sessions) if (s && s.start >= from && s.start < to) { minutes += Math.max(0, Number(s.minutes) || 0); questions += +s.questions || 0; }
+    questions += Planlar.questionEntries(scope, key).reduce((n, x) => n + x.questions, 0);
     return { minutes: Math.round(minutes), questions };
   }
   function loadScope() { try { const s = localStorage.getItem(SCOPE_KEY); if (Planlar.SCOPES.includes(s)) view.scope = s; } catch (e) { /* gizli mod */ } }
@@ -85,11 +86,11 @@ const PlanlarUI = (() => {
     const color = s ? s.color : 'var(--violet)';
     const parts = [];
     if (s) parts.push(esc(s.name));
-    const tg = [it.min ? `${it.min} dk` : '', it.q ? `${it.q} soru` : ''].filter(Boolean).join(' / ');
+    const tg = it.min ? U.fmtMin(it.min) : '';
     if (tg) parts.push('hedef ' + tg);
     if (s && tg && key <= cur && !it.moved) {
       const w = Planlar.subjectWork(it.subjectId, scope, key);
-      if (w) parts.push(`${n.when[key === cur ? 0 : 1]} ${U.fmtMin(w.minutes)}${it.q ? ` / ${w.questions} soru` : ''}`);
+      if (w) parts.push(`${n.when[key === cur ? 0 : 1]} ${U.fmtMin(w.minutes)}`);
     }
     if (it.from) parts.push(it.from === Planlar.shift(scope, key, -1) ? n.from : '↪ ertelenen');
     const reached = Planlar.targetReached(it, scope, key);
@@ -170,7 +171,7 @@ const PlanlarUI = (() => {
       ${quickForm(scope, key)}
       <button type="button" class="link-btn" data-mp="add">＋ Ders ve hedefle ekle</button>
       ${tools.length ? `<div class="mp-tools">${tools.join('')}</div>` : ''}
-      ${scope === 'day' ? upHtml(key, now) + eodHtml(key, now) : ''}
+      ${scope === 'day' ? questionHtml(key) + upHtml(key, now) + eodHtml(key, now) : ''}
       ${scope === 'week' ? daysHtml(key, now) : ''}
       ${scope === 'month' ? calHtml(key, now) : ''}
     </div>`;
@@ -187,6 +188,48 @@ const PlanlarUI = (() => {
         <ul class="plan-list mp-list">${ordered(items).map((it) => itemHtml(it, scope, k, now)).join('')}</ul></details>`);
     }
     return out.join('');
+  }
+
+  function questionHtml(day) {
+    if (day > U.dateKey(new Date())) return '';
+    const rows = Planlar.questionEntries('day', day);
+    const total = rows.reduce((n, x) => n + x.questions, 0);
+    const { from, to } = Planlar.range('day', day);
+    const inSessions = D().sessions.filter(s => s.start >= from && s.start < to).reduce((n, s) => n + (+s.questions || 0), 0);
+    return `<section class="question-journal" aria-label="Soru günlüğü">
+      <div class="mp-head"><h3>✍️ Soru günlüğü</h3><span class="journal-total">${total + inSessions} soru</span></div>
+      <p class="hint">Günün sonunda hangi dersten, hangi konudan kaç soru çözdüğünü yaz. Süre eklenmez; önceden hedef belirlemen gerekmez.</p>
+      ${inSessions ? `<p class="hint">${inSessions} soru oturumlarında zaten kayıtlı; aynı soruları yeniden ekleme. Günlükten eklenen: ${total}.</p>` : ''}
+      ${rows.length ? `<ul class="question-list">${rows.map(x => `<li><button type="button" data-mp="question-edit" data-key="${esc(day)}" data-id="${esc(x.id)}" aria-label="Soru kaydını düzenle: ${esc(x.topic)}"><span><b>${esc(Store.subject(x.subjectId).name)}</b><small>${esc(x.topic)}</small></span><strong>${x.questions} <small>soru</small></strong><span aria-hidden="true">✎</span></button></li>`).join('')}</ul>` : '<p class="muted small">Bu gün için henüz konu kaydı yok.</p>'}
+      <button type="button" class="btn soft" data-mp="question-add" data-key="${esc(day)}">＋ Çözdüğüm soruları ekle</button>
+    </section>`;
+  }
+  function openQuestionForm(day, id = '') {
+    const old = id ? (D().questionLogs || []).find(x => x.id === id && !x.del) : null;
+    if (id && !old) return;
+    const subs = D().subjects.slice();
+    if (old && !subs.some(x => x.id === old.subjectId)) { const s = Store.subject(old.subjectId); if (s.id) subs.push(s); }
+    const card = App.openModal(`<h3>✍️ ${old ? 'Soru kaydını düzenle' : 'Çözdüğüm sorular'}</h3>
+      <p class="hint">Yalnızca gerçekten çözdüğün soruları yaz. Oturum bitişinde kaydettiklerini burada tekrar sayma.</p>
+      <label class="field">Gün <input data-qlog="date" type="date" max="${U.dateKey(new Date())}" value="${esc(old ? old.date : day)}"></label>
+      <label class="field">Ders <select data-qlog="subject"><option value="">Ders seç</option>${subs.map(x => `<option value="${esc(x.id)}"${old && x.id === old.subjectId ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+      <label class="field">Konu <input data-qlog="topic" maxlength="120" placeholder="Örn: Paragraf · ana düşünce" value="${esc(old ? old.topic : '')}"></label>
+      <label class="field">Çözdüğüm soru sayısı <input data-qlog="count" type="number" min="1" max="9999" step="1" inputmode="numeric" value="${old ? old.questions : ''}" placeholder="Örn: 35"></label>
+      <p class="hint" data-qlog="error" role="status"></p>
+      <div class="modal-actions">${old ? '<button class="btn danger" data-qlog-act="delete">Sil</button>' : ''}<button class="btn soft" data-qlog-act="cancel">Vazgeç</button><button class="btn primary" data-qlog-act="save">Kaydet</button></div>`);
+    const q = k => card.querySelector(`[data-qlog="${k}"]`);
+    card.addEventListener('click', e => {
+      const b = e.target.closest('[data-qlog-act]'); if (!b) return;
+      if (b.dataset.qlogAct === 'cancel') { App.closeModal(); return; }
+      if (b.dataset.qlogAct === 'delete') {
+        if (!confirm('Bu soru kaydı silinsin mi?')) return;
+        if (!Planlar.removeQuestions(id)) { q('error').textContent = 'Kayıt silinemedi; tekrar dene.'; return; }
+      } else {
+        const saved = Planlar.saveQuestions({ date: q('date').value, subjectId: q('subject').value, topic: q('topic').value, questions: q('count').value }, id);
+        if (!saved) { q('error').textContent = 'Ders, konu, geçmiş veya bugüne ait gün ve 1–9999 arasında tam sayı gir. Kayıt alanı doluysa yer açıp tekrar dene.'; return; }
+      }
+      App.closeModal(); invalidate(); App.refresh(); App.toast('✍️', 'Soru günlüğün güncellendi');
+    });
   }
 
   // ---------- Gün sonu kartı (gün görünümü) ----------
@@ -342,11 +385,12 @@ const PlanlarUI = (() => {
     const subjOpts = subs.map((s) => `<option value="${esc(s.id)}"${it && it.subjectId === s.id ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
     const topic = topicPicker(it, prog);
     const card = App.openModal(`<h3>${it ? '✏️ Maddeyi düzenle' : '＋ Yeni plan maddesi'}</h3><p class="muted small">${N[scope].seg} · ${esc(lab.title)}</p>
-      <label class="field">Ne yapacaksın? <input data-f="title" maxlength="120" placeholder="${esc(placeholder(scope))}" value="${it ? esc(it.title) : ''}"></label>
+      <p class="hint">Her madde bir çalışma adımıdır. Ders seçersen o ders için, boş bırakırsan genel planın için kaydedilir. Günlük listene birden fazla madde ekleyebilirsin.</p>
+      <label class="field">Bu maddede ne çalışacaksın? <input data-f="title" maxlength="120" placeholder="${esc(placeholder(scope))}" value="${it ? esc(it.title) : ''}"></label>
       <label class="field">Ders (isteğe bağlı) <select data-f="subject"><option value="">— Ders seçme —</option>${subjOpts}</select></label>
       ${topic.html}
-      <div class="row2"><label class="field">Hedef dakika <input type="number" data-f="min" min="0" max="600" step="5" inputmode="numeric" placeholder="—" value="${it && it.min ? it.min : ''}"></label>
-        <label class="field">Hedef soru <input type="number" data-f="q" min="0" max="999" inputmode="numeric" placeholder="—" value="${it && it.q ? it.q : ''}"></label></div>
+      <label class="field">Hedef süre (saat, isteğe bağlı) <input type="text" data-f="hours" inputmode="decimal" placeholder="Örn: 1,5" value="${it && it.min ? U.num(Number((it.min / 60).toFixed(4))) : ''}"></label>
+      <p class="hint">1,5 saat = 1 saat 30 dakika. Önceden soru hedefi belirlemene gerek yok; çözdüklerini gün sonunda Soru günlüğü'ne yazabilirsin.</p>
       ${it && scope === 'day' && !it.moved ? `<label class="field">Gün <input type="date" data-f="date" value="${esc(key)}"></label>` : ''}
       ${it && !it.moved ? `<div class="row mp-order"><button class="btn soft small-btn" data-act="up" type="button">⬆ Yukarı</button><button class="btn soft small-btn" data-act="down" type="button">⬇ Aşağı</button><span class="muted small" data-pos>${position(it.id)}</span></div>` : ''}
       ${it && it.moved ? `<p class="hint">Bu madde ${esc(movedPhrase(scope, it.moved, now))} taşındı.</p><button class="btn soft small-btn" data-act="uncarry" type="button">↩ Taşımayı geri al</button>` : ''}
@@ -391,7 +435,9 @@ const PlanlarUI = (() => {
       const title = q('title').value.trim();
       if (!title) { App.toast('🗓️', 'Önce ne yapacağını yaz 🐾'); q('title').focus(); return; }
       const tv = topicSel ? topicSel.value : '';
-      const data = { title, subjectId: q('subject').value, min: q('min').value, q: q('q').value,
+      const minutes = Planlar.hoursToMinutes(q('hours').value, scope);
+      if (minutes === null) { App.toast('⏱️', 'Geçerli bir saat gir', 'Günlük en fazla 24, haftalık 168, aylık 744 saat. Örnek: 1,5'); q('hours').focus(); return; }
+      const data = { title, subjectId: q('subject').value, min: minutes,
         topicId: topic.kind === 'yks' ? tv : it ? it.topicId : '' }; // konu kimliği yalnızca YKS konuları için saklanır
       if (it) {
         Planlar.update(it.id, data);
@@ -453,7 +499,9 @@ const PlanlarUI = (() => {
       } else if (a === 'go') {
         const f = Planlar.find(id);
         if (f) App.startStudy({ subjectId: f.item.subjectId || undefined, intent: f.item.title });
-      } else if (a === 'edit') openForm({ id });
+      } else if (a === 'question-add') openQuestionForm(b.dataset.key);
+      else if (a === 'question-edit') openQuestionForm(b.dataset.key, b.dataset.id);
+      else if (a === 'edit') openForm({ id });
       else if (a === 'add') openForm({ scope: b.dataset.scope || view.scope, key: b.dataset.key || view.key });
       else if (a === 'carry') {
         const r = Planlar.carry(b.dataset.scope, b.dataset.key, { to: b.dataset.to });

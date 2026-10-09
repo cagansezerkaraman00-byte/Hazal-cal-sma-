@@ -73,6 +73,18 @@ function setup({ missing = false, blocked = false, denied = false, noVibration =
   assert.equal((await old).cancelled,true); assert.equal((await latest).sound,true);
   assert.ok(slow2.notes.every(n => n.buffer.file.includes('kitten.mp3')), 'latest selection wins load races');
   const feed = setup({fetchFails:1}); await assert.doesNotReject(feed.Sound.meow());
+  const hapticOnly = setup();
+  hapticOnly.Store.data.settings.sound = false;
+  hapticOnly.Store.data.settings.timerVibrate = false;
+  for (const rhythm of hapticOnly.Sound.vibrations) {
+    hapticOnly.Store.data.settings.timerVibration = rhythm.id;
+    assert.equal(hapticOnly.Sound.testVibration().vibration, true);
+    assert.ok(Array.isArray(hapticOnly.patterns.at(-1)));
+  }
+  assert.equal(hapticOnly.requests.length, 0, 'isolated haptic test never fetches or plays audio');
+  assert.equal(hapticOnly.Store.data.settings.timerVibrate, false, 'preview does not enable saved alarm setting');
+  assert.equal(setup({noVibration:true}).Sound.testVibration().vibrationSupported, false);
+  assert.equal(setup({denied:true}).Sound.testVibration().vibration, false);
   await flush();
   console.log('Real recorded meows: five excerpts, natural speed, preload, retries, cancellation, five vibrations and unsupported devices passed');
 })().catch(e => { console.error(e); process.exitCode = 1; });

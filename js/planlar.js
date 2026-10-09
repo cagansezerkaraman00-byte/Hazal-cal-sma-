@@ -21,6 +21,40 @@ const Planlar = (() => {
   const live = (x) => isObj(x) && !x.del;
   const ms = (t) => { const n = +new Date(t == null ? Date.now() : t); return isNaN(n) ? Date.now() : n; };
 
+  // Ayrı soru günlüğü: çalışma oturumları ve kazanılmış rozetler değiştirilmez.
+  function questionEntries(scope, key) {
+    if (!isKey(scope, key)) return [];
+    const { from, to } = range(scope, key);
+    return (Store.data.questionLogs || []).filter(x => live(x) && isKey('day', x.date) &&
+      noon(x.date).getTime() >= from && noon(x.date).getTime() < to && Number.isInteger(x.questions) && x.questions > 0);
+  }
+  function saveQuestions(input, id = '') {
+    const rows = Store.data.questionLogs || (Store.data.questionLogs = []);
+    const old = id ? rows.find(x => live(x) && x.id === id) : null;
+    if (id && !old) return false;
+    const count = Number(input.questions), topic = String(input.topic || '').trim().slice(0, 120);
+    const subjectId = clean(input.subjectId);
+    if (!isKey('day', input.date) || input.date > keyOf('day') || !subjectId || !Store.subject(subjectId).id || !topic ||
+        !Number.isInteger(count) || count < 1 || count > 9999) return false;
+    const record = { ...(old || {}), id: old ? old.id : 'q' + U.uid(), date: input.date, subjectId,
+      topic, questions: count, created: old ? old.created : Date.now(), updated: Date.now() };
+    if (old) rows[rows.indexOf(old)] = record; else rows.push(record);
+    if (!Store.save()) { if (old) rows[rows.indexOf(record)] = old; else rows.pop(); return false; }
+    return record;
+  }
+  function removeQuestions(id) {
+    const rows = Store.data.questionLogs || [], i = rows.findIndex(x => live(x) && x.id === id);
+    if (i < 0) return false;
+    const old = rows[i]; rows[i] = { id, del: true, updated: Date.now() };
+    if (!Store.save()) { rows[i] = old; return false; }
+    return true;
+  }
+  function hoursToMinutes(value, scope) {
+    const hours = Number(String(value).trim().replace(',', '.'));
+    const max = { day: 24, week: 168, month: 744 }[scope];
+    return max && Number.isFinite(hours) && hours >= 0 && hours <= max ? Math.round(hours * 60) : null;
+  }
+
   // ---------- Anahtarlar ----------
   function keyOf(scope, date = new Date()) {
     const d = new Date(date);
@@ -99,7 +133,7 @@ const Planlar = (() => {
   function mkItem(data, now) {
     return {
       id: 'p' + U.uid(), title: String(data.title == null ? '' : data.title).trim().slice(0, MAX_TITLE),
-      subjectId: clean(data.subjectId), topicId: clean(data.topicId), min: num(data.min, 600), q: num(data.q, 999),
+      subjectId: clean(data.subjectId), topicId: clean(data.topicId), min: num(data.min, 44640), q: num(data.q, 999),
       done: false, doneAt: 0, moved: '', from: '', src: '', counted: false, created: now, updated: now,
     };
   }
@@ -121,7 +155,7 @@ const Planlar = (() => {
     if (title !== null) it.title = title;
     if ('subjectId' in patch) it.subjectId = clean(patch.subjectId);
     if ('topicId' in patch) it.topicId = clean(patch.topicId);
-    if ('min' in patch) it.min = num(patch.min, 600);
+    if ('min' in patch) it.min = num(patch.min, 44640);
     if ('q' in patch) it.q = num(patch.q, 999);
     it.updated = ms(now);
     Store.save();
@@ -217,15 +251,16 @@ const Planlar = (() => {
       minutes += Math.max(0, Number(s.minutes) || 0);
       questions += +s.questions || 0;
     }
+    questions += questionEntries(scope, key).filter(x => x.subjectId === subjectId).reduce((n, x) => n + x.questions, 0);
     return { minutes: Math.round(minutes), questions };
   }
   // Yalnızca gösterim: hedefe ulaşıldığı söylenir, madde hiçbir zaman kendiliğinden işaretlenmez.
   // Aynı derste bitmemiş ikinci bir hedefli madde varsa süre hangisine ait bilinemez: ipucu çıkmaz.
   function targetReached(item, scope, key) {
-    if (!live(item) || item.done || item.moved || !(item.min || item.q) || !item.subjectId) return false;
+    if (!live(item) || item.done || item.moved || !item.min || !item.subjectId) return false;
     const w = subjectWork(item.subjectId, scope, key);
-    if (!w || (item.min && w.minutes < item.min) || (item.q && w.questions < item.q)) return false;
-    return list(scope, key).filter((x) => !x.done && !x.moved && (x.min || x.q) && x.subjectId === item.subjectId).length === 1;
+    if (!w || (item.min && w.minutes < item.min)) return false;
+    return list(scope, key).filter((x) => !x.done && !x.moved && x.min && x.subjectId === item.subjectId).length === 1;
   }
 
   // ---------- Taşıma ve kopyalama (yalnızca Hazal dokununca) ----------
@@ -296,7 +331,7 @@ const Planlar = (() => {
     if (!session || !session.intent) return null;
     const t = session.start || Date.now();
     for (const scope of SCOPES) {
-      const it = list(scope, keyOf(scope, t)).find((x) => !x.done && !x.moved && !x.min && !x.q && x.title.slice(0, 80) === session.intent); // sayaçtaki hedef 80 karakterde kesilir
+      const it = list(scope, keyOf(scope, t)).find((x) => !x.done && !x.moved && !x.min && x.title.slice(0, 80) === session.intent); // sayaçtaki hedef 80 karakterde kesilir
       if (it) { setDone(it.id, true); return it; }
     }
     return null;
@@ -399,6 +434,7 @@ const Planlar = (() => {
   }
 
   return {
+    questionEntries, saveQuestions, removeQuestions, hoursToMinutes,
     SCOPES, MAX_ITEMS, keyOf, isKey, shift, range, label, daysOf, weeksOfMonth, list, find, add, update, remove,
     reorder, moveToDay, setDone, stats, roll, subjectWork, targetReached, carryTarget, carry, uncarry,
     copyPrev, prevCount, copyCount, bandOf, smallest, usedRecently, eodDue, eodView, markEod, dismissEod, onSession,
