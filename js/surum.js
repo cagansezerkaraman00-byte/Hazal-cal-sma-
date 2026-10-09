@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.15",
+  "tarih": "2026-10-10",
+  "baslik": "Tek Premium müzik paneli",
+  "notlar": [
+    "🎧 Albüm kapağı, seçilebilir şarkılar ve ileri–geri sarma tek Premium panelinde. Müzik bölümü açılınca oynatıcı önceden hazırlanır ve aynı bağlantı kullanılır. Spotify’ın ağ ve ses yükleme süresi cihaz bağlantısına bağlıdır."
+  ]
+},
+{
   "surum": "2.4.14",
   "tarih": "2026-10-10",
   "baslik": "Spotify oynatıcı ve şarkı listesi",

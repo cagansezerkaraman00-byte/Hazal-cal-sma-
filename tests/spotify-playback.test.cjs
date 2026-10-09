@@ -7,8 +7,8 @@ async function main(){
  const playback=new Function('window','document','U','fetch',read('spotify-playback.js')+';return SpotifyPlayback;')({Spotify:{Player}}, {getElementById:k=>nodes[k],createElement:()=>({remove:()=>{}}),head:{appendChild:()=>{}}}, {esc:s=>s},async(url,opt)=>{calls.push({url,opt});return{ok:response===204,status:response};});
  playback.init({hasAccess:()=>access,getToken:async()=> 'test-token',selection:()=>selection});
  const click=act=>nodes['sp-playback'].click({target:{closest:()=>({dataset:{live:act}})}});
- assert.equal(calls.length,0,'no startup network');assert.equal(nodes['spotify-frame'].hidden,false);
- await click('connect');assert.equal(playback.status().ready,true);assert.equal(nodes['spotify-frame'].hidden,false);
+ assert.equal(calls.length,0,'no startup network');assert.equal(nodes['spotify-frame'].hidden,true);
+ await click('connect');assert.equal(playback.status().ready,true);assert.equal(nodes['spotify-frame'].hidden,true);
  selection='https://open.spotify.com/playlist/1234567890123456789012';await click('toggle');assert.equal(instance.activated,1);assert.match(calls[0].url,/device_id=luna-device/);assert.deepEqual(JSON.parse(calls[0].opt.body),{context_uri:'spotify:playlist:1234567890123456789012'});
  selection='spotify:track:1234567890123456789012';await click('selected');assert.deepEqual(JSON.parse(calls[1].opt.body),{uris:['spotify:track:1234567890123456789012']});
  instance.events.player_state_changed({paused:false,position:1000,duration:200000,track_window:{current_track:{name:'A song',artists:[{name:'Artist'}]}}});assert(playback.status().playing);await click('toggle');assert(instance.toggled);await click('next');assert(instance.next);await click('previous');assert(instance.prev);

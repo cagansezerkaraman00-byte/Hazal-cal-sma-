@@ -1079,7 +1079,8 @@
   function loadSpotify() {
     const p = spotifyParts(D().settings.spotify);
     const src = spotifyEmbed(D().settings.spotify);
-    if (window.SpotifyPlayback?.mountEmbed(D().settings.spotify)) {
+    if (window.SpotifyLink) SpotifyLink.showSongs(D().settings.spotify);
+    if (window.SpotifyPlayback?.prepare()) {
       spotifyLoaded = true;
       $('#music-now').textContent = 'Şarkını seç';
       return;
