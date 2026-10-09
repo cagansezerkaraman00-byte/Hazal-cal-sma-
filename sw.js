@@ -1,3 +1,4 @@
+// Spotify preview configuration revision: 2026-10-09-client-ready
 /* Hızlı açılış, çevrimdışı çalışma ve güncellemeler.
    Uygulama kabuğu (HTML, CSS, JS, simgeler) sürüme bağlı önbellekten gelir: zayıf internette de anında açılır
    ve dosyalar hep aynı sürümden olur. Sürüm numarası js/surum.js'den gelir: oraya yeni bir sürüm eklenince
@@ -9,7 +10,7 @@ const FILES = [
   'assets/sleeping-family.jpg', './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'assets/meows/cat-voice.mp3', 'assets/meows/kitten.mp3', 'assets/meows/cat-meow.mp3',
   'js/kurulum.js', 'js/notifications.js', 'js/mini-timer.js', 'js/storage.js', 'js/surum.js', 'js/messages.js', 'js/audio.js', 'js/scene.js', 'js/timer.js', 'js/stats.js',
-  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/planlar.js', 'js/planlar-ui.js', 'js/deneme.js', 'js/notes.js', 'js/giris.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify.js', 'js/uni.js', 'js/uni-ui.js', 'js/diag.js', 'js/guncelleme.js', 'js/app.js',
+  'js/takvim.js', 'js/weather.js', 'js/yks.js', 'js/plan.js', 'js/planlar.js', 'js/planlar-ui.js', 'js/deneme.js', 'js/notes.js', 'js/giris.js', 'js/depo.js', 'js/depo-ui.js', 'js/hata.js', 'js/kaynak.js', 'js/kaynak-ui.js', 'js/badges.js', 'js/spotify-config.js', 'js/spotify-playback.js', 'js/spotify.js', 'js/uni.js', 'js/uni-ui.js', 'js/diag.js', 'js/guncelleme.js', 'js/app.js',
   'icons/luna-notification-v2.png', 'icons/icon-512-maskable.png', 'icons/notification-badge.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-48.png',
 ];
 const SHELL = new Set(FILES.map((f) => new URL(f, self.registration.scope).href));

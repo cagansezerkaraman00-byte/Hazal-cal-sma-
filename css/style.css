@@ -1951,3 +1951,5 @@ body.focusing #countdown-error { display: none; }
 .mp-day-table tr.done td { background: var(--mint-soft); }
 .mp-day-table tr.done .plan-text { text-decoration: line-through; color: var(--muted); }
 .mp-day-table tr.moved { opacity: .65; }
+
+.sp-live-player{background:var(--soft,#eee5f5);border:1px solid var(--border,#d9cce4);border-radius:18px;padding:18px;margin-bottom:16px}.sp-live-player[hidden],#spotify-frame[hidden]{display:none}.sp-live-heading{display:flex;justify-content:space-between;gap:12px}.sp-live-heading span{font-size:12px;color:#268b65}.sp-live-track{font-size:18px;font-weight:800;overflow-wrap:anywhere}.sp-live-controls{display:flex;flex-wrap:wrap;gap:8px}.sp-connect-intro{padding:16px 0}

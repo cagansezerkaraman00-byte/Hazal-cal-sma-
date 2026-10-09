@@ -5,13 +5,18 @@ const SpotifyLink = (() => {
   const KEY = 'luna-spotify';
   const AUTH = 'https://accounts.spotify.com/authorize';
   const TOKEN = 'https://accounts.spotify.com/api/token';
-  const SCOPE = 'playlist-read-private playlist-read-collaborative';
+  const SCOPE = 'playlist-read-private playlist-read-collaborative streaming user-read-private user-read-email user-modify-playback-state';
   let App = null;
   let st = { clientId: '', token: '', refresh: '', exp: 0, user: '', lists: [] };
   let busy = false;
 
   function load() {
     try { st = { ...st, ...(JSON.parse(localStorage.getItem(KEY) || '{}') || {}) }; } catch (e) { /* yok say */ }
+    const configured = window.LUNA_SPOTIFY_CONFIG?.clientId || '';
+    if (/^[0-9a-f]{32}$/i.test(configured)) {
+      if (st.clientId && st.clientId !== configured) st = { clientId: configured, token: '', refresh: '', exp: 0, user: '', lists: [] };
+      else st.clientId = configured;
+    }
   }
   function persist() {
     try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { /* kota / gizli mod */ }
@@ -48,6 +53,7 @@ const SpotifyLink = (() => {
     st.token = j.access_token;
     st.exp = Date.now() + (j.expires_in || 3600) * 1000;
     if (j.refresh_token) st.refresh = j.refresh_token;
+    if (j.scope) st.scope = j.scope;
     persist();
     return true;
   }
@@ -76,8 +82,9 @@ const SpotifyLink = (() => {
     if (!secureOrigin()) { App.toast('🎧', 'Spotify bağlantısı https adres ister', 'Uygulamayı GitHub Pages adresinden açıp dene'); return; }
     const v = randomString(64);
     // doğrulayıcı localStorage'da: iOS ana ekran uygulamasında oturum deposu yönlendirmede kaybolabiliyor
-    try { localStorage.setItem('luna-sp-verifier', JSON.stringify({ v, at: Date.now() })); } catch (e) { /* yok say */ }
-    const q = new URLSearchParams({ client_id: st.clientId, response_type: 'code', redirect_uri: redirectUri(), code_challenge_method: 'S256', code_challenge: await challenge(v), scope: SCOPE });
+    const state = randomString(32);
+    try { localStorage.setItem('luna-sp-verifier', JSON.stringify({ v, state, clientId: st.clientId, redirect: redirectUri(), at: Date.now() })); } catch (e) { App.toast('🎧', 'Giriş kaydı saklanamadı', 'Cihazın depolama iznini kontrol et'); return; }
+    const q = new URLSearchParams({ client_id: st.clientId, response_type: 'code', redirect_uri: redirectUri(), state, code_challenge_method: 'S256', code_challenge: await challenge(v), scope: SCOPE });
     if (App.allowExit) App.allowExit('spotifyLogin'); // giriş sayfasına gidiş tam odakta sayacı durdurmasın
     location.href = AUTH + '?' + q.toString();
   }
@@ -86,15 +93,16 @@ const SpotifyLink = (() => {
     const q = new URLSearchParams(location.search);
     const code = q.get('code'), err = q.get('error');
     if (!code && !err) return;
-    history.replaceState(null, '', location.pathname + location.hash);
-    if (err) { App.toast('🎧', 'Spotify bağlantısı iptal edildi'); return; }
+    history.replaceState(null, '', location.pathname + '?app' + location.hash);
     let v = '';
     try {
       const x = JSON.parse(localStorage.getItem('luna-sp-verifier') || 'null');
       localStorage.removeItem('luna-sp-verifier');
-      if (x && x.v && Date.now() - x.at < 15 * 60000) v = x.v;
+      const age = x ? Date.now() - x.at : -1;
+      if (x && x.v && x.state === q.get('state') && x.clientId === st.clientId && x.redirect === redirectUri() && age >= 0 && age < 15 * 60000) v = x.v;
     } catch (e) { /* yok say */ }
     if (!v || !st.clientId) { App.toast('🎧', 'Spotify girişi tamamlanamadı', 'Müzik kutusundan bir kez daha "Spotify\'a bağlan" de'); return; }
+    if (err) { App.toast('🎧', 'Spotify bağlantısı iptal edildi'); return; }
     const ok = setTokens(await post(TOKEN, { client_id: st.clientId, grant_type: 'authorization_code', code, redirect_uri: redirectUri(), code_verifier: v }));
     if (!ok) { App.toast('🎧', 'Spotify bağlanamadı', 'Redirect URI ve kullanıcı izinlerini kılavuzdaki gibi kontrol et'); return; }
     await refreshLists();
@@ -128,16 +136,21 @@ const SpotifyLink = (() => {
     if (!connected) {
       el.innerHTML = st.clientId
         ? `<button class="btn primary" data-sp="login" type="button">Spotify ile giriş yap</button><p class="hint">Giriş Spotify'ın güvenli sayfasında tamamlanır; ardından listelerin burada görünür.</p>`
-        : '<p class="hint">Yukarıdaki oynatıcı için hesap bağlantısı gerekmez. Hazır bir liste seçebilir veya Spotify paylaşım bağlantını yapıştırabilirsin.</p>';
+        : '<div class="sp-connect-intro"><b>🎧 Spotify hesabınla Luna’da dinle</b><p class="hint">Premium hesabınla kendi listelerini burada aç. Hesap bağlantısı henüz etkinleştirilmedi.</p><button class="btn primary" type="button" disabled>Spotify ile giriş yap</button><p class="hint">Gömülü oynatıcı için hesap bağlantısı gerekmez; dinleme imkânını Spotify belirler.</p></div>';
+      if (window.SpotifyPlayback) SpotifyPlayback.render();
       return;
     }
     el.innerHTML = `<div class="sp-head"><span>👋 ${U.esc(st.user || 'Spotify')}</span>
         <span><button class="chip" data-sp="reload" type="button">${busy ? '…' : '↻'}</button> <button class="chip" data-sp="logout" type="button">Bağlantıyı kes</button></span></div>
+      ${!hasPlaybackAccess() ? '<button class="btn primary" data-sp="login" type="button">Müzik çalma izniyle yeniden bağlan</button>' : ''}
       ${st.lists.length ? `<div class="sp-lists">${st.lists.map((l) => `<button class="sp-item ${App.data().settings.spotify.includes(l.id) ? 'active' : ''}" data-sp="play" data-id="${U.esc(l.id)}" type="button">
           ${l.img ? `<img src="${U.esc(l.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="sp-noimg">🎵</span>'}
           <span class="sp-name">${U.esc(l.name)}</span><small>${l.n != null ? l.n + ' şarkı' : 'Çalma listesi'}</small></button>`).join('')}</div>`
         : `<p class="hint">${busy ? 'Listelerin yükleniyor…' : ERR[st.err] || 'Çalma listesi bulunamadı.'}</p>`}`;
+    if (window.SpotifyPlayback) SpotifyPlayback.render();
   }
+
+  function hasPlaybackAccess() { return !!(st.refresh || st.token) && SCOPE.split(' ').every(s => (st.scope || '').split(' ').includes(s)); }
 
   function bind() {
     const el = document.getElementById('sp-account');
@@ -151,10 +164,12 @@ const SpotifyLink = (() => {
         if (!/^[0-9a-f]{32}$/i.test(id)) { App.toast('🎧', 'Hesap bağlantısı henüz hazır değil', 'Şimdilik yukarıdaki oynatıcıyı kullanabilirsin'); return; }
         st.clientId = id; persist(); login();
       } else if (act === 'logout') {
+        if (window.SpotifyPlayback) SpotifyPlayback.reset();
         st = { clientId: st.clientId, token: '', refresh: '', exp: 0, user: '', lists: [] }; persist(); render();
       } else if (act === 'reload') refreshLists();
       else if (act === 'play') {
         App.playSpotify('https://open.spotify.com/playlist/' + b.dataset.id);
+        if (window.SpotifyPlayback && SpotifyPlayback.status().ready) SpotifyPlayback.playSelected();
         el.querySelectorAll('.sp-item').forEach((x) => x.classList.toggle('active', x === b));
       }
     });
@@ -164,9 +179,10 @@ const SpotifyLink = (() => {
     init(app) {
       App = app;
       load();
+      if (window.SpotifyPlayback) SpotifyPlayback.init({ getToken: token, hasAccess: hasPlaybackAccess, selection: () => App.data().settings.spotify, restoreEmbed: () => App.playSpotify(App.data().settings.spotify) });
       bind();
       render();
-      handleRedirect();
+      handleRedirect().catch(() => App.toast('🎧', 'Spotify bağlantısı tamamlanamadı', 'Yeniden giriş yapabilirsin'));
       // bağlıysa listeleri arada bir tazele (en fazla günde bir)
       if ((st.refresh || st.token) && (!st.lists.length || Date.now() - (st.listedAt || 0) > 864e5)) {
         st.listedAt = Date.now();
