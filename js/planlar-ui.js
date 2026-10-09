@@ -80,7 +80,7 @@ const PlanlarUI = (() => {
   const phaseOf = (now) => (isEvening(now) ? 'eve' : 'day');
 
   // ---------- Madde satırı (Plan sekmesi, ana sayfa ve Dönem modundaki küçük blok) ----------
-  function itemHtml(it, scope, key, now) {
+  function itemHtml(it, scope, key, now, chart = false) {
     const n = N[scope], cur = Planlar.keyOf(scope, now);
     const s = subj(it.subjectId);
     const color = s ? s.color : 'var(--violet)';
@@ -103,10 +103,20 @@ const PlanlarUI = (() => {
     } else {
       acts = `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı"${it.done ? ' checked' : ''}>${startable ? '<button type="button" class="plan-go" data-mp="go" aria-label="Başla"><span class="pg-t">Başla </span>▶</button>' : ''}`;
     }
+    if (chart) return `<tr class="${it.done ? 'done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}">
+      <td><button type="button" class="mp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><span class="plan-text">${esc(it.title)}</span><span class="plan-sub">${s ? esc(s.name) : 'Genel plan'}</span></button></td>
+      <td class="mp-time-cell">${it.min ? U.fmtMin(it.min) : '—'}${reached ? '<small>✓ Süre tamam</small>' : ''}</td>
+      <td><span class="plan-acts">${acts}</span></td></tr>`;
     return `<li class="plan-item mp-item${it.done ? ' done' : ''}${it.moved ? ' moved' : ''}${reached ? ' reached' : ''}" data-mp-id="${esc(it.id)}">
       <span class="plan-dot" style="background:${esc(color)}"></span>
       <button type="button" class="mp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><span class="plan-text">${esc(it.title)}</span>${parts.length ? `<span class="plan-sub">${parts.join(' · ')}</span>` : ''}</button>
       <span class="plan-acts">${acts}</span></li>`;
+  }
+  function dailyChart(items, key, now) {
+    return `<div class="mp-chart-wrap"><table class="mp-day-table"><caption>Günlük çalışma çizelgesi · Tamamladığın maddeyi işaretle</caption>
+      <colgroup><col class="mp-col-plan"><col class="mp-col-time"><col class="mp-col-done"></colgroup>
+      <thead><tr><th scope="col">Çalışacağım</th><th scope="col">Hedef süre</th><th scope="col">Durum</th></tr></thead>
+      <tbody>${ordered(items).map(it => itemHtml(it, 'day', key, now, true)).join('')}</tbody></table></div>`;
   }
   const ordered = (items) => items.filter((x) => !x.moved).concat(items.filter((x) => x.moved));
   function quickForm(scope, key) {
@@ -166,7 +176,7 @@ const PlanlarUI = (() => {
         <button type="button" class="icon-btn" data-mp="next" aria-label="${n.next}">›</button></div>
       ${progHtml(scope === 'day' ? own : { ...r.all, moved: r.all.total ? 0 : own.moved })}
       ${rollLine}
-      ${items.length ? `<ul class="plan-list mp-list">${ordered(items).map((it) => itemHtml(it, scope, key, now)).join('')}</ul>`
+      ${items.length ? (scope === 'day' ? dailyChart(items, key, now) : `<ul class="plan-list mp-list">${ordered(items).map((it) => itemHtml(it, scope, key, now)).join('')}</ul>`)
         : `<div class="empty-state"><span>📝</span><b>${n.empty}</b><p>Ne yapmak istediğini sen yaz, ben takip edeyim 🐾</p></div>`}
       ${quickForm(scope, key)}
       <button type="button" class="link-btn" data-mp="add">＋ Ders ve hedefle ekle</button>
@@ -316,9 +326,9 @@ const PlanlarUI = (() => {
     else { const best = App && App.bestHours ? App.bestHours()[0] : null; if (best != null) hint = `<p class="hint">💡 En verimli saatin ${U.pad(best)}:00 civarı; zor konuyu o saate koy.</p>`; }
     const yks = !isProgram() && window.YKS && typeof YKS.field === 'function' && !YKS.field()
       ? '<p class="hint"><button type="button" class="link-btn" data-mp="to-yks">📚 Alanını seçersen YKS konularından da madde ekleyebilirsin</button></p>' : '';
-    paint(el, `<h2>🗓️ Bugünün planı <span class="muted small">${st.done}/${st.total}</span></h2>
+    paint(el, `<h2>🗓️ Bugünün planı <span class="muted small">${st.done}/${st.total}${st.total ? ` · %${st.pct}` : ''}</span></h2>
       ${st.total ? `<div class="track mp-track"><i style="width:${st.pct}%"></i></div>` : ''}
-      ${act.length ? `<ul class="plan-list mp-list">${act.slice(0, 8).map((it) => itemHtml(it, 'day', today, now)).join('')}${act.length > 8 ? `<li class="mp-more"><button type="button" class="link-btn" data-mp="open" data-scope="day">… ${act.length - 8} madde daha</button></li>` : ''}</ul>`
+      ${act.length ? dailyChart(act.slice(0, 8), today, now)
         : `<p class="plan-empty">${items.length ? 'Bugünün maddelerini taşıdın. Yeni bir şey yazmak istersen buradayım 🐾' : 'Bugün için plan yok. Ne çalışmak istediğini sen yaz, ben takip edeyim 🐾'}</p>`}
       ${quickForm('day', today)}
       ${pc ? `<button type="button" class="btn soft small-btn" data-mp="copy" data-scope="day" data-key="${today}">⧉ Dünün planını kopyala (${pc})</button>` : ''}

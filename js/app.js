@@ -352,13 +352,19 @@
     $('#timer-time').classList.toggle('has-hours', shown >= 3600);
     $('#timer-duration-label').textContent = shown >= 3600 ? `${Math.floor(shown / 3600)} saat ${U.pad(Math.floor(shown / 60) % 60)} dk ${U.pad(Math.floor(shown) % 60)} sn` : '';
     $('#countdown-setup').hidden = s.kind !== 'countdown' || !!s.exam;
-    $('#countdown-minutes').disabled = !s.fresh;
-    if (document.activeElement !== $('#countdown-minutes')) $('#countdown-minutes').value = D().settings.focus;
+    if ($('#countdown-setup').hidden) $('#countdown-error').hidden = true;
+    const configured = Number.isInteger(D().settings.countdownSeconds) && D().settings.countdownSeconds > 0 ? D().settings.countdownSeconds : D().settings.focus * 60;
+    const timeParts = [Math.floor(configured / 3600), Math.floor(configured / 60) % 60, configured % 60];
+    ['hours', 'minutes', 'seconds'].forEach((part, i) => {
+      const input = $('#countdown-' + part); input.disabled = !s.fresh;
+      // Bir kutuda yazarken diğer kutulara dokunma: henüz tamamlanmamış giriş korunur.
+      if (!$('#countdown-setup').contains(document.activeElement)) input.value = U.pad(timeParts[i]);
+    });
     const completedHour = Math.floor((s.continuousSeconds || 0) / 3600);
     if (completedHour !== continuousHour) {continuousHour = completedHour;if (completedHour > 0) checkBadges();}
     const subj = Store.subject(s.subjectId).name;
     $('#timer-sub').textContent = s.running
-      ? (isBreak ? BREAK_TIPS[s.cycle % BREAK_TIPS.length] : `${subj} çalışılıyor…`)
+      ? (isBreak ? BREAK_TIPS[s.cycle % BREAK_TIPS.length] : 'Odaklanıyorsun…')
       : s.fresh ? (isBreak ? 'Mola hazır' : 'Hazır olduğunda başla ✨') : 'Duraklatıldı';
     const fg = $('#ring-fg');
     fg.style.strokeDashoffset = 553 * (1 - s.progress);
@@ -371,18 +377,14 @@
     $('#btn-finish').title = isBreak ? 'Molayı bitir' : 'Bitir ve kaydet';
     $('#btn-finish').disabled = s.fresh && !isBreak;
     $('#btn-finish').style.opacity = s.fresh && !isBreak ? 0.4 : 1;
-    if ($('#subject-select').value !== s.subjectId) $('#subject-select').value = s.subjectId;
     // sade odak ekranı
     const focusing = s.running && !isBreak && D().settings.focusMode && !focusDismissed;
     if (focusing !== document.body.classList.contains('focusing')) {
       document.body.classList.toggle('focusing', focusing);
       if (focusing) window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    $('#focus-intent').textContent = !isBreak && s.intent ? '🎯 ' + s.intent : '';
     const showApps = s.running && !isBreak && D().settings.pauseOnLeave && allowedApps().length > 0;
     if (showApps !== !$('#allow-apps').classList.contains('hidden')) $('#allow-apps').classList.toggle('hidden', !showApps);
-    const ii = $('#intent-input');
-    if (document.activeElement !== ii && ii.value !== (s.intent || '')) ii.value = s.intent || '';
     // mini sayaç ve sekme başlığı
     const mini = $('#mini-timer');
     if (!s.fresh) {
@@ -459,16 +461,19 @@
     $('#timer-end-alert').hidden = true;
   }
   function bindTimer() {
-    const setDuration = value => {
-      if (!Timer.setCountdownMinutes(value)) { toast('⏳', 'Süre değişmedi', 'Başlamadan önce 1–900 arasında tam dakika seç.'); $('#countdown-minutes').value = D().settings.focus; }
-    };
-    $('#countdown-minutes').addEventListener('change', e => setDuration(e.target.value));
-    $('#countdown-minutes').addEventListener('input', e => {
-      const value = Number(e.target.value);
-      if (Number.isInteger(value) && value >= 1 && value <= 900) Timer.setCountdownMinutes(value);
+    const timeInputs = ['hours', 'minutes', 'seconds'].map(part => $('#countdown-' + part));
+    function saveDuration(showError = false) {
+      const ok = Timer.setCountdownTime(...timeInputs.map(input => input.value));
+      $('#countdown-error').hidden = ok || !showError;
+      $('#countdown-error').textContent = ok ? '' : 'Saat 0–23, dakika ve saniye 0–59 olmalı. En az 1 saniye seç.';
+      return ok;
+    }
+    timeInputs.forEach(input => {
+      input.addEventListener('input', () => saveDuration(true));
+      input.addEventListener('change', () => saveDuration(true));
     });
     $('#dismiss-timer-alarm').addEventListener('click', dismissTimerAlarm);
-    $('#btn-toggle').addEventListener('click', () => Timer.toggle());
+    $('#btn-toggle').addEventListener('click', () => { const s = Timer.state(); if (s.fresh && s.kind === 'countdown' && !s.exam && !saveDuration(true)) return; Timer.toggle(); });
     $('#btn-finish').addEventListener('click', () => Timer.finish());
     $('#btn-reset').addEventListener('click', () => {
       const s = Timer.state();
@@ -485,9 +490,6 @@
       Timer.setKind(b.dataset.kind, exam);
       syncSceneMode();
     }));
-    $('#subject-select').addEventListener('change', (e) => Timer.setSubject(e.target.value));
-    $('#intent-input').addEventListener('input', (e) => Timer.setIntent(e.target.value));
-    $('#intent-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); if (!Timer.state().running) Timer.toggle(); } });
     // "Aklına başka bir şey mi geldi?" → görevlere ekle, odağı bozma
     $('#park-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -514,28 +516,15 @@
     };
     $('#mini-timer').addEventListener('click', backToTimer);
     $('#mini-timer').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); backToTimer(); } });
-    $('#add-subject-quick').addEventListener('click', () => {
-      const name = prompt('Yeni ders adı:');
-      if (!name || !name.trim()) return;
-      const colors = ['#f7c948', '#7ad3ff', '#b48bff', '#7ee0a1', '#ff9eb5', '#ffab6b', '#6fe3d6'];
-      const s = { id: U.uid(), name: name.trim().slice(0, 30), color: colors[D().subjects.length % colors.length] };
-      D().subjects.push(s);
-      save();
-      renderSubjectSelects();
-      Timer.setSubject(s.id);
-      $('#subject-select').value = s.id;
-    });
     // klavye: boşluk = başlat/duraklat
     document.addEventListener('keydown', (e) => {
       if (e.code !== 'Space' || currentTab !== 'home' || !$('#modal').classList.contains('hidden')) return;
       if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) return;
       e.preventDefault();
-      Timer.toggle();
+      $('#btn-toggle').click();
     });
   }
   function renderSubjectSelects() {
-    const cur = (D().timer && D().timer.subjectId) || '';
-    $('#subject-select').innerHTML = subjectOptions(cur);
     $('#task-subject').innerHTML = subjectOptions('');
   }
   // ======================================================================
@@ -545,6 +534,7 @@
     const manual = !session;
     const now = new Date();
     const s = session || { start: now.getTime() - 3600000, minutes: 60, subjectId: Timer.state().subjectId, note: '', hard: '', rating: null, mood: '' };
+    const preciseShort = !manual && s.minutes > 0 && s.minutes < 1;
     const startD = new Date(s.start);
     const title = opts.justDone ? '🎉 Oturum tamamlandı!' : manual ? '✍️ Çalışmamı ekle' : '✏️ Oturumu düzenle';
     const sub = opts.justDone
@@ -564,8 +554,7 @@
           <div><label>Tarih</label><input type="date" id="m-date" value="${U.dateKey(startD)}"></div>
           <div><label>Başlangıç</label><input type="time" id="m-time" value="${U.hm(startD)}"></div>
         </div>` : ''}
-      <label>Süre (dakika)</label>
-      <input type="number" id="m-min" min="1" max="720" value="${s.minutes}">
+      ${preciseShort ? `<p>Süre: <b>${U.fmtMin(s.minutes)}</b></p><input type="hidden" id="m-min" value="${s.minutes}">` : `<label>Süre (dakika)</label><input type="number" id="m-min" min="1" max="720" value="${s.minutes}">`}
       <label>Neler çalıştın? Önemli noktalar</label>
       <textarea id="m-note" rows="3" placeholder="Örn: Türev kuralları, zincir kuralı, 30 soru çözdüm">${U.esc(s.note)}</textarea>
       <label for="m-q">Kaç soru çözdün? <span class="muted small">(isteğe bağlı)</span></label>
@@ -602,7 +591,7 @@
       save(); closeModal(); afterDataChange();
     });
     $('#m-save').addEventListener('click', () => {
-      const minutes = U.clamp(parseInt($('#m-min').value, 10) || s.minutes, 1, 720);
+      const minutes = preciseShort ? s.minutes : U.clamp(parseInt($('#m-min').value, 10) || s.minutes, 1, 720);
       let start = s.start;
       if ($('#m-date')) {
         const [y, mo, d] = $('#m-date').value.split('-').map(Number);
@@ -1244,7 +1233,7 @@
     const num = (id, key, min, max) => $(id).addEventListener('change', (e) => {
       const n = parseInt(e.target.value, 10); // 0 geçerli bir değer olabilir (ör. Luna'nın mesajları: 0 = hiç)
       const v = U.clamp(Number.isNaN(n) ? D().settings[key] : n, min, max);
-      D().settings[key] = v; e.target.value = v; save();
+      D().settings[key] = v; if (key === 'focus') D().settings.countdownSeconds = null; e.target.value = v; save();
       renderHome(); Timer.state(); // sayaç yeni süreyi bir sonraki tick'te gösterir
     });
     num('#set-goal', 'dailyGoal', 10, 900);

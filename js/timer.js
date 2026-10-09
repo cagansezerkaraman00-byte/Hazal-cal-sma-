@@ -20,7 +20,7 @@ const Timer = (() => {
       resumedAt: null,
       firstStart: null,
       cycle: keep.cycle || 0,
-      subjectId: keep.subjectId != null ? keep.subjectId : ((Store.data.subjects[0] && Store.data.subjects[0].id) || ''), // '' = Genel, bilerek seçilebilir
+      subjectId: keep.subjectId != null ? keep.subjectId : '', // '' = Genel, bilerek seçilebilir
       intent: keep.intent || '',  // "bu oturumda ne yapacağım?"
     };
   }
@@ -29,6 +29,7 @@ const Timer = (() => {
     const s = S();
     if (phase === 'focus' && st().targetSeconds) return st().targetSeconds;
     if (phase === 'focus' && st().exam) return EXAM_MINUTES[st().exam] * 60;
+    if (phase === 'focus' && Number.isInteger(s.countdownSeconds) && s.countdownSeconds >= 1 && s.countdownSeconds <= 86399) return s.countdownSeconds;
     return (phase === 'focus' ? s.focus : phase === 'short' ? s.short : s.long) * 60;
   }
   function elapsed() {
@@ -53,7 +54,7 @@ const Timer = (() => {
     const x = st();
     x.running = true;
     x.continuousStart = at;
-    if (x.phase === 'focus' && !x.targetSeconds) x.targetSeconds = Math.max(60, Math.min(54000, Number(duration()) || 1500));
+    if (x.phase === 'focus' && !x.targetSeconds) x.targetSeconds = Math.max(1, Math.min(86399, Number(duration()) || 1500));
     x.resumedAt = at;
     x.pausedAt = null;
     if (!x.firstStart) x.firstStart = at;
@@ -66,7 +67,8 @@ const Timer = (() => {
     const session = {
       start: x.firstStart || endTime - sec * 1000,
       end: endTime,
-      minutes: Math.max(1, Math.round(sec / 60)),
+      minutes: sec < 60 ? sec / 60 : Math.round(sec / 60),
+      seconds: sec,
       subjectId: x.subjectId,
       intent: x.intent || '',
       kind: x.kind,
@@ -224,7 +226,15 @@ const Timer = (() => {
     setCountdownMinutes(value) {
       const minutes = Number(value);
       if (!Number.isInteger(minutes) || minutes < 1 || minutes > 900 || !api.state().fresh) return false;
-      S().focus = minutes; st().targetSeconds = null; st().exam = null; persist(); tick(); return true;
+      S().countdownSeconds = null; S().focus = minutes; st().targetSeconds = null; st().exam = null; persist(); tick(); return true;
+    },
+    setCountdownTime(hours, minutes, seconds) {
+      const parts = [hours, minutes, seconds].map(v => v === '' ? 0 : Number(v));
+      if (!parts.every(Number.isInteger) || parts[0] < 0 || parts[0] > 23 || parts[1] < 0 || parts[1] > 59 || parts[2] < 0 || parts[2] > 59 || !api.state().fresh || st().kind !== 'countdown' || st().exam) return false;
+      const total = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      if (total < 1) return false;
+      S().countdownSeconds = total; st().targetSeconds = null;
+      persist(); tick(); return true;
     },
     setSubject(id) { st().subjectId = id; persist(); },
     setIntent(text) { st().intent = String(text || '').slice(0, 80); persist(); },

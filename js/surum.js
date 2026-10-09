@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.4",
+  "tarih": "2026-10-09",
+  "baslik": "Sade sayaç ve günlük çizelge",
+  "notlar": [
+    "⏱️ Sayaç altındaki ders ve oturum hedefi alanları kaldırıldı. Plandan başlatınca ders bağlantısı korunur.",
+    "⌛ Geri sayım için üç kutu: saat, dakika, saniye. 1 saniyeden 23 saat 59 dakika 59 saniyeye kadar süre seçilebilir. Başlamış sayaçta süre değişmez.",
+    "🗓️ Günlük plan artık çalışma, hedef süre ve durum sütunları olan bir çizelge. Tamamlanma yüzdesi, haftalık/aylık görünüm ve soru günlüğü korunur."
+  ]
+},
+{
   "surum": "2.4.3",
   "tarih": "2026-10-09",
   "baslik": "Lavanta, dengeli sayaç ve soru günlüğü",

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr" data-theme="light" data-surum="2.4.3">
+<html lang="tr" data-theme="light" data-surum="2.4.4">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -101,8 +101,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css?v=2.4.3">
-  <script src="js/kurulum.js?v=2.4.3"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.4.4">
+  <script src="js/kurulum.js?v=2.4.4"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -162,16 +162,13 @@
               </div>
             </div>
             <div class="dots" id="cycle-dots"></div>
-            <div class="focus-intent" id="focus-intent"></div>
             <div class="allow-apps hidden" id="allow-apps" aria-label="Sayacı durdurmadan açılabilen uygulamalar"></div>
-            <div id="countdown-setup" class="countdown-setup"><label for="countdown-minutes">Geri sayım süresi</label><div><input id="countdown-minutes" type="number" min="1" max="900" step="1" value="25" inputmode="numeric" aria-label="Geri sayım dakikası"><span> dakika</span></div></div>
-            <div class="setup" id="timer-setup">
-              <div class="subject-row">
-                <select id="subject-select" aria-label="Ders"></select>
-                <button class="icon-btn" id="add-subject-quick" title="Yeni ders">＋</button>
-              </div>
-              <input id="intent-input" class="intent" maxlength="80" placeholder="🎯 Bu oturumda ne yapacağım?" aria-label="Bu oturumda ne yapacağım? (örn. 20 türev sorusu)">
+            <div id="countdown-setup" class="countdown-setup" role="group" aria-label="Geri sayım zamanı">
+              <label>Saat<input id="countdown-hours" type="number" min="0" max="23" step="1" value="0" inputmode="numeric"></label>
+              <span aria-hidden="true">:</span><label>Dakika<input id="countdown-minutes" type="number" min="0" max="59" step="1" value="25" inputmode="numeric"></label>
+              <span aria-hidden="true">:</span><label>Saniye<input id="countdown-seconds" type="number" min="0" max="59" step="1" value="0" inputmode="numeric"></label>
             </div>
+            <p id="countdown-error" class="hint" role="status" hidden></p>
             <div class="controls">
               <button class="btn ghost" id="btn-reset" title="Sıfırla">↺</button>
               <button class="btn primary big" id="btn-toggle">Başla</button>
@@ -662,36 +659,36 @@
   </div>
   <div class="toasts" id="toasts"></div>
   <div id="timer-end-alert" class="timer-end-alert" role="status" hidden><span id="timer-end-message"></span><button type="button" class="btn soft" id="dismiss-timer-alarm">Tamam</button></div>
-  <script src="js/storage.js?v=2.4.3"></script>
-  <script src="js/surum.js?v=2.4.3"></script>
-  <script src="js/messages.js?v=2.4.3"></script>
-  <script src="js/audio.js?v=2.4.3"></script>
-  <script src="js/takvim.js?v=2.4.3"></script>
-  <script src="js/scene.js?v=2.4.3"></script>
-  <script src="js/timer.js?v=2.4.3"></script>
-  <script src="js/stats.js?v=2.4.3"></script>
-  <script src="js/weather.js?v=2.4.3"></script>
-  <script src="js/yks.js?v=2.4.3"></script>
-  <script src="js/plan.js?v=2.4.3"></script>
-  <script src="js/planlar.js?v=2.4.3"></script>
-  <script src="js/planlar-ui.js?v=2.4.3"></script>
-  <script src="js/deneme.js?v=2.4.3"></script>
-  <script src="js/notes.js?v=2.4.3"></script>
-  <script src="js/giris.js?v=2.4.3"></script>
-  <script src="js/depo.js?v=2.4.3"></script>
-  <script src="js/depo-ui.js?v=2.4.3"></script>
-  <script src="js/hata.js?v=2.4.3"></script>
-  <script src="js/kaynak.js?v=2.4.3"></script>
-  <script src="js/kaynak-ui.js?v=2.4.3"></script>
-  <script src="js/badges.js?v=2.4.3"></script>
-  <script src="js/spotify.js?v=2.4.3"></script>
-  <script src="js/uni.js?v=2.4.3"></script>
-  <script src="js/uni-ui.js?v=2.4.3"></script>
-  <script src="js/diag.js?v=2.4.3"></script>
-  <script src="js/guncelleme.js?v=2.4.3"></script>
-  <script src="js/notifications.js?v=2.4.3"></script>
-  <script src="js/mini-timer.js?v=2.4.3"></script>
-  <script src="js/app.js?v=2.4.3"></script>
+  <script src="js/storage.js?v=2.4.4"></script>
+  <script src="js/surum.js?v=2.4.4"></script>
+  <script src="js/messages.js?v=2.4.4"></script>
+  <script src="js/audio.js?v=2.4.4"></script>
+  <script src="js/takvim.js?v=2.4.4"></script>
+  <script src="js/scene.js?v=2.4.4"></script>
+  <script src="js/timer.js?v=2.4.4"></script>
+  <script src="js/stats.js?v=2.4.4"></script>
+  <script src="js/weather.js?v=2.4.4"></script>
+  <script src="js/yks.js?v=2.4.4"></script>
+  <script src="js/plan.js?v=2.4.4"></script>
+  <script src="js/planlar.js?v=2.4.4"></script>
+  <script src="js/planlar-ui.js?v=2.4.4"></script>
+  <script src="js/deneme.js?v=2.4.4"></script>
+  <script src="js/notes.js?v=2.4.4"></script>
+  <script src="js/giris.js?v=2.4.4"></script>
+  <script src="js/depo.js?v=2.4.4"></script>
+  <script src="js/depo-ui.js?v=2.4.4"></script>
+  <script src="js/hata.js?v=2.4.4"></script>
+  <script src="js/kaynak.js?v=2.4.4"></script>
+  <script src="js/kaynak-ui.js?v=2.4.4"></script>
+  <script src="js/badges.js?v=2.4.4"></script>
+  <script src="js/spotify.js?v=2.4.4"></script>
+  <script src="js/uni.js?v=2.4.4"></script>
+  <script src="js/uni-ui.js?v=2.4.4"></script>
+  <script src="js/diag.js?v=2.4.4"></script>
+  <script src="js/guncelleme.js?v=2.4.4"></script>
+  <script src="js/notifications.js?v=2.4.4"></script>
+  <script src="js/mini-timer.js?v=2.4.4"></script>
+  <script src="js/app.js?v=2.4.4"></script>
 </body>
 </html>
 

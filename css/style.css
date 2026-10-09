@@ -1923,3 +1923,31 @@ body.focusing .countdown-setup { display: none; }
 .vibration-help { font-size: .85rem; margin: 12px 0; color: var(--muted); }
 .vibration-help summary { cursor: pointer; font-weight: 800; color: var(--text); padding: 8px 0; }
 #theme-seg { flex-wrap: wrap; }
+
+/* Üç kutulu geri sayım; tüm boyutlarda aynı sıra. */
+.countdown-setup { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr); width: min(340px,100%); align-items: end; gap: 7px; margin: 8px 0 20px; }
+.countdown-setup label { display: grid; gap: 7px; text-align: center; color: var(--muted); font-size: .8rem; font-weight: 800; min-width: 0; }
+.countdown-setup input { width: 100%; box-sizing: border-box; min-width: 0; padding: 13px 4px; text-align: center; border: 1px solid var(--input-line); border-radius: 14px; background: var(--input-bg); color: var(--text); font: 800 1.35rem var(--font); font-variant-numeric: tabular-nums; }
+.countdown-setup > span { padding-bottom: 14px; color: var(--muted); font-weight: 800; }
+.countdown-setup input:disabled { opacity: .65; }
+.countdown-setup[hidden], #countdown-error[hidden] { display: none; }
+body.focusing #countdown-error { display: none; }
+.mp-chart-wrap { margin: 16px 0; }
+.mp-day-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.mp-day-table caption { caption-side: top; text-align: left; font-size: .78rem; color: var(--muted); margin-bottom: 10px; }
+.mp-col-plan { width: 54%; } .mp-col-time { width: 23%; } .mp-col-done { width: 23%; }
+.mp-day-table th { background: var(--surface-3); padding: 12px 8px; color: var(--muted); text-align: left; font-size: .78rem; }
+.mp-day-table th:last-child { text-align: center; }
+.mp-day-table td { padding: 12px 8px; border-top: 1px solid var(--line); background: var(--surface-2); overflow-wrap: anywhere; vertical-align: middle; }
+.mp-day-table .mp-edit { width: 100%; }
+.mp-day-table .plan-text { font-weight: 800; font-size: .88rem; }
+.mp-day-table .plan-sub { display: block; font-size: .75rem; margin-top: 5px; }
+.mp-time-cell { color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.mp-time-cell small { display: block; color: var(--mint-ink); margin-top: 5px; }
+.mp-day-table .plan-acts { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; }
+.mp-day-table .plan-acts .check { margin: 0; width: 24px; height: 24px; }
+.mp-day-table .plan-go { min-width: 30px; min-height: 30px; padding: 4px; }
+.mp-day-table .pg-t { display: none; }
+.mp-day-table tr.done td { background: var(--mint-soft); }
+.mp-day-table tr.done .plan-text { text-decoration: line-through; color: var(--muted); }
+.mp-day-table tr.moved { opacity: .65; }

@@ -31,6 +31,7 @@ const U = {
   dec(n, d = 1) { return Number(n || 0).toFixed(d).replace('.', ','); },
   num(n) { return String(n).replace('.', ','); },
   fmtMin(m) {
+    if (m > 0 && m < 1) return `${Math.max(1, Math.round(m * 60))} sn`;
     m = Math.round(m || 0);
     if (m < 60) return `${m} dk`;
     const h = Math.floor(m / 60), r = m % 60;
