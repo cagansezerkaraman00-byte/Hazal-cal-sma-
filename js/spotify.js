@@ -9,6 +9,56 @@ const SpotifyLink = (() => {
   let App = null;
   let st = { clientId: '', token: '', refresh: '', exp: 0, user: '', lists: [] };
   let busy = false, libraryEpoch = 0;
+  let songEpoch=0,songs={url:'',name:'',items:[],next:'',busy:false,error:''};
+
+  function bindSongs(){
+      document.getElementById('sp-song-list')?.addEventListener('click',async e=>{
+        const b=e.target.closest('[data-song]');if(!b)return;
+        if(b.dataset.song==='more'){showSongs(songs.url,true);return;}
+        if(b.dataset.song==='retry'){showSongs(songs.url,false,true);return;}
+        if(b.dataset.song==='play'&&songs.items.some(t=>t.uri===b.dataset.uri)){
+          b.disabled=true;try{await window.SpotifyPlayback?.chooseTrack(b.dataset.uri);}finally{b.disabled=false;}
+        }
+      });
+  }
+  function songPath(next){
+    try{const u=new URL(next),id=window.SpotifyPlayback?.uri(songs.url)?.uri.split(':')[2];
+      return u.origin==='https://api.spotify.com'&&[ `/v1/playlists/${id}/items`, `/v1/playlists/${id}/tracks`, `/v1/albums/${id}/tracks` ].includes(u.pathname)?u.pathname.slice(3)+u.search:'';
+    }catch(e){return '';}
+  }
+  function renderSongs(){
+    const root=document.getElementById('sp-song-list');if(!root)return;
+    root.hidden=!(st.refresh||st.token)||!songs.url;
+    if(root.hidden){root.innerHTML='';return;}
+    root.innerHTML=`<h3 class="sub-h">${U.esc(songs.name||'Listendeki şarkılar')}</h3><p class="hint">İstediğin şarkıya dokun; üstteki Luna oynatıcısında çalsın.</p>
+      ${songs.error?`<p class="hint" role="status">${U.esc(songs.error)}</p><button type="button" class="btn soft" data-song="retry">Şarkıları yeniden yükle</button>`:''}
+      <div class="sp-song-rows">${songs.items.map((t,i)=>`<div class="sp-song-row"><button type="button" class="sp-song-pick" data-song="play" data-uri="${U.esc(t.uri)}"><span class="sp-song-number">${i+1}</span><span><b>${U.esc(t.name)}</b><small>${U.esc(t.artist)}</small></span><span aria-hidden="true">▶</span></button><a class="sp-song-source" href="https://open.spotify.com/track/${t.uri.split(':')[2]}" target="_blank" rel="noopener" aria-label="${U.esc(t.name)} — Spotify’da aç">↗</a></div>`).join('')}</div>
+      ${songs.busy?'<p class="hint" role="status">Şarkılar yükleniyor…</p>':''}
+      ${songs.next?`<button type="button" class="btn soft" data-song="more" ${songs.busy?'disabled':''}>Daha fazla şarkı</button>`:''}
+      ${!songs.busy&&!songs.error&&!songs.items.length?'<p class="hint">Bu listede çalınabilir şarkı bulunamadı.</p>':''}`;
+  }
+  async function showSongs(url,more=false,force=false){
+    if(!App||!(st.refresh||st.token))return;
+    const selection=window.SpotifyPlayback?.uri(url);if(!selection)return;
+    if(!more&&!force&&songs.url===url)return;
+    if(more&&songs.busy)return;
+    const path=more?songPath(songs.next):`/${selection.type==='playlist'?'playlists':selection.type==='album'?'albums':'tracks'}/${selection.uri.split(':')[2]}`;
+    if(!path)return;
+    const epoch=more?songEpoch:++songEpoch;
+    if(!more)songs={url,name:'',items:[],next:'',busy:false,error:''};
+    songs.busy=true;songs.error='';renderSongs();
+    try{
+      const json=await api(path),status=lastStatus;if(epoch!==songEpoch)return;
+      const page=more?json:selection.type==='track'?{items:[json]}:json?.items||json?.tracks;
+      if(!json||!page||!Array.isArray(page.items)){
+        songs.error=status===403||json?'Spotify bu listenin şarkılarını Luna’ya vermedi. Şarkı seçimi için kendi oluşturduğun veya ortak düzenlediğin bir listeyi aç.':status===401?ERR.auth:ERR.net;
+      }else{
+        const rows=page.items.map(x=>x?.item||x?.track||x).filter(t=>t&&/^spotify:track:[A-Za-z0-9]{10,40}$/.test(t.uri||'')&&!t.is_local&&t.is_playable!==false).map(t=>({uri:t.uri,name:t.name||'Şarkı',artist:(t.artists||[]).map(a=>a.name).join(' · ')}));
+        songs.items=more?[...songs.items,...rows]:rows;songs.name=json.name||songs.name;songs.next=page.next&&songPath(page.next)?page.next:'';
+      }
+    }catch(e){if(epoch===songEpoch)songs.error=ERR.net;}
+    finally{if(epoch===songEpoch){songs.busy=false;renderSongs();}}
+  }
 
   function load() {
     try { st = { ...st, ...(JSON.parse(localStorage.getItem(KEY) || '{}') || {}) }; } catch (e) { /* yok say */ }
@@ -192,9 +242,11 @@ const SpotifyLink = (() => {
         if (!/^[0-9a-f]{32}$/i.test(id)) { App.toast('🎧', 'Hesap bağlantısı henüz hazır değil', 'Şimdilik yukarıdaki oynatıcıyı kullanabilirsin'); return; }
         st.clientId = id; persist(); login();
       } else if (act === 'logout') {
+        ++songEpoch;songs={url:'',name:'',items:[],next:'',busy:false,error:''};
         ++libraryEpoch; busy = false;
+        st = { clientId: st.clientId, token: '', refresh: '', exp: 0, user: '', lists: [] };
         if (window.SpotifyPlayback) SpotifyPlayback.reset();
-        st = { clientId: st.clientId, token: '', refresh: '', exp: 0, user: '', lists: [] }; persist(); render();
+        persist(); render();renderSongs();
       } else if (act === 'reload') refreshLists();
       else if (act === 'more') refreshLists(true);
       else if (act === 'play') {
@@ -210,6 +262,7 @@ const SpotifyLink = (() => {
       load();
       if (window.SpotifyPlayback) SpotifyPlayback.init({ getToken: token, hasAccess: hasPlaybackAccess, selection: () => App.data().settings.spotify, restoreEmbed: () => App.playSpotify(App.data().settings.spotify) });
       bind();
+      bindSongs();
       render();
       handleRedirect().catch(() => App.toast('🎧', 'Spotify bağlantısı tamamlanamadı', 'Yeniden giriş yapabilirsin'));
       // bağlıysa listeleri arada bir tazele (en fazla günde bir)
@@ -217,7 +270,7 @@ const SpotifyLink = (() => {
         refreshLists();
       }
     },
-    render,
+    render,showSongs,
     // Tanılama: bağlantı durumu (jeton gibi gizli bilgiler dışarı verilmez)
     status() {
       return {

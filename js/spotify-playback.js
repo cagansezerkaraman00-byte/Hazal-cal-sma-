@@ -126,6 +126,10 @@ const SpotifyPlayback = (() => {
     const run=generation,current=player;
     try{await current.activateElement();if(run!==generation)return false;await request('/me/player/play?device_id='+encodeURIComponent(device),selection.type==='track'?{uris:[selection.uri]}:{context_uri:selection.uri});if(run!==generation)return false;message='Müzik Luna’da başlatılıyor…';render();return true;}catch(e){if(run===generation)error(e);return false;}
   }
+  function chooseTrack(value){
+    const selected=uri(value);if(selected?.type!=='track')return Promise.resolve(false);
+    picked=selected.uri;render();return transferPicked();
+  }
   function embedApi(){
     if(embedApiPromise)return embedApiPromise;
     embedApiPromise=new Promise((resolve,reject)=>{
@@ -139,7 +143,7 @@ const SpotifyPlayback = (() => {
     const selected=picked,controller=embedController,epoch=embedEpoch;
     if(!selected)return false;
     // Stop the embed preview before starting full playback on the Luna device.
-    try{controller?.pause();}catch(e){/* The selection remains available for retry. */}
+    try{Promise.resolve(controller?.pause()).catch(()=>{});}catch(e){/* The selection remains available for retry. */}
     if(!device){fail('Şarkı seçildi. Luna oynatıcısını açıp seçtiğin şarkıyı çal.');return false;}
     const ok=await playSelected(selected);
     return ok&&epoch===embedEpoch;
@@ -180,7 +184,7 @@ const SpotifyPlayback = (() => {
       if(b.dataset.live==='selected'){if(picked)await transferPicked();else await playSelected();return;}
       if(b.dataset.live==='toggle'){if(!track){await playSelected();return;}const activated=player.activateElement();await activated;await player.togglePlay();}
       else if(b.dataset.live==='next')await player.nextTrack();else if(b.dataset.live==='previous')await player.previousTrack();
-    }catch(err){error(err);}});render();},render,reset,playSelected,seekTo,uri,mountEmbed,
+    }catch(err){error(err);}});render();},render,reset,playSelected,seekTo,uri,mountEmbed,chooseTrack,
     status(){return {ready:!!device,connecting,playing,track:track?.name||''};}
   };
 })();

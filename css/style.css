@@ -1981,3 +1981,10 @@ body.focusing #countdown-error { display: none; }
 .sp-live-controls .sp-live-skip:focus-visible,.sp-live-controls .sp-live-toggle:focus-visible{outline:3px solid var(--ring);outline-offset:5px}
 .sp-live-controls .sp-live-selected{margin-top:14px;border-radius:99px;font-size:.85rem;min-height:44px}
 @media(prefers-reduced-motion:reduce){.sp-live-controls .sp-live-skip,.sp-live-controls .sp-live-toggle{transition:none}}
+.sp-song-list{margin-top:18px;padding:16px;background:var(--surface-2);border:1px solid var(--line);border-radius:20px;color:var(--text)}
+.sp-song-rows{max-height:350px;overflow:auto;margin:12px 0;overscroll-behavior:contain}
+.sp-song-row{display:flex;align-items:center;border-bottom:1px solid var(--line)}
+.sp-song-pick{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:10px;border:0;background:transparent;color:var(--text);text-align:left;cursor:pointer;border-radius:12px;font:inherit}
+.sp-song-pick:hover,.sp-song-pick:focus-visible{background:var(--surface-3)}
+.sp-song-pick>span:nth-child(2){flex:1;min-width:0;overflow-wrap:anywhere}.sp-song-pick small{display:block;color:var(--muted);margin-top:4px}.sp-song-number{color:var(--muted)}
+.sp-song-source{padding:12px;color:var(--accent);text-decoration:none}.sp-song-pick:disabled{opacity:.6}
