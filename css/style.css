@@ -1998,3 +1998,10 @@ body.focusing #countdown-error { display: none; }
 .sp-music-window .sp-live-track{font-size:clamp(20px,2.8vw,30px)}
 .sp-native-view{margin-top:14px}.sp-native-view>summary{cursor:pointer;padding:12px;color:var(--muted);font-size:14px}.sp-native-view .spotify-frame iframe{height:620px;width:100%}
 @media(max-width:540px){.sp-music-window .sp-live-player{padding:20px 16px 16px}.sp-music-window .sp-song-list{padding:14px 12px 18px}.sp-music-window .sp-song-rows{max-height:460px}.sp-native-view .spotify-frame iframe{height:540px}}
+
+/* Open Spotify window, with both existing Luna controls and song list retained. */
+.sp-native-view{margin-top:18px}
+.sp-native-view .spotify-frame iframe{height:900px;width:100%}
+#sp-song-list .sp-song-rows{max-height:680px}
+#sp-song-list .sp-song-pick{min-height:68px}
+@media(max-width:540px){.sp-native-view .spotify-frame iframe{height:740px}#sp-song-list .sp-song-rows{max-height:540px}}

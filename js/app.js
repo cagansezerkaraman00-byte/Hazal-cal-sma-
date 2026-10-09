@@ -1108,9 +1108,7 @@
     if (!spotifyLoaded) loadSpotify();
   }
   function bindMusic() {
-    $('#sp-native-view')?.addEventListener('toggle',()=>{
-      if ($('#sp-native-view').open && window.SpotifyPlayback) SpotifyPlayback.pauseForEmbed();
-    });
+
     $('#spotify-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const v = $('#spotify-input').value.trim();
