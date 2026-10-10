@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.17",
+  "tarih": "2026-10-10",
+  "baslik": "Spotify atlama ve sarma kontrolleri",
+  "notlar": [
+    "🎧 Seçtiğin şarkı artık çalma listesiyle birlikte başlar. İleri ve geri düğmeleri listedeki komşu şarkıyı seçer. Sarma komutu uygulanmadığında aynı Luna cihazına yeniden gönderilir. Geciken yanıtlar ve kopan bağlantılar için toparlanma düzeltmeleri dahildir."
+  ]
+},
+{
   "surum": "2.4.16",
   "tarih": "2026-10-10",
   "baslik": "Spotify bağlantı ve sarma düzeltmesi",

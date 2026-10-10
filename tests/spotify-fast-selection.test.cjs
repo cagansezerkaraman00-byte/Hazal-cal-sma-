@@ -6,7 +6,7 @@ async function main(){
  const nodes={'sp-playback':root,'sp-music-window':{},'spotify-frame':{}};
  const first='spotify:track:1111111111111111111111',second='spotify:track:2222222222222222222222';
  const state=(uri,position=0)=>({paused:false,position,duration:200000,track_window:{current_track:{uri,name:uri===first?'Old song':'New song',artists:[]}}});
- class Player{constructor(){instance=this;this.events={};this.state=state(first);}addListener(t,f){this.events[t]=f;}async connect(){this.events.ready({device_id:'demo'});return true;}disconnect(){}async activateElement(){this.activations=(this.activations||0)+1;}async getCurrentState(){return this.state;}async seek(ms){this.seeks=(this.seeks||[]).concat(ms);} }
+ class Player{constructor(){instance=this;this.events={};this.state=state(first);}addListener(t,f){this.events[t]=f;}async connect(){this.events.ready({device_id:'demo'});return true;}disconnect(){}async activateElement(){this.activations=(this.activations||0)+1;}async getCurrentState(){return this.state;}async seek(ms){this.seeks=(this.seeks||[]).concat(ms);this.state.position=ms;} }
  const source=fs.readFileSync(path.join(__dirname,'../js/spotify-playback.js'),'utf8');
  const api=new Function('window','document','U','fetch','Date','setInterval','clearInterval',source+';return SpotifyPlayback;')({Spotify:{Player}},{getElementById:k=>nodes[k],hidden:false},{esc:s=>s},()=>new Promise(r=>resolveRequest=()=>r({ok:true})),{now:()=>now},fn=>{pulse=fn;return 1;},()=>{});
  api.init({hasAccess:()=>true,getToken:async()=> 'test',selection:()=>''});await events.click({target:{closest:()=>({dataset:{live:'connect'}})}});

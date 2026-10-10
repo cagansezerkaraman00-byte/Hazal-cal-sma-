@@ -3,6 +3,7 @@ const SpotifyPlayback = (() => {
   let config, player=null, device='', pending=null, sdkPromise=null, generation=0;
   let queuedSeek=null,commandEpoch=0,selectionTimer=null,needsGesture=false,reconnectNeeded=false;
   let selectionPending=null, selectionSequence=0, seekHold=null, selectionWork=Promise.resolve();
+  let pickedContext='', playbackItems=[];
   let message='', playing=false, track=null, position=0, duration=0, connecting=false;
   let embedController=null, embedEpoch=0, embedApiPromise=null, picked='', transferQueue=Promise.resolve();
   let clock=null, observedAt=Date.now(), dragging=false, draft=0, seekBusy=false, seekSequence=0, seekAllowed=true, syncBusy=false, ticks=0;
@@ -44,7 +45,7 @@ const SpotifyPlayback = (() => {
     const incoming=state?.track_window?.current_track;
     const previousPlaying=playing,previousDuration=duration,previousMessage=message;
     if(seekHold&&(incoming?.id||incoming?.uri||incoming?.name)===seekHold.key&&state?.paused===!playing&&Date.now()<seekHold.until&&Math.abs((state?.position||0)-currentPosition())>2500)return;
-    if(selectionPending&&incoming?.uri!==selectionPending.uri&&incoming?.id!==selectionPending.uri.split(':')[2])return;
+    if(selectionPending&&incoming?.uri!==selectionPending.uri&&incoming?.linked_from?.uri!==selectionPending.uri&&incoming?.id!==selectionPending.uri.split(':')[2])return;
     if(selectionPending){clearSelection();message='';}if(state&&!state.paused)needsGesture=false;
     if(seekBusy)return;
     const previous=trackKey();track=incoming||null;
@@ -77,7 +78,20 @@ const SpotifyPlayback = (() => {
     const run=generation,current=player,key=trackKey(),sequence=++seekSequence,old=currentPosition();
     seekBusy=true;position=ms;observedAt=Date.now();paintTimeline();
     try{
-      await bounded(current.seek(ms));
+      try{
+        await bounded(current.seek(ms));
+        if(run!==generation||current!==player||sequence!==seekSequence||queuedSeek)return false;
+        if(current.getCurrentState){
+          const confirmed=await bounded(current.getCurrentState(),1500);
+          const confirmedTrack=confirmed?.track_window?.current_track;
+          if(confirmedTrack&&(confirmedTrack.id||confirmedTrack.uri||confirmedTrack.name)!==key)return false;
+          if(confirmed&&Math.abs((confirmed.position||0)-ms)>2500)throw Error('SEEK_NOT_APPLIED');
+        }
+      }catch(e){
+        // A seek is an absolute position, so retrying it cannot skip two songs.
+        if(run!==generation||current!==player||key!==trackKey()||sequence!==seekSequence||queuedSeek)throw e;
+        await request('/me/player/seek?position_ms='+ms+'&device_id='+encodeURIComponent(device));
+      }
       if(run!==generation||current!==player||key!==trackKey()||sequence!==seekSequence)return false;
       if(!queuedSeek){position=ms;observedAt=Date.now();seekHold={key,until:Date.now()+4000};message='';}
       return true;
@@ -122,12 +136,12 @@ const SpotifyPlayback = (() => {
       document.head.appendChild(script);
     });return sdkPromise;
   }
-  async function request(path,body){
+  async function request(path,body,method='PUT'){
     const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),12000);
     try{
       for(let attempt=0;attempt<2;attempt++){
         const auth=await bounded(config.getToken(attempt>0),10000);if(!auth)throw Error('AUTH');
-        const res=await fetch('https://api.spotify.com/v1'+path,{method:'PUT',headers:{Authorization:'Bearer '+auth,'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctl.signal});
+        const res=await fetch('https://api.spotify.com/v1'+path,{method,headers:{Authorization:'Bearer '+auth,'Content-Type':'application/json'},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:ctl.signal});
         if(res.status===401&&attempt===0)continue;
         if(!res.ok)throw Error(res.status===401?'AUTH':res.status===403?'PREMIUM':res.status===429?'RATE':res.status===404?'DEVICE':'PLAYBACK');
         return;
@@ -166,14 +180,18 @@ const SpotifyPlayback = (() => {
     const selection=uri(selected);if(!selection){fail('Bir şarkı, albüm veya çalma listesi seç.');return false;}
     // Must be invoked directly from a tap for iOS audio activation.
     const run=generation,current=player;
-    try{if(!activated)await bounded(current.activateElement());if(run!==generation)return false;await request('/me/player/play?device_id='+encodeURIComponent(device),selection.type==='track'?{uris:[selection.uri]}:{context_uri:selection.uri});if(run!==generation)return false;if(selection.type==='track'&&picked&&picked!==selection.uri)return false;if(selectionPending)watchSelection();if(!needsGesture)message='Müzik Luna’da başlatılıyor…';render();return true;}catch(e){if(run===generation){clearSelection();needsGesture=true;error(e);}return false;}
+    const body=selection.type==='track'?(pickedContext&&selected===picked?{context_uri:pickedContext,offset:{uri:selection.uri},position_ms:0}:{uris:[selection.uri]}):{context_uri:selection.uri};
+    try{if(!activated)await bounded(current.activateElement());if(run!==generation)return false;await request('/me/player/play?device_id='+encodeURIComponent(device),body);if(run!==generation)return false;if(selection.type==='track'&&picked&&picked!==selection.uri)return false;if(selectionPending)watchSelection();if(!needsGesture)message='Müzik Luna’da başlatılıyor…';render();return true;}catch(e){if(run===generation){clearSelection();needsGesture=true;error(e);}return false;}
   }
-  async function chooseTrack(value,metadata){
+  async function chooseTrack(value,metadata,list){
     const selected=uri(value);if(selected?.type!=='track')return false;
     if(!device){fail(connecting?'Oynatıcı hazırlanıyor. Hazır olduğunda şarkına dokun.':'Önce oynatıcıyı aç, sonra şarkını seç.');return false;}
     cancelSeek();clearSelection();needsGesture=false;
     const sequence=++selectionSequence,run=generation;
     const previous={track,position,duration,playing};
+    const context=uri(list?.context);
+    pickedContext=context&&['playlist','album'].includes(context.type)?context.uri:'';
+    playbackItems=Array.isArray(list?.items)?list.items.filter(t=>uri(t?.uri)?.type==='track'):[];
     picked=selected.uri;selectionPending={uri:selected.uri};
     track={uri:selected.uri,name:metadata?.name||'Seçtiğin şarkı',artists:metadata?.artists||[],album:metadata?.album};
     position=0;duration=metadata?.duration_ms||0;playing=false;message='Seçtiğin şarkı hazırlanıyor…';observedAt=Date.now();render();
@@ -187,6 +205,20 @@ const SpotifyPlayback = (() => {
     if(!ok){clearSelection();({track,position,duration,playing}=previous);render();}
     if(ok&&player?.getCurrentState){try{const state=await bounded(player.getCurrentState(),4000);if(run===generation&&sequence===selectionSequence&&state)acceptState(state);}catch(e){/* Next clock pulse retries. */}}
     return ok;
+  }
+  async function skip(direction){
+    const key=track?.linked_from?.uri||track?.uri||picked;
+    const index=playbackItems.findIndex(t=>t.uri===key),next=playbackItems[index+direction];
+    if(index>=0&&next)return chooseTrack(next.uri,next,{context:pickedContext,items:playbackItems});
+    if(direction<0&&index===0)return seekTo(0);
+    cancelSeek();++commandEpoch;const current=player,run=generation;
+    try{await bounded(direction>0?current.nextTrack():current.previousTrack());}
+    catch(e){
+      // A timed-out skip might already have run; never send a duplicate skip.
+      if(e.message==='COMMAND_TIMEOUT'||run!==generation||current!==player)throw e;
+      await request('/me/player/'+(direction>0?'next':'previous')+'?device_id='+encodeURIComponent(device),undefined,'POST');
+    }
+    return true;
   }
   async function pauseForEmbed(){
     if(!player||!device||!playing)return;
@@ -232,7 +264,7 @@ const SpotifyPlayback = (() => {
       root.innerHTML=`<p class="hint">Şarkı seçme bağlantısı kurulamadı. Listeyi yeniden açarak tekrar deneyebilirsin.</p><iframe title="Spotify oynatıcı" src="https://open.spotify.com/embed/${selection.type}/${selection.uri.split(':')[2]}?theme=0" width="100%" height="900" style="border:0;border-radius:12px" allow="autoplay; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
     });return true;
   }
-  function reset(){reconnectNeeded=false;clearSelection();cancelSeek();needsGesture=false;++selectionSequence;selectionPending=null;seekHold=null;selectionWork=Promise.resolve();++embedEpoch;picked='';try{embedController?.destroy();}catch(e){}embedController=null;++generation;++seekSequence;stopClock();seekBusy=false;position=0;duration=0;if(player)player.disconnect();player=null;device='';pending=null;connecting=false;track=null;playing=false;message='';if(config?.restoreEmbed)config.restoreEmbed();render();}
+  function reset(){pickedContext='';playbackItems=[];reconnectNeeded=false;clearSelection();cancelSeek();needsGesture=false;++selectionSequence;selectionPending=null;seekHold=null;selectionWork=Promise.resolve();++embedEpoch;picked='';try{embedController?.destroy();}catch(e){}embedController=null;++generation;++seekSequence;stopClock();seekBusy=false;position=0;duration=0;if(player)player.disconnect();player=null;device='';pending=null;connecting=false;track=null;playing=false;message='';if(config?.restoreEmbed)config.restoreEmbed();render();}
   return {
     init(options){config=options;const root=el();if(!root)return;
       const recover=()=>{if(reconnectNeeded&&!document.hidden&&document.getElementById('music-card')?.open&&config.hasAccess()&&!connecting)connect();};
@@ -252,7 +284,7 @@ const SpotifyPlayback = (() => {
       if(!player||!device)return;
       if(b.dataset.live==='selected'){if(picked)await transferPicked();else await playSelected();return;}
       if(b.dataset.live==='toggle'){if(!track){await playSelected();return;}const activated=player.activateElement();await bounded(activated);if(needsGesture){needsGesture=false;if(picked){selectionPending={uri:picked};await playSelected(picked,true);}else await bounded(player.resume());}else await bounded(player.togglePlay());}
-      else if(b.dataset.live==='next')await bounded(player.nextTrack());else if(b.dataset.live==='previous')await bounded(player.previousTrack());
+      else if(b.dataset.live==='next')await skip(1);else if(b.dataset.live==='previous')await skip(-1);
       const current=player,run=generation;const state=await bounded(current.getCurrentState?.(),4000);if(state&&run===generation&&current===player)acceptState(state);
     }catch(err){error(err);}});render();},render,reset,playSelected,seekTo,uri,mountEmbed,chooseTrack,pauseForEmbed,
     prepare(){if(!config?.hasAccess())return false;render();connect();return true;},

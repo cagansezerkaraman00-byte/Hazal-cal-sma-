@@ -18,7 +18,7 @@ const SpotifyLink = (() => {
         if(b.dataset.song==='retry'){showSongs(songs.url,false,true);return;}
         if(b.dataset.song==='play'&&songs.items.some(t=>t.uri===b.dataset.uri)){
           const selected=songs.items.find(t=>t.uri===b.dataset.uri);
-          b.disabled=true;try{await window.SpotifyPlayback?.chooseTrack(b.dataset.uri,selected);}finally{b.disabled=false;}
+          b.disabled=true;try{await window.SpotifyPlayback?.chooseTrack(b.dataset.uri,selected,{context:songs.url,items:songs.items});}finally{b.disabled=false;}
         }
       });
   }

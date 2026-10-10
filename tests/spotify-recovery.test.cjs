@@ -12,11 +12,11 @@ async function main(){
   addListener(k,f){this.events[k]=f;}async connect(){this.events.ready({device_id:'demo'});return true;}disconnect(){}
   async activateElement(){if(this.activationFails)throw Error('activation');}
   getCurrentState(){return this.readState?this.readState():Promise.resolve(this.state);}
-  seek(ms){seeks.push(ms);return new Promise(resolve=>resolvers.push(resolve));}
+  seek(ms){seeks.push(ms);return new Promise(resolve=>resolvers.push(()=>{this.state.position=ms;resolve();}));}
  }
  const source=fs.readFileSync(path.join(__dirname,'../js/spotify-playback.js'),'utf8');
  const api=new Function('window','document','U','fetch','Date','setInterval','clearInterval','setTimeout','clearTimeout',source+';return SpotifyPlayback;')(
-  {Spotify:{Player}},{getElementById:k=>nodes[k],hidden:false},{esc:s=>s},async(url,opts)=>{requests.push({url,body:JSON.parse(opts.body)});const status=fetchStatus;fetchStatus=204;return {ok:status===204,status};},
+  {Spotify:{Player}},{getElementById:k=>nodes[k],hidden:false},{esc:s=>s},async(url,opts)=>{requests.push({url,body:opts.body?JSON.parse(opts.body):null});const status=fetchStatus;fetchStatus=204;return {ok:status===204,status};},
   {now:()=>now},fn=>{pulse=fn;return 1;},()=>{},(fn,ms)=>{const id=++nextTimer;timers.set(id,{fn,ms});return id;},id=>timers.delete(id));
  const flush=async()=>{for(let i=0;i<50;i++)await Promise.resolve();};
  const click=live=>events.click({target:{closest:()=>({dataset:{live}})}});
@@ -26,9 +26,9 @@ async function main(){
  assert.equal(await b,false,'superseded queued seek resolves');assert.equal(range.value,'120000');assert.equal(range.disabled,false,'dragging remains available during a slow seek');
  assert.deepEqual(seeks,[60000]);resolvers.shift()();await a;await flush();assert.deepEqual(seeks,[60000,120000],'only newest queued target is sent');resolvers.shift()();assert.equal(await c,true);
  instance.events.player_state_changed(state(first,1000));assert.equal(range.value,'120000','late position cannot undo latest seek');
- now+=5000;let resolvePoll;instance.readState=()=>new Promise(r=>resolvePoll=r);const polling=pulse();await flush();
+ now+=5000;let resolvePoll;instance.readState=()=>{instance.readState=null;return new Promise(r=>resolvePoll=r);};const polling=pulse();await flush();
  const seek=api.seekTo(45000);resolvers.shift()();await seek;resolvePoll(state(first,1000));await polling;assert.equal(range.value,'45000','poll started before seek is discarded');instance.readState=null;
- const hung=api.seekTo(80000);fire(6000);assert.equal(await hung,false);assert.equal(range.disabled,false,'timeout releases controls');assert.match(html,/Sarma yanıtı/);resolvers.shift()();
+ const hung=api.seekTo(80000);fetchStatus=403;fire(6000);assert.equal(await hung,false);assert.equal(range.disabled,false,'timeout releases controls');assert.match(html,/Sarma yanıtı/);resolvers.shift()();
  instance.activationFails=true;assert.equal(await api.chooseTrack(second,{name:'Second'}),false);assert.equal(range.disabled,false,'activation failure releases selected-song lock');instance.activationFails=false;
  fetchStatus=401;await api.chooseTrack(second,{name:'Second',duration_ms:200000});assert(tokens.includes(true),'401 refreshes access token once');
  instance.events.autoplay_failed();instance.events.player_state_changed(state());await pulse();assert.match(html,/aria-label="Sesi aç"/);assert(!/data-live="toggle" disabled/.test(html),'iOS audio recovery button enabled');
