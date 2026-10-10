@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.4.16",
+  "tarih": "2026-10-10",
+  "baslik": "Spotify bağlantı ve sarma düzeltmesi",
+  "notlar": [
+    "🎧 Art arda sararken son seçilen konum uygulanır. Geciken eski yanıtlar sarma konumunu değiştirmez. iPad ses engelinde Sesi aç ile tekrar denenebilir; takılan işlemler düğmeleri kilitlemez. Oturum yenileme ve kopan bağlantının toparlanması düzeltildi."
+  ]
+},
+{
   "surum": "2.4.15",
   "tarih": "2026-10-10",
   "baslik": "Tek Premium müzik paneli",

@@ -18,7 +18,7 @@ async function main(){
  await api.seekTo(999999);assert.equal(instance.seeks.at(-1),288999,'seek bounded below track end');
  await api.seekTo(-99);assert.equal(instance.seeks.at(-1),0);const count=instance.seeks.length;await api.seekTo(NaN);assert.equal(instance.seeks.length,count);
  instance.events.player_state_changed(state(12000,true));now+=3000;await pulse();assert.equal(range.value,'12000','paused clock does not advance');
- instance.fail=true;assert.equal(await api.seekTo(60000),false);assert.equal(range.value,'12000','failed seek restores position');assert.match(root.innerHTML,/gidilemedi/);instance.fail=false;
+ instance.fail=true;assert.equal(await api.seekTo(60000),false);assert.equal(range.value,'12000','failed seek restores position');assert.match(root.innerHTML,/Sarma yanıtı alınamadı/);instance.fail=false;
  instance.events.player_state_changed(state(0,false,'second',true));assert(range.disabled);assert.equal(await api.seekTo(30000),false,'Spotify disallows seeking');
  instance.events.player_state_changed(state());let resolveSeek;instance.seek=()=>new Promise(r=>resolveSeek=r);const pending=api.seekTo(45000);api.reset();resolveSeek();await pending;assert.equal(api.status().ready,false);assert(cleared>0,'logout clears clock');
  console.log('Spotify seek: drag preview, one seek on commit, accurate playing/paused clock, bounds, restrictions, failed request rollback and logout race passed');

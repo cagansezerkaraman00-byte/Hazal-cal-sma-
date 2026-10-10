@@ -13,7 +13,7 @@ async function main(){
  instance.events.player_state_changed(state(first));const pending=api.chooseTrack(second,{name:'New song',artists:[],duration_ms:200000});
  assert.match(html,/New song/,'title changes before network finishes');assert(range.disabled,'seeking waits for real selected audio');
  instance.events.player_state_changed(state(first,10000));assert.match(html,/New song/,'late old song cannot overwrite choice');
- for(let i=0;i<6;i++)await Promise.resolve();resolveRequest();await pending;assert.equal(instance.activations,1,"one audio activation per song selection");
+ for(let i=0;i<40&&!resolveRequest;i++)await Promise.resolve();assert.equal(typeof resolveRequest,"function");resolveRequest();await pending;assert.equal(instance.activations,1,"one audio activation per song selection");
  instance.state=state(second);instance.events.player_state_changed(instance.state);assert(!range.disabled);const before=renders;
  instance.events.player_state_changed(state(second,1000));assert.equal(renders,before,'position updates do not rebuild controls');
  await api.seekTo(60000);instance.events.player_state_changed(state(second,1000));assert.equal(range.value,'60000','late old position cannot undo a seek');

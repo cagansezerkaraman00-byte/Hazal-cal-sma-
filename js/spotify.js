@@ -110,7 +110,8 @@ const SpotifyLink = (() => {
   }
   // aynı anda gelen istekler tek yenilemeyi paylaşır (Spotify yenileme anahtarını her seferinde değiştirir)
   let refreshing = null;
-  async function token() {
+  async function token(force = false) {
+    if (force) { st.token = ''; st.exp = 0; }
     if (st.token && Date.now() < st.exp - 60000) return st.token;
     if (!st.refresh || !st.clientId) return '';
     if (!refreshing) refreshing = post(TOKEN, { grant_type: 'refresh_token', refresh_token: st.refresh, client_id: st.clientId }).then(setTokens).finally(() => { refreshing = null; });
