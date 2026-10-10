@@ -1,0 +1,24 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#eee5ff"><title>Luna’yı onar</title>
+<style>body{font:17px system-ui;background:#eee5ff;color:#30234f;margin:0;min-height:100vh;display:grid;place-items:center}main{background:white;border-radius:24px;padding:28px;margin:20px;max-width:440px}button,a{font:inherit;padding:14px;border-radius:14px;border:0;background:#6943a5;color:white;display:inline-block}p{line-height:1.6}small{display:block;margin-top:18px}#open[hidden]{display:none}</style></head>
+<body><main><h1>💜 Luna’yı onar</h1><p>Uygulama dosyalarını yeniden doğrulayalım. Çalışmaların, notların ve ayarların silinmez.</p><button id="repair">Güvenli güncellemeyi yükle</button><p id="status" role="status" aria-live="polite"></p><a id="open" href="./?source=homescreen" hidden>Luna’ya dön</a><small>Kurulu Luna’yı kullanıyorsan işlem bitince ana ekrandaki simgesinden yeniden aç.</small></main>
+<script>
+const button=document.getElementById('repair'),statusBox=document.getElementById('status');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function workerVersion(worker){return new Promise(resolve=>{if(!worker)return resolve('');const channel=new MessageChannel();const t=setTimeout(()=>{channel.port1.close();resolve('');},1200);channel.port1.onmessage=e=>{clearTimeout(t);channel.port1.close();resolve(e.data.version||'');};worker.postMessage({type:'LUNA_VERSION'},[channel.port2]);});}
+button.onclick=async()=>{
+ button.disabled=true;statusBox.textContent='Dosyalar kontrol ediliyor…';
+ try {
+  if(!('serviceWorker' in navigator))throw Error('Bu tarayıcı onarımı desteklemiyor. Safari veya Chrome ile aç.');
+  const response=await fetch('release-manifest.json?guncel='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw Error('Güncelleme bilgisi alınamadı. İnternet bağlantını kontrol et.');
+  const target=(await response.json()).version;
+  const registration=await navigator.serviceWorker.register('sw.js',{updateViaCache:'none'});
+  await registration.update();
+  const deadline=Date.now()+45000;let ready=false;
+  while(Date.now()<deadline){if(await workerVersion(registration.active)===target){ready=true;break;}await sleep(700);}
+  if(!ready)throw Error('Güncelleme henüz tamamlanmadı. Biraz sonra yeniden dene; kayıtlarına dokunulmadı.');
+  statusBox.textContent='Dosyalar doğrulandı. Luna hazır.';document.getElementById('open').hidden=false;
+ } catch(error){statusBox.textContent=error.message;}
+ finally{button.disabled=false;}
+};
+</script></body></html>

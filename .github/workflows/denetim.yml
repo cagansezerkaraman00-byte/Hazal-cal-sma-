@@ -1,0 +1,39 @@
+# Her gönderimde Luna'nın testlerini ve tarayıcıda açılışını dener; bozuk bir şey varsa bu iş kırmızı yanar ve GitHub
+# e-postayla haber verir. Yalnızca okur: yayın istemez, Pages ayarına dokunmaz (bkz. pages.yml).
+# ÖNEMLİ: Pages şu an "Deploy from a branch" ile doğrudan daldan yayın yapıyor; bu iş bozuk bir gönderimin yayınlanmasını
+# DURDURAMAZ, yalnızca uyarır. Durdurması istenirse Settings → Pages → Source "GitHub Actions" yapılmalı ve bu işin
+# sonuna actions/upload-pages-artifact + actions/deploy-pages adımları eklenmeli (dal yayını açıkken yayın adımı eklemek
+# GitHub'ın kendi yayınını iptal ettirir). Telefondaki asıl korumalar: build-release bozuk dosyaya özet yazmaz, servis
+# çalışanı özeti tutmayan dosyayı kurmaz, açılamayan yeni sürümde son sağlam sürüme döner.
+name: Yayın denetimi
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: denetim-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  denetim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Birim ve bütünlük testleri
+        run: for t in tests/*.cjs; do echo "== $t"; node "$t"; done
+      - name: index.html ve release-manifest.json güncel mi
+        run: node scripts/build-release.cjs && git diff --exit-code -- index.html release-manifest.json
+      - name: Tarayıcıda açılış (duman testi)
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+          node scripts/smoke.cjs
