@@ -45,6 +45,13 @@ if(AERION_BUILD_PYTHON)
                                         "${CMAKE_CURRENT_SOURCE_DIR}/python" -q -p no:cacheprovider)
     set_tests_properties(python.pytest PROPERTIES LABELS "python" TIMEOUT 900 ENVIRONMENT
                                                   "PYTHONPATH=${AERION_PYTHONPATH}")
+    add_test(NAME python.example_poisson_quickstart
+             COMMAND "${Python_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/examples/python/poisson_quickstart.py"
+                     --n 32 --out "${CMAKE_CURRENT_BINARY_DIR}/output/plate")
+    set_tests_properties(
+      python.example_poisson_quickstart
+      PROPERTIES LABELS "python;example" ENVIRONMENT "PYTHONPATH=${AERION_PYTHONPATH}"
+                 PASS_REGULAR_EXPRESSION "exact 0.25, error [0-9.]+e-(0[89]|1[0-9])")
   else()
     message(WARNING "pytest/numpy not importable by ${Python_EXECUTABLE}: Python tests are not "
                     "registered with CTest ('python3 -m pip install -r requirements-dev.txt').")
