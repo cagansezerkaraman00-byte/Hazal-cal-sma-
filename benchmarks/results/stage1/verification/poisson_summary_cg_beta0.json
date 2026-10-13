@@ -1,0 +1,303 @@
+{
+  "generated_utc": "2026-10-13T16:55:22+00:00",
+  "build": {
+    "version": "0.1.0",
+    "git_revision": "000523a630d3",
+    "compiler": "GCC 13.3.0",
+    "build_type": "Release",
+    "cxx_standard": 202002,
+    "openmp": true,
+    "max_threads": 4,
+    "cuda": false,
+    "bounds_checking": false
+  },
+  "expected_order": 2.0,
+  "order_tolerance": 0.1,
+  "studies": [
+    {
+      "case": "sine-dirichlet",
+      "solver": "cg",
+      "beta": 0.0,
+      "relative_tolerance": 1e-10,
+      "levels": [
+        {
+          "nx": 16,
+          "ny": 16,
+          "h": 0.0625,
+          "l2_error": 0.001609482220039214,
+          "linf_error": 0.0031880386898234248,
+          "iterations": 27,
+          "final_residual": 2.7892059698768302e-11,
+          "conservation_error": 1.9654294442399085e-12,
+          "converged": true,
+          "wall_time_s": 0.00022049200015317183
+        },
+        {
+          "nx": 32,
+          "ny": 32,
+          "h": 0.03125,
+          "l2_error": 0.00040178883968641966,
+          "linf_error": 0.0008016429548807213,
+          "iterations": 51,
+          "final_residual": 2.0007963580532638e-11,
+          "conservation_error": 9.824240565645046e-13,
+          "converged": true,
+          "wall_time_s": 0.000947937999626447
+        },
+        {
+          "nx": 64,
+          "ny": 64,
+          "h": 0.015625,
+          "l2_error": 0.00010041090485039795,
+          "linf_error": 0.0002007008599499427,
+          "iterations": 90,
+          "final_residual": 1.4224127882840547e-11,
+          "conservation_error": 4.0725904123729025e-12,
+          "converged": true,
+          "wall_time_s": 0.004745881999951962
+        },
+        {
+          "nx": 128,
+          "ny": 128,
+          "h": 0.0078125,
+          "l2_error": 2.5100457957398695e-05,
+          "linf_error": 5.019335242295586e-05,
+          "iterations": 127,
+          "final_residual": 7.704329971817457e-12,
+          "conservation_error": 3.6613317330072716e-13,
+          "converged": true,
+          "wall_time_s": 0.025883619000069302
+        },
+        {
+          "nx": 256,
+          "ny": 256,
+          "h": 0.00390625,
+          "l2_error": 6.2749727416058684e-06,
+          "linf_error": 1.254947274942353e-05,
+          "iterations": 200,
+          "final_residual": 3.2867136536394448e-12,
+          "conservation_error": 6.661254549369537e-16,
+          "converged": true,
+          "wall_time_s": 0.05620205900004294
+        },
+        {
+          "nx": 512,
+          "ny": 512,
+          "h": 0.001953125,
+          "l2_error": 1.5687343455984661e-06,
+          "linf_error": 3.1374391709082516e-06,
+          "iterations": 380,
+          "final_residual": 1.3257595079894256e-12,
+          "conservation_error": 6.661317248076751e-16,
+          "converged": true,
+          "wall_time_s": 0.35158589399998164
+        }
+      ],
+      "orders_l2": [
+        2.0020872428132446,
+        2.0005215337883584,
+        2.0001303662540924,
+        2.000032589218432,
+        2.000008129549822
+      ],
+      "orders_linf": [
+        1.9916374174362683,
+        1.9979130170565391,
+        1.9994785859922637,
+        1.9998695547729275,
+        1.9999673591193656
+      ],
+      "passed": true
+    },
+    {
+      "case": "cosine-neumann",
+      "solver": "cg",
+      "beta": 0.0,
+      "relative_tolerance": 1e-10,
+      "levels": [
+        {
+          "nx": 16,
+          "ny": 16,
+          "h": 0.0625,
+          "l2_error": 0.0016094822200390037,
+          "linf_error": 0.0031880386904613637,
+          "iterations": 30,
+          "final_residual": 1.2530903871196674e-11,
+          "conservation_error": 3.4583147597194774e-18,
+          "converged": true,
+          "wall_time_s": 0.00019908900003429153
+        },
+        {
+          "nx": 32,
+          "ny": 32,
+          "h": 0.03125,
+          "l2_error": 0.0004017888396863815,
+          "linf_error": 0.0008016429562491777,
+          "iterations": 63,
+          "final_residual": 1.8923503250563403e-11,
+          "conservation_error": 8.666653050937427e-18,
+          "converged": true,
+          "wall_time_s": 0.0009349919996566314
+        },
+        {
+          "nx": 64,
+          "ny": 64,
+          "h": 0.015625,
+          "l2_error": 0.00010041090484989665,
+          "linf_error": 0.00020070086013168528,
+          "iterations": 126,
+          "final_residual": 1.2848034697638848e-11,
+          "conservation_error": 4.119141042086418e-18,
+          "converged": true,
+          "wall_time_s": 0.005872101000022667
+        },
+        {
+          "nx": 128,
+          "ny": 128,
+          "h": 0.0078125,
+          "l2_error": 2.5100457965666136e-05,
+          "linf_error": 5.0193355770502074e-05,
+          "iterations": 247,
+          "final_residual": 7.359354169072518e-12,
+          "conservation_error": 1.5991179272314955e-18,
+          "converged": true,
+          "wall_time_s": 0.04477277599971785
+        },
+        {
+          "nx": 256,
+          "ny": 256,
+          "h": 0.00390625,
+          "l2_error": 6.27497273677182e-06,
+          "linf_error": 1.2549472705569074e-05,
+          "iterations": 469,
+          "final_residual": 3.7487722364703145e-12,
+          "conservation_error": 3.455851054055222e-19,
+          "converged": true,
+          "wall_time_s": 0.12248904400030369
+        },
+        {
+          "nx": 512,
+          "ny": 512,
+          "h": 0.001953125,
+          "l2_error": 1.5687343216453015e-06,
+          "linf_error": 3.1374390522246963e-06,
+          "iterations": 922,
+          "final_residual": 1.3202824894782898e-12,
+          "conservation_error": 7.707975636482157e-19,
+          "converged": true,
+          "wall_time_s": 0.9882478670001547
+        }
+      ],
+      "orders_l2": [
+        2.002087242813193,
+        2.0005215337954243,
+        2.0001303657717036,
+        2.0000325908050267,
+        2.0000081504670715
+      ],
+      "orders_linf": [
+        1.9916374152621834,
+        1.9979130182128955,
+        1.9994784910809966,
+        1.9998696560321474,
+        1.9999674086523327
+      ],
+      "passed": true
+    },
+    {
+      "case": "exp-mixed",
+      "solver": "cg",
+      "beta": 0.0,
+      "relative_tolerance": 1e-10,
+      "levels": [
+        {
+          "nx": 32,
+          "ny": 16,
+          "h": 0.0625,
+          "l2_error": 0.0011474219292063137,
+          "linf_error": 0.00392549720350388,
+          "iterations": 118,
+          "final_residual": 4.4571017065883595e-09,
+          "conservation_error": 1.0226342153228193e-11,
+          "converged": true,
+          "wall_time_s": 0.0009012160003294412
+        },
+        {
+          "nx": 64,
+          "ny": 32,
+          "h": 0.03125,
+          "l2_error": 0.000287700009199734,
+          "linf_error": 0.0010333427028204056,
+          "iterations": 236,
+          "final_residual": 7.692217632535879e-09,
+          "conservation_error": 3.7874289109090545e-11,
+          "converged": true,
+          "wall_time_s": 0.010469764000390569
+        },
+        {
+          "nx": 128,
+          "ny": 64,
+          "h": 0.015625,
+          "l2_error": 7.197881790723464e-05,
+          "linf_error": 0.0002666150336878559,
+          "iterations": 465,
+          "final_residual": 1.1963126277828383e-08,
+          "conservation_error": 1.3297797774123032e-10,
+          "converged": true,
+          "wall_time_s": 0.04832681599964417
+        },
+        {
+          "nx": 256,
+          "ny": 128,
+          "h": 0.0078125,
+          "l2_error": 1.799796459804173e-05,
+          "linf_error": 6.775961574767564e-05,
+          "iterations": 904,
+          "final_residual": 1.7847282573557274e-08,
+          "conservation_error": 3.4288978558281173e-10,
+          "converged": true,
+          "wall_time_s": 0.1055265749996579
+        },
+        {
+          "nx": 512,
+          "ny": 256,
+          "h": 0.00390625,
+          "l2_error": 4.499674378351043e-06,
+          "linf_error": 1.7079081878534907e-05,
+          "iterations": 1786,
+          "final_residual": 2.5372047982818915e-08,
+          "conservation_error": 2.616294899784989e-10,
+          "converged": true,
+          "wall_time_s": 0.8827892750000501
+        },
+        {
+          "nx": 1024,
+          "ny": 512,
+          "h": 0.001953125,
+          "l2_error": 1.1250061331165813e-06,
+          "linf_error": 4.28715159195292e-06,
+          "iterations": 3531,
+          "final_residual": 3.6122257951621e-08,
+          "conservation_error": 4.043102181795454e-10,
+          "converged": true,
+          "wall_time_s": 7.832501885000056
+        }
+      ],
+      "orders_l2": [
+        1.9957588234266153,
+        1.9989209527129528,
+        1.999738648959946,
+        1.9999412515885138,
+        1.9998877372207837
+      ],
+      "orders_linf": [
+        1.9255566013525993,
+        1.954488758553953,
+        1.9762605337750696,
+        1.9881952714558468,
+        1.9941390856942982
+      ],
+      "passed": true
+    }
+  ]
+}

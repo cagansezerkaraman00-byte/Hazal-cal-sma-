@@ -1,0 +1,19 @@
+AERION 0.1.0 -- Engineering the Invisible.
+  revision       : 000523a630d3
+  compiler       : GCC 13.3.0 (C++ 202002)
+  build type     : Release
+  OpenMP         : yes (4 threads)
+  CUDA           : no (planned, Stage 6)
+  bounds checking: no
+
+relative tolerance 1e-08
+
+     n solver                         threads    iters    time[s]   ns/(cell*it)     L2 error  conv
+    64 pcg-jacobi                           4       58     0.0022           9.38   1.0041e-04   yes
+    64 sor-redblack(omega=1.90645)          4      259     0.0083           7.83   1.0041e-04   yes
+   128 pcg-jacobi                           4      100     0.0153           9.35   2.5100e-05   yes
+   128 sor-redblack(omega=1.95209)          4      532     0.0764           8.76   2.5100e-05   yes
+   256 pcg-jacobi                           4      192     0.0427           3.39   6.2750e-06   yes
+   256 sor-redblack(omega=1.97575)          4     1093     0.2143           2.99   6.2749e-06   yes
+   512 pcg-jacobi                           4      374     0.3088           3.15   1.5687e-06   yes
+   512 sor-redblack(omega=1.9878)           4     2243     1.9651           3.34   1.5687e-06   yes

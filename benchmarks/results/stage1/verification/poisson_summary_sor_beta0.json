@@ -1,0 +1,261 @@
+{
+  "generated_utc": "2026-10-13T16:55:39+00:00",
+  "build": {
+    "version": "0.1.0",
+    "git_revision": "000523a630d3",
+    "compiler": "GCC 13.3.0",
+    "build_type": "Release",
+    "cxx_standard": 202002,
+    "openmp": true,
+    "max_threads": 4,
+    "cuda": false,
+    "bounds_checking": false
+  },
+  "expected_order": 2.0,
+  "order_tolerance": 0.1,
+  "studies": [
+    {
+      "case": "sine-dirichlet",
+      "solver": "sor",
+      "beta": 0.0,
+      "relative_tolerance": 1e-10,
+      "levels": [
+        {
+          "nx": 16,
+          "ny": 16,
+          "h": 0.0625,
+          "l2_error": 0.001609482216419339,
+          "linf_error": 0.0031880386840329455,
+          "iterations": 74,
+          "final_residual": 4.3492757324330524e-11,
+          "conservation_error": 7.283819547366923e-12,
+          "converged": true,
+          "wall_time_s": 0.000528998999925534
+        },
+        {
+          "nx": 32,
+          "ny": 32,
+          "h": 0.03125,
+          "l2_error": 0.0004017888372723001,
+          "linf_error": 0.0008016429517024859,
+          "iterations": 150,
+          "final_residual": 2.9293264413767155e-11,
+          "conservation_error": 4.835354536758539e-12,
+          "converged": true,
+          "wall_time_s": 0.0024829610001688707
+        },
+        {
+          "nx": 64,
+          "ny": 64,
+          "h": 0.015625,
+          "l2_error": 0.00010041090359527297,
+          "linf_error": 0.00020070085791867864,
+          "iterations": 307,
+          "final_residual": 1.528218748786163e-11,
+          "conservation_error": 2.515038254661903e-12,
+          "converged": true,
+          "wall_time_s": 0.01442924299999504
+        },
+        {
+          "nx": 128,
+          "ny": 128,
+          "h": 0.0078125,
+          "l2_error": 2.5100457339921996e-05,
+          "linf_error": 5.0193354904970455e-05,
+          "iterations": 629,
+          "final_residual": 7.5449040897288e-12,
+          "conservation_error": 1.2416111007262985e-12,
+          "converged": true,
+          "wall_time_s": 0.09207650100006504
+        },
+        {
+          "nx": 256,
+          "ny": 256,
+          "h": 0.00390625,
+          "l2_error": 6.2749724424281614e-06,
+          "linf_error": 1.2549472394041139e-05,
+          "iterations": 1288,
+          "final_residual": 3.8400271863915955e-12,
+          "conservation_error": 6.0062311853482e-13,
+          "converged": true,
+          "wall_time_s": 0.37159412700020766
+        }
+      ],
+      "orders_l2": [
+        2.0020872482368195,
+        2.0005215431535537,
+        2.000130383711178,
+        2.000032622512535
+      ],
+      "orders_linf": [
+        1.991637420535665,
+        1.9979130259380606,
+        1.999478500051032,
+        1.9998696669678309
+      ],
+      "passed": true
+    },
+    {
+      "case": "cosine-neumann",
+      "solver": "sor",
+      "beta": 0.0,
+      "relative_tolerance": 1e-10,
+      "levels": [
+        {
+          "nx": 16,
+          "ny": 16,
+          "h": 0.0625,
+          "l2_error": 0.0016094822238331208,
+          "linf_error": 0.0031880386988561936,
+          "iterations": 63,
+          "final_residual": 4.7921238186914983e-11,
+          "conservation_error": 3.4583147597194774e-18,
+          "converged": true,
+          "wall_time_s": 0.0005507220002982649
+        },
+        {
+          "nx": 32,
+          "ny": 32,
+          "h": 0.03125,
+          "l2_error": 0.0004017888288338959,
+          "linf_error": 0.0008016429349975339,
+          "iterations": 124,
+          "final_residual": 2.5979815611382914e-11,
+          "conservation_error": 8.666653050937427e-18,
+          "converged": true,
+          "wall_time_s": 0.002297529999850667
+        },
+        {
+          "nx": 64,
+          "ny": 64,
+          "h": 0.015625,
+          "l2_error": 0.00010041090588025297,
+          "linf_error": 0.0002007008624495008,
+          "iterations": 290,
+          "final_residual": 1.39731262123633e-11,
+          "conservation_error": 4.119141042086418e-18,
+          "converged": true,
+          "wall_time_s": 0.019881359999999404
+        },
+        {
+          "nx": 128,
+          "ny": 128,
+          "h": 0.0078125,
+          "l2_error": 2.510046499812517e-05,
+          "linf_error": 5.0193370047533914e-05,
+          "iterations": 508,
+          "final_residual": 4.460570896610327e-12,
+          "conservation_error": 1.5991179272314955e-18,
+          "converged": true,
+          "wall_time_s": 0.10768782799959808
+        },
+        {
+          "nx": 256,
+          "ny": 256,
+          "h": 0.00390625,
+          "l2_error": 6.2749724988383475e-06,
+          "linf_error": 1.2549472509604405e-05,
+          "iterations": 1216,
+          "final_residual": 3.810379111905572e-12,
+          "conservation_error": 3.455851054055222e-19,
+          "converged": true,
+          "wall_time_s": 0.3517365540001265
+        }
+      ],
+      "orders_l2": [
+        2.0020872851819345,
+        2.000521480023555,
+        2.0001299763722966,
+        2.000033049712397
+      ],
+      "orders_linf": [
+        1.9916374573071334,
+        1.99791296330577,
+        1.9994780973810273,
+        1.9998700889214538
+      ],
+      "passed": true
+    },
+    {
+      "case": "exp-mixed",
+      "solver": "sor",
+      "beta": 0.0,
+      "relative_tolerance": 1e-10,
+      "levels": [
+        {
+          "nx": 32,
+          "ny": 16,
+          "h": 0.0625,
+          "l2_error": 0.0011474208253446688,
+          "linf_error": 0.003925497469776218,
+          "iterations": 350,
+          "final_residual": 6.404118703238904e-09,
+          "conservation_error": 4.1456660305638464e-10,
+          "converged": true,
+          "wall_time_s": 0.0018071810000037658
+        },
+        {
+          "nx": 64,
+          "ny": 32,
+          "h": 0.03125,
+          "l2_error": 0.00028769849193510265,
+          "linf_error": 0.0010333428837618897,
+          "iterations": 702,
+          "final_residual": 8.991561754974033e-09,
+          "conservation_error": 5.861450727065512e-10,
+          "converged": true,
+          "wall_time_s": 0.01073782299999948
+        },
+        {
+          "nx": 128,
+          "ny": 64,
+          "h": 0.015625,
+          "l2_error": 7.197671523125842e-05,
+          "linf_error": 0.00026661519319226556,
+          "iterations": 1393,
+          "final_residual": 1.2771783692173161e-08,
+          "conservation_error": 8.351180804687424e-10,
+          "converged": true,
+          "wall_time_s": 0.08074968999972043
+        },
+        {
+          "nx": 256,
+          "ny": 128,
+          "h": 0.0078125,
+          "l2_error": 1.7995025328495496e-05,
+          "linf_error": 6.775983158213705e-05,
+          "iterations": 2751,
+          "final_residual": 1.8045262137831277e-08,
+          "conservation_error": 1.1816027554684908e-09,
+          "converged": true,
+          "wall_time_s": 0.43721741400031533
+        },
+        {
+          "nx": 512,
+          "ny": 256,
+          "h": 0.00390625,
+          "l2_error": 4.495370341701595e-06,
+          "linf_error": 1.7079271136921648e-05,
+          "iterations": 5418,
+          "final_residual": 2.5555369421559538e-08,
+          "conservation_error": 1.6745258242510751e-09,
+          "converged": true,
+          "wall_time_s": 2.274386050999965
+        }
+      ],
+      "orders_l2": [
+        1.9957650439674972,
+        1.9989554894856836,
+        1.9999321312478082,
+        2.0010862537294947
+      ],
+      "orders_linf": [
+        1.9255564465924404,
+        1.954488148071581,
+        1.9762568014737276,
+        1.9881838800155527
+      ],
+      "passed": true
+    }
+  ]
+}

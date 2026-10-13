@@ -1,0 +1,35 @@
+AERION 0.1.0 - Engineering the Invisible.
+Poisson order-of-accuracy verification | solver=sor beta=0.0 rtol=1e-10 threads=4
+
+[PASS] sine-dirichlet: phi = sin(pi x) sin(pi y) on [0,1]^2, homogeneous Dirichlet
+    nx     ny          h     L2 error   p(L2)   Linf error p(Linf)  iters  conserv.  time[s]
+--------------------------------------------------------------------------------------------
+    16     16  6.250e-02  1.60948e-03       -  3.18804e-03       -     74  7.28e-12    0.001
+    32     32  3.125e-02  4.01789e-04   2.002  8.01643e-04   1.992    150  4.84e-12    0.002
+    64     64  1.562e-02  1.00411e-04   2.001  2.00701e-04   1.998    307  2.52e-12    0.014
+   128    128  7.812e-03  2.51005e-05   2.000  5.01934e-05   1.999    629  1.24e-12    0.092
+   256    256  3.906e-03  6.27497e-06   2.000  1.25495e-05   2.000   1288  6.01e-13    0.372
+asymptotic L2 order 2.0000 (expected 2.0 +/- 0.1)
+
+[PASS] cosine-neumann: phi = cos(pi x) cos(pi y) on [0,1]^2, homogeneous Neumann (singular)
+    nx     ny          h     L2 error   p(L2)   Linf error p(Linf)  iters  conserv.  time[s]
+--------------------------------------------------------------------------------------------
+    16     16  6.250e-02  1.60948e-03       -  3.18804e-03       -     63  3.46e-18    0.001
+    32     32  3.125e-02  4.01789e-04   2.002  8.01643e-04   1.992    124  8.67e-18    0.002
+    64     64  1.562e-02  1.00411e-04   2.001  2.00701e-04   1.998    290  4.12e-18    0.020
+   128    128  7.812e-03  2.51005e-05   2.000  5.01934e-05   1.999    508  1.60e-18    0.108
+   256    256  3.906e-03  6.27497e-06   2.000  1.25495e-05   2.000   1216  3.46e-19    0.352
+asymptotic L2 order 2.0000 (expected 2.0 +/- 0.1)
+
+[PASS] exp-mixed: phi = exp(x) sin(2y) + x^2 y on [0,2]x[0,1], Dirichlet west/east, Neumann south/north (non-homogeneous)
+    nx     ny          h     L2 error   p(L2)   Linf error p(Linf)  iters  conserv.  time[s]
+--------------------------------------------------------------------------------------------
+    32     16  6.250e-02  1.14742e-03       -  3.92550e-03       -    350  4.15e-10    0.002
+    64     32  3.125e-02  2.87698e-04   1.996  1.03334e-03   1.926    702  5.86e-10    0.011
+   128     64  1.562e-02  7.19767e-05   1.999  2.66615e-04   1.954   1393  8.35e-10    0.081
+   256    128  7.812e-03  1.79950e-05   2.000  6.77598e-05   1.976   2751  1.18e-09    0.437
+   512    256  3.906e-03  4.49537e-06   2.001  1.70793e-05   1.988   5418  1.67e-09    2.274
+asymptotic L2 order 2.0011 (expected 2.0 +/- 0.1)
+
+results written to benchmarks/results/stage1/verification
+verification PASSED

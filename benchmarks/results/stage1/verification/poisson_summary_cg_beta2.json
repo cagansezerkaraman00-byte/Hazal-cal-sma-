@@ -1,0 +1,303 @@
+{
+  "generated_utc": "2026-10-13T16:55:35+00:00",
+  "build": {
+    "version": "0.1.0",
+    "git_revision": "000523a630d3",
+    "compiler": "GCC 13.3.0",
+    "build_type": "Release",
+    "cxx_standard": 202002,
+    "openmp": true,
+    "max_threads": 4,
+    "cuda": false,
+    "bounds_checking": false
+  },
+  "expected_order": 2.0,
+  "order_tolerance": 0.1,
+  "studies": [
+    {
+      "case": "sine-dirichlet",
+      "solver": "cg",
+      "beta": 2.0,
+      "relative_tolerance": 1e-10,
+      "levels": [
+        {
+          "nx": 16,
+          "ny": 16,
+          "h": 0.08163993959193339,
+          "l2_error": 0.0034452717931303593,
+          "linf_error": 0.008067523574590951,
+          "iterations": 27,
+          "final_residual": 5.856223709000212e-11,
+          "conservation_error": 3.5742795599028845e-12,
+          "converged": true,
+          "wall_time_s": 0.00022625500014328281
+        },
+        {
+          "nx": 32,
+          "ny": 32,
+          "h": 0.04097900847806529,
+          "l2_error": 0.0008611772853709578,
+          "linf_error": 0.002056944236043745,
+          "iterations": 56,
+          "final_residual": 2.8489320138884505e-11,
+          "conservation_error": 1.9813114968794452e-12,
+          "converged": true,
+          "wall_time_s": 0.0009174950000669924
+        },
+        {
+          "nx": 64,
+          "ny": 64,
+          "h": 0.020509500500845324,
+          "l2_error": 0.00021528542943786858,
+          "linf_error": 0.000516774658343655,
+          "iterations": 114,
+          "final_residual": 1.6883042036728537e-11,
+          "conservation_error": 7.975835256474139e-13,
+          "converged": true,
+          "wall_time_s": 0.005636001000311808
+        },
+        {
+          "nx": 128,
+          "ny": 128,
+          "h": 0.010257253444127201,
+          "l2_error": 5.382080002354877e-05,
+          "linf_error": 0.00012935287538085039,
+          "iterations": 230,
+          "final_residual": 8.427272132288474e-12,
+          "conservation_error": 1.321295191675944e-12,
+          "converged": true,
+          "wall_time_s": 0.03979813000023569
+        },
+        {
+          "nx": 256,
+          "ny": 256,
+          "h": 0.005128939735860316,
+          "l2_error": 1.3455165150753938e-05,
+          "linf_error": 3.234817815056523e-05,
+          "iterations": 462,
+          "final_residual": 4.575978325522656e-12,
+          "conservation_error": 2.6644887503424752e-14,
+          "converged": true,
+          "wall_time_s": 0.13898351399984676
+        },
+        {
+          "nx": 512,
+          "ny": 512,
+          "h": 0.002564508998236903,
+          "l2_error": 3.363789110738861e-06,
+          "linf_error": 8.08766705440167e-06,
+          "iterations": 930,
+          "final_residual": 1.6035967860925792e-12,
+          "conservation_error": 2.0761079963915833e-13,
+          "converged": true,
+          "wall_time_s": 1.0159453479996046
+        }
+      ],
+      "orders_l2": [
+        2.0115201806867704,
+        2.0028781937340687,
+        2.000719433283338,
+        2.0001798507767017,
+        2.0000449614359614
+      ],
+      "orders_linf": [
+        1.9827463386463215,
+        1.9957039643492127,
+        1.9989270632642313,
+        1.9997318310513066,
+        1.9999329751779813
+      ],
+      "passed": true
+    },
+    {
+      "case": "cosine-neumann",
+      "solver": "cg",
+      "beta": 2.0,
+      "relative_tolerance": 1e-10,
+      "levels": [
+        {
+          "nx": 16,
+          "ny": 16,
+          "h": 0.08163993959193339,
+          "l2_error": 0.0010811230386550403,
+          "linf_error": 0.0031782056223020904,
+          "iterations": 31,
+          "final_residual": 1.7998838372339815e-11,
+          "conservation_error": 6.0526190581028555e-18,
+          "converged": true,
+          "wall_time_s": 0.00020591699967553723
+        },
+        {
+          "nx": 32,
+          "ny": 32,
+          "h": 0.04097900847806529,
+          "l2_error": 0.00027069962625662957,
+          "linf_error": 0.0008749113094508387,
+          "iterations": 65,
+          "final_residual": 2.2656308689232058e-11,
+          "conservation_error": 1.6250357711142002e-18,
+          "converged": true,
+          "wall_time_s": 0.0009398440001859854
+        },
+        {
+          "nx": 64,
+          "ny": 64,
+          "h": 0.020509500500845324,
+          "l2_error": 6.770092352522326e-05,
+          "linf_error": 0.00022811248498145638,
+          "iterations": 132,
+          "final_residual": 1.2003126190451171e-11,
+          "conservation_error": 8.617727517855238e-18,
+          "converged": true,
+          "wall_time_s": 0.006006367000281898
+        },
+        {
+          "nx": 128,
+          "ny": 128,
+          "h": 0.010257253444127201,
+          "l2_error": 1.6926854424060302e-05,
+          "linf_error": 5.815962040888314e-05,
+          "iterations": 268,
+          "final_residual": 6.677752155962907e-12,
+          "conservation_error": 8.98488771680193e-18,
+          "converged": true,
+          "wall_time_s": 0.0487515960003293
+        },
+        {
+          "nx": 256,
+          "ny": 256,
+          "h": 0.005128939735860316,
+          "l2_error": 4.231815037437855e-06,
+          "linf_error": 1.4678742694226139e-05,
+          "iterations": 541,
+          "final_residual": 3.2628417925124682e-12,
+          "conservation_error": 5.724178931727416e-18,
+          "converged": true,
+          "wall_time_s": 0.15003882599967255
+        },
+        {
+          "nx": 512,
+          "ny": 512,
+          "h": 0.002564508998236903,
+          "l2_error": 1.057960096848099e-06,
+          "linf_error": 3.68687798666898e-06,
+          "iterations": 1094,
+          "final_residual": 1.1950268844871378e-12,
+          "conservation_error": 1.2346314642009555e-17,
+          "converged": true,
+          "wall_time_s": 1.1265403630000037
+        }
+      ],
+      "orders_l2": [
+        2.0090365394366154,
+        2.0022632185619536,
+        2.0005660566384593,
+        2.000141530109209,
+        2.000035385365127
+      ],
+      "orders_linf": [
+        1.8715028455446336,
+        1.9421244772369866,
+        1.9723501558826164,
+        1.9864643595107545,
+        1.993300701053418
+      ],
+      "passed": true
+    },
+    {
+      "case": "exp-mixed",
+      "solver": "cg",
+      "beta": 2.0,
+      "relative_tolerance": 1e-10,
+      "levels": [
+        {
+          "nx": 32,
+          "ny": 16,
+          "h": 0.08195801695613059,
+          "l2_error": 0.0022125874005294336,
+          "linf_error": 0.007270571941571546,
+          "iterations": 123,
+          "final_residual": 8.401753768089452e-09,
+          "conservation_error": 1.749715712432616e-10,
+          "converged": true,
+          "wall_time_s": 0.0008957320001172775
+        },
+        {
+          "nx": 64,
+          "ny": 32,
+          "h": 0.04101900100169065,
+          "l2_error": 0.0005544955532896234,
+          "linf_error": 0.0019082066283502286,
+          "iterations": 248,
+          "final_residual": 1.5478232200284847e-08,
+          "conservation_error": 3.75105652555171e-10,
+          "converged": true,
+          "wall_time_s": 0.005121248000250489
+        },
+        {
+          "nx": 128,
+          "ny": 64,
+          "h": 0.020514506888254402,
+          "l2_error": 0.00013870836644636764,
+          "linf_error": 0.0004874177863882778,
+          "iterations": 493,
+          "final_residual": 2.168832371663951e-08,
+          "conservation_error": 8.397655708779441e-10,
+          "converged": true,
+          "wall_time_s": 0.03672785200024009
+        },
+        {
+          "nx": 256,
+          "ny": 128,
+          "h": 0.010257879471720632,
+          "l2_error": 3.468227654128915e-05,
+          "linf_error": 0.00012308894849688556,
+          "iterations": 976,
+          "final_residual": 3.215140755812293e-08,
+          "conservation_error": 2.211593733813984e-09,
+          "converged": true,
+          "wall_time_s": 0.11545580099982544
+        },
+        {
+          "nx": 512,
+          "ny": 256,
+          "h": 0.005129017996473806,
+          "l2_error": 8.670754145968155e-06,
+          "linf_error": 3.091805155008842e-05,
+          "iterations": 1917,
+          "final_residual": 4.6625010608074496e-08,
+          "conservation_error": 4.3961760716581486e-09,
+          "converged": true,
+          "wall_time_s": 0.9197792730001311
+        },
+        {
+          "nx": 1024,
+          "ny": 512,
+          "h": 0.0025645187810374726,
+          "l2_error": 2.166545602834475e-06,
+          "linf_error": 7.788924671459085e-06,
+          "iterations": 3783,
+          "final_residual": 6.649063314704864e-08,
+          "conservation_error": 1.0302827905637636e-08,
+          "converged": true,
+          "wall_time_s": 8.535756933999892
+        }
+      ],
+      "orders_l2": [
+        1.9993002212412438,
+        1.9998252606836218,
+        1.999960398114705,
+        2.0000132434939157,
+        2.000771885884557
+      ],
+      "orders_linf": [
+        1.932571123842309,
+        1.9696801621974358,
+        1.9856324944260826,
+        1.9932238044530421,
+        1.9889642792620925
+      ],
+      "passed": true
+    }
+  ]
+}
