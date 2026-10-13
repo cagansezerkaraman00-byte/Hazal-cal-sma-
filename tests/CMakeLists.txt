@@ -2,7 +2,13 @@
 
 include(GoogleTest)
 
-add_executable(aerion_cpp_tests cpp/test_core.cpp cpp/test_field.cpp cpp/test_mesh.cpp)
+add_executable(
+  aerion_cpp_tests
+  cpp/test_core.cpp
+  cpp/test_field.cpp
+  cpp/test_linalg.cpp
+  cpp/test_mesh.cpp
+  cpp/test_poisson.cpp)
 target_link_libraries(aerion_cpp_tests PRIVATE aerion::core aerion::project_options GTest::gtest_main)
 gtest_discover_tests(aerion_cpp_tests DISCOVERY_TIMEOUT 60 PROPERTIES LABELS "cpp")
 

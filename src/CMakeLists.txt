@@ -9,8 +9,14 @@ add_library(
   core/logger.cpp
   core/parallel.cpp
   field/cell_field.cpp
+  linalg/linear_solvers.cpp
+  linalg/stencil_matrix_2d.cpp
+  linalg/vector_ops.cpp
   mesh/spacing.cpp
-  mesh/structured_grid_2d.cpp)
+  mesh/structured_grid_2d.cpp
+  solvers/boundary.cpp
+  solvers/poisson_2d.cpp
+  verification/manufactured.cpp)
 add_library(aerion::core ALIAS aerion_core)
 
 target_include_directories(
