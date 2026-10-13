@@ -9,6 +9,7 @@ add_library(
   core/logger.cpp
   core/parallel.cpp
   field/cell_field.cpp
+  io/writers.cpp
   linalg/linear_solvers.cpp
   linalg/stencil_matrix_2d.cpp
   linalg/vector_ops.cpp
