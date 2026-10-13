@@ -187,7 +187,7 @@ class ConvergenceStudy:
         orders2 = [math.nan, *self.orders_l2]
         ordersi = [math.nan, *self.orders_linf]
         with path.open("w", newline="", encoding="utf-8") as fh:
-            writer = csv.writer(fh)
+            writer = csv.writer(fh, lineterminator="\n")
             names = list(asdict(self.levels[0]).keys()) if self.levels else []
             writer.writerow([*names, "order_l2", "order_linf"])
             for lv, a, b in zip(self.levels, orders2, ordersi):
