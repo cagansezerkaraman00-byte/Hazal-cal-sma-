@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
+#include <algorithm>
+#include <cmath>
+
 #include <aerion/core/error.hpp>
 #include <aerion/core/parallel.hpp>
 #include <aerion/linalg/vector_ops.hpp>
 
-#include <algorithm>
-#include <cmath>
-
 namespace aerion::linalg {
 
 namespace {
-Index length(std::span<const Real> a) { return static_cast<Index>(a.size()); }
+Index length(std::span<const Real> a) {
+    return static_cast<Index>(a.size());
+}
 }  // namespace
 
 Real dot(std::span<const Real> a, std::span<const Real> b) {
@@ -26,7 +28,9 @@ Real dot(std::span<const Real> a, std::span<const Real> b) {
     return s;
 }
 
-Real norm2(std::span<const Real> a) { return std::sqrt(dot(a, a)); }
+Real norm2(std::span<const Real> a) {
+    return std::sqrt(dot(a, a));
+}
 
 Real norm_inf(std::span<const Real> a) {
     // Serial on purpose: MSVC implements OpenMP 2.0, which has no max-reduction,

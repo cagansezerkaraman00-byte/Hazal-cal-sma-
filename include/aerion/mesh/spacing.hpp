@@ -2,9 +2,9 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
-#include <aerion/core/types.hpp>
-
 #include <vector>
+
+#include <aerion/core/types.hpp>
 
 namespace aerion::mesh {
 

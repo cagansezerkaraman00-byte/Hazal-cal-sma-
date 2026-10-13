@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/error.hpp>
-#include <aerion/field/cell_field.hpp>
-#include <aerion/io/writers.hpp>
-#include <aerion/linalg/vector_ops.hpp>
-
 #include <algorithm>
 #include <fstream>
 #include <limits>
 #include <locale>
 #include <set>
 #include <string>
+
+#include <aerion/core/error.hpp>
+#include <aerion/field/cell_field.hpp>
+#include <aerion/io/writers.hpp>
+#include <aerion/linalg/vector_ops.hpp>
 
 namespace aerion::io {
 

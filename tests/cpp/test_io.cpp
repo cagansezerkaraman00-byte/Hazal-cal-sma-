@@ -1,12 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/error.hpp>
-#include <aerion/field/cell_field.hpp>
-#include <aerion/io/writers.hpp>
-#include <aerion/mesh/spacing.hpp>
-
-#include <gtest/gtest.h>
-
 #include <filesystem>
 #include <fstream>
 #include <limits>
@@ -16,13 +9,20 @@
 #include <string>
 #include <vector>
 
+#include <gtest/gtest.h>
+
+#include <aerion/core/error.hpp>
+#include <aerion/field/cell_field.hpp>
+#include <aerion/io/writers.hpp>
+#include <aerion/mesh/spacing.hpp>
+
 namespace aerion::io {
 namespace {
 
 namespace fs = std::filesystem;
 
 class IoTest : public ::testing::Test {
-protected:
+  protected:
     void SetUp() override {
         std::random_device rd;
         dir_ = fs::temp_directory_path() / ("aerion_io_test_" + std::to_string(rd()));
@@ -117,8 +117,8 @@ TEST_F(IoTest, OutputIsLocaleIndependent) {
     struct CommaNumpunct : std::numpunct<char> {
         char do_decimal_point() const override { return ','; }
     };
-    const std::locale previous = std::locale::global(std::locale(std::locale::classic(),
-                                                                 new CommaNumpunct));
+    const std::locale previous =
+        std::locale::global(std::locale(std::locale::classic(), new CommaNumpunct));
     const auto grid = mesh::StructuredGrid2D::uniform(1, 1, 0.0, 1.0, 0.0, 1.0);
     const auto a = make_cell_field(grid, 0.5);
     const CellScalar fields[] = {{"a", a}};
@@ -144,7 +144,8 @@ TEST_F(IoTest, RejectsBadNamesShapesAndValues) {
     }
     {
         const CellScalar f[] = {{"x", ok}};
-        EXPECT_THROW(write_cell_csv(dir_ / "x.csv", grid, f), InvalidArgument);  // clashes with column
+        EXPECT_THROW(write_cell_csv(dir_ / "x.csv", grid, f),
+                     InvalidArgument);  // clashes with column
     }
     {
         const CellScalar f[] = {{"w", wrong}};

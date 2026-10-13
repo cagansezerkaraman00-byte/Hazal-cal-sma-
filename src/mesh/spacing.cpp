@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/error.hpp>
-#include <aerion/mesh/spacing.hpp>
-
 #include <cmath>
 #include <cstddef>
+
+#include <aerion/core/error.hpp>
+#include <aerion/mesh/spacing.hpp>
 
 namespace aerion::mesh {
 

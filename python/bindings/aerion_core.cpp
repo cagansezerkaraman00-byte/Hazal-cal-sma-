@@ -6,21 +6,6 @@
 // Array convention: cell fields are exchanged as NumPy arrays of shape
 // (nx, ny) indexed [i, j] ("ij" indexing, i along x). Data are copied at the
 // boundary; the GIL is released while the engine computes.
-#include <aerion/core/build_info.hpp>
-#include <aerion/core/error.hpp>
-#include <aerion/core/logger.hpp>
-#include <aerion/core/parallel.hpp>
-#include <aerion/field/array2d.hpp>
-#include <aerion/io/writers.hpp>
-#include <aerion/mesh/spacing.hpp>
-#include <aerion/mesh/structured_grid_2d.hpp>
-#include <aerion/solvers/poisson_2d.hpp>
-
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include <pybind11/stl/filesystem.h>
-
 #include <algorithm>
 #include <exception>
 #include <filesystem>
@@ -31,6 +16,21 @@
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/stl/filesystem.h>
+
+#include <aerion/core/build_info.hpp>
+#include <aerion/core/error.hpp>
+#include <aerion/core/logger.hpp>
+#include <aerion/core/parallel.hpp>
+#include <aerion/field/array2d.hpp>
+#include <aerion/io/writers.hpp>
+#include <aerion/mesh/spacing.hpp>
+#include <aerion/mesh/structured_grid_2d.hpp>
+#include <aerion/solvers/poisson_2d.hpp>
 
 namespace py = pybind11;
 using namespace pybind11::literals;
@@ -124,18 +124,18 @@ PyObject* new_exception(py::module_& m, const char* name, PyObject* bases, const
 void register_exceptions(py::module_& m) {
     g_aerion_error = new_exception(m, "AerionError", PyExc_RuntimeError,
                                    "Base class of all errors raised by the AERION engine.");
-    const py::tuple invalid_bases = py::make_tuple(py::handle(g_aerion_error),
-                                                   py::handle(PyExc_ValueError));
+    const py::tuple invalid_bases =
+        py::make_tuple(py::handle(g_aerion_error), py::handle(PyExc_ValueError));
     g_invalid_argument = new_exception(m, "InvalidArgumentError", invalid_bases.ptr(),
                                        "Invalid input (bad mesh size, mismatched shapes...).");
-    const py::tuple numerical_bases = py::make_tuple(py::handle(g_aerion_error),
-                                                     py::handle(PyExc_ArithmeticError));
+    const py::tuple numerical_bases =
+        py::make_tuple(py::handle(g_aerion_error), py::handle(PyExc_ArithmeticError));
     g_numerical_error = new_exception(m, "NumericalError", numerical_bases.ptr(),
                                       "A numerical failure (NaN, divergence...).");
-    const py::tuple io_bases = py::make_tuple(py::handle(g_aerion_error),
-                                              py::handle(PyExc_OSError));
-    g_io_error = new_exception(m, "AerionIOError", io_bases.ptr(),
-                               "Reading or writing a file failed.");
+    const py::tuple io_bases =
+        py::make_tuple(py::handle(g_aerion_error), py::handle(PyExc_OSError));
+    g_io_error =
+        new_exception(m, "AerionIOError", io_bases.ptr(), "Reading or writing a file failed.");
 
     py::register_exception_translator([](std::exception_ptr p) {
         try {
@@ -255,8 +255,8 @@ PYBIND11_MODULE(_core, m) {
                     "y_min"_a, "y_max"_a)
         .def_property_readonly("nx", &StructuredGrid2D::nx)
         .def_property_readonly("ny", &StructuredGrid2D::ny)
-        .def_property_readonly("shape",
-                               [](const StructuredGrid2D& g) { return py::make_tuple(g.nx(), g.ny()); })
+        .def_property_readonly(
+            "shape", [](const StructuredGrid2D& g) { return py::make_tuple(g.nx(), g.ny()); })
         .def_property_readonly("num_cells", &StructuredGrid2D::num_cells)
         .def_property_readonly("x_min", &StructuredGrid2D::x_min)
         .def_property_readonly("x_max", &StructuredGrid2D::x_max)
@@ -288,30 +288,32 @@ PYBIND11_MODULE(_core, m) {
                                    }
                                    return to_numpy(v);
                                })
-        .def("cell_volumes",
-             [](const StructuredGrid2D& g) {
-                 ScalarField2D v(g.nx(), g.ny());
-                 for (Index j = 0; j < g.ny(); ++j) {
-                     for (Index i = 0; i < g.nx(); ++i) {
-                         v(i, j) = g.volume(i, j);
-                     }
-                 }
-                 return to_numpy(v);
-             },
-             "Cell areas (volume per unit depth) as an (nx, ny) array.")
-        .def("cell_centers",
-             [](const StructuredGrid2D& g) {
-                 ScalarField2D x(g.nx(), g.ny());
-                 ScalarField2D y(g.nx(), g.ny());
-                 for (Index j = 0; j < g.ny(); ++j) {
-                     for (Index i = 0; i < g.nx(); ++i) {
-                         x(i, j) = g.xc(i);
-                         y(i, j) = g.yc(j);
-                     }
-                 }
-                 return py::make_tuple(to_numpy(x), to_numpy(y));
-             },
-             "Cell-centre coordinates (X, Y), each of shape (nx, ny).")
+        .def(
+            "cell_volumes",
+            [](const StructuredGrid2D& g) {
+                ScalarField2D v(g.nx(), g.ny());
+                for (Index j = 0; j < g.ny(); ++j) {
+                    for (Index i = 0; i < g.nx(); ++i) {
+                        v(i, j) = g.volume(i, j);
+                    }
+                }
+                return to_numpy(v);
+            },
+            "Cell areas (volume per unit depth) as an (nx, ny) array.")
+        .def(
+            "cell_centers",
+            [](const StructuredGrid2D& g) {
+                ScalarField2D x(g.nx(), g.ny());
+                ScalarField2D y(g.nx(), g.ny());
+                for (Index j = 0; j < g.ny(); ++j) {
+                    for (Index i = 0; i < g.nx(); ++i) {
+                        x(i, j) = g.xc(i);
+                        y(i, j) = g.yc(j);
+                    }
+                }
+                return py::make_tuple(to_numpy(x), to_numpy(y));
+            },
+            "Cell-centre coordinates (X, Y), each of shape (nx, ny).")
         .def_property_readonly("total_volume", &StructuredGrid2D::total_volume)
         .def_property_readonly("min_spacing", &StructuredGrid2D::min_spacing)
         .def_property_readonly("max_expansion_ratio", &StructuredGrid2D::max_expansion_ratio)
@@ -349,8 +351,7 @@ PYBIND11_MODULE(_core, m) {
                     "outward_gradients"_a)
         .def_readwrite("type", &solvers::BoundaryCondition::type)
         .def_property(
-            "values",
-            [](const solvers::BoundaryCondition& bc) { return to_numpy(bc.values); },
+            "values", [](const solvers::BoundaryCondition& bc) { return to_numpy(bc.values); },
             [](solvers::BoundaryCondition& bc, std::vector<Real> v) { bc.values = std::move(v); })
         .def("__repr__", &repr_bc);
 
@@ -399,10 +400,9 @@ PYBIND11_MODULE(_core, m) {
         .def_readonly("initial_residual_norm", &linalg::SolverStats::initial_residual_norm)
         .def_readonly("final_residual_norm", &linalg::SolverStats::final_residual_norm)
         .def_readonly("tolerance", &linalg::SolverStats::tolerance)
-        .def_property_readonly("residual_history",
-                               [](const linalg::SolverStats& s) {
-                                   return to_numpy(s.residual_history);
-                               })
+        .def_property_readonly(
+            "residual_history",
+            [](const linalg::SolverStats& s) { return to_numpy(s.residual_history); })
         .def_property_readonly("converged", &linalg::SolverStats::converged)
         .def("__repr__", [](const linalg::SolverStats& s) {
             std::ostringstream os;
@@ -415,8 +415,8 @@ PYBIND11_MODULE(_core, m) {
     py::class_<solvers::PoissonOptions>(m, "PoissonOptions")
         .def(py::init([](solvers::LinearSolverKind solver, Real relative_tolerance,
                          Real absolute_tolerance, int max_iterations,
-                         linalg::Preconditioner preconditioner, Real sor_omega,
-                         bool record_history, Real compatibility_tolerance) {
+                         linalg::Preconditioner preconditioner, Real sor_omega, bool record_history,
+                         Real compatibility_tolerance) {
                  solvers::PoissonOptions o;
                  o.solver = solver;
                  o.control.relative_tolerance = relative_tolerance;
@@ -445,10 +445,12 @@ PYBIND11_MODULE(_core, m) {
             [](const solvers::PoissonOptions& o) { return o.control.absolute_tolerance; },
             [](solvers::PoissonOptions& o, Real v) { o.control.absolute_tolerance = v; })
         .def_property(
-            "max_iterations", [](const solvers::PoissonOptions& o) { return o.control.max_iterations; },
+            "max_iterations",
+            [](const solvers::PoissonOptions& o) { return o.control.max_iterations; },
             [](solvers::PoissonOptions& o, int v) { o.control.max_iterations = v; })
         .def_property(
-            "record_history", [](const solvers::PoissonOptions& o) { return o.control.record_history; },
+            "record_history",
+            [](const solvers::PoissonOptions& o) { return o.control.record_history; },
             [](solvers::PoissonOptions& o, bool v) { o.control.record_history = v; });
 
     py::class_<solvers::PoissonReport>(m, "PoissonReport", "Diagnostics of one Poisson solve.")
@@ -461,8 +463,8 @@ PYBIND11_MODULE(_core, m) {
         .def("__repr__", [](const solvers::PoissonReport& r) {
             std::ostringstream os;
             os << "PoissonReport(converged=" << (r.solver.converged() ? "True" : "False")
-               << ", iterations=" << r.solver.iterations << ", singular="
-               << (r.singular ? "True" : "False")
+               << ", iterations=" << r.solver.iterations
+               << ", singular=" << (r.singular ? "True" : "False")
                << ", conservation_error=" << r.conservation_error << ")";
             return os.str();
         });
@@ -490,10 +492,10 @@ PYBIND11_MODULE(_core, m) {
                const std::optional<InputArray>& initial_guess) {
                 const auto& g = self.grid();
                 const ScalarField2D f = to_cell_field(source, g, "source");
-                solvers::PoissonSolution out{
-                    initial_guess ? to_cell_field(*initial_guess, g, "initial_guess")
-                                  : ScalarField2D(g.nx(), g.ny()),
-                    {}};
+                solvers::PoissonSolution out{initial_guess
+                                                 ? to_cell_field(*initial_guess, g, "initial_guess")
+                                                 : ScalarField2D(g.nx(), g.ny()),
+                                             {}};
                 {
                     const py::gil_scoped_release release;
                     out.report = self.solve(f, out.phi);
@@ -510,20 +512,18 @@ PYBIND11_MODULE(_core, m) {
                                              g.nx(), g.ny());
             },
             "source"_a)
-        .def(
-            "matrix_properties",
-            [](const solvers::PoissonSolver2D& self) {
-                py::dict d;
-                d["rows"] = self.matrix().rows();
-                d["symmetric"] = self.matrix().is_symmetric();
-                d["diagonally_dominant"] = self.matrix().is_diagonally_dominant();
-                return d;
-            })
+        .def("matrix_properties",
+             [](const solvers::PoissonSolver2D& self) {
+                 py::dict d;
+                 d["rows"] = self.matrix().rows();
+                 d["symmetric"] = self.matrix().is_symmetric();
+                 d["diagonally_dominant"] = self.matrix().is_diagonally_dominant();
+                 return d;
+             })
         .def(
             "boundary_fluxes",
             [](const solvers::PoissonSolver2D& self, const InputArray& phi) {
-                const auto fluxes =
-                    self.boundary_fluxes(to_cell_field(phi, self.grid(), "phi"));
+                const auto fluxes = self.boundary_fluxes(to_cell_field(phi, self.grid(), "phi"));
                 py::dict d;
                 for (const auto side : solvers::all_sides) {
                     d[py::str(std::string(solvers::to_string(side)))] =
@@ -552,7 +552,8 @@ PYBIND11_MODULE(_core, m) {
             std::vector<std::pair<std::string, ScalarField2D>> sdata;
             for (const auto& [key, value] : scalars) {
                 const auto name = py::cast<std::string>(key);
-                sdata.emplace_back(name, to_cell_field(py::cast<InputArray>(value), grid, name.c_str()));
+                sdata.emplace_back(name,
+                                   to_cell_field(py::cast<InputArray>(value), grid, name.c_str()));
             }
             std::vector<std::tuple<std::string, ScalarField2D, ScalarField2D>> vdata;
             for (const auto& [key, value] : vectors) {
@@ -562,9 +563,9 @@ PYBIND11_MODULE(_core, m) {
                     throw aerion::InvalidArgument("vector field '" + name +
                                                   "' must be a (u, v) pair of arrays");
                 }
-                vdata.emplace_back(name,
-                                   to_cell_field(py::cast<InputArray>(pair[0]), grid, name.c_str()),
-                                   to_cell_field(py::cast<InputArray>(pair[1]), grid, name.c_str()));
+                vdata.emplace_back(
+                    name, to_cell_field(py::cast<InputArray>(pair[0]), grid, name.c_str()),
+                    to_cell_field(py::cast<InputArray>(pair[1]), grid, name.c_str()));
             }
             std::vector<aerion::io::CellScalar> s;
             for (const auto& [name, f] : sdata) {
@@ -581,11 +582,13 @@ PYBIND11_MODULE(_core, m) {
 
     m.def(
         "write_csv",
-        [](const std::filesystem::path& path, const StructuredGrid2D& grid, const py::dict& scalars) {
+        [](const std::filesystem::path& path, const StructuredGrid2D& grid,
+           const py::dict& scalars) {
             std::vector<std::pair<std::string, ScalarField2D>> sdata;
             for (const auto& [key, value] : scalars) {
                 const auto name = py::cast<std::string>(key);
-                sdata.emplace_back(name, to_cell_field(py::cast<InputArray>(value), grid, name.c_str()));
+                sdata.emplace_back(name,
+                                   to_cell_field(py::cast<InputArray>(value), grid, name.c_str()));
             }
             std::vector<aerion::io::CellScalar> s;
             for (const auto& [name, f] : sdata) {

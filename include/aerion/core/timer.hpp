@@ -8,7 +8,7 @@ namespace aerion {
 
 /// Monotonic wall-clock stopwatch (std::chrono::steady_clock).
 class WallTimer {
-public:
+  public:
     using Clock = std::chrono::steady_clock;
 
     WallTimer() noexcept : start_(Clock::now()) {}
@@ -20,7 +20,7 @@ public:
         return std::chrono::duration<double>(Clock::now() - start_).count();
     }
 
-private:
+  private:
     Clock::time_point start_;
 };
 

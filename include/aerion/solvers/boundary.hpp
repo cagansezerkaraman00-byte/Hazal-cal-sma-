@@ -2,20 +2,20 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
-#include <aerion/core/types.hpp>
-#include <aerion/mesh/structured_grid_2d.hpp>
-
 #include <array>
 #include <string_view>
 #include <vector>
+
+#include <aerion/core/types.hpp>
+#include <aerion/mesh/structured_grid_2d.hpp>
 
 namespace aerion::solvers {
 
 /// Sides of a rectangular structured domain.
 enum class BoundarySide { West = 0, East = 1, South = 2, North = 3 };
 
-inline constexpr std::array<BoundarySide, 4> all_sides = {
-    BoundarySide::West, BoundarySide::East, BoundarySide::South, BoundarySide::North};
+inline constexpr std::array<BoundarySide, 4> all_sides = {BoundarySide::West, BoundarySide::East,
+                                                          BoundarySide::South, BoundarySide::North};
 
 [[nodiscard]] std::string_view to_string(BoundarySide side) noexcept;
 

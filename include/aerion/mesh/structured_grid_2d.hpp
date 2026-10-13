@@ -2,11 +2,11 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
-#include <aerion/core/types.hpp>
-
 #include <cstddef>
 #include <span>
 #include <vector>
+
+#include <aerion/core/types.hpp>
 
 namespace aerion::mesh {
 
@@ -21,7 +21,7 @@ namespace aerion::mesh {
 /// are areas per unit depth in the third direction, i.e. the usual 2D
 /// finite-volume convention.
 class StructuredGrid2D {
-public:
+  public:
     /// Builds the grid from face coordinates (at least 2 per direction).
     StructuredGrid2D(std::vector<Real> x_faces, std::vector<Real> y_faces);
 
@@ -72,7 +72,7 @@ public:
     [[nodiscard]] std::span<const Real> x_centers() const noexcept { return xc_; }
     [[nodiscard]] std::span<const Real> y_centers() const noexcept { return yc_; }
 
-private:
+  private:
     static std::size_t at(Index i) noexcept { return static_cast<std::size_t>(i); }
 
     Index nx_ = 0;

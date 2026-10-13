@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
+#include <string>
+#include <utility>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include <aerion/core/build_info.hpp>
 #include <aerion/core/error.hpp>
 #include <aerion/core/logger.hpp>
 #include <aerion/core/parallel.hpp>
 #include <aerion/core/timer.hpp>
 #include <aerion/core/version.hpp>
-
-#include <gtest/gtest.h>
-
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace aerion {
 namespace {
@@ -35,7 +35,7 @@ TEST(Error, HierarchyDerivesFromRuntimeError) {
 }
 
 class LoggerTest : public ::testing::Test {
-protected:
+  protected:
     void SetUp() override {
         saved_level_ = log_level();
         set_log_sink([this](LogLevel level, std::string_view msg) {

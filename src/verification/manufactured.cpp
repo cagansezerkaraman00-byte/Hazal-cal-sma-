@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
+#include <cmath>
+#include <numbers>
+
 #include <aerion/core/error.hpp>
 #include <aerion/field/cell_field.hpp>
 #include <aerion/mesh/spacing.hpp>
 #include <aerion/verification/manufactured.hpp>
-
-#include <cmath>
-#include <numbers>
 
 namespace aerion::verification {
 
@@ -65,8 +65,7 @@ std::vector<ManufacturedSolution2D> all_manufactured_solutions() {
     return {sine_dirichlet(), cosine_neumann(), exp_mixed()};
 }
 
-mesh::StructuredGrid2D make_grid(const ManufacturedSolution2D& ms, Index nx, Index ny,
-                                 Real beta) {
+mesh::StructuredGrid2D make_grid(const ManufacturedSolution2D& ms, Index nx, Index ny, Real beta) {
     return {mesh::tanh_clustered_faces(nx, ms.x_min, ms.x_max, beta),
             mesh::tanh_clustered_faces(ny, ms.y_min, ms.y_max, beta)};
 }

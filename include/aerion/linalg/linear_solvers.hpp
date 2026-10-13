@@ -2,13 +2,13 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
-#include <aerion/core/types.hpp>
-#include <aerion/linalg/stencil_matrix_2d.hpp>
-
 #include <span>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <aerion/core/types.hpp>
+#include <aerion/linalg/stencil_matrix_2d.hpp>
 
 namespace aerion::linalg {
 
@@ -73,8 +73,8 @@ enum class Preconditioner { None, Jacobi };
 /// `x` holds the initial guess on entry and the solution on exit.
 /// In exact arithmetic CG converges in at most rows() iterations; for the
 /// 2D Poisson matrix the iteration count grows like O(n) for an n x n grid.
-SolverStats conjugate_gradient(const StencilMatrix2D& a, std::span<const Real> b,
-                               std::span<Real> x, const SolverControl& control,
+SolverStats conjugate_gradient(const StencilMatrix2D& a, std::span<const Real> b, std::span<Real> x,
+                               const SolverControl& control,
                                Preconditioner preconditioner = Preconditioner::Jacobi);
 
 /// Successive over-relaxation with red-black (checkerboard) ordering.

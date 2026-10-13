@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/error.hpp>
-#include <aerion/core/parallel.hpp>
-#include <aerion/linalg/stencil_matrix_2d.hpp>
-
 #include <algorithm>
 #include <cmath>
 #include <string>
 
+#include <aerion/core/error.hpp>
+#include <aerion/core/parallel.hpp>
+#include <aerion/linalg/stencil_matrix_2d.hpp>
+
 namespace aerion::linalg {
 
 namespace {
-std::size_t at(Index k) noexcept { return static_cast<std::size_t>(k); }
+std::size_t at(Index k) noexcept {
+    return static_cast<std::size_t>(k);
+}
 
 bool close(Real a, Real b, Real rel_tol) {
     return std::abs(a - b) <= rel_tol * std::max({std::abs(a), std::abs(b), Real{1e-300}});
@@ -80,13 +82,14 @@ void StencilMatrix2D::validate() const {
     for (Index j = 0; j < ny_; ++j) {
         for (Index i = 0; i < nx_; ++i) {
             const auto k = at(index(i, j));
-            const std::string where = " at cell (" + std::to_string(i) + ", " +
-                                      std::to_string(j) + ")";
+            const std::string where =
+                " at cell (" + std::to_string(i) + ", " + std::to_string(j) + ")";
             require(std::isfinite(c_[k]) && std::isfinite(e_[k]) && std::isfinite(w_[k]) &&
                         std::isfinite(n_[k]) && std::isfinite(s_[k]),
                     "StencilMatrix2D: non-finite coefficient" + where);
             require(c_[k] != 0.0, "StencilMatrix2D: zero diagonal entry" + where);
-            require(i > 0 || w_[k] == 0.0, "StencilMatrix2D: west coupling leaves the grid" + where);
+            require(i > 0 || w_[k] == 0.0,
+                    "StencilMatrix2D: west coupling leaves the grid" + where);
             require(i < nx_ - 1 || e_[k] == 0.0,
                     "StencilMatrix2D: east coupling leaves the grid" + where);
             require(j > 0 || s_[k] == 0.0,

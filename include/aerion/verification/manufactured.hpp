@@ -2,15 +2,15 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
-#include <aerion/core/types.hpp>
-#include <aerion/field/array2d.hpp>
-#include <aerion/mesh/structured_grid_2d.hpp>
-#include <aerion/solvers/boundary.hpp>
-
 #include <array>
 #include <functional>
 #include <string>
 #include <vector>
+
+#include <aerion/core/types.hpp>
+#include <aerion/field/array2d.hpp>
+#include <aerion/mesh/structured_grid_2d.hpp>
+#include <aerion/solvers/boundary.hpp>
 
 /// Method of Manufactured Solutions (MMS) for code verification.
 ///
@@ -50,8 +50,8 @@ struct ManufacturedSolution2D {
 
 /// Grid on the solution's domain with nx x ny cells, uniform (beta = 0) or
 /// tanh-clustered towards all walls with strength beta.
-[[nodiscard]] mesh::StructuredGrid2D make_grid(const ManufacturedSolution2D& ms, Index nx,
-                                               Index ny, Real beta = 0.0);
+[[nodiscard]] mesh::StructuredGrid2D make_grid(const ManufacturedSolution2D& ms, Index nx, Index ny,
+                                               Real beta = 0.0);
 
 /// Source field f = laplacian(phi_e) sampled at cell centres.
 [[nodiscard]] ScalarField2D source_field(const ManufacturedSolution2D& ms,
@@ -59,8 +59,8 @@ struct ManufacturedSolution2D {
 
 /// Boundary conditions of the case's types with values sampled from phi_e at
 /// the boundary face centres (outward normal derivatives for Neumann sides).
-[[nodiscard]] solvers::BoundaryConditions2D boundary_conditions(
-    const ManufacturedSolution2D& ms, const mesh::StructuredGrid2D& grid);
+[[nodiscard]] solvers::BoundaryConditions2D boundary_conditions(const ManufacturedSolution2D& ms,
+                                                                const mesh::StructuredGrid2D& grid);
 
 struct ErrorNorms {
     Real l2;    ///< Volume-weighted RMS of the error.

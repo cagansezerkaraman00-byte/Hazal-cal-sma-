@@ -2,15 +2,6 @@
 // Copyright (c) 2026 The AERION Authors
 //
 // aerion-engine: command-line front end of the C++ engine.
-#include <aerion/core/build_info.hpp>
-#include <aerion/core/error.hpp>
-#include <aerion/core/parallel.hpp>
-#include <aerion/core/timer.hpp>
-#include <aerion/field/cell_field.hpp>
-#include <aerion/io/writers.hpp>
-#include <aerion/solvers/poisson_2d.hpp>
-#include <aerion/verification/manufactured.hpp>
-
 #include <cmath>
 #include <cstdio>
 #include <exception>
@@ -20,6 +11,15 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <aerion/core/build_info.hpp>
+#include <aerion/core/error.hpp>
+#include <aerion/core/parallel.hpp>
+#include <aerion/core/timer.hpp>
+#include <aerion/field/cell_field.hpp>
+#include <aerion/io/writers.hpp>
+#include <aerion/solvers/poisson_2d.hpp>
+#include <aerion/verification/manufactured.hpp>
 
 namespace {
 
@@ -112,7 +112,8 @@ int run_poisson_mms(const std::vector<std::string>& args) {
             levels.push_back(to_index(item, "--levels"));
         }
     }
-    aerion::require(opts.empty(), "unknown option '--" + (opts.empty() ? "" : opts.begin()->first) + "'");
+    aerion::require(opts.empty(),
+                    "unknown option '--" + (opts.empty() ? "" : opts.begin()->first) + "'");
     aerion::require(!levels.empty(), "--levels must list at least one resolution");
     aerion::require(solver_name == "cg" || solver_name == "sor", "--solver must be cg or sor");
     if (!threads.empty()) {
@@ -130,8 +131,8 @@ int run_poisson_mms(const std::vector<std::string>& args) {
     aerion::require(found, "unknown case '" + case_name + "'");
 
     as::PoissonOptions options;
-    options.solver = solver_name == "cg" ? as::LinearSolverKind::ConjugateGradient
-                                         : as::LinearSolverKind::SOR;
+    options.solver =
+        solver_name == "cg" ? as::LinearSolverKind::ConjugateGradient : as::LinearSolverKind::SOR;
     options.control.relative_tolerance = rtol;
     options.control.max_iterations = 200000;
     options.control.record_history = false;
@@ -140,8 +141,9 @@ int run_poisson_mms(const std::vector<std::string>& args) {
               << "case " << ms.name << " on [" << ms.x_min << ", " << ms.x_max << "] x ["
               << ms.y_min << ", " << ms.y_max << "], beta = " << beta << ", solver " << solver_name
               << ", " << aerion::max_threads() << " thread(s)\n\n";
-    std::printf("%8s %8s %10s %13s %7s %13s %7s %8s %11s %10s %9s\n", "nx", "ny", "h_max", "L2 error",
-                "order", "Linf error", "order", "iters", "residual", "conserv.", "time[s]");
+    std::printf("%8s %8s %10s %13s %7s %13s %7s %8s %11s %10s %9s\n", "nx", "ny", "h_max",
+                "L2 error", "order", "Linf error", "order", "iters", "residual", "conserv.",
+                "time[s]");
 
     bool all_converged = true;
     Real prev_l2 = 0.0;
@@ -149,12 +151,15 @@ int run_poisson_mms(const std::vector<std::string>& args) {
     Real prev_h = 0.0;
     for (std::size_t k = 0; k < levels.size(); ++k) {
         const Index n = levels[k];
-        const auto nx = static_cast<Index>(std::lround(static_cast<Real>(n) * (ms.x_max - ms.x_min)));
-        const auto ny = static_cast<Index>(std::lround(static_cast<Real>(n) * (ms.y_max - ms.y_min)));
+        const auto nx =
+            static_cast<Index>(std::lround(static_cast<Real>(n) * (ms.x_max - ms.x_min)));
+        const auto ny =
+            static_cast<Index>(std::lround(static_cast<Real>(n) * (ms.y_max - ms.y_min)));
         const auto grid = av::make_grid(ms, std::max<Index>(nx, 1), std::max<Index>(ny, 1), beta);
         const auto source = av::source_field(ms, grid);
         aerion::WallTimer timer;
-        const auto sol = as::solve_poisson(grid, source, av::boundary_conditions(ms, grid), options);
+        const auto sol =
+            as::solve_poisson(grid, source, av::boundary_conditions(ms, grid), options);
         const double seconds = timer.elapsed_seconds();
         const auto err = av::error_norms(ms, grid, sol.phi, sol.report.singular);
         all_converged = all_converged && sol.report.solver.converged();

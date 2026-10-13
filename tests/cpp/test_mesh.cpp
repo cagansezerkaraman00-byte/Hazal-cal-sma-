@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/error.hpp>
-#include <aerion/mesh/spacing.hpp>
-#include <aerion/mesh/structured_grid_2d.hpp>
-
-#include <gtest/gtest.h>
-
 #include <cmath>
 #include <limits>
 #include <vector>
+
+#include <gtest/gtest.h>
+
+#include <aerion/core/error.hpp>
+#include <aerion/mesh/spacing.hpp>
+#include <aerion/mesh/structured_grid_2d.hpp>
 
 namespace aerion::mesh {
 namespace {
@@ -46,7 +46,8 @@ TEST(Spacing, TanhWithZeroBetaIsUniform) {
 TEST(Spacing, RejectsInvalidInput) {
     EXPECT_THROW((void)uniform_faces(0, 0.0, 1.0), InvalidArgument);
     EXPECT_THROW((void)uniform_faces(4, 1.0, 1.0), InvalidArgument);
-    EXPECT_THROW((void)uniform_faces(4, 0.0, std::numeric_limits<Real>::quiet_NaN()), InvalidArgument);
+    EXPECT_THROW((void)uniform_faces(4, 0.0, std::numeric_limits<Real>::quiet_NaN()),
+                 InvalidArgument);
     EXPECT_THROW((void)tanh_clustered_faces(4, 0.0, 1.0, -1.0), InvalidArgument);
 }
 
@@ -90,7 +91,8 @@ TEST(StructuredGrid2D, RejectsDegenerateFaces) {
     EXPECT_THROW(StructuredGrid2D({0.0}, {0.0, 1.0}), InvalidArgument);
     EXPECT_THROW(StructuredGrid2D({0.0, 1.0, 1.0}, {0.0, 1.0}), InvalidArgument);
     EXPECT_THROW(StructuredGrid2D({0.0, 2.0, 1.0}, {0.0, 1.0}), InvalidArgument);
-    EXPECT_THROW(StructuredGrid2D({0.0, 1.0}, {0.0, std::numeric_limits<Real>::infinity()}), InvalidArgument);
+    EXPECT_THROW(StructuredGrid2D({0.0, 1.0}, {0.0, std::numeric_limits<Real>::infinity()}),
+                 InvalidArgument);
     EXPECT_THROW((void)StructuredGrid2D::uniform(0, 4, 0.0, 1.0, 0.0, 1.0), InvalidArgument);
 }
 

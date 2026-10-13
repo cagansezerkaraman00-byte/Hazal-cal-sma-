@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/error.hpp>
-#include <aerion/field/cell_field.hpp>
-
 #include <algorithm>
 #include <cmath>
 #include <string>
+
+#include <aerion/core/error.hpp>
+#include <aerion/field/cell_field.hpp>
 
 namespace aerion {
 
@@ -29,8 +29,8 @@ ScalarField2D sample_cell_centers(const StructuredGrid2D& grid,
 
 void require_cell_field(const StructuredGrid2D& grid, const ScalarField2D& field,
                         const char* name) {
-    const bool ok = field.i_range() == IndexRange{0, grid.nx()} &&
-                    field.j_range() == IndexRange{0, grid.ny()};
+    const bool ok =
+        field.i_range() == IndexRange{0, grid.nx()} && field.j_range() == IndexRange{0, grid.ny()};
     require(ok, std::string(name) + ": expected a cell field of shape (" +
                     std::to_string(grid.nx()) + ", " + std::to_string(grid.ny()) + "), got (" +
                     std::to_string(field.ni()) + ", " + std::to_string(field.nj()) + ")");

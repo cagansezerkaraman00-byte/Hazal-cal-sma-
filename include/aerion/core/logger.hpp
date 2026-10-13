@@ -24,10 +24,18 @@ void set_log_sink(LogSink sink);
 
 void log(LogLevel level, std::string_view message);
 
-inline void log_debug(std::string_view message) { log(LogLevel::Debug, message); }
-inline void log_info(std::string_view message) { log(LogLevel::Info, message); }
-inline void log_warning(std::string_view message) { log(LogLevel::Warning, message); }
-inline void log_error(std::string_view message) { log(LogLevel::Error, message); }
+inline void log_debug(std::string_view message) {
+    log(LogLevel::Debug, message);
+}
+inline void log_info(std::string_view message) {
+    log(LogLevel::Info, message);
+}
+inline void log_warning(std::string_view message) {
+    log(LogLevel::Warning, message);
+}
+inline void log_error(std::string_view message) {
+    log(LogLevel::Error, message);
+}
 
 [[nodiscard]] std::string_view to_string(LogLevel level) noexcept;
 

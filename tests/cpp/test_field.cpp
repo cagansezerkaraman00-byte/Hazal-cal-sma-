@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
+#include <cmath>
+#include <numbers>
+#include <stdexcept>
+
+#include <gtest/gtest.h>
+
 #include <aerion/core/error.hpp>
 #include <aerion/field/array2d.hpp>
 #include <aerion/field/cell_field.hpp>
 #include <aerion/mesh/spacing.hpp>
 #include <aerion/mesh/structured_grid_2d.hpp>
-
-#include <gtest/gtest.h>
-
-#include <cmath>
-#include <numbers>
-#include <stdexcept>
 
 namespace aerion {
 namespace {

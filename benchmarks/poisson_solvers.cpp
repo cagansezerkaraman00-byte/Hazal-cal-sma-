@@ -6,14 +6,6 @@
 // Solves the sine-dirichlet manufactured problem on uniform n x n grids from
 // a zero initial guess and reports iterations, time and the discretisation
 // error (to show that every timed solve produced a correct answer).
-#include <aerion/core/build_info.hpp>
-#include <aerion/core/error.hpp>
-#include <aerion/core/parallel.hpp>
-#include <aerion/core/timer.hpp>
-#include <aerion/field/cell_field.hpp>
-#include <aerion/solvers/poisson_2d.hpp>
-#include <aerion/verification/manufactured.hpp>
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -22,6 +14,14 @@
 #include <iostream>
 #include <string>
 #include <vector>
+
+#include <aerion/core/build_info.hpp>
+#include <aerion/core/error.hpp>
+#include <aerion/core/parallel.hpp>
+#include <aerion/core/timer.hpp>
+#include <aerion/field/cell_field.hpp>
+#include <aerion/solvers/poisson_2d.hpp>
+#include <aerion/verification/manufactured.hpp>
 
 namespace {
 
@@ -101,7 +101,8 @@ int main(int argc, char** argv) {
                     "time[s]", "ns/(cell*it)", "L2 error", "conv");
         std::vector<Row> rows;
         for (Index n = 64; n <= max_n; n *= 2) {
-            for (const auto kind : {as::LinearSolverKind::ConjugateGradient, as::LinearSolverKind::SOR}) {
+            for (const auto kind :
+                 {as::LinearSolverKind::ConjugateGradient, as::LinearSolverKind::SOR}) {
                 const int repeats = n <= 256 ? 5 : 3;
                 const Row r = run(n, kind, rtol, repeats);
                 std::printf("%6td %-30s %7d %8d %10.4f %14.2f %12.4e %5s\n", r.n, r.solver.c_str(),
@@ -120,7 +121,8 @@ int main(int argc, char** argv) {
                     << (r.converged ? 1 : 0) << '\n';
             }
         }
-        const bool ok = std::all_of(rows.begin(), rows.end(), [](const Row& r) { return r.converged; });
+        const bool ok =
+            std::all_of(rows.begin(), rows.end(), [](const Row& r) { return r.converged; });
         return ok ? EXIT_SUCCESS : EXIT_FAILURE;
     } catch (const std::exception& e) {
         std::cerr << "aerion-bench-poisson: " << e.what() << '\n';

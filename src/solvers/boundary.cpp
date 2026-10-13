@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/error.hpp>
-#include <aerion/solvers/boundary.hpp>
-
 #include <cmath>
 #include <string>
 #include <utility>
+
+#include <aerion/core/error.hpp>
+#include <aerion/solvers/boundary.hpp>
 
 namespace aerion::solvers {
 

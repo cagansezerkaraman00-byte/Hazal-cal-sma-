@@ -2,9 +2,6 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
-#include <aerion/core/error.hpp>
-#include <aerion/core/types.hpp>
-
 #include <algorithm>
 #include <cstddef>
 #include <span>
@@ -12,6 +9,9 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+
+#include <aerion/core/error.hpp>
+#include <aerion/core/types.hpp>
 
 namespace aerion {
 
@@ -38,7 +38,7 @@ template <class T>
 class Array2D {
     static_assert(!std::is_same_v<T, bool>, "Array2D<bool> is not supported (std::vector<bool>)");
 
-public:
+  public:
     using value_type = T;
 
     Array2D() = default;
@@ -85,15 +85,14 @@ public:
         return i >= ri_.begin && i < ri_.end && j >= rj_.begin && j < rj_.end;
     }
 
-private:
+  private:
     [[nodiscard]] std::size_t offset(Index i, Index j) const {
 #if defined(AERION_BOUNDS_CHECK)
         if (!contains(i, j)) {
-            throw std::out_of_range("Array2D: index (" + std::to_string(i) + ", " +
-                                    std::to_string(j) + ") outside [" + std::to_string(ri_.begin) +
-                                    ", " + std::to_string(ri_.end) + ") x [" +
-                                    std::to_string(rj_.begin) + ", " + std::to_string(rj_.end) +
-                                    ")");
+            throw std::out_of_range(
+                "Array2D: index (" + std::to_string(i) + ", " + std::to_string(j) + ") outside [" +
+                std::to_string(ri_.begin) + ", " + std::to_string(ri_.end) + ") x [" +
+                std::to_string(rj_.begin) + ", " + std::to_string(rj_.end) + ")");
         }
 #endif
         return static_cast<std::size_t>((i - ri_.begin) + ri_.size() * (j - rj_.begin));

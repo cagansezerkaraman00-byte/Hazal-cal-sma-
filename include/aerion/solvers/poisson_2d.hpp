@@ -2,15 +2,15 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
+#include <array>
+#include <vector>
+
 #include <aerion/core/types.hpp>
 #include <aerion/field/array2d.hpp>
 #include <aerion/linalg/linear_solvers.hpp>
 #include <aerion/linalg/stencil_matrix_2d.hpp>
 #include <aerion/mesh/structured_grid_2d.hpp>
 #include <aerion/solvers/boundary.hpp>
-
-#include <array>
-#include <vector>
 
 namespace aerion::solvers {
 
@@ -69,7 +69,7 @@ struct PoissonReport {
 /// solver instance is assembled once and reused for many right-hand sides
 /// (e.g. the pressure equation at every time step).
 class PoissonSolver2D {
-public:
+  public:
     PoissonSolver2D(mesh::StructuredGrid2D grid, BoundaryConditions2D bcs,
                     PoissonOptions options = {});
 
@@ -96,7 +96,7 @@ public:
     /// the face formulas used by the discretisation.
     [[nodiscard]] std::array<Real, 4> boundary_fluxes(const ScalarField2D& phi) const;
 
-private:
+  private:
     void assemble_matrix();
 
     mesh::StructuredGrid2D grid_;

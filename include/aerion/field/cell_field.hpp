@@ -2,11 +2,11 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
+#include <functional>
+
 #include <aerion/core/types.hpp>
 #include <aerion/field/array2d.hpp>
 #include <aerion/mesh/structured_grid_2d.hpp>
-
-#include <functional>
 
 namespace aerion {
 

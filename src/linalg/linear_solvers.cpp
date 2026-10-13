@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/error.hpp>
-#include <aerion/core/parallel.hpp>
-#include <aerion/linalg/linear_solvers.hpp>
-#include <aerion/linalg/vector_ops.hpp>
-
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <numbers>
 #include <sstream>
+
+#include <aerion/core/error.hpp>
+#include <aerion/core/parallel.hpp>
+#include <aerion/linalg/linear_solvers.hpp>
+#include <aerion/linalg/vector_ops.hpp>
 
 namespace aerion::linalg {
 
@@ -56,8 +56,7 @@ void check_inputs(const StencilMatrix2D& a, std::span<const Real> b, std::span<R
 }
 
 /// Sets up the residual bookkeeping; returns the absolute tolerance.
-Real start(SolverStats& stats, const SolverControl& control, std::span<const Real> b,
-           Real r0) {
+Real start(SolverStats& stats, const SolverControl& control, std::span<const Real> b, Real r0) {
     stats.rhs_norm = norm2(b);
     stats.initial_residual_norm = r0;
     stats.final_residual_norm = r0;
@@ -102,9 +101,8 @@ void apply_preconditioner(const std::vector<Real>& inv_diag, std::span<const Rea
 
 }  // namespace
 
-SolverStats conjugate_gradient(const StencilMatrix2D& a, std::span<const Real> b,
-                               std::span<Real> x, const SolverControl& control,
-                               Preconditioner preconditioner) {
+SolverStats conjugate_gradient(const StencilMatrix2D& a, std::span<const Real> b, std::span<Real> x,
+                               const SolverControl& control, Preconditioner preconditioner) {
     check_inputs(a, b, x, control);
     const auto n = static_cast<std::size_t>(a.rows());
     const bool project = control.constant_nullspace;
@@ -117,8 +115,9 @@ SolverStats conjugate_gradient(const StencilMatrix2D& a, std::span<const Real> b
         inv_diag.resize(n);
         const auto c = a.center();
         for (std::size_t k = 0; k < n; ++k) {
-            require(c[k] > 0.0, "conjugate_gradient: Jacobi preconditioning needs a positive "
-                                "diagonal (is the matrix symmetric positive definite?)");
+            require(c[k] > 0.0,
+                    "conjugate_gradient: Jacobi preconditioning needs a positive "
+                    "diagonal (is the matrix symmetric positive definite?)");
             inv_diag[k] = 1.0 / c[k];
         }
     }

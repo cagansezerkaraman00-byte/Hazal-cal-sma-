@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
+#include <sstream>
+
 #include <aerion/core/build_info.hpp>
 #include <aerion/core/parallel.hpp>
 #include <aerion/core/version.hpp>
-
-#include <sstream>
 
 #ifndef AERION_BUILD_TYPE
 #define AERION_BUILD_TYPE "unknown"

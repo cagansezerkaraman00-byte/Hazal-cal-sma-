@@ -2,11 +2,11 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
-#include <aerion/core/types.hpp>
-
 #include <cstddef>
 #include <span>
 #include <vector>
+
+#include <aerion/core/types.hpp>
 
 namespace aerion::linalg {
 
@@ -26,7 +26,7 @@ namespace aerion::linalg {
 /// This structure is shared by the pressure equation and (later) implicit
 /// momentum and scalar transport equations on structured grids.
 class StencilMatrix2D {
-public:
+  public:
     StencilMatrix2D(Index nx, Index ny);
 
     [[nodiscard]] Index nx() const noexcept { return nx_; }
@@ -64,7 +64,7 @@ public:
     /// Dense row-major copy (rows() x rows()); intended for tests of small systems.
     [[nodiscard]] std::vector<Real> to_dense() const;
 
-private:
+  private:
     Index nx_;
     Index ny_;
     std::vector<Real> c_, e_, w_, n_, s_;

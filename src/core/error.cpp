@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/error.hpp>
-
 #include <sstream>
 #include <string>
+
+#include <aerion/core/error.hpp>
 
 namespace aerion::detail {
 

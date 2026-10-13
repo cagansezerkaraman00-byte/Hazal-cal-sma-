@@ -2,13 +2,13 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
-#include <aerion/field/array2d.hpp>
-#include <aerion/mesh/structured_grid_2d.hpp>
-
 #include <filesystem>
 #include <span>
 #include <string>
 #include <string_view>
+
+#include <aerion/field/array2d.hpp>
+#include <aerion/mesh/structured_grid_2d.hpp>
 
 namespace aerion::io {
 

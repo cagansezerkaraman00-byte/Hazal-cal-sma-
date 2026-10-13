@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/logger.hpp>
-
 #include <atomic>
 #include <iostream>
 #include <mutex>
 #include <utility>
+
+#include <aerion/core/logger.hpp>
 
 namespace aerion {
 
@@ -28,9 +28,13 @@ void default_sink(LogLevel level, std::string_view message) {
 
 }  // namespace
 
-void set_log_level(LogLevel level) noexcept { state().level.store(level); }
+void set_log_level(LogLevel level) noexcept {
+    state().level.store(level);
+}
 
-LogLevel log_level() noexcept { return state().level.load(); }
+LogLevel log_level() noexcept {
+    return state().level.load();
+}
 
 void set_log_sink(LogSink sink) {
     auto& s = state();

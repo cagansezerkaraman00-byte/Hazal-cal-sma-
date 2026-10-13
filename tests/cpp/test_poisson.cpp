@@ -7,18 +7,18 @@
 //  * observed order of accuracy with manufactured solutions on uniform and
 //    stretched grids, for Dirichlet, Neumann and mixed boundary conditions,
 //  * global conservation and pure-Neumann solvability handling.
+#include <cmath>
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include <aerion/core/error.hpp>
 #include <aerion/core/logger.hpp>
 #include <aerion/field/cell_field.hpp>
 #include <aerion/mesh/spacing.hpp>
 #include <aerion/solvers/poisson_2d.hpp>
 #include <aerion/verification/manufactured.hpp>
-
-#include <gtest/gtest.h>
-
-#include <cmath>
-#include <string>
-#include <vector>
 
 namespace aerion::solvers {
 namespace {
@@ -45,9 +45,9 @@ MmsResult run_mms(const ManufacturedSolution2D& ms, Index n, Real beta,
     const auto nx = static_cast<Index>(std::lround(static_cast<Real>(n) * (ms.x_max - ms.x_min)));
     const auto ny = static_cast<Index>(std::lround(static_cast<Real>(n) * (ms.y_max - ms.y_min)));
     const auto grid = verification::make_grid(ms, nx, ny, beta);
-    const auto sol = solve_poisson(grid, verification::source_field(ms, grid),
-                                   verification::boundary_conditions(ms, grid),
-                                   tight_options(kind));
+    const auto sol =
+        solve_poisson(grid, verification::source_field(ms, grid),
+                      verification::boundary_conditions(ms, grid), tight_options(kind));
     return {verification::error_norms(ms, grid, sol.phi, sol.report.singular), sol.report};
 }
 
@@ -126,7 +126,8 @@ TEST(PoissonConsistency, LinearFieldIsReproducedExactlyOnStretchedGrid) {
         Real max_err = 0.0;
         for (Index j = 0; j < grid.ny(); ++j) {
             for (Index i = 0; i < grid.nx(); ++i) {
-                max_err = std::max(max_err, std::abs(sol.phi(i, j) - exact(grid.xc(i), grid.yc(j))));
+                max_err =
+                    std::max(max_err, std::abs(sol.phi(i, j) - exact(grid.xc(i), grid.yc(j))));
             }
         }
         EXPECT_LT(max_err, 1e-9) << sol.report.solver.method;
@@ -171,20 +172,23 @@ TEST_P(PoissonConvergence, SecondOrderAccuracy) {
     EXPECT_LT(results.back().error.l2, 2e-4);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    ManufacturedSolutions, PoissonConvergence,
-    ::testing::Values(ConvergenceCase{"sine-dirichlet", 0.0}, ConvergenceCase{"sine-dirichlet", 2.0},
-                      ConvergenceCase{"cosine-neumann", 0.0}, ConvergenceCase{"cosine-neumann", 2.0},
-                      ConvergenceCase{"exp-mixed", 0.0}, ConvergenceCase{"exp-mixed", 2.0}),
-    [](const ::testing::TestParamInfo<ConvergenceCase>& param_info) {
-        std::string name = param_info.param.name;
-        for (auto& ch : name) {
-            if (ch == '-') {
-                ch = '_';
-            }
-        }
-        return name + (param_info.param.beta > 0.0 ? "_stretched" : "_uniform");
-    });
+INSTANTIATE_TEST_SUITE_P(ManufacturedSolutions, PoissonConvergence,
+                         ::testing::Values(ConvergenceCase{"sine-dirichlet", 0.0},
+                                           ConvergenceCase{"sine-dirichlet", 2.0},
+                                           ConvergenceCase{"cosine-neumann", 0.0},
+                                           ConvergenceCase{"cosine-neumann", 2.0},
+                                           ConvergenceCase{"exp-mixed", 0.0},
+                                           ConvergenceCase{"exp-mixed", 2.0}),
+                         [](const ::testing::TestParamInfo<ConvergenceCase>& param_info) {
+                             std::string name = param_info.param.name;
+                             for (auto& ch : name) {
+                                 if (ch == '-') {
+                                     ch = '_';
+                                 }
+                             }
+                             return name +
+                                    (param_info.param.beta > 0.0 ? "_stretched" : "_uniform");
+                         });
 
 TEST(PoissonSolvers, SorAgreesWithConjugateGradient) {
     const auto ms = verification::exp_mixed();
@@ -212,8 +216,8 @@ TEST(PoissonSolver2D, BoundaryFluxesBalanceTheSource) {
     const auto ms = verification::exp_mixed();
     const auto grid = verification::make_grid(ms, 64, 32, 1.0);
     const auto f = verification::source_field(ms, grid);
-    const auto sol = solve_poisson(grid, f, verification::boundary_conditions(ms, grid),
-                                   tight_options());
+    const auto sol =
+        solve_poisson(grid, f, verification::boundary_conditions(ms, grid), tight_options());
     const PoissonSolver2D solver(grid, verification::boundary_conditions(ms, grid));
     const auto flux = solver.boundary_fluxes(sol.phi);
     const Real net = flux[0] + flux[1] + flux[2] + flux[3];
@@ -229,9 +233,9 @@ TEST(PoissonSolver2D, ChangingBoundaryValuesKeepsMatrix) {
     EXPECT_EQ(solver.matrix().to_dense(), before);
     solver.set_boundary_condition(BoundarySide::North, BoundaryCondition::neumann(0.0));
     EXPECT_NE(solver.matrix().to_dense(), before);
-    EXPECT_THROW(solver.set_boundary_condition(BoundarySide::West,
-                                               BoundaryCondition::dirichlet({1.0, 2.0})),
-                 InvalidArgument);
+    EXPECT_THROW(
+        solver.set_boundary_condition(BoundarySide::West, BoundaryCondition::dirichlet({1.0, 2.0})),
+        InvalidArgument);
 }
 
 TEST(PoissonSolver2D, IncompatibleNeumannDataIsDetectedAndProjected) {
@@ -276,8 +280,8 @@ TEST(PoissonSolver2D, RejectsInvalidInput) {
     EXPECT_THROW((void)solver.solve(bad_source, phi), InvalidArgument);
     auto wrong_phi = ScalarField2D::with_ghosts(4, 4, 1);
     EXPECT_THROW((void)solver.solve(make_cell_field(grid), wrong_phi), InvalidArgument);
-    EXPECT_THROW(PoissonSolver2D(grid, BoundaryConditions2D::all(
-                                           BoundaryCondition::neumann({1.0, 2.0, 3.0}))),
+    EXPECT_THROW(PoissonSolver2D(
+                     grid, BoundaryConditions2D::all(BoundaryCondition::neumann({1.0, 2.0, 3.0}))),
                  InvalidArgument);
 }
 

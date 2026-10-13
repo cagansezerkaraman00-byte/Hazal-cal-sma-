@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
+#include <algorithm>
+#include <cmath>
+#include <sstream>
+#include <utility>
+
 #include <aerion/core/error.hpp>
 #include <aerion/core/logger.hpp>
 #include <aerion/field/cell_field.hpp>
 #include <aerion/linalg/vector_ops.hpp>
 #include <aerion/solvers/poisson_2d.hpp>
-
-#include <algorithm>
-#include <cmath>
-#include <sstream>
-#include <utility>
 
 namespace aerion::solvers {
 
@@ -40,7 +40,9 @@ BoundaryFace boundary_face(const StructuredGrid2D& g, BoundarySide side, Index m
     return {m, g.ny() - 1, g.dx(m), g.yf(g.ny()) - g.yc(g.ny() - 1)};
 }
 
-std::size_t at(Index k) noexcept { return static_cast<std::size_t>(k); }
+std::size_t at(Index k) noexcept {
+    return static_cast<std::size_t>(k);
+}
 
 }  // namespace
 
@@ -170,8 +172,7 @@ PoissonReport PoissonSolver2D::solve(const ScalarField2D& source, ScalarField2D&
         Real neumann_scale = 0.0;
         for (const auto side : all_sides) {
             for (Index m = 0; m < boundary_face_count(grid_, side); ++m) {
-                neumann_scale +=
-                    std::abs(bcs_[side].value(m)) * boundary_face(grid_, side, m).area;
+                neumann_scale += std::abs(bcs_[side].value(m)) * boundary_face(grid_, side, m).area;
             }
         }
         const Real scale = source_scale + neumann_scale;
@@ -191,8 +192,7 @@ PoissonReport PoissonSolver2D::solve(const ScalarField2D& source, ScalarField2D&
 
     auto x = phi.values();
     if (options_.solver == LinearSolverKind::ConjugateGradient) {
-        report.solver =
-            linalg::conjugate_gradient(matrix_, b, x, control, options_.preconditioner);
+        report.solver = linalg::conjugate_gradient(matrix_, b, x, control, options_.preconditioner);
     } else {
         report.solver = linalg::sor(matrix_, b, x, control, options_.sor_omega);
     }

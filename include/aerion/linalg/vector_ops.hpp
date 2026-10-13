@@ -2,9 +2,9 @@
 // Copyright (c) 2026 The AERION Authors
 #pragma once
 
-#include <aerion/core/types.hpp>
-
 #include <span>
+
+#include <aerion/core/types.hpp>
 
 /// BLAS-1 style kernels on contiguous vectors. Parallelised with OpenMP for
 /// long vectors; note that OpenMP reductions sum in a thread-count dependent

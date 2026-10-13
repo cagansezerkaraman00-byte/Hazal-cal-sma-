@@ -10,25 +10,25 @@ namespace aerion {
 
 /// Base class of every exception thrown by the AERION engine.
 class Error : public std::runtime_error {
-public:
+  public:
     using std::runtime_error::runtime_error;
 };
 
 /// A caller supplied an invalid argument (bad mesh size, mismatched shapes...).
 class InvalidArgument : public Error {
-public:
+  public:
     using Error::Error;
 };
 
 /// A numerical failure that makes the result meaningless (NaN, divergence...).
 class NumericalError : public Error {
-public:
+  public:
     using Error::Error;
 };
 
 /// Reading or writing a file failed.
 class IOError : public Error {
-public:
+  public:
     using Error::Error;
 };
 

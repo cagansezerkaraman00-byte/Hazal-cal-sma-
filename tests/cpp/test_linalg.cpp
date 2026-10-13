@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
+#include <cmath>
+#include <random>
+#include <vector>
+
+#include <gtest/gtest.h>
+
 #include <aerion/core/error.hpp>
 #include <aerion/linalg/linear_solvers.hpp>
 #include <aerion/linalg/stencil_matrix_2d.hpp>
 #include <aerion/linalg/vector_ops.hpp>
-
-#include <gtest/gtest.h>
-
-#include <cmath>
-#include <random>
-#include <vector>
 
 namespace aerion::linalg {
 namespace {

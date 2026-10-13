@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 The AERION Authors
-#include <aerion/core/error.hpp>
-#include <aerion/mesh/spacing.hpp>
-#include <aerion/mesh/structured_grid_2d.hpp>
-
 #include <algorithm>
 #include <cmath>
 #include <string>
 #include <utility>
+
+#include <aerion/core/error.hpp>
+#include <aerion/mesh/spacing.hpp>
+#include <aerion/mesh/structured_grid_2d.hpp>
 
 namespace aerion::mesh {
 
