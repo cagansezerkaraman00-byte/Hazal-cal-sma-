@@ -61,6 +61,10 @@ if(AERION_BUILD_TESTS)
   add_subdirectory(tests)
 endif()
 
+if(AERION_BUILD_BENCHMARKS)
+  add_subdirectory(benchmarks)
+endif()
+
 # ----------------------------------------------------------------------------
 # Summary
 # ----------------------------------------------------------------------------
