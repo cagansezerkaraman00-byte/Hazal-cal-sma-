@@ -1,0 +1,2 @@
+# Runtime dependencies of the aerion Python package.
+numpy>=1.24

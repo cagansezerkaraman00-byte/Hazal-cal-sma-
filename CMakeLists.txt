@@ -52,6 +52,10 @@ include(AerionBuildInfo)
 # ----------------------------------------------------------------------------
 add_subdirectory(src)
 
+if(AERION_BUILD_PYTHON)
+  add_subdirectory(python)
+endif()
+
 if(AERION_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)

@@ -1,0 +1,7 @@
+# Everything needed to build AERION from source and run the full test-suite.
+-r requirements.txt
+pybind11>=2.12
+pytest>=7.4
+scikit-build-core>=0.11
+# Optional: lets the test-suite read VTK output with the reference VTK reader.
+# vtk>=9.2
