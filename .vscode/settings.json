@@ -1,0 +1,10 @@
+{
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": false,
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/dev/compile_commands.json",
+  "python.analysis.extraPaths": ["${workspaceFolder}/python"],
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestArgs": ["tests/python"],
+  "files.associations": { "*.hpp.in": "cpp" },
+  "editor.formatOnSave": false
+}

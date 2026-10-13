@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "ms-vscode-remote.remote-wsl",
+    "ms-vscode.cmake-tools",
+    "ms-vscode.cpptools",
+    "ms-python.python",
+    "xaver.clang-format",
+    "editorconfig.editorconfig"
+  ]
+}
