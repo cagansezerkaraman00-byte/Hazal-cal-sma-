@@ -1,0 +1,60 @@
+# --- Build trees -------------------------------------------------------------
+/build/
+/build-*/
+/out/
+/install/
+CMakeUserPresets.json
+compile_commands.json
+.cache/
+
+# --- Compiled extension modules built in-place for development --------------
+python/aerion/_core*.so
+python/aerion/_core*.pyd
+python/aerion/_core*.dylib
+
+# --- C/C++ artefacts ---------------------------------------------------------
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+*.exe
+*.pdb
+*.ilk
+
+# --- Python ------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+wheels/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Simulation output (never commit raw results; curated ones go in benchmarks/) ---
+/results/
+/runs/
+*.vtk
+*.vtu
+*.vti
+*.vtr
+*.pvd
+!benchmarks/**/*.vtk
+
+# --- Editors / OS ------------------------------------------------------------
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db

@@ -1,0 +1,11 @@
+# Normalise line endings: the project is developed on Windows 11 + WSL2,
+# so keep LF in the repository regardless of the editor's platform.
+* text=auto eol=lf
+
+*.bat  text eol=crlf
+*.ps1  text eol=crlf
+
+*.png  binary
+*.jpg  binary
+*.pdf  binary
+*.msh  binary
