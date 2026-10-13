@@ -1,0 +1,85 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 22, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Development (RelWithDebInfo, in-place Python module)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "AERION_PYTHON_INPLACE": "ON",
+        "AERION_BOUNDS_CHECK": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release (optimised)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "AERION_PYTHON_INPLACE": "OFF"
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Debug (bounds checking)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "AERION_PYTHON_INPLACE": "OFF"
+      }
+    },
+    {
+      "name": "asan",
+      "displayName": "Debug + AddressSanitizer/UBSan (C++ only)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "AERION_ENABLE_SANITIZERS": "ON",
+        "AERION_BUILD_PYTHON": "OFF",
+        "AERION_BUILD_BENCHMARKS": "OFF"
+      }
+    },
+    {
+      "name": "ci",
+      "displayName": "Continuous integration (Release, warnings as errors)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "AERION_PYTHON_INPLACE": "OFF",
+        "AERION_WARNINGS_AS_ERRORS": "ON",
+        "AERION_BOUNDS_CHECK": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "dev", "configurePreset": "dev" },
+    { "name": "release", "configurePreset": "release" },
+    { "name": "debug", "configurePreset": "debug" },
+    { "name": "asan", "configurePreset": "asan" },
+    { "name": "ci", "configurePreset": "ci" }
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error", "stopOnFailure": false }
+    },
+    { "name": "dev", "inherits": "base", "configurePreset": "dev" },
+    { "name": "release", "inherits": "base", "configurePreset": "release" },
+    { "name": "debug", "inherits": "base", "configurePreset": "debug" },
+    { "name": "asan", "inherits": "base", "configurePreset": "asan" },
+    { "name": "ci", "inherits": "base", "configurePreset": "ci" }
+  ]
+}
