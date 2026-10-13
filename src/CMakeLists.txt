@@ -7,7 +7,10 @@ add_library(
   core/build_info.cpp
   core/error.cpp
   core/logger.cpp
-  core/parallel.cpp)
+  core/parallel.cpp
+  field/cell_field.cpp
+  mesh/spacing.cpp
+  mesh/structured_grid_2d.cpp)
 add_library(aerion::core ALIAS aerion_core)
 
 target_include_directories(
