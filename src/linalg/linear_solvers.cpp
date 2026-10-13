@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numbers>
 #include <sstream>
 
@@ -22,6 +23,8 @@ std::string_view to_string(SolverStatus status) noexcept {
             return "breakdown";
         case SolverStatus::Diverged:
             return "diverged";
+        case SolverStatus::Stagnated:
+            return "stagnated";
     }
     return "unknown";
 }
@@ -37,6 +40,9 @@ Real model_problem_sor_omega(Index nx, Index ny) noexcept {
 namespace {
 
 constexpr Real kDivergenceFactor = 1e10;
+/// CG: consecutive true-residual restarts without halving the residual
+/// before the iteration is declared stagnated.
+constexpr int kMaxStalledRestarts = 3;
 
 void check_inputs(const StencilMatrix2D& a, std::span<const Real> b, std::span<Real> x,
                   const SolverControl& control) {
@@ -130,6 +136,8 @@ SolverStats conjugate_gradient(const StencilMatrix2D& a, std::span<const Real> b
     Real rz = dot(r, z);
 
     stats.status = SolverStatus::MaxIterationsReached;
+    Real last_restart_residual = std::numeric_limits<Real>::infinity();
+    int stalled_restarts = 0;
     for (int it = 1; it <= control.max_iterations; ++it) {
         a.multiply(p, q);
         const Real pq = dot(p, q);
@@ -163,6 +171,14 @@ SolverStats conjugate_gradient(const StencilMatrix2D& a, std::span<const Real> b
             rnorm = true_residual(a, b, x, r, project);
             if (rnorm <= tol) {
                 stats.status = SolverStatus::Converged;
+                break;
+            }
+            // Repeated restarts that no longer reduce the true residual mean
+            // the target is below the round-off floor: stop instead of looping.
+            stalled_restarts = rnorm > 0.5 * last_restart_residual ? stalled_restarts + 1 : 0;
+            last_restart_residual = std::min(last_restart_residual, rnorm);
+            if (stalled_restarts >= kMaxStalledRestarts) {
+                stats.status = SolverStatus::Stagnated;
                 break;
             }
             apply_preconditioner(inv_diag, r, z);
@@ -216,6 +232,13 @@ SolverStats sor(const StencilMatrix2D& a, std::span<const Real> b, std::span<Rea
     const Real* pb = b.data();
     Real* px = x.data();
 
+    // Stagnation window: SOR reduces the error by ~(1 - 2 pi / n) per sweep
+    // at best, so failing to halve the best residual within 4 n + 100 sweeps
+    // means the round-off floor has been reached.
+    const Index window = 4 * std::max(nx, ny) + 100;
+    Real best = rnorm;
+    Index since_best = 0;
+
     stats.status = SolverStatus::MaxIterationsReached;
     for (int it = 1; it <= control.max_iterations; ++it) {
         for (Index color = 0; color < 2; ++color) {
@@ -253,6 +276,13 @@ SolverStats sor(const StencilMatrix2D& a, std::span<const Real> b, std::span<Rea
         }
         if (rnorm <= tol) {
             stats.status = SolverStatus::Converged;
+            break;
+        }
+        if (rnorm < 0.5 * best) {
+            best = rnorm;
+            since_best = 0;
+        } else if (++since_best >= window) {
+            stats.status = SolverStatus::Stagnated;
             break;
         }
     }

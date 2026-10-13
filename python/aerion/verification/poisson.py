@@ -210,7 +210,7 @@ def solve_level(
     n: int,
     solver: str = "cg",
     beta: float = 0.0,
-    relative_tolerance: float = 1e-12,
+    relative_tolerance: float = 1e-10,
     max_iterations: int = 200_000,
 ) -> LevelResult:
     grid = make_grid(case, n, beta)
@@ -253,7 +253,7 @@ def run_convergence_study(
     levels: tuple[int, ...] | list[int] = (16, 32, 64, 128),
     solver: str = "cg",
     beta: float = 0.0,
-    relative_tolerance: float = 1e-12,
+    relative_tolerance: float = 1e-10,
 ) -> ConvergenceStudy:
     """Solve ``case`` on successively refined grids and collect error norms."""
     if isinstance(case, str):

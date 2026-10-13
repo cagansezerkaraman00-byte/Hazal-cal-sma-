@@ -17,6 +17,11 @@ enum class SolverStatus {
     MaxIterationsReached,  ///< Stopped at max_iterations without converging.
     Breakdown,             ///< Algorithmic breakdown (e.g. p^T A p <= 0 in CG).
     Diverged,              ///< Residual became non-finite or grew by > 1e10.
+    /// The true residual stopped decreasing above the target: the requested
+    /// tolerance lies below the floating-point floor of evaluating b - A x for
+    /// this problem. The iterate is as accurate as round-off permits; use a
+    /// looser tolerance rather than more iterations.
+    Stagnated,
 };
 
 [[nodiscard]] std::string_view to_string(SolverStatus status) noexcept;

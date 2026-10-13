@@ -380,7 +380,8 @@ PYBIND11_MODULE(_core, m) {
         .value("CONVERGED", linalg::SolverStatus::Converged)
         .value("MAX_ITERATIONS_REACHED", linalg::SolverStatus::MaxIterationsReached)
         .value("BREAKDOWN", linalg::SolverStatus::Breakdown)
-        .value("DIVERGED", linalg::SolverStatus::Diverged);
+        .value("DIVERGED", linalg::SolverStatus::Diverged)
+        .value("STAGNATED", linalg::SolverStatus::Stagnated);
 
     py::enum_<linalg::Preconditioner>(m, "Preconditioner")
         .value("NONE", linalg::Preconditioner::None)

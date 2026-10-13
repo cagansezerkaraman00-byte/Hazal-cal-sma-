@@ -80,7 +80,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_poisson.add_argument("--solver", choices=["cg", "sor"], default="cg")
     p_poisson.add_argument("--beta", type=float, default=0.0,
                            help="tanh wall-clustering strength (0 = uniform grid)")
-    p_poisson.add_argument("--rtol", type=float, default=1e-12,
+    p_poisson.add_argument("--rtol", type=float, default=1e-10,
                            help="relative residual tolerance of the linear solver")
     p_poisson.add_argument("--expected-order", type=float, default=2.0)
     p_poisson.add_argument("--order-tolerance", type=float, default=0.1)

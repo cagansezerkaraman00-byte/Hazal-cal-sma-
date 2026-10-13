@@ -221,6 +221,26 @@ TEST(IterativeSolvers, ReportNonConvergenceHonestly) {
     EXPECT_EQ(gs.status, SolverStatus::MaxIterationsReached);
 }
 
+TEST(IterativeSolvers, UnreachableToleranceIsReportedAsStagnation) {
+    // A relative tolerance of 1e-20 is far below double-precision round-off:
+    // both solvers must stop early with Stagnated instead of iterating to the cap.
+    const auto a = random_spd(40, 40, 9);
+    const auto b = random_vector(1600, 10);
+    SolverControl control;
+    control.relative_tolerance = 1e-20;
+    control.max_iterations = 200000;
+    std::vector<Real> x(1600, 0.0);
+    const auto cg = conjugate_gradient(a, b, x, control);
+    EXPECT_EQ(cg.status, SolverStatus::Stagnated);
+    EXPECT_LT(cg.iterations, 2000);
+    EXPECT_LT(cg.final_residual_norm, 1e-12 * cg.rhs_norm);  // still a good solution
+    std::fill(x.begin(), x.end(), 0.0);
+    const auto gs = sor(a, b, x, control, 1.5);
+    EXPECT_EQ(gs.status, SolverStatus::Stagnated);
+    EXPECT_LT(gs.iterations, 20000);
+    EXPECT_LT(gs.final_residual_norm, 1e-12 * gs.rhs_norm);
+}
+
 TEST(IterativeSolvers, RejectInvalidInput) {
     const auto a = random_spd(3, 3, 1);
     std::vector<Real> b(9, 1.0);
