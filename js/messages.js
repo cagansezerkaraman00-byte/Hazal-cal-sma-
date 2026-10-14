@@ -2,6 +2,22 @@
 
 const Messages = (() => {
   const M = {
+    // Hazal'a bırakılan mektup (Çalış sekmesindeki kartta durur, istediği zaman açar).
+    mektup: {
+      baslik: 'Hazal,',
+      paragraflar: [
+        'Bazen insan kendine o kadar fazla yükleniyor ki, ne kadar güzel şeyler yaptığını, ne kadar çabaladığını, hatta ne kadar iyi bir insan olduğunu bile unutuyor. Senin de bazen böyle hissettiğini düşünüyorum.',
+        'Sana bir şey söylemek istiyorum. Her zaman güçlü olmak zorunda değilsin. Her şeyi doğru yapmak, herkese yetişmek, her sorunu çözmek zorunda da değilsin. Bazen hiçbir şey yapmak istemeyebilirsin. Bazen küçük bir şey bile sana ağır gelebilir. Bunların hiçbiri senin değerinden bir şey eksiltmiyor.',
+        'Ben senin kendinde pek fark etmediğin bazı şeyleri görüyorum. Mesela bir şeyi ne kadar önemsediğini, bazen gereğinden fazla düşündüğünü, bir şeyler yolunda gitmediğinde nasıl kendine kızdığını… Keşke kendine biraz da başkalarına gösterdiğin anlayışla yaklaşabilsen.',
+        'Bir de şunu bilmeni istiyorum: Bir insanın değerli olması için sürekli bir şeyler başarması gerekmiyor. İyi bir gün geçirmiş olmanla kötü bir gün geçirmiş olman arasında senin kim olduğun açısından hiçbir fark yok. Bugün hiçbir işin yolunda gitmemiş olabilir. Birilerine kızmış, kırılmış, ağlamış olabilirsin. Ama bütün bunlardan sonra da sen hâlâ aynı Hazal\'sın.',
+        'Seni tanıyan insanların hayatında bir yerin var. Belki bunun ne kadar önemli olduğunu düşünmüyorsun bile. Ama bazen bir insanın söylediği sıradan bir cümle, gösterdiği küçücük bir ilgi, hatta sadece orada olması bile başka birine iyi gelebiliyor. Sen de farkında olmadan böyle şeyler yapıyorsun.',
+        'Senden tek bir ricam var. Kendine kızdığın zamanlarda, kendin hakkında verdiğin kararların hepsine inanma. Çünkü insan üzgünken kendisine pek adil davranamıyor.',
+        'Bugün iyi hissetmiyorsan hissetme Hazal. Günün güzel geçmediyse geçmemiş olsun. Her günü güzel geçirmek gibi bir borcun yok.',
+        'Sadece kendini, yaşadığın kötü bir günün gözünden değerlendirme. Çünkü sen bir gününden, bir hatandan, birinin sana söylediği sözden çok daha fazlasısın.',
+        'Ve umarım bir gün kendine bakarken, seni önemseyen insanların gördüğü güzel şeylerin en azından birazını sen de görebilirsin.',
+        'Kendine biraz iyi davran, olur mu Hazal? Bunu gerçekten hak ediyorsun.',
+      ],
+    },
     checkIn: ["Nasılsın anneciğim? Bugün keyfin nasıl, anlat bakalım 🐾","{name}, bugün nasıl hissediyorsun? Önce bir halini hatırını sorayım dedim 💜","Hoş geldiiin anneciğim! Günün nasıl geçti? Biraz soluklan, sonra birlikte başlarız 🐱"],
     lowStudy: ["Bugün dersler biraz bekledi ama sorun değil 🐾 Küçücük bir adımla başlayabiliriz anneciğim.","{name}, kitaplar seni özledi 😽 Hadi yalnızca on dakika deneyelim.","Hıımm, dersler biraz yalnız kaldı bugün 🐾 Yorulduysan dinlen; hazırsan beraber kısa bir oturum yapalım."],
     focusNudge: ["Anneciğim, geri geldin! 🐾 Telefonu molaya bırakalım, şimdi derse dönelim.","{name}, patimi masaya koydum! 🐾 Şimdi bir tek şu soruya odaklanalım.","Patimi masaya vurdum 😼 Konumuz yarım kalmasın, kaldığımız yerden devam!"],
@@ -443,7 +459,7 @@ const Messages = (() => {
   }
 
   return {
-    companionState, mood, departure, delivery, nightKey, planComment, PLAN_EOD,
+    companionState, mood, departure, delivery, nightKey, planComment, PLAN_EOD, mektup: M.mektup,
     get(kind, vars) {
       const arr = M[kind] || M.poke;
       const state = companionState();

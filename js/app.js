@@ -720,7 +720,8 @@
         say('goal', { ms: 8000 });
         Scene.celebrate();
         Sound.chime();
-        toast('💌', 'Günün gizli notu açıldı!', 'Çalış sekmesinde seni bekliyor');
+        if (loveNoteOfDay()) toast('💌', 'Günün gizli notu açıldı!', 'Çalış sekmesinde seni bekliyor');
+        else toast('🎉', 'Günlük hedefin tamam!', 'Harikasın, böyle devam 💜');
       }, 2500);
     }
   }
@@ -759,6 +760,36 @@
     const dayNum = Math.floor(U.dayStart(new Date()).getTime() / 864e5);
     return notes[dayNum % notes.length];
   }
+  const MEKTUP_KEY = 'luna-mektup-okundu';
+  function mektupOkundu() { try { return localStorage.getItem(MEKTUP_KEY) === '1'; } catch (e) { return false; } }
+  function renderMektup() {
+    const el = $('#mektup-card');
+    if (!el || typeof Messages === 'undefined' || !Messages.mektup) { if (el) el.hidden = true; return; }
+    el.hidden = false;
+    const partner = D().settings.partner;
+    const okundu = mektupOkundu();
+    const alt = okundu ? 'İstediğin zaman tekrar okuyabilirsin.'
+      : `${partner ? U.esc(partner) + ' senin' : 'Senin'} için bıraktı. Hazır olduğunda aç.`;
+    el.classList.toggle('yeni', !okundu);
+    el.innerHTML = `<h2>💜 ${okundu ? 'Mektubun' : 'Sana bir mektup var'}</h2>
+      <p class="muted small">${alt}</p>
+      <button class="btn soft" type="button" id="mektup-ac">Mektubu aç 💜</button>`;
+    $('#mektup-ac').addEventListener('click', openMektup);
+  }
+  function openMektup() {
+    const m = Messages.mektup;
+    const partner = D().settings.partner;
+    const govde = m.paragraflar.map((p) => `<p>${U.esc(p)}</p>`).join('');
+    openModal(`<div class="mektup">
+        <h3 class="mektup-baslik">${U.esc(m.baslik)}</h3>
+        <div class="mektup-govde">${govde}</div>
+        <p class="mektup-imza">${partner ? '— ' + U.esc(partner) + ' 💜' : '💜'}</p>
+      </div>
+      <div class="modal-actions"><button class="btn primary" type="button" data-act="ok">Kapat</button></div>`);
+    $('#modal-card [data-act="ok"]').addEventListener('click', closeModal);
+    try { localStorage.setItem(MEKTUP_KEY, '1'); } catch (e) { /* özel sekme */ }
+    renderMektup();
+  }
   function renderHome() {
     const goal = D().settings.dailyGoal;
     const mins = Stats.minutesOn(new Date());
@@ -791,6 +822,7 @@
         <div class="lock"><span>🔒</span><div><b>${from} bir not bıraktı!</b><div class="muted small">Günlük hedefine ulaşınca açılacak.</div></div></div>
         <div class="progress"><i style="width:${pct}%"></i></div>`;
     }
+    renderMektup();
     renderWelcome(mins, pct);
     const tp = $('#today-plan');
     // plan kartındaki bir hata ana sayfayı (ve açılışı) bozmasın: kart sade bir notla kalır, kayıtlar yerinde
@@ -869,7 +901,8 @@
     if (last) chips.push(['📈', `${last.net} net`, `son ${last.type}${last.delta > 0 ? ' · +' + Deneme.fmt(last.delta) : ''}`, last.delta > 0 ? 'up' : '', 'deneme']);
     const msg = pct >= 100 ? 'Bugünkü hedefini tamamladın! Kendinle gurur duy 🎉'
       : sk >= 3 ? `${sk} gündür buradasın, bu istikrar harika 🌟`
-      : yksMode && days != null && days >= 0 ? Messages.daily('yks', { days })
+      : yksMode && days === 0 ? 'Bugün o gün! 💛 Derin bir nefes al, sen bu yola uzun zamandır hazırlanıyorsun. Luna yanında 🐾'
+      : yksMode && days != null && days > 0 ? Messages.daily('yks', { days })
       : nextEx && Uni.daysLeft(nextEx.date) <= 7 ? Messages.daily('exam', { what: examClause(nextEx) })
       : prog ? Messages.daily('uni')
       : Messages.daily(Messages.timeOfDay());
@@ -1152,7 +1185,7 @@
     renderEdu();
     $('#set-goal').value = s.dailyGoal;
     $('#set-msg').value = s.msgInterval;
-    $('#set-focus').value = s.focus;
+    $('#set-focus').value = Math.round((Number.isInteger(s.countdownSeconds) && s.countdownSeconds > 0 ? s.countdownSeconds : s.focus * 60) / 60);
     $('#set-short').value = s.short;
     $('#set-long').value = s.long;
     $('#set-every').value = s.longEvery;
@@ -1240,7 +1273,7 @@
     const num = (id, key, min, max) => $(id).addEventListener('change', (e) => {
       const n = parseInt(e.target.value, 10); // 0 geçerli bir değer olabilir (ör. Luna'nın mesajları: 0 = hiç)
       const v = U.clamp(Number.isNaN(n) ? D().settings[key] : n, min, max);
-      D().settings[key] = v; if (key === 'focus') D().settings.countdownSeconds = null; e.target.value = v; save();
+      D().settings[key] = v; if (key === 'focus') D().settings.countdownSeconds = v * 60; e.target.value = v; save(); // geri sayımla tutarlı kalsın (saat:dk:sn seçimini sessizce silme)
       renderHome(); Timer.state(); // sayaç yeni süreyi bir sonraki tick'te gösterir
     });
     num('#set-goal', 'dailyGoal', 10, 900);
@@ -1452,6 +1485,7 @@
               return;
             }
             const added = Store.mergeJSON(obj);
+            if (added === false) { toast('⚠️', 'Yedek birleştirilemedi', 'Dosya bozuk olabilir ya da depolama dolu; verilerin olduğu gibi kaldı', 8000); return; }
             closeModal();
             // yeni dersler/alan gelmiş olabilir: her şeyi baştan çiz
             renderSubjectSelects(); renderSettings(); applyTheme();
@@ -1469,7 +1503,7 @@
     });
   }
   function renderFooter() {
-    $('.footer').textContent = `${D().settings.name || 'Sana'} için sevgiyle yapıldı ✨🐾`;
+    $('.footer').textContent = `${D().settings.name ? D().settings.name + ' için' : 'Senin için'} sevgiyle yapıldı ✨🐾`;
   }
   // ======================================================================
   // Luna etkileşimleri ve periyodik mesajlar

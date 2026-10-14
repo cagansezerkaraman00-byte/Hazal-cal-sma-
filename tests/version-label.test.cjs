@@ -30,7 +30,7 @@ ok(g.parse('broken')===null,'invalid version document');
 g.init(app);
 await Promise.resolve();
 await g.check(true);
-ok(nodes.get('#update-card').innerHTML.includes("Sürüm 2.1.4'e güncelle"),'settings update button rendered');
+ok(nodes.get('#update-card').innerHTML.includes("Güncelle · Sürüm 2.1.4"),'settings update button rendered');
 ok(nodes.get('#update-banner').innerHTML.includes('Güncelle'),'banner update button rendered');
 ok(nodes.get('#update-card').innerHTML.includes('Geliştiren: Çağan Sezer Karaman'),'developer credit');
 offline=true; await g.check(true);

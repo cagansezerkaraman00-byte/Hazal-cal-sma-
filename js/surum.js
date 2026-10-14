@@ -6,6 +6,19 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.5",
+  "tarih": "2026-10-14",
+  "baslik": "Sana bir mektup ve birçok küçük düzeltme",
+  "notlar": [
+    "💜 Çalış ekranına sana özel bir mektup eklendi. 'Mektubu aç' deyince açılır, istediğin zaman tekrar okuyabilirsin.",
+    "🛟 Yedek yükleme artık güvenli: bozuk bir dosya ya da dolu depolama yüzünden hiçbir verin kaybolmaz; işlem ya tam uygulanır ya hiç.",
+    "⏱️ Ayarlardaki geri sayım dakikası artık seçtiğin süreyle aynı; düzenleyince saat:dakika:saniye seçimini sessizce silmiyor.",
+    "🔕 Güncelleme kartı odak ekranında saatin üstüne binmiyor; oturum bitince yeniden görünür.",
+    "✍️ Küçük yazı ve dil düzeltmeleri: iPhone kurulum metni, 'Güncelle' düğmesi, gün sonu kutlaması, kılavuzdaki eski anlatımlar ve alt yazı düzeltildi.",
+    "🗓️ YKS günü geldiğinde Luna artık '0 gün' demiyor, o güne özel bir söz söylüyor."
+  ]
+},
+{
   "surum": "2.4.17",
   "tarih": "2026-10-10",
   "baslik": "Spotify atlama ve sarma kontrolleri",
@@ -105,7 +118,7 @@ const SURUMLER = /*SURUMLER*/[
   "surum": "2.4.5",
   "tarih": "2026-10-09",
   "baslik": "Spotify hesabınla Luna içinde dinle",
-  "notlar": ["🎧 Spotify hesabınla güvenli giriş, kendi çalma listelerin ve Luna içinde Premium oynatıcı eklendi. Oynatıcıyı açarak şarkıları başlatabilir, duraklatabilir ve değiştirebilirsin. Telefon ve tabletlerde gerçek hesapla deneme yapılacak."]
+  "notlar": ["🎧 Spotify hesabınla güvenli giriş, kendi çalma listelerin ve Luna içinde Premium oynatıcı eklendi. Oynatıcıyı açarak şarkıları başlatabilir, duraklatabilir ve değiştirebilirsin."]
 },
 {
   "surum": "2.4.4",

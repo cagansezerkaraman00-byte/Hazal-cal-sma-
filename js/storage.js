@@ -348,8 +348,17 @@ const Store = (() => {
       }
     },
     reset() { data = defaults(); this.save(); },
-    importJSON(obj) { data = merge(defaults(), { ...obj, timer: null }); return this.save(); }, // başka cihazın sayacı buraya taşınmasın
-    mergeJSON(obj) { const n = mergeIn(obj); this.save(); return n; },
+    // Yükleme/birleştirme ya tam uygulanır ya hiç: hata ya da dolu depolama Hazal'ın verisini bozmaz.
+    importJSON(obj) { // başka cihazın sayacı buraya taşınmasın
+      const prev = data;
+      try { data = merge(defaults(), { ...obj, timer: null }); if (this.save()) return true; } catch (e) { /* bozuk yedek */ }
+      data = prev; return false;
+    },
+    mergeJSON(obj) {
+      const snap = JSON.parse(JSON.stringify(data)); // mergeIn yerinde değiştirir; hata olursa eski hale dön
+      try { const n = mergeIn(obj); if (this.save()) return n; } catch (e) { /* bozuk yedek */ }
+      data = snap; return false;
+    },
     // aktif listede yoksa diğer modların listelerine de bakılır (geçmiş oturumların ders adı kaybolmasın)
     subject(id) {
       const hit = data.subjects.find((s) => s.id === id);

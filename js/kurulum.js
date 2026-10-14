@@ -57,7 +57,7 @@ const LunaKurulum = (() => {
   const shareWhere = isIPad ? 'sağ üstte, <b>+</b> düğmesinin hemen solunda; görmüyorsan altta ya da adres çubuğundaki <b>•••</b> menüsünde' : 'altta ya da adres çubuğunun yanında; görmüyorsan önce <b>•••</b>';
   const STEPS = {
     ios: `${fromHome ? `<p class="kr-note kr-warn"><b>Luna Safari'de açıldı.</b> Ana ekrandaki Luna simgesine basılı tut ve sil; sonra aşağıdaki adımlarla yeniden ekle, <b>Web Uygulaması Olarak Aç</b> açık kalsın.</p>` : ''}
-      <p class="kr-note">${isIPad ? 'iPad' : 'iPhone'}'de indirme çubuğu bekleme; kurulumu Safari menüsünden tamamla:</p>
+      <p class="kr-note">${isIPad ? "iPad'de" : "iPhone'da"} indirme çubuğu bekleme; kurulumu Safari menüsünden tamamla:</p>
       <ol><li><b>Paylaş</b> ${share} düğmesine dokun <small>(${shareWhere})</small></li>
       <li><b>Ana Ekrana Ekle</b>'ye dokun <small>(ilk listede yoksa listenin altındaki <b>Daha Fazla</b> ⌄ satırına dokun ya da listeyi kaydır; hâlâ yoksa <b>Eylemleri Düzenle</b>'den ekle)</small></li>
       <li><b>Web Uygulaması Olarak Aç</b> açık (yeşil) kalsın <small>(bu seçenek varsa; kapalıysa aç, yoksa Luna Safari'de açılır)</small>, sonra <b>Ekle</b>'ye dokun</li>
