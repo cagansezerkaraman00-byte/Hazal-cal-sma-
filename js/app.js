@@ -520,7 +520,7 @@
     $('#mini-timer').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); backToTimer(); } });
     // klavye: boşluk = başlat/duraklat
     document.addEventListener('keydown', (e) => {
-      if (e.code !== 'Space' || currentTab !== 'home' || !$('#modal').classList.contains('hidden')) return;
+      if (e.code !== 'Space' || siirEl || currentTab !== 'home' || !$('#modal').classList.contains('hidden')) return;
       if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(document.activeElement.tagName)) return;
       e.preventDefault();
       $('#btn-toggle').click();
@@ -809,7 +809,7 @@
     el.innerHTML = `<div class="siir-kart-ic">
         <div class="siir-kart-yazi">
           <h2>🌸 ${okundu ? 'Şiirin' : 'Sana bir şiir var'}</h2>
-          <p class="small">${okundu ? 'Geceleri sahnedeki evin üstünde parlayan yıldıza dokunursan da açılır.' : `${U.esc(m.imza)} bıraktı, yalnızca sana. Hazır olduğunda aç.`}</p>
+          <p class="small">${okundu ? 'Geceleri sahnenin gökyüzünde parlayan altın yıldıza dokunursan da açılır.' : `${U.esc(m.imza)} bıraktı, yalnızca sana. Hazır olduğunda aç.`}</p>
           <button class="btn primary siir-ac" type="button" id="siir-ac">Şiiri aç ✨</button>
         </div>
         <img class="siir-kart-resim" src="${m.kucuk}" alt="" width="108" height="105" decoding="async">
@@ -818,11 +818,12 @@
   }
   function siirTus(e) {
     if (!siirEl) return;
-    if (e.key === 'Escape') { e.preventDefault(); const tam = siirEl.querySelector('.sg-tam'); if (tam) tam.remove(); else closeSiir(); }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); const tam = siirEl.querySelector('.sg-tam'); if (tam) tam.remove(); else closeSiir(); }
   }
   function openSiir() {
     const m = typeof Messages !== 'undefined' && Messages.siir;
     if (!m) return;
+    if (!siirEl) siirOnceki = document.activeElement; // "Baştan" önceki odağı silmesin
     if (siirEl) closeSiir(true);
     const cols = ['#ffe27a', '#ffd06b', '#ff9bd8', '#9fe8ff', '#c9a6ff', '#ffffff'];
     let gok = '';
@@ -837,7 +838,6 @@
       return `<p class="sg-satir">${ws.join(' ')}</p>`;
     }).join('');
     const imzaD = d + 0.2, altD = imzaD + 1.1;
-    siirOnceki = document.activeElement;
     siirEl = document.createElement('div');
     siirEl.className = 'siir-gece';
     siirEl.setAttribute('role', 'dialog');
@@ -875,9 +875,9 @@
     });
     document.body.appendChild(siirEl);
     document.body.classList.add('siir-acik');
-    document.addEventListener('keydown', siirTus);
+    window.addEventListener('keydown', siirTus, true);
     try { siirEl.focus({ preventScroll: true }); } catch (e) { /* eski tarayıcı */ }
-    siirIlk = lsGet(SIIR_KEY) !== '1';
+    siirIlk = siirIlk || lsGet(SIIR_KEY) !== '1'; // ilk okumada "Baştan" denirse Luna'nın sözü kaybolmasın
     lsSet(SIIR_KEY, '1');
     renderSiir();
   }
@@ -885,17 +885,21 @@
     if (!siirEl) return;
     const el = siirEl;
     siirEl = null;
-    document.removeEventListener('keydown', siirTus);
+    window.removeEventListener('keydown', siirTus, true);
     document.body.classList.remove('siir-acik');
     if (hemen) el.remove();
     else { el.classList.add('kapaniyor'); setTimeout(() => el.remove(), 360); }
-    if (!hemen && siirOnceki && siirOnceki.focus) { try { siirOnceki.focus({ preventScroll: true }); } catch (e) { /* yok say */ } }
+    if (!hemen && siirOnceki) {
+      const geri = siirOnceki.isConnected ? siirOnceki : siirOnceki.id ? document.getElementById(siirOnceki.id) : null;
+      siirOnceki = null;
+      if (geri && geri.focus) { try { geri.focus({ preventScroll: true }); } catch (e) { /* yok say */ } }
+    }
     // ilk okumadan sonra Luna da bir şey söyler
     if (!hemen && siirIlk) {
       siirIlk = false;
       setTimeout(() => {
         if (App.isFocusing() || siirEl) return;
-        Scene.say('Bu şiiri sana Eşeğin yazdı anneciğim 💜 Geceleri evin üstündeki o parlayan yıldız da artık sizin.', { emotion: 'tender', ms: 9000 });
+        Scene.say('Bu şiiri sana Eşeğin yazdı anneciğim 💜 Geceleri gökyüzündeki o altın yıldız da artık sizin.', { emotion: 'tender', ms: 9000 });
         lastMsgAt = Date.now();
       }, 900);
     }
@@ -904,7 +908,8 @@
   let siirDeneme = 0;
   function siirSurpriz() {
     if (!(typeof Messages !== 'undefined' && Messages.siir) || lsGet(SIIR_KEY) === '1' || lsGet(SIIR_SURPRIZ) === '1') return;
-    const mesgul = App.isFocusing() || !$('#modal').classList.contains('hidden') || siirEl || document.hidden;
+    const viewer = $('#viewer');
+    const mesgul = App.isFocusing() || !$('#modal').classList.contains('hidden') || (viewer && !viewer.classList.contains('hidden')) || siirEl || document.hidden;
     if (mesgul) { if (++siirDeneme < 2400) setTimeout(siirSurpriz, 1500); return; } // "Luna güncellendi" kapanınca hemen gelsin; uzun bir odak oturumunda da vazgeçmesin
     lsSet(SIIR_SURPRIZ, '1');
     openSiir();
@@ -1809,7 +1814,7 @@
     try { if (!localStorage.getItem('luna-temizlik-1')) { localStorage.removeItem('luna-sync-on'); if (window.indexedDB) indexedDB.deleteDatabase('luna-sync'); localStorage.setItem('luna-temizlik-1', '1'); } } catch (e) { /* yok say */ }
     safe('Sahne', () => Scene.init($('#sky'), $('#bubble'), {
       onPoke() { Sound.meow(); say('poke'); },
-      onStar() { openSiir(); },
+      onStar() { if (!App.isFocusing()) openSiir(); },
       onFriend(kind) { Sound.meow(); say(friendLine(kind)); },
       onFriendArrival(kind) {
         // gelişte konuşma: Luna'nın konuşma sıklığı 0 ise hiç, değilse her kedi gecede bir kez

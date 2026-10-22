@@ -2067,9 +2067,9 @@ body.focusing #countdown-error { display: none; }
 /* Tam ekran gece: yıldızlar yanar, zambak açar, şiir kelime kelime belirir */
 body.siir-acik { overflow: hidden; }
 .siir-gece {
-  position: fixed; inset: 0; z-index: 2000; overflow: hidden; outline: none;
+  position: fixed; inset: 0; z-index: 62; overflow: hidden; outline: none; /* modal 50 ve bildirimlerin (60) üstünde, ders bitti uyarısının (65) altında */
   display: flex; flex-direction: column; align-items: center;
-  padding: max(16px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom));
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   background: radial-gradient(130% 90% at 50% 72%, #112150 0%, #071433 45%, #020a1c 100%);
   color: #fbe7ae; animation: sg-gir .7s ease both;
 }
@@ -2110,6 +2110,12 @@ body.siir-acik { overflow: hidden; }
 .sg-tam img { max-width: 100%; max-height: calc(100% - 76px); border-radius: 14px; box-shadow: 0 0 0 1px rgba(255, 231, 174, .2), 0 20px 50px -20px #000; }
 .sg-tam .sg-tam-alt { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .sg-tam a.btn { text-decoration: none; }
+/* yan çevrilmiş telefon: şiir solda, zambak sağda; her şey ekrana sığar */
+@media (orientation: landscape) and (max-height: 500px) {
+  .sg-sahne { flex-direction: row; align-items: stretch; width: min(900px, 100%); padding-top: 8px; gap: 12px; }
+  .sg-siir { flex: 1.6; align-self: center; font-size: clamp(13px, 4.6vh, 18px); }
+  .sg-cicek-kutu { flex: 1; min-height: 0; }
+}
 @keyframes sg-gir { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sg-cik { to { opacity: 0; } }
 @keyframes sg-yildiz { 0%, 100% { opacity: .12; transform: translate(-50%, -50%) scale(.55); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }

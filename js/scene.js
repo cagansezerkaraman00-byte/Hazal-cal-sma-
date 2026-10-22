@@ -2218,6 +2218,14 @@ const Scene = (() => {
     }
   }
 
+  const inStar = (x, y) => !!(ourStar && onStar && night * starVis > 0.15 && Math.abs(x - ourStar.x) <= 6 && Math.abs(y - ourStar.y) <= 6);
+  function starTap(ev) {
+    const rect = cv.getBoundingClientRect();
+    const x = (ev.clientX - rect.left) / scale, y = (ev.clientY - rect.top) / scale;
+    if (!inStar(x, y)) return;
+    sparkles(ourStar.x, ourStar.y, 10);
+    onStar();
+  }
   function hit(ev) {
     const rect = cv.getBoundingClientRect();
     const x = (ev.clientX - rect.left) / scale, y = (ev.clientY - rect.top) / scale;
@@ -2239,12 +2247,8 @@ const Scene = (() => {
       if (!play) startPlay();
       return;
     }
-    // gecenin parlayan yıldızı: şiiri açar
-    if (ourStar && onStar && night * starVis > 0.15 && Math.abs(x - ourStar.x) <= 6 && Math.abs(y - ourStar.y) <= 6) {
-      sparkles(ourStar.x, ourStar.y, 10);
-      onStar();
-      return;
-    }
+    // gecenin parlayan yıldızı: şiiri dokunuş bitince açar (starTap); kaydırma onun üstünde başlarsa açılmaz
+    if (inStar(x, y)) return;
     const g = lunaGeom();
     if (x >= g.left - 3 && x <= g.left + g.p.w + 3 && y >= g.top - 4 && y <= groundY + 3) {
       if (L.state === 'sleep') { L.state = 'happy'; L.wait = 3; L.nap = false; }
@@ -2284,6 +2288,7 @@ const Scene = (() => {
       }
       document.addEventListener('visibilitychange', wake);
       cv.addEventListener('pointerdown', hit);
+      cv.addEventListener('click', starTap);
       wake();
     },
     setMode(m) {

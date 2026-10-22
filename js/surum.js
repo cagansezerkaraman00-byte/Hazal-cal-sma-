@@ -6,12 +6,24 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.6.1",
+  "tarih": "2026-10-22",
+  "baslik": "Şiir için küçük düzeltmeler",
+  "notlar": [
+    "⭐ Yıldız artık parmağını kaldırınca açılıyor; sayfayı kaydırırken yanlışlıkla açılmıyor. Ders sırasında dokunulursa da dersini bölmüyor.",
+    "⏰ Şiir açıkken ders biterse 'Süre doldu' uyarısı şiirin üstünde görünüyor.",
+    "📱 Telefon yan çevrildiğinde şiir ve zambak ekrana tam sığıyor.",
+    "✨ 'Baştan' dedikten sonra da Luna'nın sözü geliyor; klavyeyle açınca boşluk tuşu sayacı başlatmıyor, Esc yalnızca şiiri kapatıyor.",
+    "🔤 İnternetsiz açılışta da uygulamanın yazı tipleri yerinde kalıyor."
+  ]
+},
+{
   "surum": "2.6",
   "tarih": "2026-10-22",
   "baslik": "Sana bir şiir ve Zambak teması",
   "notlar": [
     "🌸 Eşeğin sana bir şiir bıraktı 💜 İlk açılışta kendiliğinden gelir; sonra Çalış ekranındaki 'Şiiri aç' ile istediğin zaman yeniden okuyabilirsin.",
-    "⭐ Geceleri sahnedeki evin üstünde altın renkli bir yıldız parlıyor. O sizin yıldızınız: dokununca şiir yeniden açılır.",
+    "⭐ Geceleri sahnenin gökyüzünde altın renkli bir yıldız parlıyor. O sizin yıldızınız: dokununca şiir yeniden açılır.",
     "🌺 Ayarlar → Görünüm'e yeni bir tema geldi: Zambak. Lacivert gökyüzü, altın başlıklar ve gökkuşağı renkli düğmeler.",
     "🖼️ Şiirdeki resmin tamamını açabilirsin; telefonuna kaydetmek için 'Telefona kaydet'e dokun ya da resme basılı tut."
   ]
