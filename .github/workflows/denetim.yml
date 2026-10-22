@@ -21,7 +21,8 @@ concurrency:
 
 jobs:
   denetim:
-    runs-on: ubuntu-latest
+    # Playwright 1.56.1 tarayıcıyı Ubuntu 26.04'e kuramıyor (ubuntu-latest artık 26.04): desteklenen sürümde kal
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
