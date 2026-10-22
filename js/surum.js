@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.6.2",
+  "tarih": "2026-10-23",
+  "baslik": "Müzikte oynatıcı yukarıda",
+  "notlar": [
+    "🎧 Müzik bölümünde Luna oynatıcısı ve şarkı listesi artık en üstte, kütüphanendeki çalma listeleri altında. Aşağıdan bir liste seçince oynatıcı ekranın yukarısında kaldıysa yumuşakça oraya kayar."
+  ]
+},
+{
   "surum": "2.6.1",
   "tarih": "2026-10-22",
   "baslik": "Şiir için küçük düzeltmeler",

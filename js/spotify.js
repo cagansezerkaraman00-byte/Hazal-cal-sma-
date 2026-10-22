@@ -209,24 +209,28 @@ const SpotifyLink = (() => {
   function render() {
     const el = document.getElementById('sp-account');
     if (!el) return;
+    // kütüphanedeki listeler oynatıcının altında kendi kutusunda (kutu yoksa hesap satırının altında)
+    const lib = document.getElementById('sp-library');
     const connected = !!(st.refresh || st.token);
     if (!connected) {
+      if (lib && lib !== el) lib.innerHTML = '';
       el.innerHTML = st.clientId
         ? `<button class="btn primary" data-sp="login" type="button">Spotify ile giriş yap</button><p class="hint">Giriş Spotify'ın güvenli sayfasında tamamlanır; ardından listelerin burada görünür.</p>`
         : '<div class="sp-connect-intro"><b>🎧 Spotify hesabınla Luna’da dinle</b><p class="hint">Premium hesabınla kendi listelerini burada aç. Hesap bağlantısı henüz etkinleştirilmedi.</p><button class="btn primary" type="button" disabled>Spotify ile giriş yap</button><p class="hint">Gömülü oynatıcı için hesap bağlantısı gerekmez; dinleme imkânını Spotify belirler.</p></div>';
       if (window.SpotifyPlayback) SpotifyPlayback.render();
       return;
     }
-    el.innerHTML = `<div class="sp-head"><span>👋 ${U.esc(st.user || 'Spotify')}</span>
+    const head = `<div class="sp-head"><span>👋 ${U.esc(st.user || 'Spotify')}</span>
         <span><button class="chip" data-sp="reload" type="button" aria-label="Spotify listelerini yenile" ${busy ? 'disabled' : ''}>${busy ? '…' : '↻'}</button> <button class="chip" data-sp="logout" type="button">Bağlantıyı kes</button></span></div>
-      ${!hasPlaybackAccess() ? '<button class="btn primary" data-sp="login" type="button">Müzik çalma izniyle yeniden bağlan</button>' : ''}
-      <h3 class="sub-h">Kütüphanemdeki listeler</h3><p class="hint">Spotify’da kaydettiğin ve oluşturduğun çalma listeleri burada. Listeye dokunarak seç; Luna oynatıcısı açıkken çalar.</p>
+      ${!hasPlaybackAccess() ? '<button class="btn primary" data-sp="login" type="button">Müzik çalma izniyle yeniden bağlan</button>' : ''}`;
+    const library = `<h3 class="sub-h">Kütüphanemdeki listeler</h3><p class="hint">Spotify’da kaydettiğin ve oluşturduğun çalma listeleri burada. Listeye dokunarak seç; Luna oynatıcısı açıkken çalar.</p>
       ${st.err ? `<p class="hint" role="status">${ERR[st.err]}</p>` : ''}
       ${st.lists.length ? `<div class="sp-lists">${st.lists.map((l) => `<button class="sp-item ${App.data().settings.spotify.includes(l.id) ? 'active' : ''}" data-sp="play" data-id="${U.esc(l.id)}" type="button">
           ${l.img ? `<img src="${U.esc(l.img)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="sp-noimg">🎵</span>'}
           <span class="sp-name">${U.esc(l.name)}</span><small>${l.n != null ? l.n + ' şarkı' : U.esc(l.owner || 'Kaydedilmiş liste')}</small></button>`).join('')}</div>`
         : `<p class="hint">${busy ? 'Listelerin yükleniyor…' : ERR[st.err] || 'Bu hesapta Spotify’dan gelen liste yok. Doğru hesapla giriş yaptığını kontrol et ve listeleri yenile.'}</p>`}
       ${st.next ? `<button class="btn soft" data-sp="more" type="button" ${busy ? 'disabled' : ''}>${busy ? 'Listeler yükleniyor…' : 'Daha fazla liste'}</button>` : ''}`;
+    if (lib && lib !== el) { el.innerHTML = head; lib.innerHTML = library; } else el.innerHTML = head + library;
     if (window.SpotifyPlayback) SpotifyPlayback.render();
   }
 
@@ -235,7 +239,7 @@ const SpotifyLink = (() => {
   function bind() {
     const el = document.getElementById('sp-account');
     if (!el) return;
-    el.addEventListener('click', (e) => {
+    const onClick = (e) => {
       const b = e.target.closest('[data-sp]');
       if (!b || b.tagName === 'INPUT') return;
       const act = b.dataset.sp;
@@ -253,9 +257,18 @@ const SpotifyLink = (() => {
       else if (act === 'more') refreshLists(true);
       else if (act === 'play') {
         App.playSpotify('https://open.spotify.com/playlist/' + b.dataset.id);
-        el.querySelectorAll('.sp-item').forEach((x) => x.classList.toggle('active', x === b));
+        (b.parentElement || el).querySelectorAll('.sp-item').forEach((x) => x.classList.toggle('active', x === b));
+        // oynatıcı listelerin üstünde: seçince ekranın yukarısında kaldıysa yumuşakça oraya kayar
+        const win = document.getElementById('sp-music-window');
+        if (win && !win.hidden && win.getBoundingClientRect && win.getBoundingClientRect().top < 0) {
+          const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+          win.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+        }
       }
-    });
+    };
+    el.addEventListener('click', onClick);
+    const lib = document.getElementById('sp-library');
+    if (lib && lib !== el) lib.addEventListener('click', onClick);
   }
 
   return {
