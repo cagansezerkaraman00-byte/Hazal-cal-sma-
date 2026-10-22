@@ -702,6 +702,7 @@ const Scene = (() => {
   let birds = null, nextBirds = U.rand(25, 70), butterflies = [], seasonT = 0, smokeT = 0, fireT = 3, flagT = 0;
   // ziyaretçi kediler
   let friends = [], nextVisit = U.rand(45, 110), onFriend = null, onFriendSeen = null, onFriendArrival = null;
+  let onStar = null, ourStar = null; // şiirdeki "o parlayan yıldız": gece evin üstünde parlar, dokununca şiir açılır
   let eveningVisitDay = ''; let bubbleSpeaker = 'luna';
 
   // ---------- Renk yardımcıları ----------
@@ -1007,6 +1008,8 @@ const Scene = (() => {
     // tepedeki küçük kulübe (gece penceresi yanar, kış/sonbahar akşamı bacası tüter)
     const hx0 = Math.round(W * 0.6);
     house = W > 120 ? { x: hx0, y: Math.min(hillFar[hx0], hillFar[Math.min(W - 1, hx0 + 11)]) - HOUSE.length + 2 } : null;
+    // küçük ekranda kulübe çizilmez: yıldız yine de gökte, aynı yerde parlar
+    ourStar = house ? { x: house.x + 6, y: Math.max(5, house.y - 13) } : { x: Math.round(W * 0.62), y: Math.max(5, Math.round(groundY * 0.3)) };
     butterflies = [0, 1, 2].map((i) => ({ x: r() * W, y: groundY - 10 - r() * 10, ph: r() * 6.28, c: i % 4, vx: 0 }));
     applyWeather();
   }
@@ -1364,6 +1367,22 @@ const Scene = (() => {
       ctx.globalAlpha = vis * tw;
       if (tw > 0.8) ctx.drawImage(SP.starBig, s.x - 2, s.y - 2);
       else ctx.drawImage(SP.star, s.x - 1, s.y - 1);
+    }
+    // bizim yıldızımız: evin üstünde, ötekilerden iri ve sıcak; yavaşça nefes alır gibi parlar
+    if (ourStar && onStar) {
+      const tw = 0.7 + 0.3 * Math.sin(time * 1.3), { x, y } = ourStar, arm = tw > 0.93 ? 4 : 3;
+      ctx.globalAlpha = vis * (0.12 + 0.12 * tw);
+      disc(ctx, x, y, 4, '#ffe08a');
+      ctx.fillStyle = '#ffd86b';
+      for (let i = 1; i <= arm; i++) {
+        ctx.globalAlpha = vis * (1 - i / (arm + 1));
+        ctx.fillRect(x - i, y, 1, 1); ctx.fillRect(x + i, y, 1, 1); ctx.fillRect(x, y - i, 1, 1); ctx.fillRect(x, y + i, 1, 1);
+      }
+      ctx.globalAlpha = vis * 0.55 * tw;
+      ctx.fillStyle = '#ff9bd8'; ctx.fillRect(x - 1, y - 1, 1, 1); ctx.fillRect(x + 1, y + 1, 1, 1);
+      ctx.fillStyle = '#9fe8ff'; ctx.fillRect(x + 1, y - 1, 1, 1); ctx.fillRect(x - 1, y + 1, 1, 1);
+      ctx.globalAlpha = vis;
+      ctx.fillStyle = '#fffbe6'; ctx.fillRect(x, y, 1, 1);
     }
     // kalp takımyıldızı
     ctx.globalAlpha = vis * 0.3;
@@ -2220,6 +2239,12 @@ const Scene = (() => {
       if (!play) startPlay();
       return;
     }
+    // gecenin parlayan yıldızı: şiiri açar
+    if (ourStar && onStar && night * starVis > 0.15 && Math.abs(x - ourStar.x) <= 6 && Math.abs(y - ourStar.y) <= 6) {
+      sparkles(ourStar.x, ourStar.y, 10);
+      onStar();
+      return;
+    }
     const g = lunaGeom();
     if (x >= g.left - 3 && x <= g.left + g.p.w + 3 && y >= g.top - 4 && y <= groundY + 3) {
       if (L.state === 'sleep') { L.state = 'happy'; L.wait = 3; L.nap = false; }
@@ -2244,6 +2269,7 @@ const Scene = (() => {
       onFriend = opts.onFriend || null;
       onFriendSeen = opts.onFriendSeen || null;
       onFriendArrival = opts.onFriendArrival || null;
+      onStar = opts.onStar || null;
       sprites();
       updateSun();
       resize();

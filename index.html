@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr" data-theme="light" data-surum="2.5">
+<html lang="tr" data-theme="light" data-surum="2.6">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -92,7 +92,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" media="print" onload="this.media='all'" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Pixelify+Sans:wght@500;600&family=Press+Start+2P&display=swap" rel="stylesheet" media="print" onload="this.media='all'" crossorigin="anonymous">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Luna">
   <meta property="og:description" content="Senin için hazırlandı 💜 Dokun ve yükle.">
@@ -101,8 +101,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css?v=2.5">
-  <script src="js/kurulum.js?v=2.5"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.6">
+  <script src="js/kurulum.js?v=2.6"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -200,6 +200,7 @@
             <button class="btn soft wide" id="btn-manual">＋ Çalışmamı elle ekle</button>
           </div>
           <div class="card love-card" id="love-card"></div>
+          <div class="card siir-card" id="siir-card" hidden></div>
           <div class="card mektup-card" id="mektup-card" hidden></div>
           <div class="card today-plan" id="today-plan"></div>
           <details class="card wide-card music-card" id="music-card">
@@ -501,8 +502,9 @@
               <button data-theme="light">🪻 Lavanta</button>
               <button data-theme="dark">🌙 Gece</button>
               <button data-theme="auto">🌗 Otomatik</button>
+              <button data-theme="zambak">🌺 Zambak</button>
             </div>
-            <p class="hint">Lavanta ve pembe tonları. Gece görünümünde fonda hafif yıldızlar; otomatik seçersen gün batımında geçiş yapar.</p>
+            <p class="hint">Lavanta ve pembe tonları. Gece görünümünde fonda hafif yıldızlar; otomatik seçersen gün batımında geçiş yapar. Zambak, şiirdeki gökkuşağı zambağın gecesi: lacivert gökyüzü, altın yazılar ve parıldayan yıldızlar.</p>
           </div>
           <div class="card">
             <h2>👤 Kişisel</h2>
@@ -663,38 +665,38 @@
   </div>
   <div class="toasts" id="toasts"></div>
   <div id="timer-end-alert" class="timer-end-alert" role="status" hidden><span id="timer-end-message"></span><button type="button" class="btn soft" id="dismiss-timer-alarm">Tamam</button></div>
-  <script src="js/storage.js?v=2.5"></script>
-  <script src="js/surum.js?v=2.5"></script>
-  <script src="js/messages.js?v=2.5"></script>
-  <script src="js/audio.js?v=2.5"></script>
-  <script src="js/takvim.js?v=2.5"></script>
-  <script src="js/scene.js?v=2.5"></script>
-  <script src="js/timer.js?v=2.5"></script>
-  <script src="js/stats.js?v=2.5"></script>
-  <script src="js/weather.js?v=2.5"></script>
-  <script src="js/yks.js?v=2.5"></script>
-  <script src="js/plan.js?v=2.5"></script>
-  <script src="js/planlar.js?v=2.5"></script>
-  <script src="js/planlar-ui.js?v=2.5"></script>
-  <script src="js/deneme.js?v=2.5"></script>
-  <script src="js/notes.js?v=2.5"></script>
-  <script src="js/giris.js?v=2.5"></script>
-  <script src="js/depo.js?v=2.5"></script>
-  <script src="js/depo-ui.js?v=2.5"></script>
-  <script src="js/hata.js?v=2.5"></script>
-  <script src="js/kaynak.js?v=2.5"></script>
-  <script src="js/kaynak-ui.js?v=2.5"></script>
-  <script src="js/badges.js?v=2.5"></script>
-  <script src="js/spotify-config.js?v=2.5"></script>
-  <script src="js/spotify-playback.js?v=2.5"></script>
-  <script src="js/spotify.js?v=2.5"></script>
-  <script src="js/uni.js?v=2.5"></script>
-  <script src="js/uni-ui.js?v=2.5"></script>
-  <script src="js/diag.js?v=2.5"></script>
-  <script src="js/guncelleme.js?v=2.5"></script>
-  <script src="js/notifications.js?v=2.5"></script>
-  <script src="js/mini-timer.js?v=2.5"></script>
-  <script src="js/app.js?v=2.5"></script>
+  <script src="js/storage.js?v=2.6"></script>
+  <script src="js/surum.js?v=2.6"></script>
+  <script src="js/messages.js?v=2.6"></script>
+  <script src="js/audio.js?v=2.6"></script>
+  <script src="js/takvim.js?v=2.6"></script>
+  <script src="js/scene.js?v=2.6"></script>
+  <script src="js/timer.js?v=2.6"></script>
+  <script src="js/stats.js?v=2.6"></script>
+  <script src="js/weather.js?v=2.6"></script>
+  <script src="js/yks.js?v=2.6"></script>
+  <script src="js/plan.js?v=2.6"></script>
+  <script src="js/planlar.js?v=2.6"></script>
+  <script src="js/planlar-ui.js?v=2.6"></script>
+  <script src="js/deneme.js?v=2.6"></script>
+  <script src="js/notes.js?v=2.6"></script>
+  <script src="js/giris.js?v=2.6"></script>
+  <script src="js/depo.js?v=2.6"></script>
+  <script src="js/depo-ui.js?v=2.6"></script>
+  <script src="js/hata.js?v=2.6"></script>
+  <script src="js/kaynak.js?v=2.6"></script>
+  <script src="js/kaynak-ui.js?v=2.6"></script>
+  <script src="js/badges.js?v=2.6"></script>
+  <script src="js/spotify-config.js?v=2.6"></script>
+  <script src="js/spotify-playback.js?v=2.6"></script>
+  <script src="js/spotify.js?v=2.6"></script>
+  <script src="js/uni.js?v=2.6"></script>
+  <script src="js/uni-ui.js?v=2.6"></script>
+  <script src="js/diag.js?v=2.6"></script>
+  <script src="js/guncelleme.js?v=2.6"></script>
+  <script src="js/notifications.js?v=2.6"></script>
+  <script src="js/mini-timer.js?v=2.6"></script>
+  <script src="js/app.js?v=2.6"></script>
 </body>
 </html>
 

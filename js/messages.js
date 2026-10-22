@@ -18,6 +18,19 @@ const Messages = (() => {
         'Kendine biraz iyi davran, olur mu Hazal? Bunu gerçekten hak ediyorsun.',
       ],
     },
+    // Eşeğin'den Hazal'a şiir (gökkuşağı zambaklı resmiyle; Çalış sekmesindeki kartta ve gece evin üstündeki yıldızda)
+    siir: {
+      satirlar: [
+        'Duvarları hasret kokar, çatısı sırf özlemden,',
+        'Bir yuva kurdum ikimize, canımdan ve gövdemden.',
+        'Sen o kapıdan girince, dinecek kalpteki sızı,',
+        'Aynı pencereden izleyeceğiz Hazal, o parlayan yıldızı.',
+      ],
+      imza: 'Eşeğin',
+      resim: 'assets/siir/zambak-siir.webp',
+      cicek: 'assets/siir/zambak.webp',
+      kucuk: 'assets/siir/zambak-kucuk.webp',
+    },
     checkIn: ["Nasılsın anneciğim? Bugün keyfin nasıl, anlat bakalım 🐾","{name}, bugün nasıl hissediyorsun? Önce bir halini hatırını sorayım dedim 💜","Hoş geldiiin anneciğim! Günün nasıl geçti? Biraz soluklan, sonra birlikte başlarız 🐱"],
     lowStudy: ["Bugün dersler biraz bekledi ama sorun değil 🐾 Küçücük bir adımla başlayabiliriz anneciğim.","{name}, kitaplar seni özledi 😽 Hadi yalnızca on dakika deneyelim.","Hıımm, dersler biraz yalnız kaldı bugün 🐾 Yorulduysan dinlen; hazırsan beraber kısa bir oturum yapalım."],
     focusNudge: ["Anneciğim, geri geldin! 🐾 Telefonu molaya bırakalım, şimdi derse dönelim.","{name}, patimi masaya koydum! 🐾 Şimdi bir tek şu soruya odaklanalım.","Patimi masaya vurdum 😼 Konumuz yarım kalmasın, kaldığımız yerden devam!"],
@@ -459,7 +472,7 @@ const Messages = (() => {
   }
 
   return {
-    companionState, mood, departure, delivery, nightKey, planComment, PLAN_EOD, mektup: M.mektup,
+    companionState, mood, departure, delivery, nightKey, planComment, PLAN_EOD, mektup: M.mektup, siir: M.siir,
     get(kind, vars) {
       const arr = M[kind] || M.poke;
       const state = companionState();

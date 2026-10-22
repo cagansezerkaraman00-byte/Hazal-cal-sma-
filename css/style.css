@@ -2027,3 +2027,123 @@ body.focusing #countdown-error { display: none; }
 .sp-premium-cover{position:absolute;left:24px;top:24px;width:140px;height:140px;border-radius:14px;overflow:hidden;background:var(--surface);display:grid;place-items:center;color:var(--accent);font-size:64px}
 .sp-premium-cover img{width:100%;height:100%;object-fit:cover}
 @media(max-width:540px){.sp-music-window .sp-live-player{padding:20px 16px}.sp-premium-cover{position:static;width:88px;height:88px;margin-bottom:14px}.sp-music-window .sp-song-list{padding:14px 12px}}
+
+/* ======================================================================
+   Eşeğin'den şiir: gökkuşağı zambak kartı, gece penceresi ve Zambak teması
+   ====================================================================== */
+:root {
+  --siir-yildiz: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='160'%3E%3Cpath fill='%23ffd86b' d='M30 18Q30 25 37 25Q30 25 30 32Q30 25 23 25Q30 25 30 18ZM176 112Q176 117 181 117Q176 117 176 122Q176 117 171 117Q176 117 176 112Z'/%3E%3Cpath fill='%23ff8fe0' d='M128 30Q128 34 132 34Q128 34 128 38Q128 34 124 34Q128 34 128 30ZM58 128Q58 131 61 131Q58 131 58 134Q58 131 55 131Q58 131 58 128Z'/%3E%3Cpath fill='%2390e8ff' d='M200 46Q200 49 203 49Q200 49 200 52Q200 49 197 49Q200 49 200 46ZM96 92Q96 95 99 95Q96 95 96 98Q96 95 93 95Q96 95 96 92Z'/%3E%3Cg fill='%23ffffffaa'%3E%3Ccircle cx='80' cy='14' r='1.1'/%3E%3Ccircle cx='150' cy='70' r='1'/%3E%3Ccircle cx='14' cy='88' r='1.2'/%3E%3Ccircle cx='210' cy='140' r='1'/%3E%3Ccircle cx='120' cy='150' r='1.1'/%3E%3C/g%3E%3C/svg%3E");
+  --zambak-grad: linear-gradient(90deg, #ff5f57, #ffa047, #ffd85c, #ff6fd0, #a768ff, #4fb0ff);
+}
+/* Çalış ekranındaki kart: hangi tema seçilirse seçilsin küçük bir gece penceresi */
+.siir-card {
+  align-self: start; position: relative; overflow: hidden; isolation: isolate;
+  background: radial-gradient(120% 150% at 88% 35%, #16265a 0%, #0a1536 52%, #050c22 100%);
+  border-color: #26346a; color: #fdf3d6;
+}
+.siir-card::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image: var(--siir-yildiz); background-size: 220px 160px;
+  animation: siir-parilti 4.5s ease-in-out infinite;
+}
+.siir-card h2 { color: #f8db8f; text-shadow: 0 0 12px rgba(255, 207, 107, .45); }
+.siir-card p { color: #d8d3f3; margin: 0; }
+.siir-card.yeni { box-shadow: 0 0 0 2px rgba(255, 216, 107, .6), 0 16px 30px -16px rgba(255, 111, 208, .65); }
+.siir-card.yeni h2::after { content: ' •'; color: #ff8fe0; }
+.siir-kart-ic { display: flex; align-items: center; gap: 12px; }
+.siir-kart-yazi { flex: 1; min-width: 0; }
+.siir-kart-resim {
+  width: 108px; height: auto; flex: none; border-radius: 16px;
+  -webkit-mask-image: radial-gradient(closest-side, #000 72%, transparent 100%); mask-image: radial-gradient(closest-side, #000 72%, transparent 100%);
+  animation: siir-salin 6s ease-in-out infinite;
+}
+.siir-card .siir-ac { margin-top: 12px; }
+.btn.primary.siir-ac, .siir-gece .btn.primary {
+  background: var(--zambak-grad); color: #1b1036; border-color: transparent; box-shadow: 0 3px 0 #7a3a7a, 0 0 18px -4px rgba(255, 111, 208, .7);
+}
+@keyframes siir-parilti { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@keyframes siir-salin { 0%, 100% { transform: rotate(-2deg) translateY(0); } 50% { transform: rotate(2deg) translateY(-3px); } }
+
+/* Tam ekran gece: yıldızlar yanar, zambak açar, şiir kelime kelime belirir */
+body.siir-acik { overflow: hidden; }
+.siir-gece {
+  position: fixed; inset: 0; z-index: 2000; overflow: hidden; outline: none;
+  display: flex; flex-direction: column; align-items: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(14px, env(safe-area-inset-bottom));
+  background: radial-gradient(130% 90% at 50% 72%, #112150 0%, #071433 45%, #020a1c 100%);
+  color: #fbe7ae; animation: sg-gir .7s ease both;
+}
+.siir-gece.kapaniyor { animation: sg-cik .35s ease both; }
+.sg-gok { position: absolute; inset: 0; pointer-events: none; }
+.sg-yildiz { position: absolute; width: 9px; height: 9px; opacity: 0; transform: translate(-50%, -50%) scale(.6); animation: sg-yildiz var(--s) ease-in-out var(--g) infinite; }
+.sg-yildiz.iri { width: 17px; height: 17px; }
+.sg-yildiz::before, .sg-yildiz::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: var(--c); box-shadow: 0 0 6px var(--c), 0 0 12px var(--c); border-radius: 2px; }
+.sg-yildiz::before { width: 100%; height: 2px; }
+.sg-yildiz::after { width: 2px; height: 100%; }
+.sg-x {
+  position: absolute; top: max(10px, env(safe-area-inset-top)); right: 10px; z-index: 3;
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 231, 174, .35);
+  background: rgba(5, 12, 34, .55); color: #fbe7ae; font-size: 18px; line-height: 1; cursor: pointer;
+}
+.sg-sahne { position: relative; z-index: 1; width: min(600px, 100%); flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 34px; }
+.sg-siir {
+  width: 100%; text-align: center;
+  font-family: 'Pixelify Sans', var(--font); font-weight: 600; font-size: clamp(15px, 4.2vw, 22px); line-height: 1.42;
+  color: #fde9b0; text-shadow: 0 0 2px rgba(255, 236, 190, .9), 0 0 12px rgba(255, 205, 100, .55);
+}
+.sg-satir { margin: 0 0 7px; text-wrap: balance; }
+.sg-satir span, .sg-imza { display: inline-block; opacity: 0; transform: translateY(7px); filter: blur(3px); animation: sg-kelime .8s ease forwards var(--d); }
+.sg-imza { display: block; text-align: right; margin: 6px 4px 0; font-size: 1.1em; color: #ffe39a; }
+.sg-cicek-kutu { flex: 1; min-height: 120px; width: 100%; display: flex; justify-content: center; align-items: center; animation: sg-nefes 6s ease-in-out 3s infinite; }
+.sg-cicek {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  opacity: 0; transform: scale(.78) translateY(18px); filter: blur(5px) saturate(.5) brightness(.7);
+  animation: sg-acil 2.4s cubic-bezier(.2, .8, .2, 1) .4s forwards;
+  -webkit-mask-image: radial-gradient(closest-side, #000 78%, transparent 100%); mask-image: radial-gradient(closest-side, #000 78%, transparent 100%);
+}
+.sg-alt { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding-top: 10px; opacity: 0; animation: sg-kelime .7s ease forwards var(--d); }
+.sg-alt .btn.soft { background: rgba(255, 255, 255, .08); color: #fbe7ae; border: 1px solid rgba(255, 231, 174, .28); box-shadow: none; }
+.sg-tam {
+  position: absolute; inset: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  padding: max(16px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)); background: rgba(2, 8, 24, .97); animation: sg-gir .35s ease both;
+}
+.sg-tam img { max-width: 100%; max-height: calc(100% - 76px); border-radius: 14px; box-shadow: 0 0 0 1px rgba(255, 231, 174, .2), 0 20px 50px -20px #000; }
+.sg-tam .sg-tam-alt { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.sg-tam a.btn { text-decoration: none; }
+@keyframes sg-gir { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sg-cik { to { opacity: 0; } }
+@keyframes sg-yildiz { 0%, 100% { opacity: .12; transform: translate(-50%, -50%) scale(.55); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes sg-kelime { to { opacity: 1; transform: none; filter: none; } }
+@keyframes sg-acil { to { opacity: 1; transform: none; filter: none; } }
+@keyframes sg-nefes { 0%, 100% { filter: drop-shadow(0 0 0 rgba(255, 120, 210, 0)); } 50% { filter: drop-shadow(0 0 20px rgba(255, 120, 210, .4)); } }
+@media (prefers-reduced-motion: reduce) {
+  .siir-card::before, .siir-kart-resim, .sg-yildiz, .sg-cicek-kutu { animation: none; }
+  .sg-yildiz { opacity: .8; transform: translate(-50%, -50%); }
+  .sg-satir span, .sg-imza, .sg-alt, .sg-cicek { animation: none; opacity: 1; transform: none; filter: none; }
+}
+
+/* Zambak teması: şiirdeki gecenin renkleri (lacivert gök, altın yazı, gökkuşağı zambak) */
+:root[data-tema="zambak"] {
+  --bg: #050d24; --bg-top: #08163a; --bg-bottom: #070a22;
+  --stars: var(--siir-yildiz); --stars-opacity: .8;
+  --surface: #0d1a3e; --surface-2: #12224c; --surface-3: #192b5a; --surface-3h: #213668;
+  --input-bg: #0a1533; --input-line: #2f4382; --line: #1e2f63; --line-strong: #2f4483; --track: #1b2a59;
+  --text: #fdf6e4; --muted: #c4c4e8; --faint: #56629c;
+  --accent: #ffd56b; --accent-grad: var(--zambak-grad); --accent-edge: #7a3a7a; --on-accent: #1b1036;
+  --accent-ink: #ffdb8c; --accent-soft: rgba(255, 213, 107, .12); --accent-line: rgba(255, 213, 107, .45);
+  --ring: #ffd56b; --gold2: #ff8fd8; --focus: #ffd56b;
+  --pink: #ff7fd0; --pink-ink: #ffa3e0; --pink-soft: rgba(255, 127, 208, .14);
+  --lav: #ad7bff; --lav-ink: #cdb0ff; --lav-soft: rgba(173, 123, 255, .16);
+  --blue: #64c0ff; --blue-ink: #9ad6ff; --blue-soft: rgba(100, 192, 255, .13);
+  --tabbar-bg: rgba(7, 15, 42, .97); --chart-grid: rgba(255, 255, 255, .08);
+  --bar-grad: linear-gradient(180deg, #ffd85c, #ff6fd0 55%, #4fb0ff);
+  --welcome-bg: linear-gradient(135deg, #17215a 0%, #2a1752 52%, #0e2b5c 100%); --welcome-line: #34408a;
+  --love-bg: linear-gradient(135deg, #1b1f55, #3a1748); --love-line: rgba(255, 127, 208, .35);
+  --hud-bg: rgba(5, 12, 34, .6); --hud-bg-strong: rgba(5, 12, 34, .84);
+  --overlay: rgba(2, 7, 22, .82);
+}
+:root[data-tema="zambak"] body::after { background: #050d24; }
+:root[data-tema="zambak"] body::before { background-size: 220px 160px; }
+:root[data-tema="zambak"] .card > h2, :root[data-tema="zambak"] .card > summary { color: #f8db8f; }
+:root[data-tema="zambak"] .goal-ring:not(.done) { background: conic-gradient(from 0deg, #ff5f57, #ffa047, #ffd85c, #ff6fd0, #a768ff, #4fb0ff calc(var(--p) * 1%), var(--track) 0); }
+:root[data-tema="zambak"] .seg button.active { background: var(--surface-3h); box-shadow: inset 0 0 0 1px var(--accent-line); }

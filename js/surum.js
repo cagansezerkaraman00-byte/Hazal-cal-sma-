@@ -6,6 +6,17 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.6",
+  "tarih": "2026-10-22",
+  "baslik": "Sana bir şiir ve Zambak teması",
+  "notlar": [
+    "🌸 Eşeğin sana bir şiir bıraktı 💜 İlk açılışta kendiliğinden gelir; sonra Çalış ekranındaki 'Şiiri aç' ile istediğin zaman yeniden okuyabilirsin.",
+    "⭐ Geceleri sahnedeki evin üstünde altın renkli bir yıldız parlıyor. O sizin yıldızınız: dokununca şiir yeniden açılır.",
+    "🌺 Ayarlar → Görünüm'e yeni bir tema geldi: Zambak. Lacivert gökyüzü, altın başlıklar ve gökkuşağı renkli düğmeler.",
+    "🖼️ Şiirdeki resmin tamamını açabilirsin; telefonuna kaydetmek için 'Telefona kaydet'e dokun ya da resme basılı tut."
+  ]
+},
+{
   "surum": "2.5",
   "tarih": "2026-10-14",
   "baslik": "Sana bir mektup ve birçok küçük düzeltme",

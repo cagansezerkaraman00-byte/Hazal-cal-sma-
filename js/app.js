@@ -97,13 +97,15 @@
   // Tema (açık / koyu / gün batımında otomatik)
   // ======================================================================
   function applyTheme() {
-    const t = D().settings.theme;
-    const dark = t === 'dark' || (t === 'auto' && Scene.sunInfo().elev < -4);
-    const v = dark ? 'dark' : 'light';
-    if (document.documentElement.dataset.theme === v) return;
-    document.documentElement.dataset.theme = v;
+    const t = D().settings.theme, root = document.documentElement;
+    const zambak = t === 'zambak'; // şiirdeki gece: koyu temanın üstüne kendi renkleri
+    const dark = zambak || t === 'dark' || (t === 'auto' && Scene.sunInfo().elev < -4);
+    const v = dark ? 'dark' : 'light', tema = zambak ? 'zambak' : '';
+    if (root.dataset.theme === v && (root.dataset.tema || '') === tema) return;
+    root.dataset.theme = v;
+    if (tema) root.dataset.tema = tema; else delete root.dataset.tema;
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = dark ? '#21182f' : '#f3ecfb';
+    if (meta) meta.content = zambak ? '#050d24' : dark ? '#21182f' : '#f3ecfb';
   }
   // ======================================================================
   // Hava durumu
@@ -790,6 +792,123 @@
     try { localStorage.setItem(MEKTUP_KEY, '1'); } catch (e) { /* özel sekme */ }
     renderMektup();
   }
+  // ======================================================================
+  // Eşeğin'den şiir: gökkuşağı zambak + gece gökyüzünde kelime kelime açılan şiir
+  // ======================================================================
+  const SIIR_KEY = 'luna-siir-okundu', SIIR_SURPRIZ = 'luna-siir-gosterildi';
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* özel sekme */ } };
+  let siirEl = null, siirOnceki = null, siirIlk = false;
+  function renderSiir() {
+    const el = $('#siir-card'), m = typeof Messages !== 'undefined' && Messages.siir;
+    if (!el) return;
+    if (!m) { el.hidden = true; return; }
+    el.hidden = false;
+    const okundu = lsGet(SIIR_KEY) === '1';
+    el.classList.toggle('yeni', !okundu);
+    el.innerHTML = `<div class="siir-kart-ic">
+        <div class="siir-kart-yazi">
+          <h2>🌸 ${okundu ? 'Şiirin' : 'Sana bir şiir var'}</h2>
+          <p class="small">${okundu ? 'Geceleri sahnedeki evin üstünde parlayan yıldıza dokunursan da açılır.' : `${U.esc(m.imza)} bıraktı, yalnızca sana. Hazır olduğunda aç.`}</p>
+          <button class="btn primary siir-ac" type="button" id="siir-ac">Şiiri aç ✨</button>
+        </div>
+        <img class="siir-kart-resim" src="${m.kucuk}" alt="" width="108" height="105" decoding="async">
+      </div>`;
+    $('#siir-ac').addEventListener('click', () => openSiir());
+  }
+  function siirTus(e) {
+    if (!siirEl) return;
+    if (e.key === 'Escape') { e.preventDefault(); const tam = siirEl.querySelector('.sg-tam'); if (tam) tam.remove(); else closeSiir(); }
+  }
+  function openSiir() {
+    const m = typeof Messages !== 'undefined' && Messages.siir;
+    if (!m) return;
+    if (siirEl) closeSiir(true);
+    const cols = ['#ffe27a', '#ffd06b', '#ff9bd8', '#9fe8ff', '#c9a6ff', '#ffffff'];
+    let gok = '';
+    for (let i = 0; i < 48; i++) {
+      gok += `<i class="sg-yildiz${i % 5 === 0 ? ' iri' : ''}" style="left:${(Math.random() * 100).toFixed(1)}%;top:${(Math.random() * 100).toFixed(1)}%;--c:${cols[i % cols.length]};--g:${(Math.random() * 3).toFixed(2)}s;--s:${(2.2 + Math.random() * 2.8).toFixed(2)}s"></i>`;
+    }
+    // her kelime sırayla belirir; satır sonlarında kısa bir nefes
+    let d = 1.8;
+    const satirlar = m.satirlar.map((line) => {
+      const ws = line.split(' ').map((w) => { const h = `<span style="--d:${d.toFixed(2)}s">${U.esc(w)}</span>`; d += 0.2; return h; });
+      d += 0.6;
+      return `<p class="sg-satir">${ws.join(' ')}</p>`;
+    }).join('');
+    const imzaD = d + 0.2, altD = imzaD + 1.1;
+    siirOnceki = document.activeElement;
+    siirEl = document.createElement('div');
+    siirEl.className = 'siir-gece';
+    siirEl.setAttribute('role', 'dialog');
+    siirEl.setAttribute('aria-modal', 'true');
+    siirEl.setAttribute('aria-label', `${m.imza}'den şiir`);
+    siirEl.tabIndex = -1;
+    siirEl.innerHTML = `<div class="sg-gok" aria-hidden="true">${gok}</div>
+      <button class="sg-x" type="button" data-act="kapat" aria-label="Kapat">✕</button>
+      <div class="sg-sahne">
+        <div class="sg-siir">${satirlar}<p class="sg-imza" style="--d:${imzaD.toFixed(2)}s">-${U.esc(m.imza)}</p></div>
+        <div class="sg-cicek-kutu"><img class="sg-cicek" src="${m.cicek}" alt="Gökkuşağı renklerinde açmış bir zambak"></div>
+      </div>
+      <div class="sg-alt" style="--d:${altD.toFixed(2)}s">
+        <button class="btn soft" type="button" data-act="tam">🖼️ Resmin tamamı</button>
+        <button class="btn soft" type="button" data-act="tekrar">✨ Baştan</button>
+        <button class="btn primary" type="button" data-act="kapat">Kapat</button>
+      </div>`;
+    siirEl.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-act]');
+      if (!b || !siirEl) return;
+      const act = b.dataset.act;
+      if (act === 'kapat') closeSiir();
+      else if (act === 'tekrar') openSiir();
+      else if (act === 'geri') { const tam = siirEl.querySelector('.sg-tam'); if (tam) tam.remove(); }
+      else if (act === 'tam' && !siirEl.querySelector('.sg-tam')) {
+        const tam = document.createElement('div');
+        tam.className = 'sg-tam';
+        tam.innerHTML = `<img src="${m.resim}" alt="Şiir ve gökkuşağı zambak">
+          <div class="sg-tam-alt">
+            <a class="btn soft" href="${m.resim}" download="zambak-siir.webp">⬇️ Telefona kaydet</a>
+            <button class="btn primary" type="button" data-act="geri">Geri</button>
+          </div>`;
+        siirEl.appendChild(tam);
+      }
+    });
+    document.body.appendChild(siirEl);
+    document.body.classList.add('siir-acik');
+    document.addEventListener('keydown', siirTus);
+    try { siirEl.focus({ preventScroll: true }); } catch (e) { /* eski tarayıcı */ }
+    siirIlk = lsGet(SIIR_KEY) !== '1';
+    lsSet(SIIR_KEY, '1');
+    renderSiir();
+  }
+  function closeSiir(hemen) {
+    if (!siirEl) return;
+    const el = siirEl;
+    siirEl = null;
+    document.removeEventListener('keydown', siirTus);
+    document.body.classList.remove('siir-acik');
+    if (hemen) el.remove();
+    else { el.classList.add('kapaniyor'); setTimeout(() => el.remove(), 360); }
+    if (!hemen && siirOnceki && siirOnceki.focus) { try { siirOnceki.focus({ preventScroll: true }); } catch (e) { /* yok say */ } }
+    // ilk okumadan sonra Luna da bir şey söyler
+    if (!hemen && siirIlk) {
+      siirIlk = false;
+      setTimeout(() => {
+        if (App.isFocusing() || siirEl) return;
+        Scene.say('Bu şiiri sana Eşeğin yazdı anneciğim 💜 Geceleri evin üstündeki o parlayan yıldız da artık sizin.', { emotion: 'tender', ms: 9000 });
+        lastMsgAt = Date.now();
+      }, 900);
+    }
+  }
+  // İlk açılışta bir kez kendiliğinden açılır (hediye gibi); o an ders sürüyorsa ya da bir pencere açıksa bekler
+  let siirDeneme = 0;
+  function siirSurpriz() {
+    if (!(typeof Messages !== 'undefined' && Messages.siir) || lsGet(SIIR_KEY) === '1' || lsGet(SIIR_SURPRIZ) === '1') return;
+    const mesgul = App.isFocusing() || !$('#modal').classList.contains('hidden') || siirEl || document.hidden;
+    if (mesgul) { if (++siirDeneme < 2400) setTimeout(siirSurpriz, 1500); return; } // "Luna güncellendi" kapanınca hemen gelsin; uzun bir odak oturumunda da vazgeçmesin
+    lsSet(SIIR_SURPRIZ, '1');
+    openSiir();
+  }
   function renderHome() {
     const goal = D().settings.dailyGoal;
     const mins = Stats.minutesOn(new Date());
@@ -823,6 +942,7 @@
         <div class="progress"><i style="width:${pct}%"></i></div>`;
     }
     renderMektup();
+    renderSiir();
     renderWelcome(mins, pct);
     const tp = $('#today-plan');
     // plan kartındaki bir hata ana sayfayı (ve açılışı) bozmasın: kart sade bir notla kalır, kayıtlar yerinde
@@ -1689,6 +1809,7 @@
     try { if (!localStorage.getItem('luna-temizlik-1')) { localStorage.removeItem('luna-sync-on'); if (window.indexedDB) indexedDB.deleteDatabase('luna-sync'); localStorage.setItem('luna-temizlik-1', '1'); } } catch (e) { /* yok say */ }
     safe('Sahne', () => Scene.init($('#sky'), $('#bubble'), {
       onPoke() { Sound.meow(); say('poke'); },
+      onStar() { openSiir(); },
       onFriend(kind) { Sound.meow(); say(friendLine(kind)); },
       onFriendArrival(kind) {
         // gelişte konuşma: Luna'nın konuşma sıklığı 0 ise hiç, değilse her kedi gecede bir kez
@@ -1842,6 +1963,7 @@
     safe('Bildirimler', () => LunaNotify.init(App));
     safe('Mini sayaç', () => MiniTimer.init(App,()=>weatherNow));
     if (window.Guncelleme) safe('Güncelleme', () => Guncelleme.init(App)); // güncellemeler, yenilikler ve ana ekrana ekleme
+    setTimeout(siirSurpriz, 2400); // şiir: ilk açılışta bir kez kendiliğinden
     // ana ekrana eklenmiş uygulamada tarayıcıdan verilerin kalıcı saklanmasını iste (izin penceresi çıkmaz)
     if (navigator.storage && navigator.storage.persist && (matchMedia('(display-mode: standalone)').matches || navigator.standalone)) {
       navigator.storage.persisted().then((p) => p || navigator.storage.persist()).catch(() => {});
