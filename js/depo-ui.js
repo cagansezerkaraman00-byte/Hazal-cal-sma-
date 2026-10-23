@@ -273,7 +273,7 @@ const DepoUI = (() => {
     const card = App.openModal(`
       <h3>✏️ Dosyayı düzenle</h3>
       <label>Ad</label><input data-f="name" maxlength="120" value="${U.esc(item.name)}">
-      <label>Ders</label><select data-f="subject">${D().subjects.map((s) => `<option value="${s.id}" ${s.id === item.subjectId ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')}<option value="" ${!item.subjectId ? 'selected' : ''}>Genel</option></select>
+      <label>Ders</label><select data-f="subject">${item.subjectId && !D().subjects.some((s) => s.id === item.subjectId) ? `<option value="${U.esc(item.subjectId)}" selected>${U.esc(Store.subject(item.subjectId).name)}</option>` : ''}${D().subjects.map((s) => `<option value="${s.id}" ${s.id === item.subjectId ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')}<option value="" ${!item.subjectId ? 'selected' : ''}>Genel</option></select>
       <label>Tür</label><div class="chips">${Object.keys(K()).map((k) => `<button type="button" class="chip ${k === chosenKind ? 'active' : ''}" data-kind="${k}">${K()[k][0]} ${K()[k][1]}</button>`).join('')}</div>
       <label>Not</label><input data-f="note" maxlength="200" value="${U.esc(item.note || '')}">
       <p class="muted small">${Depo.fmtSize(item.size || 0)} · ${new Date(item.created).toLocaleString('tr-TR')} · ${item.src === 'drive' ? '☁️ Google Drive' : '📱 Bu cihazda'}</p>
@@ -380,7 +380,7 @@ const DepoUI = (() => {
   }
 
   async function syncNow(manual) {
-    if (!Depo.driveReady()) return;
+    if (!Depo.driveReady() || progress) return; // yükleme / taşıma sürerken eşitleme beklesin
     if (!Depo.hasToken()) { // oturum ekran çizildikten sonra dolmuş olabilir: sessizce hiçbir şey yapmasın
       if (manual) App.toast('☁️', 'Drive bağlantısı yenilenmeli', 'Kütüphane’deki "Drive bağlantısını yenile"ye dokun');
       render();
@@ -396,6 +396,7 @@ const DepoUI = (() => {
   }
 
   return {
+    busy() { return progress !== null; }, // yükleme ya da Drive'a taşıma sürüyor (güncelleme bu arada sayfayı yenilemesin)
     init(app) {
       App = app;
       Depo.setApp(app);

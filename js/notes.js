@@ -146,7 +146,7 @@ const NotesUI = (() => {
     card.addEventListener('click', (e) => {
       const act = e.target.closest('button') && e.target.closest('button').dataset.act;
       if (act === 'cancel') { setDraft(null); App.closeModal(); render(); }
-      if (act === 'del' && confirm('Bu not silinsin mi?')) { D().notes = D().notes.filter((x) => x.id !== n.id); done(); }
+      if (act === 'del' && confirm('Bu not silinsin mi?')) { D().notes = D().notes.filter((x) => x.id !== n.id); Store.forget(n.id); done(); }
       if (act === 'save') {
         const title = card.querySelector('[data-f="title"]').value.trim().slice(0, 80);
         const body = card.querySelector('[data-f="body"]').value.slice(0, 20000);
@@ -176,7 +176,7 @@ const NotesUI = (() => {
     card.addEventListener('click', (e) => {
       const act = e.target.closest('button') && e.target.closest('button').dataset.act;
       if (act === 'cancel') { App.closeModal(); render(); }
-      if (act === 'del' && confirm('Bu kart silinsin mi?')) { D().cards = D().cards.filter((x) => x.id !== c.id); App.save(); App.closeModal(); render(); }
+      if (act === 'del' && confirm('Bu kart silinsin mi?')) { D().cards = D().cards.filter((x) => x.id !== c.id); Store.forget(c.id); App.save(); App.closeModal(); render(); }
       if (act === 'save' || act === 'save-more') {
         const front = card.querySelector('[data-f="front"]').value.trim();
         const back = card.querySelector('[data-f="back"]').value.trim();

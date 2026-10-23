@@ -6,6 +6,20 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.6.3",
+  "tarih": "2026-10-23",
+  "baslik": "Daha sağlam Luna",
+  "notlar": [
+    "📅 Gece duraklatıp sabah devam ettiğin oturum artık ikiye ayrılıyor: dünkü kısım düne, bugünkü kısım bugüne yazılıyor; bugünün hedefi doğru doluyor.",
+    "🔔 Luna arka planda kapanıp yeniden açılsa da süre bitince alarm sesi çalar; ekrana bir kez dokunman yeter.",
+    "🎯 Sıfırladığın oturumun hedefi bir sonraki oturuma taşınmıyor, başka bir plan maddesi yanlışlıkla işaretlenmiyor.",
+    "🔄 Yedekleri birleştirirken sildiğin kayıtlar geri gelmiyor; başka cihazda düzelttiğin oturum yeni hâliyle geliyor.",
+    "📚 Silinmiş ya da öbür moddaki bir derse ait oturum, kaynak ve dosya düzenlenince başka derse kaymıyor; alan seçerken kullandığın dersler silinmiyor.",
+    "☁️ Dosya yüklerken, kamera ya da dosya seçici açıkken güncelleme sayfayı yenilemiyor; Drive eşitlemesi yeni yüklenen dosyayı silmiyor.",
+    "🗓️ Ana ekrandaki plan 8 maddeden uzunsa kalanlara bağlantı var; hata defterinde öğrenilen soru sayısı doğru sayılıyor; rehberdeki müzik anlatımı güncellendi."
+  ]
+},
+{
   "surum": "2.6.2",
   "tarih": "2026-10-23",
   "baslik": "Müzikte oynatıcı yukarıda",

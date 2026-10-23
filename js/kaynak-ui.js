@@ -85,7 +85,7 @@ const KaynakUI = (() => {
       <div class="row2" data-show="book"><label class="field">Baskı <input data-f="edition" inputmode="numeric" value="${U.esc(r.edition || '')}" placeholder="ör. 14"></label><label class="field">Şehir <input data-f="city" value="${U.esc(r.city || '')}"></label></div>
       <div class="row2" data-show="web"><label class="field">Sayfa tarihi <input type="date" data-f="date" value="${U.esc(r.date || '')}"></label><label class="field">Erişim tarihi <input type="date" data-f="accessed" value="${U.esc(r.accessed || '')}"></label></div>
       <div class="row2"><label class="field">DOI <input data-f="doi" value="${U.esc(r.doi)}" placeholder="10.…"></label><label class="field">Bağlantı <input data-f="url" value="${U.esc(r.url)}" placeholder="https://…"></label></div>
-      <label>Ders</label><select data-f="subject">${D().subjects.map((s) => `<option value="${s.id}" ${s.id === subj ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')}<option value="" ${!subj ? 'selected' : ''}>Genel</option></select>
+      <label>Ders</label><select data-f="subject">${subj && !D().subjects.some((s) => s.id === subj) ? `<option value="${U.esc(subj)}" selected>${U.esc(Store.subject(subj).name)}</option>` : ''}${D().subjects.map((s) => `<option value="${s.id}" ${s.id === subj ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')}<option value="" ${!subj ? 'selected' : ''}>Genel</option></select>
       <div class="modal-actions">${isNew ? '' : '<button class="btn danger" data-act="del" type="button">Sil</button><span style="flex:1"></span>'}<button class="btn soft" data-act="cancel" type="button">Vazgeç</button><button class="btn primary" data-act="save" type="button">Kaydet</button></div>`);
     let type = r.type;
     const sync = () => card.querySelectorAll('[data-show]').forEach((el) => el.classList.toggle('hidden', !el.dataset.show.split(' ').includes(type)));
@@ -95,7 +95,7 @@ const KaynakUI = (() => {
       if (tb) { type = tb.dataset.type; card.querySelectorAll('[data-type]').forEach((b) => b.classList.toggle('active', b === tb)); sync(); return; }
       const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
       if (act === 'cancel') App.closeModal();
-      if (act === 'del' && confirm('Bu kaynak silinsin mi?')) { D().refs = D().refs.filter((x) => x.id !== target.id); App.save(); App.closeModal(); render(); }
+      if (act === 'del' && confirm('Bu kaynak silinsin mi?')) { D().refs = D().refs.filter((x) => x.id !== target.id); Store.forget(target.id); App.save(); App.closeModal(); render(); }
       if (act !== 'save') return;
       const v = (f) => (card.querySelector(`[data-f="${f}"]`) || {}).value || '';
       const title = v('title').trim();

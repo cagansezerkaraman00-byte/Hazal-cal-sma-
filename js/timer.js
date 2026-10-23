@@ -89,6 +89,18 @@ const Timer = (() => {
     if (kind === 'pomodoro' && st().phase !== 'focus') h.onBreakStart && h.onBreakStart(st().running);
   }
 
+  const dayOf = (t) => new Date(t).toDateString(); // yerel takvim günü
+  // Dün (ya da daha önce) duraklatılmış oturuma bugün devam edilirse: çalışılan kısım duraklatıldığı güne kaydedilir,
+  // devamı bugün aynı ders ve hedefle, kalan süreyle yeni oturum olarak başlar (bugünün dakikaları bugüne yazılır).
+  function splitAtPause() {
+    const x = st(), left = countdown() ? Math.max(1, Math.round(duration() - x.accum / 1000)) : null;
+    const carry = { intent: x.intent, exam: x.exam };
+    finishFocus(x.accum / 1000, x.pausedAt, 'split');
+    const nx = st();
+    nx.intent = carry.intent;
+    if (left) { nx.targetSeconds = Math.min(86399, left); nx.exam = carry.exam; }
+  }
+
   function finishBreak(endTime) {
     const x = st();
     Store.data.timer = fresh(x.kind, { cycle: x.phase === 'long' ? 0 : x.cycle, subjectId: x.subjectId });
@@ -154,9 +166,10 @@ const Timer = (() => {
         persist();
         h.onPause && h.onPause();
       } else {
-        const resumed = x.accum > 0;
+        if (x.phase === 'focus' && x.pausedAt && x.accum >= 60000 && dayOf(x.pausedAt) !== dayOf(Date.now())) splitAtPause();
+        const resumed = st().accum > 0;
         startPhase();
-        h.onStart && h.onStart(x.phase, resumed);
+        h.onStart && h.onStart(st().phase, resumed);
       }
       tick();
     },
@@ -209,7 +222,7 @@ const Timer = (() => {
     reset() {
       rememberContinuous();
       const x = st();
-      Store.data.timer = fresh(x.kind, { cycle: x.cycle, subjectId: x.subjectId, intent: x.intent, exam: x.exam });
+      Store.data.timer = fresh(x.kind, { cycle: x.cycle, subjectId: x.subjectId, exam: x.exam }); // hedef taşınmaz: yoksa sonraki alakasız oturum eski plan maddesini işaretler
       persist();
       h.onReset && h.onReset();
       tick();
@@ -219,7 +232,7 @@ const Timer = (() => {
       if (exam != null && (kind !== 'countdown' || !Object.hasOwn(EXAM_MINUTES, exam))) return;
       rememberContinuous();
       const x = st();
-      Store.data.timer = fresh(kind, { subjectId: x.subjectId, intent: x.intent, exam });
+      Store.data.timer = fresh(kind, { subjectId: x.subjectId, exam });
       persist();
       tick();
     },

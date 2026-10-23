@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr" data-theme="light" data-surum="2.6.2">
+<html lang="tr" data-theme="light" data-surum="2.6.3">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -71,7 +71,9 @@
       ready() {
         ready = true; document.getElementById('luna-boot-repair')?.remove();
         if (gate()) return; // kurulum sayfası uygulamayı başlatmaz: bu sürümü "bu cihazda sorunsuz açıldı" sayma
-        const c = sw && sw.controller; if (c && VERSION) c.postMessage({ type: 'LUNA_GOOD', version: VERSION });
+        const good = () => { const c = sw && sw.controller; if (c && VERSION) c.postMessage({ type: 'LUNA_GOOD', version: VERSION }); return !!c; };
+        // ilk açılışta henüz denetleyici yok: kurulunca bu sürüm de "bu cihazda sorunsuz açıldı" sayılsın (geri dönüş hedefi olabilsin)
+        if (!good() && sw) { const once = () => { sw.removeEventListener('controllerchange', once); good(); }; sw.addEventListener('controllerchange', once); }
         const g = note(); if (g && g.good !== VERSION) try { localStorage.removeItem('luna-geri-donus'); } catch (e) { /* yok say */ }
       },
       // bu cihazda açılamayıp geri dönülen sürüm: { bad, good, at, told }
@@ -102,8 +104,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css?v=2.6.2">
-  <script src="js/kurulum.js?v=2.6.2"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.6.3">
+  <script src="js/kurulum.js?v=2.6.3"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -435,7 +437,7 @@
             <ul>
               <li>Bana dokunursan zıplarım 💕 Her odak oturumunda bir 🐟 kazanırsın; üstteki balık düğmesiyle beni besleyebilirsin.</li>
               <li>Molada ve boştayken arada yün yumağıyla oynarım; yumağa sen de dokunabilirsin 🧶 Akşamları daha çok kıvrılıp uyurum.</li>
-              <li><b>Vesper</b> (mavi gözlü siyah kedi) ve sarı yavrumuz <b>Güçlü</b> arada bir uğrar; geceleri yanımda uyurlar. Odaklanırken seni rahatsız etmezler. Ayarlar → Kediler'den çağırabilir, yavruya isim koyabilirsin.</li>
+              <li><b>Vesper</b> (mavi gözlü siyah kedi) ve sarı yavrumuz <b>Güçlü</b> arada bir uğrar; geceleri yanımda uyurlar. Odaklanırken seni rahatsız etmezler. Ayarlar → Kediler'den çağırabilirsin.</li>
               <li>Dünya gerçek zamanlı: güneş ve ay bulunduğun şehre göre hareket eder, mevsimler aya göre değişir (kışın kar, ilkbaharda çiçekli ağaç, yazın ayçiçekleri, sonbaharda düşen yapraklar). Geceleri zambaklar açar, mevsimin takımyıldızı görünür. Yılbaşı, bayramlar, ulusal bayramlar ve 14 Şubat'ta sahne süslenir.</li>
             </ul>
           </details>
@@ -449,10 +451,9 @@
           <details>
             <summary>🎧 Müzik ve Spotify</summary>
             <ul>
-              <li>Çalış ekranındaki <b>Müzik ve odak sesleri</b> kutusunda hazır bir liste seç veya Spotify şarkı, albüm ya da çalma listesi bağlantını yapıştır. Resmi Spotify oynatıcısı Luna'nın içinde açılır; başlatmak için ▶ düğmesine dokun.</li>
-              <li>Oynatıcı için Client ID girmen gerekmez. Spotify hesabına, içeriğe ve tarayıcının izinlerine göre önizleme sunabilir; tam şarkı oynatma garantili değildir.</li>
-              <li>Oynatıcının altındaki <b>Spotify'da dinle</b> düğmesi içeriği Spotify'da açar.</li>
-              <li>Daha önce bağladığın hesap varsa listelerin korunur. Yeni hesapları tek tuşla bağlama özelliği için Luna'nın Spotify hesap bağlantısının geliştirici tarafından yapılandırılması gerekir.</li>
+              <li>Çalış ekranındaki <b>Müzik ve odak sesleri</b> kutusunda <b>Spotify ile giriş yap</b>'a dokun; giriş Spotify'ın kendi sayfasında tamamlanır, şifren Luna'ya verilmez. Tam şarkı çalmak için Spotify Premium gerekir.</li>
+              <li>Bağlanınca en üstte <b>Luna oynatıcısı</b> durur; altında seçtiğin listenin şarkıları, en altta <b>Kütüphanemdeki listeler</b>. Bir listeye dokun, şarkıları gelsin; bir şarkıya dokun, Luna'da çalsın. İleri, geri ve çubukla sarma oynatıcıdan yapılır.</li>
+              <li>Hesap bağlı değilken hazır listeler (Lofi, Sakin Piyano, Derin Odak) ya da yapıştırdığın bir Spotify bağlantısı Spotify'ın kendi oynatıcısıyla açılır; o oynatıcı hesabına göre yalnızca önizleme çalabilir. <b>Spotify'da dinle</b> düğmesi içeriği Spotify'da açar.</li>
               <li>Odak sesleri (yağmur, dalga, şömine, kütüphane…) müzikle birlikte ya da tek başına açılabilir.</li>
             </ul>
           </details>
@@ -667,38 +668,38 @@
   </div>
   <div class="toasts" id="toasts"></div>
   <div id="timer-end-alert" class="timer-end-alert" role="status" hidden><span id="timer-end-message"></span><button type="button" class="btn soft" id="dismiss-timer-alarm">Tamam</button></div>
-  <script src="js/storage.js?v=2.6.2"></script>
-  <script src="js/surum.js?v=2.6.2"></script>
-  <script src="js/messages.js?v=2.6.2"></script>
-  <script src="js/audio.js?v=2.6.2"></script>
-  <script src="js/takvim.js?v=2.6.2"></script>
-  <script src="js/scene.js?v=2.6.2"></script>
-  <script src="js/timer.js?v=2.6.2"></script>
-  <script src="js/stats.js?v=2.6.2"></script>
-  <script src="js/weather.js?v=2.6.2"></script>
-  <script src="js/yks.js?v=2.6.2"></script>
-  <script src="js/plan.js?v=2.6.2"></script>
-  <script src="js/planlar.js?v=2.6.2"></script>
-  <script src="js/planlar-ui.js?v=2.6.2"></script>
-  <script src="js/deneme.js?v=2.6.2"></script>
-  <script src="js/notes.js?v=2.6.2"></script>
-  <script src="js/giris.js?v=2.6.2"></script>
-  <script src="js/depo.js?v=2.6.2"></script>
-  <script src="js/depo-ui.js?v=2.6.2"></script>
-  <script src="js/hata.js?v=2.6.2"></script>
-  <script src="js/kaynak.js?v=2.6.2"></script>
-  <script src="js/kaynak-ui.js?v=2.6.2"></script>
-  <script src="js/badges.js?v=2.6.2"></script>
-  <script src="js/spotify-config.js?v=2.6.2"></script>
-  <script src="js/spotify-playback.js?v=2.6.2"></script>
-  <script src="js/spotify.js?v=2.6.2"></script>
-  <script src="js/uni.js?v=2.6.2"></script>
-  <script src="js/uni-ui.js?v=2.6.2"></script>
-  <script src="js/diag.js?v=2.6.2"></script>
-  <script src="js/guncelleme.js?v=2.6.2"></script>
-  <script src="js/notifications.js?v=2.6.2"></script>
-  <script src="js/mini-timer.js?v=2.6.2"></script>
-  <script src="js/app.js?v=2.6.2"></script>
+  <script src="js/storage.js?v=2.6.3"></script>
+  <script src="js/surum.js?v=2.6.3"></script>
+  <script src="js/messages.js?v=2.6.3"></script>
+  <script src="js/audio.js?v=2.6.3"></script>
+  <script src="js/takvim.js?v=2.6.3"></script>
+  <script src="js/scene.js?v=2.6.3"></script>
+  <script src="js/timer.js?v=2.6.3"></script>
+  <script src="js/stats.js?v=2.6.3"></script>
+  <script src="js/weather.js?v=2.6.3"></script>
+  <script src="js/yks.js?v=2.6.3"></script>
+  <script src="js/plan.js?v=2.6.3"></script>
+  <script src="js/planlar.js?v=2.6.3"></script>
+  <script src="js/planlar-ui.js?v=2.6.3"></script>
+  <script src="js/deneme.js?v=2.6.3"></script>
+  <script src="js/notes.js?v=2.6.3"></script>
+  <script src="js/giris.js?v=2.6.3"></script>
+  <script src="js/depo.js?v=2.6.3"></script>
+  <script src="js/depo-ui.js?v=2.6.3"></script>
+  <script src="js/hata.js?v=2.6.3"></script>
+  <script src="js/kaynak.js?v=2.6.3"></script>
+  <script src="js/kaynak-ui.js?v=2.6.3"></script>
+  <script src="js/badges.js?v=2.6.3"></script>
+  <script src="js/spotify-config.js?v=2.6.3"></script>
+  <script src="js/spotify-playback.js?v=2.6.3"></script>
+  <script src="js/spotify.js?v=2.6.3"></script>
+  <script src="js/uni.js?v=2.6.3"></script>
+  <script src="js/uni-ui.js?v=2.6.3"></script>
+  <script src="js/diag.js?v=2.6.3"></script>
+  <script src="js/guncelleme.js?v=2.6.3"></script>
+  <script src="js/notifications.js?v=2.6.3"></script>
+  <script src="js/mini-timer.js?v=2.6.3"></script>
+  <script src="js/app.js?v=2.6.3"></script>
 </body>
 </html>
 

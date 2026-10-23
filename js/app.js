@@ -8,6 +8,7 @@
   let focusDismissed = false; // odak ekranından geçici çıkış
   let lastMsgAt = Date.now();
   let wakeLock = null;
+  let pickedAt = 0; // kamera / dosya seçicinin en son açıldığı an
   let currentTab = 'home';
   let spotifyLoaded = false;
   // Rozetler: badges.js (her rozetin bir sevgi notu var)
@@ -45,8 +46,10 @@
   async function lockScreen(on) {
     try {
       if (on && 'wakeLock' in navigator && !wakeLock) {
-        wakeLock = await navigator.wakeLock.request('screen');
-        wakeLock.addEventListener('release', () => { wakeLock = null; });
+        const lock = await navigator.wakeLock.request('screen');
+        wakeLock = lock;
+        lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+        if (!App.isFocusing()) { wakeLock = null; await lock.release(); }
       } else if (!on && wakeLock) {
         await wakeLock.release();
         wakeLock = null;
@@ -55,7 +58,8 @@
   }
   const fmtDayMin = (m) => `${U.pad(Math.floor(((m % 1440) + 1440) % 1440 / 60))}:${U.pad(Math.floor(((m % 60) + 60) % 60))}`;
   function subjectOptions(sel) {
-    return D().subjects.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')
+    const gone = sel && !D().subjects.some((s) => s.id === sel) ? `<option value="${U.esc(sel)}" selected>${U.esc(Store.subject(sel).name)}</option>` : '';
+    return gone + D().subjects.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')
       + `<option value="" ${!sel ? 'selected' : ''}>Genel</option>`;
   }
   function ratingColor(r) {
@@ -324,8 +328,10 @@
         const k = b.dataset.where;
         closeModal();
         if (k && Timer.resumeFrom(Timer.state().pausedAt)) {
-          lockScreen(true);
-          Scene.say(`${APPS[k].from} hoş geldin ${APPS[k].e} Sayaç hiç durmamış gibi devam ediyor; o süre de çalışmana sayıldı.`);
+          if (App.isFocusing()) {
+            lockScreen(true);
+            Scene.say(`${APPS[k].from} hoş geldin ${APPS[k].e} Sayaç hiç durmamış gibi devam ediyor; o süre de çalışmana sayıldı.`);
+          }
         } else {
           Scene.say(nudge ? Messages.get('focusNudge') + ' Hazır olduğunda Devam’a bas 🐾' : 'Sorun değil, hazır olduğunda Devam’a bas, kaldığımız yerden sürdürelim 🐾');
         }
@@ -425,12 +431,18 @@
     onTooShort() { toast('⏱️', '1 dakikadan kısa oturumlar kaydedilmez'); },
     beforeFinish: () => checkAway(),
     onFocusDone(session) {
-      lockScreen(false);
+      if (session.endReason !== 'split') lockScreen(false); // bölünen oturumun devamı hemen başlar; ekran kilidi bırakılmaz
       session.id = U.uid();
       session.note = session.intent || ''; session.hard = ''; session.rating = null; session.mood = '';
       D().sessions.push(session);
       if (session.minutes >= 10) D().fish++;
       save();
+      if (session.endReason === 'split') {
+        const day = new Date(session.start).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+        toast('📅', `${day} günkü çalışman o güne yazıldı`, `${U.fmtMin(session.minutes)} · bugünkü kısım yeni oturum olarak sürüyor`, 6000);
+        afterDataChange();
+        return;
+      }
       if (session.endReason === 'elapsed') {
         Sound.timerEnd();
         $('#timer-end-message').textContent = `${session.exam ? session.exam.toUpperCase() : 'Geri sayım'} bitti! ${U.fmtMin(session.minutes)} tamamlandı 🐾`;
@@ -589,7 +601,7 @@
     $('#m-cancel').addEventListener('click', closeModal);
     $('#m-del') && $('#m-del').addEventListener('click', () => {
       if (!confirm('Bu oturum silinsin mi?')) return;
-      D().sessions = D().sessions.filter((x) => x.id !== s.id);
+      D().sessions = D().sessions.filter((x) => x.id !== s.id); Store.forget(s.id);
       save(); closeModal(); afterDataChange();
     });
     $('#m-save').addEventListener('click', () => {
@@ -612,6 +624,7 @@
         rating: rating || null,
         mood,
         questions: U.clamp(parseInt($('#m-q').value, 10) || 0, 0, 999),
+        updated: Date.now(),
       });
       if (manual) D().sessions.push(target);
       D().sessions.sort((a, b) => a.start - b.start);
@@ -649,7 +662,7 @@
     }
     if (kind && kind !== Timer.state().kind) Timer.setKind(kind);
     if (subjectId != null && (subjectId === '' || D().subjects.some((x) => x.id === subjectId))) Timer.setSubject(subjectId);
-    if (intent) Timer.setIntent(intent);
+    Timer.setIntent(intent || '');
     showTab('home');
     Timer.toggle();
     return true;
@@ -667,7 +680,9 @@
   function applyFieldSubjects(field) {
     if (!window.YKS) return;
     const target = YKS.studySubjects(field);
-    const used = new Set([...D().sessions, ...D().tasks, ...D().notes, ...D().cards, ...D().review].map((x) => x.subjectId));
+    const plans = D().plans || {};
+    const planItems = ['day', 'week', 'month'].flatMap((k) => Object.values(plans[k] || {}).flatMap((v) => (Array.isArray(v) ? v : [])));
+    const used = new Set([...D().sessions, ...D().tasks, ...D().notes, ...D().cards, ...D().review, ...(D().questionLogs || []), ...(D().mistakes || []), ...(D().files || []), ...(D().refs || []), ...planItems].map((x) => x && x.subjectId));
     // dokunulmamış varsayılan dersleri (s1..s5) kullanılmıyorsa kaldır
     let list = D().subjects.filter((x) => !(/^s[1-5]$/.test(x.id) && !used.has(x.id)));
     const lower = (t) => t.toLocaleLowerCase('tr-TR');
@@ -1181,7 +1196,7 @@
       const t = D().tasks.find((x) => x.id === li.dataset.id);
       if (!t) return;
       if (e.target.classList.contains('x')) {
-        D().tasks = D().tasks.filter((x) => x.id !== t.id);
+        D().tasks = D().tasks.filter((x) => x.id !== t.id); Store.forget(t.id);
       } else if (e.target.classList.contains('check')) {
         t.done = e.target.checked;
         t.doneAt = t.done ? Date.now() : null;
@@ -1208,7 +1223,7 @@
       if (!li) return;
       const r = D().review.find((x) => x.id === li.dataset.id);
       if (!r) return;
-      if (e.target.classList.contains('x')) D().review = D().review.filter((x) => x.id !== r.id);
+      if (e.target.classList.contains('x')) { D().review = D().review.filter((x) => x.id !== r.id); Store.forget(r.id); }
       else if (e.target.classList.contains('check')) {
         r.done = e.target.checked;
         D().reviewDone = Math.max(0, (D().reviewDone || 0) + (r.done ? 1 : -1));
@@ -1791,7 +1806,13 @@
     celebrate() { Scene.celebrate(); Sound.chime(); },
     isFocusing() { const s = Timer.state(); return s.running && s.phase === 'focus'; },
     // kullanıcı bir işin ortasında mı (sayaç, açık pencere, görüntüleyici): sessiz güncelleme beklesin
-    isBusy() { return Timer.state().running || !$('#modal').classList.contains('hidden') || !$('#viewer').classList.contains('hidden'); },
+    // meşgulken güncelleme sayfayı kendiliğinden yenilemez: sayaç, açık pencere, yükleme, yazılmakta olan bir metin,
+    // ya da az önce açılan kamera / dosya seçici (onlar da sayfayı arka plana atar; dönünce sayfa yerinde olmalı)
+    isBusy() {
+      const a = document.activeElement, typing = a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && a.type !== 'file' && !!a.value;
+      return Timer.state().running || !$('#modal').classList.contains('hidden') || !$('#viewer').classList.contains('hidden')
+        || (window.DepoUI && DepoUI.busy && DepoUI.busy()) || typing || Date.now() - pickedAt < 120000;
+    },
     playSpotify(url) {
       D().settings.spotify = url;
       save();
@@ -1861,7 +1882,13 @@
     renderAllowApps();
     welcomedBack = welcomeBack(); // uygulama dışındayken sayfa kapanmışsa (iOS) dönüşte değerlendir
     syncSceneMode();
-    if (Timer.state().running && Timer.state().phase === 'focus') lockScreen(true);
+    if (Timer.state().running && Timer.state().phase === 'focus') {
+      lockScreen(true);
+      const wake = () => { Sound.unlock(); ['pointerdown', 'touchend', 'keydown'].forEach((t) => document.removeEventListener(t, wake, true)); };
+      ['pointerdown', 'touchend', 'keydown'].forEach((t) => document.addEventListener(t, wake, true));
+    }
+    // dosya seçici ya da kamera açılınca (programla açılsa da tıklama olayı gelir) bir süre "meşgul" sayılır
+    document.addEventListener('click', (e) => { if (e.target && e.target.matches && e.target.matches('input[type="file"]')) pickedAt = Date.now(); }, true);
     $$('#tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
     $('#period-seg').addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;

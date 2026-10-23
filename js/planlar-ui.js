@@ -328,7 +328,7 @@ const PlanlarUI = (() => {
       ? '<p class="hint"><button type="button" class="link-btn" data-mp="to-yks">📚 Alanını seçersen YKS konularından da madde ekleyebilirsin</button></p>' : '';
     paint(el, `<h2>🗓️ Bugünün planı <span class="muted small">${st.done}/${st.total}${st.total ? ` · %${st.pct}` : ''}</span></h2>
       ${st.total ? `<div class="track mp-track"><i style="width:${st.pct}%"></i></div>` : ''}
-      ${act.length ? dailyChart(act.slice(0, 8), today, now)
+      ${act.length ? dailyChart(act.slice(0, 8), today, now) + (act.length > 8 ? `<p class="mp-more"><button type="button" class="link-btn" data-mp="open" data-scope="day">… ${act.length - 8} madde daha</button></p>` : '')
         : `<p class="plan-empty">${items.length ? 'Bugünün maddelerini taşıdın. Yeni bir şey yazmak istersen buradayım 🐾' : 'Bugün için plan yok. Ne çalışmak istediğini sen yaz, ben takip edeyim 🐾'}</p>`}
       ${quickForm('day', today)}
       ${pc ? `<button type="button" class="btn soft small-btn" data-mp="copy" data-scope="day" data-key="${today}">⧉ Dünün planını kopyala (${pc})</button>` : ''}

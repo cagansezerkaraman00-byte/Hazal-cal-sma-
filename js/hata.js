@@ -162,8 +162,9 @@ const HataUI = (() => {
       if (act === 'yes') {
         right++;
         m.rights = (m.rights || 0) + 1;
+        const was = m.box;
         m.box = Math.min(5, m.box + 1);
-        if (m.box >= 5) { m.learnedAt = Date.now(); D().stats.mistakesLearned = (D().stats.mistakesLearned || 0) + 1; }
+        if (m.box >= 5 && was < 5) { m.learnedAt = Date.now(); D().stats.mistakesLearned = (D().stats.mistakesLearned || 0) + 1; }
       } else m.box = 1;
       m.last = Date.now();
       if (m.box < 5) m.due = U.dateKey(U.addDays(new Date(), INTERVAL[m.box]));
@@ -206,7 +207,7 @@ const HataUI = (() => {
       if (act === 'cancel') App.closeModal();
       if (act === 'solve') { App.closeModal(); review([m]); }
       if (act === 'del' && confirm('Bu soru hata defterinden silinsin mi? (Fotoğrafı Kütüphane’de kalır)')) {
-        D().mistakes = D().mistakes.filter((x) => x.id !== m.id);
+        D().mistakes = D().mistakes.filter((x) => x.id !== m.id); Store.forget(m.id);
         App.save(); App.closeModal(); render(); App.refreshHome();
       }
     });

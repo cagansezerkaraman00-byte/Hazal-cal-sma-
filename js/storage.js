@@ -147,6 +147,7 @@ const Store = (() => {
     fed: 0,
     timer: null,
     lastGoalDay: null,
+    deleted: {},    // silinen kayıtların izi (id -> silinme anı): eski bir yedek birleştirilince geri gelmesinler
   });
 
   function merge(def, obj) {
@@ -193,6 +194,17 @@ const Store = (() => {
     for (const k of ['courses', 'events', 'calendar']) each(out.uni[k]);
     for (const e of out.denemeler) if (isObj(e) && !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) e.date = U.dateKey(new Date());
     for (const x of out.sessions) if (isObj(x) && x.mood && !MOODS.has(x.mood)) x.mood = '';
+    const num = (v) => (v == null || v === '' ? v : Number.isFinite(+v) ? +v : 0); // boş alan boş kalır
+    const box = (v, lo) => (Number.isInteger(+v) && +v >= lo && +v <= 5 ? +v : 1);
+    for (const e of out.denemeler) {
+      if (!isObj(e)) continue;
+      if (!['TYT', 'AYT', 'BRANS'].includes(e.type)) e.type = 'TYT';
+      if (isObj(e.scores)) for (const k of Object.keys(e.scores)) { const s = e.scores[k]; if (!isObj(s)) { delete e.scores[k]; continue; } s.d = num(s.d); s.y = num(s.y); }
+    }
+    for (const c of out.cards) if (isObj(c) && 'box' in c) c.box = box(c.box, 0);
+    for (const m of out.mistakes) if (isObj(m) && 'box' in m) m.box = box(m.box, 1);
+    for (const c of out.uni.courses) if (isObj(c) && Array.isArray(c.absences)) for (const a of c.absences) if (isObj(a)) a.hours = num(a.hours) || 0;
+    if (!isObj(out.deleted)) out.deleted = {};
   }
 
   // Planlarım: anahtarlar (YYYY-AA-GG / YYYY-AA) ve maddeler beklenen biçimde kalır; geçerli kayıtlara dokunulmaz.
@@ -254,9 +266,13 @@ const Store = (() => {
   const COUNTERS = new Set(['fish', 'fed', 'tasksDone', 'reviewDone', 'planItems', 'planFull', 'cardReviews']);
   const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
   const hasIds = (arr) => arr.length > 0 && arr.every((x) => isObj(x) && (typeof x.id === 'string' || typeof x.id === 'number'));
+  // izi tutulan listeler: bunlarda silinen kayıt, silinmeden önce alınmış bir yedekten geri gelmez
+  const TRACKED = ['sessions', 'tasks', 'review', 'notes', 'cards', 'denemeler', 'mistakes', 'refs', 'files'];
   function mergeIn(obj) {
     const inc = merge(defaults(), obj);
     let added = 0;
+    // iki cihazın silme izleri birleşir: izi olan kayıt geri eklenmez; öbür cihazda silinen burada da kalkar
+    const gone = { ...(isObj(inc.deleted) ? inc.deleted : {}), ...(isObj(data.deleted) ? data.deleted : {}) };
     // yedek başka moddaysa (YKS / üniversite) aktif listeler yer değiştirir: dersler kendi modunun listesine gider
     const setOf = (lvl) => ((lvl || 'yks') === 'yks' ? 'yks' : 'program');
     const mine = setOf(data.settings.profile.level), theirs = setOf(inc.settings.profile.level);
@@ -271,6 +287,7 @@ const Store = (() => {
       if (hasIds(b) && (hasIds(a) || !a.length)) {
         const byId = new Map(a.map((x, i) => [x.id, i]));
         for (const x of b) {
+          if (!x.del && gone[x.id] != null) continue; // burada (ya da yedeğin cihazında) silinmiş
           if (!byId.has(x.id)) { a.push(x); if (!x.del) added++; continue; } // silinmiş plan maddesinin izi kayıt sayılmaz
           const i = byId.get(x.id); // ikisinde de varsa daha yeni düzenlenen kalsın (notlar gibi)
           if (+x.updated > +(a[i].updated || 0)) a[i] = x;
@@ -306,6 +323,8 @@ const Store = (() => {
       else if (isObj(x) && isObj(y)) obj2(x, y, k);
       else if (COUNTERS.has(k) && typeof x === 'number' && typeof y === 'number') data[k] = Math.max(x, y);
     }
+    data.deleted = gone;
+    for (const k of TRACKED) if (Array.isArray(data[k])) data[k] = data[k].filter((x) => !(isObj(x) && gone[x.id] != null));
     if (data.yks && data.yks.planCache) delete data.yks.planCache; // plan yeniden hesaplansın
     // üniversite modundaki bir yedeğin ders kutucukları YKS listesine karışmasın
     if ((data.settings.profile.level || 'yks') === 'yks') {
@@ -358,6 +377,14 @@ const Store = (() => {
       const snap = JSON.parse(JSON.stringify(data)); // mergeIn yerinde değiştirir; hata olursa eski hale dön
       try { const n = mergeIn(obj); if (this.save()) return n; } catch (e) { /* bozuk yedek */ }
       data = snap; return false;
+    },
+    // silinen kaydın izi: eski bir yedek birleştirilince geri gelmez (en yeni 3000 iz tutulur)
+    forget(id) {
+      if (id == null || id === '') return;
+      const m = isObj(data.deleted) ? data.deleted : (data.deleted = {});
+      m[id] = Date.now();
+      const keys = Object.keys(m);
+      if (keys.length > 3000) keys.sort((a, b) => m[a] - m[b]).slice(0, keys.length - 3000).forEach((k) => delete m[k]);
     },
     // aktif listede yoksa diğer modların listelerine de bakılır (geçmiş oturumların ders adı kaybolmasın)
     subject(id) {

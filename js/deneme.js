@@ -396,7 +396,7 @@ const DenemeUI = (() => {
         if (!e) return;
         if (b.dataset.act === 'edit') openForm(e);
         if (b.dataset.act === 'del' && confirm('Bu deneme silinsin mi?')) {
-          D().denemeler = D().denemeler.filter((x) => x.id !== e.id);
+          D().denemeler = D().denemeler.filter((x) => x.id !== e.id); Store.forget(e.id);
           App.save(); App.refresh(); render();
         }
         return;

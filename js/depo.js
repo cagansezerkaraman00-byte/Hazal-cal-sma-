@@ -249,7 +249,7 @@ const Depo = (() => {
     if (item.src === 'local') await IDB.del('f:' + item.id).catch(() => {});
     await IDB.del('t:' + item.id).catch(() => {});
     blobCache.delete(item.id);
-    D().files = D().files.filter((x) => x.id !== item.id);
+    D().files = D().files.filter((x) => x.id !== item.id); Store.forget(item.id);
     App.save();
   }
   // bu cihazdaki dosyaları Drive'a taşı (iPad'de yer açılır)
@@ -274,6 +274,8 @@ const Depo = (() => {
   }
   // Drive klasörü asıl kaynak: başka cihazdan yüklenenler eklenir, Drive'dan silinenler listeden çıkar
   async function syncDrive() {
+    // listeleme sürerken biten yüklemeler silinmesin: yalnızca listeleme başlamadan önce bilinen dosyalar karşılaştırılır
+    const listedBefore = new Set(D().files.filter((x) => x.src === 'drive' && x.rid).map((x) => x.rid));
     const remote = await driveList();
     const byRid = new Map(remote.map((f) => [f.id, f]));
     const known = new Set(D().files.filter((x) => x.src === 'drive').map((x) => x.rid));
@@ -290,7 +292,7 @@ const Depo = (() => {
       added++;
     }
     const before = D().files.length;
-    D().files = D().files.filter((x) => x.src !== 'drive' || byRid.has(x.rid));
+    D().files = D().files.filter((x) => x.src !== 'drive' || byRid.has(x.rid) || !listedBefore.has(x.rid));
     removed = before - D().files.length;
     if (added || removed) App.save();
     return { added, removed };

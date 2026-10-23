@@ -24,6 +24,8 @@ const server = http.createServer((req, res) => {
       const context = await browser.newContext({ viewport });
       await context.route(/^https?:\/\/(?!127\.0\.0\.1)/, (r) => r.abort()); // yazı tipi, hava durumu, Spotify: internetsiz de açılmalı
       await context.addInitScript(() => Object.defineProperty(navigator, 'standalone', { get: () => true }));
+      // ilk açılıştaki şiir sürprizi (2,4 sn'de açılır) sekme dokunuşlarının önüne geçmesin: bu denemede gösterilmiş say
+      await context.addInitScript(() => { try { localStorage.setItem('luna-siir-gosterildi', '1'); } catch (e) { /* yok say */ } });
       const page = await context.newPage();
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message.split('\n')[0]));
