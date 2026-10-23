@@ -2375,56 +2375,70 @@ span.bk-st { width: auto; height: auto; font-size: 26px; filter: none; }
 .bk-arrow:active { transform: scale(.92); }
 .bk-count { font-weight: 800; color: var(--muted); min-width: 64px; text-align: center; }
 @media (prefers-reduced-motion: reduce) { .bk-arrow:active, .tk-book-btn:active .tk-book-ic { transform: none; } }
-/* Gerçek defter sahnesi: ekranı kaplar; dikken tek sayfa, yanken iki sayfa. Kapak/kâğıt yine --bk-kapak / --bk-kagit'ten. */
-.df-sahne { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; background: radial-gradient(ellipse at 50% 40%, rgba(70, 40, 100, .72), rgba(14, 8, 26, .9));
-  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); animation: df-gel .3s ease both;
+/* Gerçek defter sahnesi: ekranı kaplar; her zaman iki sayfa (dikken aynı defter, küçük). Kapak ve kâğıt Hazal'ın tasarımları. */
+.df-sahne { --df-kapak: none; --df-kagit: none; --df-ic: #cdc2db;
+  position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; background: radial-gradient(ellipse at 50% 42%, rgba(66, 40, 96, .74), rgba(12, 7, 24, .92));
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); animation: df-gel .32s ease both;
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
-.df-sahne.kapaniyor { animation: df-git .26s ease both; }
+.df-sahne.kapaniyor { animation: df-git .28s ease both; }
 @keyframes df-gel { from { opacity: 0; } to { opacity: 1; } }
-@keyframes df-git { to { opacity: 0; transform: scale(.98); } }
+@keyframes df-git { to { opacity: 0; } }
 .df-x { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); z-index: 3; width: 42px; height: 42px; border-radius: 50%;
   border: 0; background: rgba(255, 255, 255, .16); color: #fff; font-size: 18px; cursor: pointer; }
-.df-alan { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; margin: 58px 12px 4px; }
-.df-flip { position: relative; z-index: 1; animation: df-kitap .5s cubic-bezier(.2, 1.3, .5, 1) both; }
+.df-alan { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; margin: 60px 8px 6px; }
+.df-kitap { position: relative; will-change: transform; animation: df-belir .55s cubic-bezier(.2, .9, .3, 1) both; }
+@keyframes df-belir { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
+.df-flip { position: relative; z-index: 1; }
 .df-flip .stf__wrapper { height: 100%; }
-@keyframes df-kitap { from { transform: scale(.86) translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
-/* sert kapak ve sayfa kenarları (sayfaların arkasında, biraz taşar) */
-.df-arka-kapak { position: absolute; z-index: 0; transition: left .45s ease, width .45s ease; pointer-events: none; }
-.df-arka-kapak::before { content: ''; position: absolute; inset: -12px -12px -14px -12px; border-radius: 10px 16px 16px 10px; background: var(--bk-kapak-renk); box-shadow: 0 18px 40px rgba(0, 0, 0, .45), inset 0 0 0 2px rgba(255, 255, 255, .18); }
-.df-arka-kapak.acik::before { border-radius: 14px; }
-.df-arka-kapak i { position: absolute; inset: -4px -6px -7px -4px; border-radius: 3px 8px 8px 3px; background: #f4ece0;
-  box-shadow: 2px 2px 0 #e3d8c8, 4px 4px 0 #f1e8db, 6px 5px 0 #ddd1bf; }
-.df-arka-kapak.acik i { inset: -4px -6px -7px -6px; border-radius: 6px; box-shadow: -2px 2px 0 #e3d8c8, 2px 2px 0 #e3d8c8, -4px 4px 0 #f1e8db, 4px 4px 0 #f1e8db, 0 6px 0 #ddd1bf; }
-.df-arka-kapak.acik i::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 30px; margin-left: -15px; background: linear-gradient(90deg, transparent, rgba(80, 50, 40, .28), transparent); }
-.df-arka-kapak.kapali i { display: none; }
+.df-flip .stf__block { perspective: 4200px; } /* sert kapak dönerken yakın kenarı fazla büyüyüp taşmasın */
+/* açık defterin arkasındaki sert kapak ve sayfa yığını (kapalıyken görünmez; kapak açılırken belirir) */
+.df-tahta { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 0; pointer-events: none; }
+.df-sahne.kapali-on .df-tahta { left: 50%; }
+.df-sahne.kapali-arka .df-tahta { right: 50%; }
+.df-sahne.kapali-on .df-tahta i::after, .df-sahne.kapali-arka .df-tahta i::after { opacity: 0; }
+.df-tahta::before { content: ''; position: absolute; inset: -9px -10px -12px; border-radius: 12px; background: var(--df-ic); box-shadow: 0 22px 44px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(255, 255, 255, .25); }
+.df-tahta i { position: absolute; inset: -3px -5px -6px; border-radius: 4px; background: #f3ece2;
+  box-shadow: -2px 2px 0 #e2d7c7, 2px 2px 0 #e2d7c7, -4px 4px 0 #f0e7da, 4px 4px 0 #f0e7da, 0 5px 0 #dacdba; }
+.df-tahta i::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 26px; margin-left: -13px; background: linear-gradient(90deg, transparent, rgba(70, 45, 35, .3), transparent); transition: opacity .3s; }
 /* sayfalar */
-.df-sayfa { overflow: hidden; background: var(--bk-kagit); color: #4a3b52; }
+.df-sayfa { overflow: hidden; background-color: #fbf7f1; }
+.df-kagit { background: var(--df-kagit) center / 100% 100% no-repeat, #fbf7f1; }
+.df-sayfa.--left.df-kagit { box-shadow: inset -16px 0 20px -14px rgba(60, 35, 25, .5); }
+.df-sayfa.--right.df-kagit { box-shadow: inset 16px 0 20px -14px rgba(60, 35, 25, .5); }
+.df-kapak { background: var(--df-kapak) center / 100% 100% no-repeat, var(--df-ic); border-radius: 0 8px 8px 0; box-shadow: inset 7px 0 6px -4px rgba(0, 0, 0, .35); }
+.df-kapak.df-arka { background: var(--df-ic); border-radius: 8px 0 0 8px; box-shadow: inset -7px 0 6px -4px rgba(0, 0, 0, .35); }
+.df-ic { background: var(--df-ic); }
+.df-ic.--left { box-shadow: inset -10px 0 12px -8px rgba(0, 0, 0, .3); }
 .df-pg { position: absolute; inset: 0; display: flex; flex-direction: column; }
-.df-kagit .df-pg { gap: 5px; padding: 5% 6% 3%; }
-.df-sayfa.--left.df-kagit { box-shadow: inset -18px 0 22px -16px rgba(70, 40, 30, .45); }
-.df-sayfa.--right.df-kagit { box-shadow: inset 18px 0 22px -16px rgba(70, 40, 30, .45); }
-.df-kapak-pg, .df-ic-pg { align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 8%; }
-.df-kapak { background: var(--bk-kapak) center / cover no-repeat, var(--bk-kapak-renk); color: #fff; border-radius: 0 10px 10px 0;
-  box-shadow: inset 12px 0 0 rgba(0, 0, 0, .12), inset 0 0 0 2px rgba(255, 255, 255, .2); }
-.df-kapak.df-arka { border-radius: 10px 0 0 10px; box-shadow: inset -12px 0 0 rgba(0, 0, 0, .12); }
-.df-kapak-ic { text-align: center; display: flex; flex-direction: column; gap: 6px; text-shadow: 0 2px 6px rgba(60, 20, 80, .35); }
-.df-kapak-ic b { font-size: clamp(22px, 6vw, 34px); font-weight: 900; }
-.df-kapak-ic small { font-size: 15px; font-weight: 800; opacity: .9; }
-.df-ic { background: #f6eee4; }
-.df-ic p { margin: 0; font-size: clamp(18px, 4.6vw, 24px); font-weight: 900; color: #7a4a6e; line-height: 1.3; }
-.df-ic small { color: #9a7d90; font-weight: 700; }
-.df-no { align-self: center; font-size: 11px; font-weight: 800; opacity: .55; }
-.df-sayfa .bk-ph b { font-size: clamp(12px, 3.4vw, 16px); }
-.df-sayfa .bk-cell { background: rgba(255, 255, 255, .5); }
+.df-ic-pg { align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 10%; }
+.df-ic p { margin: 0; font-size: clamp(13px, 3.6vw, 24px); font-weight: 900; line-height: 1.3; color: rgba(60, 40, 70, .8); }
+.df-ic small { font-size: clamp(9px, 2.4vw, 13px); font-weight: 700; color: rgba(60, 40, 70, .6); }
+.df-ic.koyu p { color: rgba(255, 255, 255, .88); }
+.df-ic.koyu small { color: rgba(255, 255, 255, .6); }
+.df-alan2 { position: absolute; display: flex; flex-direction: column; gap: 2%; }
+.df-alan2 .bk-ph { padding: 0 2px; }
+.df-alan2 .bk-ph b { font-size: clamp(10px, 2.8vw, 17px); font-weight: 900; color: inherit; }
+.df-alan2 .bk-ph span { font-size: clamp(9px, 2.2vw, 12px); opacity: .7; }
+.df-alan2 .bk-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 3%; }
+.df-alan2 .bk-cell { background: transparent; box-shadow: none; padding: 6%; border-radius: 10px; }
+.df-alan2 .bk-cell:hover, .df-alan2 .bk-cell:focus-visible { background: rgba(255, 255, 255, .45); }
+.df-alan2 .bk-cell:nth-child(4n+1) .bk-st { transform: rotate(-5deg); }
+.df-alan2 .bk-cell:nth-child(4n+3) .bk-st { transform: rotate(4deg); }
 .df-sayfa .bk-st { pointer-events: none; } /* dokunuş düğmeye gitsin: kütüphane yalnızca düğmeye gelen dokunuşu sayfaya bırakmaz */
-/* alt şerit: oklar ve günün 3 yeri */
-.df-alt { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 6px 12px 14px; }
+.df-no { position: absolute; bottom: 3.2%; left: 0; right: 0; text-align: center; font-size: clamp(8px, 2vw, 11px); font-weight: 800; color: rgba(70, 55, 80, .5); }
+/* alt şerit: oklar, günün 3 yeri, kapak seçimi */
+.df-alt { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 12px 14px; }
 .df-ok { width: 48px; height: 48px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .92); color: #b23a68; font-size: 26px; font-weight: 900; line-height: 1; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, .3); }
 .df-ok:active { transform: scale(.92); }
 .df-gun { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, .92); color: #3b2a4a; font-weight: 800; font-size: 13px; box-shadow: 0 4px 12px rgba(0, 0, 0, .3); }
 .df-slots { display: flex; gap: 6px; }
 .df-slots .bk-slot { width: 38px; height: 38px; border-radius: 10px; }
-.df-sahne[data-yon="yan"] .df-alan { margin-top: 10px; margin-bottom: 0; }
-.df-sahne[data-yon="yan"] .df-alt { padding-bottom: 8px; }
-.df-sahne[data-yon="yan"] .df-x { top: 8px; }
-@media (prefers-reduced-motion: reduce) { .df-sahne, .df-flip { animation: none; } .df-arka-kapak { transition: none; } .df-ok:active { transform: none; } }
+.df-renk { width: 40px; height: 40px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, .85); background: var(--df-kapak) center / cover, var(--df-ic); cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, .3); }
+.df-secici { display: flex; justify-content: center; gap: 10px; padding: 4px 12px 2px; overflow-x: auto; }
+.df-secici[hidden] { display: none; }
+.df-sec { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; color: #fff; font: inherit; cursor: pointer; padding: 0; }
+.df-sec img { width: 46px; height: 69px; object-fit: cover; border-radius: 3px 7px 7px 3px; box-shadow: 0 3px 8px rgba(0, 0, 0, .4); border: 2px solid transparent; }
+.df-sec.on img { border-color: #fff; }
+.df-sec small { font-size: 10px; font-weight: 800; opacity: .9; white-space: nowrap; }
+@media (orientation: landscape) and (max-height: 520px) { .df-alan { margin-top: 8px; margin-bottom: 0; } .df-alt { padding-bottom: 6px; } .df-x { top: 6px; } }
+@media (prefers-reduced-motion: reduce) { .df-sahne, .df-kitap { animation: none; } .df-tahta { transition: none !important; } .df-ok:active { transform: none; } }

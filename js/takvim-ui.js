@@ -465,10 +465,26 @@ const TakvimUI = (() => {
   }
 
   // ---------- Gerçek defter: ekranı kaplar, sayfalar köşeden kıvrılarak çevrilir (StPageFlip, vendor/page-flip) ----------
-  // Telefon dikken tek sayfa, yan çevrilince iki sayfa yan yana; arkada sert kapak ve sayfa kenarları görünür.
+  // Her zaman iki sayfa yan yana (telefon dikken aynı defter, yalnızca küçük). Kapalıyken defter ortada durur;
+  // kapak açılırken defter sola kayar ve sırt ortaya gelir. Kapak ve kâğıt Hazal'ın tasarımları (assets/defter/<ad>/).
   // Kütüphane ilk açılışta yüklenir; yüklenemezse (ilk açılış internetsiz) basit defter açılır.
-  const FLIP_SRC = 'vendor/page-flip-2.0.7/page-flip.browser.js';
-  let flipLib = null, flip = null, scene = null;
+  const FLIP_SRC = 'vendor/page-flip-2.0.7/page-flip.browser.js', FLIP_MS = 820, RATIO = 2 / 3;
+  // alan: stickerların süslere binmediği bölge (yüzde: üst, sağ, alt, sol); ic: kapağın iç yüzü; yazi: başlık rengi
+  const DEFTERLER = {
+    'leylak-inci': { ad: 'Leylak inci', ic: '#cdc2db', yazi: '#7a67a3', alan: [11, 8, 20, 8] },
+    'siyah-yildizli': { ad: 'Yıldızlı gece', ic: '#121019', yazi: '#4a4658', alan: [10, 8, 21, 8], koyu: true },
+    'pembe-kurdele': { ad: 'Pembe kurdele', ic: '#e3b4ae', yazi: '#8e2e3e', alan: [10, 9, 26, 9] },
+    'krem-botanik': { ad: 'Krem botanik', ic: '#efe4cc', yazi: '#6c7a4c', alan: [15, 10, 14, 10] },
+    'mavi-kelebek': { ad: 'Mavi kelebek', ic: '#c3dcef', yazi: '#46699a', alan: [11, 9, 13, 9] },
+  };
+  // seçilmediyse sitenin temasına uyan defter: Lavanta → leylak inci, Gece ve Zambak → yıldızlı gece
+  function defterId() {
+    const s = D().settings.defter;
+    if (DEFTERLER[s]) return s;
+    const r = document.documentElement;
+    return r.dataset.tema === 'zambak' || r.dataset.theme === 'dark' ? 'siyah-yildizli' : 'leylak-inci';
+  }
+  let flipLib = null, flip = null, scene = null, flipPageW = 0;
   function loadFlip() {
     if (window.St && window.St.PageFlip) return Promise.resolve(true);
     if (!flipLib) flipLib = new Promise((ok) => {
@@ -480,78 +496,114 @@ const TakvimUI = (() => {
     });
     return flipLib;
   }
-  function flipPages() {
-    const name = esc(D().settings.name || '');
-    const pages = [`<div class="df-sayfa df-kapak" data-density="hard"><div class="df-pg df-kapak-pg"><div class="df-kapak-ic"><b>Sticker defteri</b><small>${name}</small></div></div></div>`,
-      `<div class="df-sayfa df-ic" data-density="hard"><div class="df-pg df-ic-pg"><p>${name ? name + "'ın" : 'Benim'}<br>sticker defteri</p><small>Bir stickera dokun, güne yapışsın</small></div></div>`];
-    // kütüphane sayfanın display'ini kendisi ayarlar; düzen içteki kutuda
-    SD().PAGES.forEach((p, i) => pages.push(`<div class="df-sayfa df-kagit"><div class="df-pg">${pageHtml(i)}<span class="df-no">${i + 1}</span></div></div>`));
-    if (pages.length % 2) pages.push('<div class="df-sayfa df-kagit df-bos"></div>'); // arka kapak tek başına kalsın diye çift sayıda sayfa
-    pages.push('<div class="df-sayfa df-ic" data-density="hard"></div>', '<div class="df-sayfa df-kapak df-arka" data-density="hard"></div>');
+  // kapağı önceden yükle: defter açılırken resim sonradan belirmesin
+  function preload(id) {
+    const urls = ['kapak', 'sayfa'].map((x) => `assets/defter/${id}/${x}.webp`);
+    return Promise.race([Promise.all(urls.map((u) => new Promise((ok) => { const i = new Image(); i.onload = i.onerror = ok; i.src = u; }))), new Promise((ok) => setTimeout(ok, 1500))]);
+  }
+  function flipPages(id) {
+    const d = DEFTERLER[id], name = esc(D().settings.name || ''), a = d.alan;
+    const area = `top:${a[0]}%;right:${a[1]}%;bottom:${a[2]}%;left:${a[3]}%;color:${d.yazi}`;
+    const pages = [
+      '<div class="df-sayfa df-kapak" data-density="hard"></div>',
+      `<div class="df-sayfa df-ic${d.koyu ? ' koyu' : ''}" data-density="hard"><div class="df-pg df-ic-pg"><p>${name ? name + "'ın" : 'Benim'}<br>sticker defteri</p><small>Bir stickera dokun, güne yapışsın</small></div></div>`,
+    ];
+    SD().PAGES.forEach((p, i) => pages.push(`<div class="df-sayfa df-kagit"><div class="df-alan2" style="${area}">${pageHtml(i)}</div><span class="df-no">${i + 1}</span></div>`));
+    if (pages.length % 2) pages.push('<div class="df-sayfa df-kagit"></div>'); // arka kapak tek başına kalsın diye çift sayıda sayfa
+    pages.push(`<div class="df-sayfa df-ic${d.koyu ? ' koyu' : ''}" data-density="hard"></div>`, '<div class="df-sayfa df-kapak df-arka" data-density="hard"></div>');
     return pages.join('');
   }
-  const isLand = () => window.innerWidth > window.innerHeight;
-  // defterin boyu: dikken tek sayfa ekrana sığar (kenarlar görünsün diye biraz küçük), yanken iki sayfa
+  // defterin boyu: her zaman iki sayfa; dikken ekran genişliğine, yanken yüksekliğe sığar
   function sizeBook() {
     const area = scene.querySelector('.df-alan'), el = scene.querySelector('.df-flip');
-    const w = area.clientWidth, h = area.clientHeight, land = isLand();
-    const pageW = land ? Math.min(w * 0.94 / 2, h * 0.9 * 0.75) : Math.min(w * 0.82, h * 0.88 * 0.75);
-    el.style.width = Math.round(land ? pageW * 2 : pageW) + 'px';
-    el.style.height = Math.round(pageW / 0.75) + 'px';
-    return { land, pageW };
+    const w = area.clientWidth, h = area.clientHeight;
+    flipPageW = Math.floor(Math.min(w * 0.96 / 2, h * 0.94 * RATIO));
+    el.style.width = flipPageW * 2 + 'px';
+    el.style.height = Math.round(flipPageW / RATIO) + 'px';
   }
-  // arkadaki sert kapak ve sayfa yığını: açıkken iki sayfanın, kapalıyken yalnızca kapağın arkasında
-  function placeBoard() {
+  // kapalı defter ortada: ön kapakta yarım sayfa sola, arka kapakta yarım sayfa sağa kaydırılır; açılırken kayma kapakla birlikte biter
+  function shiftFor(i) { const n = flip.getPageCount(); return i === 0 ? -flipPageW / 2 : i >= n - 1 ? flipPageW / 2 : 0; }
+  function setShift(x, ms) {
+    const book = scene && scene.querySelector('.df-kitap');
+    if (!book) return;
+    book.style.transition = ms ? `transform ${ms}ms cubic-bezier(.45, .05, .3, 1)` : 'none';
+    book.style.transform = `translateX(${x}px)`;
+    // arkadaki kapak ve sayfa yığını: kapalıyken kapağın altında, açılırken kapakla aynı hızda genişler
+    // açılırken tahtanın sol yarısı kapak dik konumu geçince büyür ve kapak yere değdiğinde biter (kapaktan önce görünmez)
+    const board = scene.querySelector('.df-tahta');
+    if (board) { board.style.left = ''; board.style.transition = ms ? `left ${ms}ms cubic-bezier(.45, .05, .3, 1), right ${ms}ms cubic-bezier(.45, .05, .3, 1)` : 'none'; }
+    scene.classList.toggle('kapali-on', x < 0);
+    scene.classList.toggle('kapali-arka', x > 0);
+  }
+  // Ön kapak dönerken defterin kayması ve arkadaki tahtanın açılması her karede kapağın gerçek açısından hesaplanır
+  // (kütüphane kapağı kendi hızında, parmakla sürüklerken de parmağın hızında çevirir; ikisi hep birlikte gider).
+  let syncRaf = 0;
+  const angleOf = (el) => { const m = el && /rotateY\((-?[\d.]+)deg\)/.exec(el.style.transform || ''); return m ? ((+m[1] % 360) + 360) % 360 : null; };
+  function syncCover() {
+    syncRaf = 0;
     if (!scene || !flip) return;
-    const el = scene.querySelector('.df-flip'), board = scene.querySelector('.df-arka-kapak');
-    const n = flip.getPageCount(), i = flip.getCurrentPageIndex(), land = flip.getOrientation() === 'landscape';
-    const half = el.offsetWidth / 2, closed = land && (i === 0 || i >= n - 1);
-    const left = el.offsetLeft + (land && i === 0 ? half : 0), width = land ? (closed ? half : half * 2) : el.offsetWidth;
-    board.style.left = left + 'px'; board.style.top = el.offsetTop + 'px';
-    board.style.width = width + 'px'; board.style.height = el.offsetHeight + 'px';
-    board.classList.toggle('kapali', closed || i === 0);
-    board.classList.toggle('acik', land && !closed);
+    const ic = scene.querySelector('.df-flip .df-ic'), cover = scene.querySelector('.df-flip .df-kapak:not(.df-arka)');
+    let a = ic && getComputedStyle(ic).display !== 'none' ? angleOf(ic) : null; // iç kapak: 180° kapalı, 0° açık
+    if (a == null) { const c = cover && getComputedStyle(cover).display !== 'none' ? angleOf(cover) : null; if (c != null) a = (c + 180) % 360; }
+    if (a != null && a <= 180) {
+      const k = (1 - Math.cos(a * Math.PI / 180)) / 2; // 1 kapalı … 0 açık; iki ucunda yavaş, ortada hızlı
+      const book = scene.querySelector('.df-kitap'), board = scene.querySelector('.df-tahta');
+      book.style.transition = 'none'; book.style.transform = `translateX(${-flipPageW / 2 * k}px)`;
+      board.style.transition = 'none'; board.style.left = k * 50 + '%';
+      scene.classList.remove('kapali-on');
+    }
+    syncRaf = requestAnimationFrame(syncCover);
   }
-  function sceneSync() {
-    if (!scene) return;
-    scene.querySelector('.df-slots').innerHTML = slots();
-  }
+  function stopSync() { if (syncRaf) cancelAnimationFrame(syncRaf); syncRaf = 0; }
+  function sceneSync() { if (scene) scene.querySelector('.df-slots').innerHTML = slots(); }
+  const abs = (u) => new URL(u, location.href).href; // css değişkenindeki url() stil dosyasına göre çözülmesin
   function buildFlip(start) {
-    const el = scene.querySelector('.df-flip');
+    const id = defterId();
+    // kütüphane kapanırken kök kutuyu da siler: her kurulumda yeni kutu
     if (flip) { try { flip.destroy(); } catch (e) { /* yok say */ } flip = null; }
-    el.innerHTML = flipPages();
-    // boyu biz veriyoruz (autoSize kapalı): dikken kutu tek sayfa genişliğinde olduğu için kütüphane tek sayfa gösterir
-    const { land, pageW } = sizeBook();
+    let el = scene.querySelector('.df-flip');
+    if (!el) { el = document.createElement('div'); el.className = 'df-flip'; scene.querySelector('.df-kitap').appendChild(el); }
+    scene.dataset.tasarim = id;
+    scene.style.setProperty('--df-kapak', `url("${abs(`assets/defter/${id}/kapak.webp`)}")`);
+    scene.style.setProperty('--df-kagit', `url("${abs(`assets/defter/${id}/sayfa.webp`)}")`);
+    scene.style.setProperty('--df-ic', DEFTERLER[id].ic);
+    el.innerHTML = flipPages(id);
+    sizeBook();
     flip = new window.St.PageFlip(el, {
-      width: 600, height: 800, size: 'stretch', autoSize: false, minWidth: Math.round(pageW * 0.6), maxWidth: 4000, minHeight: 100, maxHeight: 6000,
-      showCover: true, usePortrait: true, drawShadow: true, maxShadowOpacity: 0.55, flippingTime: 850,
-      mobileScrollSupport: false, clickEventForward: true, disableFlipByClick: true, swipeDistance: 25, showPageCorners: true,
+      width: 400, height: 600, size: 'stretch', autoSize: false, usePortrait: false, minWidth: 40, maxWidth: 4000, minHeight: 60, maxHeight: 6000,
+      // kütüphane süreyi yol uzunluğuyla kısaltır (1000 pikselden kısa yolda); küçük ekranda da aynı hızda dönsün diye büyütülür
+      showCover: true, drawShadow: true, maxShadowOpacity: 0.45, flippingTime: Math.round(FLIP_MS * Math.max(1, 1000 / (flipPageW * 2))),
+      mobileScrollSupport: false, clickEventForward: true, disableFlipByClick: true, swipeDistance: 20, showPageCorners: true,
       startPage: Math.max(0, Math.min(start, el.children.length - 1)),
     });
     flip.loadFromHTML(el.querySelectorAll('.df-sayfa'));
-    flip.on('flip', (e) => { const p = e.data - 2; if (p >= 0 && p < SD().PAGES.length) lsSet('luna-defter-sayfa', String(p)); placeBoard(); });
-    flip.on('changeOrientation', placeBoard);
-    flip.on('changeState', placeBoard);
-    scene.dataset.yon = land ? 'yan' : 'dik';
-    placeBoard();
+    // ön kapaktan sayfa kalkmaya başlayınca defter kapakla aynı hızda ortaya kayar; vazgeçilirse geri döner
+    flip.on('changeState', (e) => {
+      if (!scene) return;
+      const i = flip.getCurrentPageIndex();
+      if (e.data === 'read') { stopSync(); setShift(shiftFor(i), i >= flip.getPageCount() - 1 ? 420 : 160); }
+      else if (i <= 2 && !syncRaf) syncCover(); // ön kapağa yakınken: kapakla birlikte kay
+    });
+    flip.on('flip', (e) => { if (scene && !syncRaf) setShift(shiftFor(e.data), 420); });
+    setShift(shiftFor(flip.getCurrentPageIndex()), 0);
   }
   let resizeT = 0;
   function onResize() {
     clearTimeout(resizeT);
     resizeT = setTimeout(() => {
       if (!scene || !flip) return;
-      if ((scene.dataset.yon === 'yan') !== isLand()) buildFlip(flip.getCurrentPageIndex()); // dik ↔ yan: tek sayfa ↔ iki sayfa
-      else { sizeBook(); flip.update(); placeBoard(); }
-    }, 180);
+      sizeBook(); flip.update(); setShift(shiftFor(flip.getCurrentPageIndex()), 0);
+    }, 160);
   }
   function closeBook() {
     if (!scene) return;
+    stopSync();
     const sc = scene;
     scene = null;
     window.removeEventListener('resize', onResize);
     document.removeEventListener('keydown', onKey, true);
     sc.classList.add('kapaniyor');
-    setTimeout(() => { if (flip) { try { flip.destroy(); } catch (e) { /* yok say */ } flip = null; } sc.remove(); }, calm() ? 0 : 260);
+    setTimeout(() => { if (flip) { try { flip.destroy(); } catch (e) { /* yok say */ } flip = null; } sc.remove(); }, calm() ? 0 : 280);
   }
   function onKey(e) {
     if (!scene) return;
@@ -559,34 +611,51 @@ const TakvimUI = (() => {
     else if (e.key === 'ArrowRight' && flip) flip.flipNext('bottom');
     else if (e.key === 'ArrowLeft' && flip) flip.flipPrev('bottom');
   }
+  function chooser() {
+    const cur = defterId();
+    return Object.entries(DEFTERLER).map(([id, d]) => `<button type="button" class="df-sec${id === cur ? ' on' : ''}" data-defter="${id}" aria-label="${esc(d.ad)} defteri" aria-pressed="${id === cur}"><img src="assets/defter/${id}/kapak.webp" alt="" loading="lazy"><small>${esc(d.ad)}</small></button>`).join('');
+  }
   async function openBook() {
     if (!SD() || !SD().PAGES.length || scene) return;
-    if (!(await loadFlip())) { openSimpleBook(); return; }
+    const id = defterId();
+    const [ok] = await Promise.all([loadFlip(), preload(id)]);
+    if (!ok) { openSimpleBook(); return; }
     scene = document.createElement('div');
-    scene.className = 'df-sahne';
+    scene.className = 'df-sahne kapali-on';
     scene.setAttribute('role', 'dialog'); scene.setAttribute('aria-modal', 'true'); scene.setAttribute('aria-label', 'Sticker defteri');
     scene.innerHTML = `<button type="button" class="df-x" data-df="close" aria-label="Defteri kapat">✕</button>
-      <div class="df-alan"><div class="df-arka-kapak kapali" aria-hidden="true"><i></i></div><div class="df-flip"></div></div>
+      <div class="df-alan"><div class="df-kitap"><div class="df-tahta" aria-hidden="true"><i></i></div><div class="df-flip"></div></div></div>
+      <div class="df-secici" hidden>${chooser()}</div>
       <div class="df-alt">
         <button type="button" class="df-ok" data-df="prev" aria-label="Önceki sayfa">‹</button>
         <div class="df-gun"><span>${longDate(sel)}</span><div class="df-slots"></div></div>
         <button type="button" class="df-ok" data-df="next" aria-label="Sonraki sayfa">›</button>
+        <button type="button" class="df-renk" data-df="kapak" aria-label="Defterin kapağını değiştir" aria-expanded="false"></button>
       </div>`;
     document.body.appendChild(scene);
     sceneSync();
-    const saved = +lsGet('luna-defter-sayfa'), resume = Number.isInteger(saved) && saved > 0 && saved < SD().PAGES.length ? saved : -1;
     buildFlip(0);
     window.addEventListener('resize', onResize);
     document.addEventListener('keydown', onKey, true);
-    // açılış: kapalı defter belirir, kapak kendiliğinden açılır (kaldığın sayfa varsa oraya gider)
-    setTimeout(() => {
-      if (!scene || !flip) return;
-      if (resume > 0) flip.flip(resume + 2, 'bottom'); else flip.flipNext('bottom');
-    }, calm() ? 0 : 650);
+    // açılış: kapalı defter ortada belirir, az sonra kapak kendiliğinden açılır
+    setTimeout(() => { if (scene && flip && flip.getCurrentPageIndex() === 0) flip.flipNext('bottom'); }, calm() ? 0 : 700);
     scene.addEventListener('click', (e) => {
       const t = e.target;
       const b = t.closest('[data-df]');
-      if (b) { const a = b.dataset.df; if (a === 'close') closeBook(); else if (flip) (a === 'next' ? flip.flipNext('bottom') : flip.flipPrev('bottom')); return; }
+      if (b) {
+        const a = b.dataset.df;
+        if (a === 'close') closeBook();
+        else if (a === 'kapak') { const box = scene.querySelector('.df-secici'); box.hidden = !box.hidden; b.setAttribute('aria-expanded', String(!box.hidden)); }
+        else if (flip) (a === 'next' ? flip.flipNext('bottom') : flip.flipPrev('bottom'));
+        return;
+      }
+      const df = t.closest('.df-sec');
+      if (df && DEFTERLER[df.dataset.defter]) {
+        D().settings.defter = df.dataset.defter; app.save();
+        const at = flip ? flip.getCurrentPageIndex() : 0;
+        preload(df.dataset.defter).then(() => { if (!scene) return; buildFlip(at); scene.querySelector('.df-secici').innerHTML = chooser(); });
+        return;
+      }
       const un = t.closest('[data-bk-un]');
       if (un) { const d = decor(sel); d.stickers.splice(+un.dataset.bkUn, 1); d.updated = Date.now(); app.save(); render(); sceneSync(); return; }
       const pk = t.closest('[data-pick]');

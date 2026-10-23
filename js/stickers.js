@@ -1,4 +1,4 @@
-/* Sticker defteri: sayfa sayfa stickerlar. Benzer stickerlar aynı bölümde; bölüm 20'den uzunsa birkaç sayfaya bölünür.
+/* Sticker defteri: sayfa sayfa stickerlar. Benzer stickerlar aynı bölümde; bölüm 12'den uzunsa birkaç sayfaya bölünür.
    Görsel stickerlar assets/stickers/<paket>/<ad>.webp (saydam, beyaz kesim kenarlı); güne 'i:<paket>/<ad>' diye yazılır
    (eski emoji stickerlar da olduğu gibi gösterilir). Yeni paket: scripts/sticker-kes.py ile kes, aşağıya bölüm olarak ekle (bkz. NOTLAR.md). */
 
@@ -14,7 +14,7 @@ const StickerDefter = (() => {
     { id: 'cay', title: 'Çay saati', icon: '🫖', pack: 'p1', items: ['s05-03', 's05-19', 's05-04', 's05-08', 's05-06', 's05-18', 's05-24', 's05-32', 's05-31'] },
     { id: 'ev', title: 'Sıcacık ev', icon: '🏡', pack: 'p1', items: ['s03-12', 's03-01', 's03-02', 's03-10', 's03-14', 's03-09', 's03-25', 's03-04', 's03-11', 's03-31', 's03-21', 's03-20', 's03-18', 's03-33', 's03-34', 's03-23', 's03-35', 's03-16', 's03-13', 's03-37', 's03-39', 's07-05'] },
   ];
-  const PER_PAGE = 20;
+  const PER_PAGE = 12; // defter sayfası 3 × 4
   const isImg = (s) => typeof s === 'string' && s.startsWith('i:');
   const src = (s) => 'assets/stickers/' + s.slice(2) + '.webp';
   const all = (b) => (b.pack ? b.items.map((x) => 'i:' + b.pack + '/' + x) : b.items.slice());

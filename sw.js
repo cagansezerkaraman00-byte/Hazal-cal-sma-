@@ -6,7 +6,7 @@
 importScripts('js/surum.js');
 const VERSION = 'luna-' + SURUMLER[0].surum;
 const VENDOR = 'luna-vendor-1'; // büyük ve değişmeyen kütüphaneler (PDF.js), yazı tipleri
-const STICKERS = 'luna-stickers-1'; // sticker defterinin görselleri: ilk görüldüğünde saklanır, sonra internetsiz de görünür (sürüm temizliği dokunmaz)
+const STICKERS = 'luna-stickers-1'; // sticker defterinin görselleri ve kapak/kâğıt tasarımları: ilk görüldüğünde saklanır, sonra internetsiz de görünür (sürüm temizliği dokunmaz)
 const FILES = [
   'assets/sleeping-family.jpg', 'assets/siir/zambak-siir.webp', 'assets/siir/zambak.webp', 'assets/siir/zambak-kucuk.webp', './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'assets/meows/cat-voice.mp3', 'assets/meows/kitten.mp3', 'assets/meows/cat-meow.mp3',
@@ -127,7 +127,7 @@ self.addEventListener('fetch', (e) => {
       return;
     }
     if (url.pathname.includes('/vendor/')) { e.respondWith(cacheFirst(req, VENDOR, url.origin + url.pathname)); return; }
-    if (url.pathname.includes('/assets/stickers/')) { e.respondWith(cacheFirst(req, STICKERS, url.origin + url.pathname).catch(() => new Response('', { status: 504 }))); return; }
+    if (url.pathname.includes('/assets/stickers/') || url.pathname.includes('/assets/defter/')) { e.respondWith(cacheFirst(req, STICKERS, url.origin + url.pathname).catch(() => new Response('', { status: 504 }))); return; }
     const key = url.origin + url.pathname;
     if (SHELL.has(key)) {
       const requested = url.searchParams.get('v');
