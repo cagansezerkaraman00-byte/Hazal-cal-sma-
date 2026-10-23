@@ -2375,70 +2375,93 @@ span.bk-st { width: auto; height: auto; font-size: 26px; filter: none; }
 .bk-arrow:active { transform: scale(.92); }
 .bk-count { font-weight: 800; color: var(--muted); min-width: 64px; text-align: center; }
 @media (prefers-reduced-motion: reduce) { .bk-arrow:active, .tk-book-btn:active .tk-book-ic { transform: none; } }
-/* Gerçek defter sahnesi: ekranı kaplar; her zaman iki sayfa (dikken aynı defter, küçük). Kapak ve kâğıt Hazal'ın tasarımları. */
-.df-sahne { --df-kapak: none; --df-kagit: none; --df-ic: #cdc2db;
-  position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; background: radial-gradient(ellipse at 50% 42%, rgba(66, 40, 96, .74), rgba(12, 7, 24, .92));
-  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); animation: df-gel .32s ease both;
+/* Gerçek defter sahnesi: ekranı kaplar; her zaman iki sayfa (dikken aynı defter, küçük). Ölçü, gölge, kayma ve sahne Lilium
+   defterinden; kapak ve kâğıt Hazal'ın tasarımları. Sahne rengi, ışığı ve vurgusu seçilen deftere göre değişir. */
+.df-sahne { --df-kapak: none; --df-kagit: none; --df-sahne: #ddd9e5; --df-isik: #f6efff; --df-vurgu: #9d8daf; --df-murekkep: #353b35;
+  position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; isolation: isolate; overflow: hidden; color: var(--df-murekkep);
+  background: var(--df-sahne); transition: background 1s; animation: df-gel .32s ease both;
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+/* Lilium sahnesi: iki yumuşak ışık ve ince kâğıt dokusu */
+.df-sahne::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(circle 420px at 12% 6%, var(--df-isik), transparent 100%), radial-gradient(circle 520px at 104% 108%, var(--df-isik), transparent 100%); opacity: .8; }
+.df-sahne::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .13;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' opacity='.3' filter='url(%23n)'/%3E%3C/svg%3E"); }
 .df-sahne.kapaniyor { animation: df-git .28s ease both; }
 @keyframes df-gel { from { opacity: 0; } to { opacity: 1; } }
 @keyframes df-git { to { opacity: 0; } }
+.df-sahne svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.df-etiket { position: absolute; top: calc(20px + env(safe-area-inset-top, 0px)); left: calc(20px + env(safe-area-inset-left, 0px)); right: 70px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 8px;
+  font-size: 10px; letter-spacing: 1.8px; color: #555b50; pointer-events: none; }
+.df-etiket i { width: 5px; height: 5px; border-radius: 50%; background: var(--df-vurgu); }
+.df-etiket b { font-weight: 800; white-space: nowrap; }
+.df-sayac { grid-column: 2; letter-spacing: .5px; font-weight: 700; white-space: nowrap; opacity: .85; }
 .df-x { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); z-index: 3; width: 42px; height: 42px; border-radius: 50%;
-  border: 0; background: rgba(255, 255, 255, .16); color: #fff; font-size: 18px; cursor: pointer; }
-.df-alan { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; margin: 60px 8px 6px; }
-.df-kitap { position: relative; will-change: transform; animation: df-belir .55s cubic-bezier(.2, .9, .3, 1) both; }
+  display: grid; place-items: center; border: 1px solid #5c625b28; background: #ffffff40; color: var(--df-murekkep); cursor: pointer; transition: background .2s; }
+.df-x:hover { background: #ffffff90; }
+.df-alan { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; margin: 60px 8px 6px; transition: opacity .25s, transform .4s; }
+.df-alan.degisiyor { opacity: 0; transform: translateY(10px); }
+/* Lilium: kapalı defter ortada (ön kapakta yarım sayfa sola, arka kapakta sağa); açılınca .65 s'de ortaya kayar */
+.df-kitap { --page-w: 200px; position: relative; flex: none; will-change: transform; animation: df-belir .55s cubic-bezier(.2, .9, .3, 1) both;
+  transition: transform .65s cubic-bezier(.22, .7, .25, 1); transform: translateX(calc(var(--page-w) * -.5)); }
+.df-kitap[data-position="open"] { transform: translateX(0); }
+.df-kitap[data-position="back"] { transform: translateX(calc(var(--page-w) * .5)); }
 @keyframes df-belir { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
-.df-flip { position: relative; z-index: 1; }
+.df-flip { position: relative; filter: drop-shadow(0 25px 22px #22251c30); }
 .df-flip .stf__wrapper { height: 100%; }
 .df-flip .stf__block { perspective: 4200px; } /* sert kapak dönerken yakın kenarı fazla büyüyüp taşmasın */
-/* açık defterin arkasındaki sert kapak ve sayfa yığını (kapalıyken görünmez; kapak açılırken belirir) */
-.df-tahta { position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 0; pointer-events: none; }
-.df-sahne.kapali-on .df-tahta { left: 50%; }
-.df-sahne.kapali-arka .df-tahta { right: 50%; }
-.df-sahne.kapali-on .df-tahta i::after, .df-sahne.kapali-arka .df-tahta i::after { opacity: 0; }
-.df-tahta::before { content: ''; position: absolute; inset: -9px -10px -12px; border-radius: 12px; background: var(--df-ic); box-shadow: 0 22px 44px rgba(0, 0, 0, .5), inset 0 0 0 1px rgba(255, 255, 255, .25); }
-.df-tahta i { position: absolute; inset: -3px -5px -6px; border-radius: 4px; background: #f3ece2;
-  box-shadow: -2px 2px 0 #e2d7c7, 2px 2px 0 #e2d7c7, -4px 4px 0 #f0e7da, 4px 4px 0 #f0e7da, 0 5px 0 #dacdba; }
-.df-tahta i::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 26px; margin-left: -13px; background: linear-gradient(90deg, transparent, rgba(70, 45, 35, .3), transparent); transition: opacity .3s; }
-/* sayfalar */
-.df-sayfa { overflow: hidden; background-color: #fbf7f1; }
-.df-kagit { background: var(--df-kagit) center / 100% 100% no-repeat, #fbf7f1; }
-.df-sayfa.--left.df-kagit { box-shadow: inset -16px 0 20px -14px rgba(60, 35, 25, .5); }
-.df-sayfa.--right.df-kagit { box-shadow: inset 16px 0 20px -14px rgba(60, 35, 25, .5); }
-.df-kapak { background: var(--df-kapak) center / 100% 100% no-repeat, var(--df-ic); border-radius: 0 8px 8px 0; box-shadow: inset 7px 0 6px -4px rgba(0, 0, 0, .35); }
-.df-kapak.df-arka { background: var(--df-ic); border-radius: 8px 0 0 8px; box-shadow: inset -7px 0 6px -4px rgba(0, 0, 0, .35); }
-.df-ic { background: var(--df-ic); }
-.df-ic.--left { box-shadow: inset -10px 0 12px -8px rgba(0, 0, 0, .3); }
-.df-pg { position: absolute; inset: 0; display: flex; flex-direction: column; }
-.df-ic-pg { align-items: center; justify-content: center; gap: 8px; text-align: center; padding: 10%; }
-.df-ic p { margin: 0; font-size: clamp(13px, 3.6vw, 24px); font-weight: 900; line-height: 1.3; color: rgba(60, 40, 70, .8); }
-.df-ic small { font-size: clamp(9px, 2.4vw, 13px); font-weight: 700; color: rgba(60, 40, 70, .6); }
-.df-ic.koyu p { color: rgba(255, 255, 255, .88); }
-.df-ic.koyu small { color: rgba(255, 255, 255, .6); }
+/* sayfalar (Lilium): ince kenar, sırta doğru hafif gölge, dış kenarda ışık */
+.df-sayfa { overflow: hidden; background: #fcfaf6; border: 1px solid #b4b3a254; }
+.df-sayfa::after { content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(90deg, #1d231a15, transparent 7%, transparent 92%, #fff4); }
+.df-sayfa.--left::after { background: linear-gradient(90deg, #0001, transparent 5%, transparent 84%, #3a382a20); }
+.df-sayfa.--right::after { background: linear-gradient(90deg, #3a382a25, transparent 15%, transparent 96%, #0001); }
+.df-kagit { background: var(--df-kagit) center / 100% 100% no-repeat, #fcfaf6; }
+.df-kapak { background: var(--df-kapak) center / 100% 100% no-repeat, #fcfaf6; border-radius: 2px 5px 5px 2px; border: 1px solid #5553; }
+.df-kapak::after { background: linear-gradient(90deg, #0005, transparent 3%, #fff5 4%, transparent 7%, transparent 96%, #0003); }
+.df-kapak.df-arka { border-radius: 5px 2px 2px 5px; filter: brightness(.94); }
+.df-kapak.df-arka::after { background: linear-gradient(270deg, #0005, transparent 3%, #fff5 4%, transparent 7%, transparent 96%, #0003); }
 .df-alan2 { position: absolute; display: flex; flex-direction: column; gap: 2%; }
 .df-alan2 .bk-ph { padding: 0 2px; }
-.df-alan2 .bk-ph b { font-size: clamp(10px, 2.8vw, 17px); font-weight: 900; color: inherit; }
-.df-alan2 .bk-ph span { font-size: clamp(9px, 2.2vw, 12px); opacity: .7; }
+.df-alan2 .bk-ph b { font-size: max(10px, min(22px, calc(var(--page-w) * .062))); font-weight: 900; color: inherit; }
+.df-alan2 .bk-ph span { font-size: max(9px, calc(var(--page-w) * .045)); opacity: .7; }
 .df-alan2 .bk-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 3%; }
-.df-alan2 .bk-cell { background: transparent; box-shadow: none; padding: 6%; border-radius: 10px; }
+.df-flip.dar .df-alan2 .bk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 4%; }
+.df-alan2 .bk-cell { position: relative; overflow: visible; background: transparent; box-shadow: none; padding: 0; border-radius: 10px; }
+.df-alan2 img.bk-st { position: absolute; inset: 4%; width: 92%; height: 92%; } /* hücreye tam sığsın, alttan kesilmesin */
 .df-alan2 .bk-cell:hover, .df-alan2 .bk-cell:focus-visible { background: rgba(255, 255, 255, .45); }
 .df-alan2 .bk-cell:nth-child(4n+1) .bk-st { transform: rotate(-5deg); }
 .df-alan2 .bk-cell:nth-child(4n+3) .bk-st { transform: rotate(4deg); }
-.df-sayfa .bk-st { pointer-events: none; } /* dokunuş düğmeye gitsin: kütüphane yalnızca düğmeye gelen dokunuşu sayfaya bırakmaz */
-.df-no { position: absolute; bottom: 3.2%; left: 0; right: 0; text-align: center; font-size: clamp(8px, 2vw, 11px); font-weight: 800; color: rgba(70, 55, 80, .5); }
-/* alt şerit: oklar, günün 3 yeri, kapak seçimi */
+.df-sayfa .bk-st { pointer-events: none; } /* dokunuş düğmeye gitsin, resim sürüklenmesin */
+/* ilk sayfa: defterin adı (Lilium'un yazı tipi gibi) */
+.df-ilk { align-items: center; justify-content: center; gap: 4%; text-align: center; }
+.df-ilk p { margin: 0; font: italic 400 max(13px, calc(var(--page-w) * .085)) / 1.3 Georgia, 'Times New Roman', serif; }
+.df-ilk small { font-size: max(9px, calc(var(--page-w) * .045)); font-weight: 700; opacity: .75; }
+.df-no { position: absolute; bottom: 2%; left: 0; right: 0; z-index: 4; text-align: center; font-size: max(8px, calc(var(--page-w) * .032)); color: #696953; }
+/* alt şerit: oklar (Lilium'un yuvarlak düğmeleri), günün 3 yeri, kapak seçimi */
 .df-alt { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 12px 14px; }
-.df-ok { width: 48px; height: 48px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .92); color: #b23a68; font-size: 26px; font-weight: 900; line-height: 1; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, .3); }
+.df-ok { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; border: 1px solid #5c625b28; background: #ffffff40; color: var(--df-murekkep); cursor: pointer; transition: background .2s, opacity .2s; }
+.df-ok:hover { background: #ffffff90; }
 .df-ok:active { transform: scale(.92); }
-.df-gun { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, .92); color: #3b2a4a; font-weight: 800; font-size: 13px; box-shadow: 0 4px 12px rgba(0, 0, 0, .3); }
+.df-ok:disabled { opacity: .3; cursor: default; transform: none; }
+.df-gun { display: flex; align-items: center; gap: 8px; padding: 5px 7px 5px 14px; border-radius: 999px; border: 1px solid #5c625b22; background: #ffffff70; color: var(--df-murekkep); font-weight: 800; font-size: 12px; }
 .df-slots { display: flex; gap: 6px; }
-.df-slots .bk-slot { width: 38px; height: 38px; border-radius: 10px; }
-.df-renk { width: 40px; height: 40px; border-radius: 10px; border: 2px solid rgba(255, 255, 255, .85); background: var(--df-kapak) center / cover, var(--df-ic); cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, .3); }
-.df-secici { display: flex; justify-content: center; gap: 10px; padding: 4px 12px 2px; overflow-x: auto; }
+.df-slots .bk-slot { position: relative; width: 38px; height: 38px; border-radius: 10px; border-color: #5c625b40; background: #ffffff60; }
+.df-slots img.bk-st { position: absolute; inset: 3px; width: calc(100% - 6px); height: calc(100% - 6px); }
+.df-slots .bk-slot.full { border-style: solid; border-color: var(--df-vurgu); background: #ffffffb0; }
+.df-renk { flex: none; width: 34px; height: 51px; border-radius: 2px 5px 5px 2px; border: 0; background: var(--df-kapak) center / cover, var(--df-sahne); cursor: pointer;
+  box-shadow: 4px 7px 9px #2e2a2830, 1px 1px 1px #28251e44; transform: rotate(-5deg); transition: transform .3s; }
+.df-renk[aria-expanded="true"] { transform: rotate(0) translateY(-3px); }
+/* Lilium rafı: eğik küçük defterler; seçilen düzelir ve öne çıkar */
+.df-secici { display: flex; justify-content: center; gap: 14px; padding: 6px 12px 2px; overflow-x: auto; }
 .df-secici[hidden] { display: none; }
-.df-sec { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; color: #fff; font: inherit; cursor: pointer; padding: 0; }
-.df-sec img { width: 46px; height: 69px; object-fit: cover; border-radius: 3px 7px 7px 3px; box-shadow: 0 3px 8px rgba(0, 0, 0, .4); border: 2px solid transparent; }
-.df-sec.on img { border-color: #fff; }
-.df-sec small { font-size: 10px; font-weight: 800; opacity: .9; white-space: nowrap; }
-@media (orientation: landscape) and (max-height: 520px) { .df-alan { margin-top: 8px; margin-bottom: 0; } .df-alt { padding-bottom: 6px; } .df-x { top: 6px; } }
-@media (prefers-reduced-motion: reduce) { .df-sahne, .df-kitap { animation: none; } .df-tahta { transition: none !important; } .df-ok:active { transform: none; } }
+.df-sec { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; color: var(--df-murekkep); font: inherit; cursor: pointer; padding: 6px 2px 0; }
+.df-mini { position: relative; display: block; width: 44px; height: 66px; border-radius: 1px 3px 3px 1px; overflow: hidden; transform: rotate(-5deg) rotateY(-9deg);
+  box-shadow: 7px 13px 13px #2e2a2823, 1px 1px 1px #28251e44; transition: transform .55s cubic-bezier(.2, .8, .2, 1), box-shadow .55s; }
+.df-sec:nth-child(even) .df-mini { transform: rotate(5deg) rotateY(-9deg); }
+.df-mini::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #0005 0, transparent 3%, #ffffff70 5%, transparent 8%, transparent 95%, #0002 100%); pointer-events: none; }
+.df-mini img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.df-sec:hover .df-mini, .df-sec[aria-pressed="true"] .df-mini { transform: rotate(0) translateY(-5px); box-shadow: 8px 18px 20px #2e2a2830; }
+.df-sec small { font: 400 12px Georgia, 'Times New Roman', serif; white-space: nowrap; padding-bottom: 3px; border-bottom: 1px solid transparent; }
+.df-sec[aria-pressed="true"] small { border-color: var(--df-murekkep); }
+@media (orientation: landscape) and (max-height: 520px) { .df-alan { margin-top: 8px; margin-bottom: 0; } .df-alt { padding-bottom: 6px; } .df-x { top: 6px; } .df-etiket { top: 18px; } }
+@media (max-width: 520px) { .df-alt { gap: 10px; } .df-gun { flex-direction: column; gap: 3px; padding: 4px 8px 6px; border-radius: 16px; } .df-gun > span { font-size: 11px; white-space: nowrap; } }
+@media (prefers-reduced-motion: reduce) { .df-sahne, .df-kitap { animation: none; } .df-kitap, .df-alan, .df-mini, .df-renk { transition: none; } .df-ok:active { transform: none; } }
