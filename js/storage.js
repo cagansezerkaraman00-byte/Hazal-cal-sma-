@@ -136,6 +136,8 @@ const Store = (() => {
     files: [],      // depo: {id, src: drive|local, rid, name, mime, size, subjectId, kind, note, created}
     cards: [],      // bilgi kartları: {id, subjectId, front, back, box (1-5), due (YYYY-AA-GG), created}
     dayNotes: [],   // takvim notları: {id, date (YYYY-AA-GG), text, emoji, yearly, remind, created, updated}
+    dayDecor: [],   // takvim süsleri: {id: 'dc-YYYY-AA-GG', date, stickers: [en çok 3], tint (gün rengi), updated}
+    denemePlan: [], // takvimden planlanan denemeler: {id, date, type: TYT|AYT|BRANS, name, created, updated}; sonuç girilince denemelere geçer
     plans: { day: {}, week: {}, month: {}, eod: {}, eodSeq: {} }, // Planlarım: Hazal'ın elle yazdığı planlar (gün / hafta / ay) ve gün sonu notları
     stats: { planItems: 0, planFull: 0, planFullDates: [], cardReviews: 0, friendsMet: false, seen: {} },
     badges: {},     // id -> timestamp
@@ -159,7 +161,7 @@ const Store = (() => {
     out.settings.profile = { ...def.settings.profile, ...(isObj(out.settings.profile) ? out.settings.profile : {}) };
     if (!Array.isArray(out.settings.allowedApps)) out.settings.allowedApps = def.settings.allowedApps.slice();
     delete out.settings.kittenName; // yavrunun adı sabit: Güçlü
-    for (const k of ['subjects', 'questionLogs', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files', 'mistakes', 'refs', 'dayNotes']) {
+    for (const k of ['subjects', 'questionLogs', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files', 'mistakes', 'refs', 'dayNotes', 'dayDecor', 'denemePlan']) {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }
     if (!isObj(out.badges)) out.badges = {};
@@ -212,6 +214,21 @@ const Store = (() => {
       n.text = typeof n.text === 'string' ? n.text.slice(0, 60) : '';
       n.emoji = typeof n.emoji === 'string' && n.emoji.length <= 8 ? n.emoji : '⭐';
       n.yearly = !!n.yearly; n.remind = !!n.remind; n.created = +n.created || 0; n.updated = +n.updated || 0;
+    }
+    const DAY = /^\d{4}-\d{2}-\d{2}$/, TINTS = ['', 'pembe', 'seftali', 'limon', 'nane', 'gok', 'lila']; // 'color' değil: o ad yukarıda #renk diye denetleniyor
+    out.dayDecor = out.dayDecor.filter((x) => isObj(x) && typeof x.date === 'string' && DAY.test(x.date));
+    for (const x of out.dayDecor) {
+      x.id = 'dc-' + x.date;
+      x.stickers = (Array.isArray(x.stickers) ? x.stickers : []).filter((s) => typeof s === 'string' && s && s.length <= 8).slice(0, 3);
+      if (!TINTS.includes(x.tint)) x.tint = '';
+      x.updated = +x.updated || 0;
+    }
+    out.denemePlan = out.denemePlan.filter((x) => isObj(x) && typeof x.date === 'string' && DAY.test(x.date));
+    for (const x of out.denemePlan) {
+      if (typeof x.id !== 'string' || !x.id) x.id = 'dp' + U.uid();
+      if (!['TYT', 'AYT', 'BRANS'].includes(x.type)) x.type = 'TYT';
+      x.name = typeof x.name === 'string' ? x.name.slice(0, 40) : '';
+      x.created = +x.created || 0; x.updated = +x.updated || 0;
     }
     if (!isObj(out.deleted)) out.deleted = {};
   }
@@ -276,7 +293,7 @@ const Store = (() => {
   const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
   const hasIds = (arr) => arr.length > 0 && arr.every((x) => isObj(x) && (typeof x.id === 'string' || typeof x.id === 'number'));
   // izi tutulan listeler: bunlarda silinen kayıt, silinmeden önce alınmış bir yedekten geri gelmez
-  const TRACKED = ['sessions', 'tasks', 'review', 'notes', 'cards', 'denemeler', 'mistakes', 'refs', 'files', 'dayNotes'];
+  const TRACKED = ['sessions', 'tasks', 'review', 'notes', 'cards', 'denemeler', 'mistakes', 'refs', 'files', 'dayNotes', 'denemePlan'];
   function mergeIn(obj) {
     const inc = merge(defaults(), obj);
     let added = 0;

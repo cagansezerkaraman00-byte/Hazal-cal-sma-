@@ -2228,7 +2228,21 @@ body.siir-acik { overflow: hidden; }
 .tk-cell.we .tk-n { color: var(--pink-ink); }
 .tk-n { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; }
 .tk-cell.today .tk-n { background: var(--pink); color: #fff; box-shadow: 0 0 0 3px var(--pink-soft), 0 0 12px rgba(242, 120, 159, .6); }
-.tk-cell.sel { background: var(--pink-soft); box-shadow: inset 0 0 0 2px var(--pink); }
+.tk-cell.sel { box-shadow: inset 0 0 0 2px var(--pink); }
+.tk-cell.sel:not([class*=" t-"]) { background: var(--pink-soft); }
+/* gün rengi (yarı saydam: üç temada da yumuşak durur) */
+.tk-cell.t-pembe { background: rgba(255, 143, 190, .34); }
+.tk-cell.t-seftali { background: rgba(255, 168, 110, .34); }
+.tk-cell.t-limon { background: rgba(255, 214, 70, .36); }
+.tk-cell.t-nane { background: rgba(80, 210, 160, .30); }
+.tk-cell.t-gok { background: rgba(100, 175, 255, .30); }
+.tk-cell.t-lila { background: rgba(170, 130, 255, .32); }
+/* güne yapışan stickerlar */
+.tk-st { position: absolute; left: 1px; bottom: 0; font-size: 17px; line-height: 1; transform: rotate(-12deg); filter: drop-shadow(0 1px 1px rgba(30, 10, 40, .22)); pointer-events: none; }
+.tk-st.s2 { left: auto; bottom: auto; right: 0; top: 1px; font-size: 12px; transform: rotate(14deg); }
+.tk-st.pop { animation: tk-pop .45s ease-out; }
+@keyframes tk-pop { 0% { transform: scale(.2) rotate(-40deg); } 70% { transform: scale(1.3) rotate(-6deg); } 100% { transform: rotate(-12deg); } }
+.tk-corner { position: absolute; top: -18px; right: -8px; z-index: 1; font-size: 34px; line-height: 1; transform: rotate(14deg); filter: drop-shadow(0 2px 2px rgba(30, 10, 40, .25)); pointer-events: none; }
 .tk-mark { font-size: 11px; line-height: 1; white-space: nowrap; }
 .tk-mark i { font-style: normal; font-size: 9px; color: var(--muted); }
 .tk-star { position: absolute; bottom: 2px; right: 4px; font-size: 12px; line-height: 1; color: var(--faint); }
@@ -2281,5 +2295,40 @@ body.siir-acik { overflow: hidden; }
 .takvim-yakin h2 { margin: 0 0 10px; }
 .tk-soon button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 0; border-radius: 12px; background: var(--surface-2); color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .tk-rel { font-size: 12px; font-weight: 800; color: var(--pink-ink); white-space: nowrap; }
-@media (max-width: 360px) { .tk-cell { font-size: 12px; border-radius: 10px; } .tk-n { width: 21px; height: 21px; } .tk-month span { font-size: 22px; } }
-@media (prefers-reduced-motion: reduce) { .tk-nav:active { transform: none; } }
+.tk-sec h3 small { font-size: 12px; }
+.tk-stuck { display: flex; gap: 10px; }
+.tk-stuck button { position: relative; width: 50px; height: 50px; border-radius: 14px; border: 2px dashed var(--pink); background: var(--pink-soft); font-size: 28px; line-height: 1; cursor: pointer; }
+.tk-stuck button:nth-child(odd) { transform: rotate(-6deg); }
+.tk-stuck button:nth-child(even) { transform: rotate(5deg); }
+.tk-stuck i { position: absolute; top: -7px; right: -7px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-style: normal; font-size: 10px; }
+.tk-stickers { display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; padding: 2px 2px 6px; }
+.tk-stickers button { flex: none; width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); font-size: 22px; line-height: 1; cursor: pointer; }
+.tk-stickers button:active { transform: scale(.9) rotate(-8deg); }
+@media (min-width: 700px) { .tk-stickers { flex-wrap: wrap; overflow: visible; } }
+.tk-tints { display: flex; flex-wrap: wrap; gap: 10px; }
+.tk-tints button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+.tk-tints button[aria-checked="true"] { box-shadow: 0 0 0 3px var(--pink); }
+.tint-yok { background: repeating-linear-gradient(45deg, var(--surface-2) 0 4px, var(--line) 4px 7px); }
+.tint-pembe { background: #ff9cc8; } .tint-seftali { background: #ffb98a; } .tint-limon { background: #ffe066; }
+.tint-nane { background: #7fdcb5; } .tint-gok { background: #8cc4ff; } .tint-lila { background: #bfa0ff; }
+/* takvimdeki deneme planı */
+.tk-dn-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.tk-dn { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 8px 4px 8px 10px; border-radius: 12px; background: var(--lav-soft); }
+.tk-dn.done { grid-template-columns: auto minmax(0, 1fr) auto; padding-right: 8px; }
+.tk-dn .btn { white-space: nowrap; }
+.tk-dn.done { background: var(--surface-2); }
+.tk-dn-t { min-width: 0; display: flex; flex-direction: column; }
+.tk-dn-t small { font-size: 11px; color: var(--muted); font-weight: 700; }
+.tk-dn .small-btn, .deneme-plan-list .small-btn { margin-top: 0; }
+.tk-dn-form { display: flex; flex-direction: column; gap: 8px; }
+.tk-dn-types { align-self: flex-start; }
+/* Deneme sekmesi: takvimden planlanan denemeler */
+.deneme-plan-card { margin-bottom: 14px; }
+.deneme-plan-card h2 { margin-top: 0; }
+.deneme-plan-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.deneme-plan-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); }
+.deneme-plan-list li.due { background: var(--pink-soft); }
+.dp-text { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
+.dp-text small { color: var(--muted); font-weight: 700; }
+@media (max-width: 360px) { .tk-cell { font-size: 12px; border-radius: 10px; } .tk-n { width: 21px; height: 21px; } .tk-month span { font-size: 22px; } .tk-st { font-size: 15px; } }
+@media (prefers-reduced-motion: reduce) { .tk-nav:active, .tk-stickers button:active { transform: none; } .tk-st.pop { animation: none; } }

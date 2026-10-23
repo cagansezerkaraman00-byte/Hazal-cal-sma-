@@ -1,13 +1,19 @@
 /* Takvim sekmesi: telli masa takvimi. Bir güne dokununca o günün sayfası açılır: notlar ("Doğum günüm 🎂" gibi, istenirse her yıl),
-   özel günler ve sınavlar, o günkü çalışma, o günün planı (Planlarım ile aynı liste) ve geçmiş bir güne çalışma ekleme.
-   Notlar D().dayNotes içinde durur: {id, date: YYYY-AA-GG, text, emoji, yearly, remind, created, updated}.
-   Not günü gelince sayfanın üstünde yazar, Luna da bir kez söyler; "bir gün önce haber ver" açıksa bir gün önceden de. */
+   özel günler ve sınavlar, o günkü çalışma, sticker ve gün rengi, deneme planı, o günün planı (Planlarım ile aynı liste)
+   ve geçmiş bir güne çalışma ekleme.
+   Notlar D().dayNotes: {id, date: YYYY-AA-GG, text, emoji, yearly, remind, created, updated}.
+   Süsler D().dayDecor: {id: 'dc-' + tarih, date, stickers: [en çok 3], tint, updated}.
+   Planlanan denemeler D().denemePlan: Deneme sekmesinde de görünür; sonuç girilince gerçek denemeye dönüşüp analize katılır.
+   Not günü gelince sayfanın üstünde yazar, Luna da bir kez söyler; "bir gün önce haber ver" açıksa (ve denemelerde her zaman) bir gün önceden de. */
 
 const TakvimUI = (() => {
   const EMOJI = ['🎂', '💖', '🎉', '📚', '📝', '⭐', '🌸', '🎁', '✈️', '🩺'];
+  const STICKERS = ['🌸', '🌷', '🌈', '⭐', '🌙', '☁️', '🦋', '🍓', '🍒', '🧁', '🎀', '💖', '💫', '🐱', '🐰', '🍀', '🌻', '🍉'];
+  const TINTS = [['', 'Renksiz'], ['pembe', 'Pembe'], ['seftali', 'Şeftali'], ['limon', 'Limon'], ['nane', 'Nane'], ['gok', 'Gök mavisi'], ['lila', 'Lila']];
+  const MONTH_STICKER = ['❄️', '💝', '🌱', '🌷', '🌼', '☀️', '🍉', '🐚', '📚', '🍁', '☕', '🎄'];
   const SAID_KEY = 'luna-takvim-soz', EVE_KEY = 'luna-takvim-yarin'; // Luna bugünün / yarının notunu söyledi mi (günde bir kez)
   let app = null, bound = false, view = null, sel = '';
-  let form = { id: '', text: '', emoji: EMOJI[0], yearly: true, remind: true }, planDraft = '';
+  let form = { id: '', text: '', emoji: EMOJI[0], yearly: true, remind: true }, planDraft = '', dnType = 'TYT', dnDraft = '';
 
   const $ = (s) => document.querySelector(s);
   const D = () => app.data();
@@ -59,7 +65,23 @@ const TakvimUI = (() => {
     return n === 0 ? 'Bugün' : n === 1 ? 'Yarın' : n === -1 ? 'Dün' : n > 0 ? `${n} gün sonra` : `${-n} gün önce`;
   }
   const longDate = (k) => { const d = at(k); return `${d.getDate()} ${U.MONTHS[d.getMonth()]} ${U.DAYS[d.getDay()]}`; };
-  const marksOf = (k) => notesOn(k).map((n) => ({ emoji: n.emoji, text: n.text })).concat(special(k));
+  // süsler ve denemeler
+  const decorList = () => (Array.isArray(D().dayDecor) ? D().dayDecor : (D().dayDecor = []));
+  const decorOn = (k) => decorList().find((x) => x.date === k) || null;
+  function decor(k) { // yoksa oluşturur
+    let x = decorOn(k);
+    if (!x) { x = { id: 'dc-' + k, date: k, stickers: [], tint: '', updated: 0 }; decorList().push(x); }
+    return x;
+  }
+  const deneme = () => !programMode() && !!window.Deneme && !!window.DenemeUI;
+  // Üniversite modu (ileride): burası vize / final / proje olacak; şimdilik deneme yalnızca YKS modunda (bkz. NOTLAR.md)
+  const plansOn = (k) => (deneme() ? (D().denemePlan || []).filter((x) => x && x.date === k) : []);
+  const doneOn = (k) => (deneme() ? D().denemeler.filter((x) => x && x.date === k) : []);
+  const dnName = (t) => (t === 'BRANS' ? 'Branş' : window.Deneme ? Deneme.typeName(t) : t);
+  const marksOf = (k) => notesOn(k).map((n) => ({ emoji: n.emoji, text: n.text }))
+    .concat(plansOn(k).map((p) => ({ emoji: '📝', text: Deneme.planTitle(p) })))
+    .concat(doneOn(k).map((e) => ({ emoji: '📊', text: `${e.name || Deneme.label(e) + ' denemesi'} · ${Deneme.fmt(Deneme.total(e))} net` })))
+    .concat(special(k));
 
   // ---------- Takvim sayfası ----------
   function ribbon(today) {
@@ -76,11 +98,12 @@ const TakvimUI = (() => {
     const days = new Date(y, m + 1, 0).getDate(), pad = (new Date(y, m, 1, 12).getDay() + 6) % 7; // Pzt = 0
     let html = '<span class="tk-cell empty" aria-hidden="true"></span>'.repeat(pad);
     for (let d = 1; d <= days; d++) {
-      const k = key(new Date(y, m, d, 12)), dow = (pad + d - 1) % 7, marks = marksOf(k);
-      const lv = k <= today ? level(mins[k] || 0) : '', plan = planOn(k).length;
-      const cls = ['tk-cell', k === today ? 'today' : '', k === sel ? 'sel' : '', dow >= 5 ? 'we' : ''].join(' ');
+      const k = key(new Date(y, m, d, 12)), dow = (pad + d - 1) % 7, marks = marksOf(k), dc = decorOn(k);
+      const lv = k <= today ? level(mins[k] || 0) : '', plan = planOn(k).length, st = dc ? dc.stickers : [];
+      const cls = ['tk-cell', k === today ? 'today' : '', k === sel ? 'sel' : '', dow >= 5 ? 'we' : '', dc && dc.tint ? 't-' + dc.tint : ''].join(' ');
       const label = [longDate(k), ...marks.map((x) => x.text), mins[k] ? U.fmtMin(mins[k]) + ' çalışma' : '', plan ? plan + ' plan maddesi' : ''].filter(Boolean).join(', ');
       html += `<button type="button" class="${cls}" data-day="${k}" aria-label="${esc(label)}" aria-pressed="${k === sel}">
+        ${st[0] ? `<span class="tk-st" aria-hidden="true">${st[0]}</span>` : ''}${st[1] ? `<span class="tk-st s2" aria-hidden="true">${st[1]}</span>` : ''}
         <span class="tk-n">${d}</span>${marks.length ? `<span class="tk-mark" aria-hidden="true">${marks.slice(0, 2).map((x) => x.emoji).join('')}${marks.length > 2 ? '<i>+</i>' : ''}</span>` : ''}
         ${lv ? `<span class="tk-star ${lv}" aria-hidden="true">★</span>` : plan && k >= today ? '<span class="tk-dot" aria-hidden="true"></span>' : ''}</button>`;
     }
@@ -91,6 +114,7 @@ const TakvimUI = (() => {
     if (!root) return;
     const away = key(view).slice(0, 7) !== today.slice(0, 7) || sel !== today;
     root.innerHTML = `<div class="tk-wire" aria-hidden="true">${'<i></i>'.repeat(12)}</div>
+      <span class="tk-corner" aria-hidden="true">${MONTH_STICKER[view.getMonth()]}</span>
       <div class="tk-page">
         <div class="tk-head">
           <button type="button" class="tk-nav" data-nav="-1" aria-label="Önceki ay">‹</button>
@@ -117,7 +141,6 @@ const TakvimUI = (() => {
     const facts = [];
     if (k <= today && mins) facts.push(`⭐ ${k === today ? 'Bugün şimdiye kadar' : 'O gün'} ${U.fmtMin(mins)} çalıştın${mins >= goal ? ' · hedef tamam 🎯' : ''}`);
     else if (k < today) facts.push('🌙 O gün çalışma kaydı yok; dinlenmek de yolun parçası.');
-    for (const e of D().denemeler) if (e && e.date === k) facts.push(`📝 ${esc(e.name || e.type + ' denemesi')}`);
     if (k > today && !programMode() && window.YKS && YKS.examDate) {
       const n = Math.round((at(YKS.examDate()) - at(k)) / 864e5);
       if (n > 0) facts.push(`🎓 O gün YKS'ye ${n} gün kalacak`);
@@ -126,10 +149,32 @@ const TakvimUI = (() => {
       ? `<li class="tk-pl moved"><span>↪</span><span class="tk-pl-t">${esc(it.title)}</span><small>taşındı</small></li>`
       : `<li class="tk-pl${it.done ? ' done' : ''}"><label><input type="checkbox" data-pdone="${esc(it.id)}" ${it.done ? 'checked' : ''}><span class="tk-pl-t">${esc(it.title)}</span></label>
           <button type="button" class="tk-del" data-pdel="${esc(it.id)}" aria-label="${esc(it.title)} maddesini sil">✕</button></li>`).join('');
-    const editing = !!form.id;
+    const editing = !!form.id, dc = decorOn(k), stuck = dc ? dc.stickers : [], tint = dc ? dc.tint : '';
+    const decorHtml = `<section class="tk-sec tk-decor" aria-label="Sticker ve gün rengi">
+        <h3>🌈 Sticker ve renk ${stuck.length ? `<small>${stuck.length}/3</small>` : ''}</h3>
+        ${stuck.length ? `<div class="tk-stuck">${stuck.map((x, i) => `<button type="button" data-unstick="${i}" aria-label="${x} stickerını kaldır">${x}<i aria-hidden="true">✕</i></button>`).join('')}</div>` : ''}
+        <div class="tk-stickers" role="group" aria-label="Sticker yapıştır">${STICKERS.map((x) => `<button type="button" data-stick="${x}" aria-label="${x} yapıştır">${x}</button>`).join('')}</div>
+        <div class="tk-tints" role="radiogroup" aria-label="Gün rengi">${TINTS.map(([v, n]) => `<button type="button" role="radio" class="tint-${v || 'yok'}" data-tint="${v}" aria-checked="${v === tint}" aria-label="${n}" title="${n}"></button>`).join('')}</div>
+      </section>`;
+    const pl = plansOn(k), dn = doneOn(k);
+    const dnHtml = !deneme() ? '' : `<section class="tk-sec tk-deneme" aria-label="Deneme">
+        <h3>📝 Deneme</h3>
+        ${pl.length || dn.length ? `<ul class="tk-dn-list">${pl.map((x) => `<li class="tk-dn"><span class="type-tag" data-type="${x.type === 'BRANS' ? 'BRANS' : esc(dnName(x.type))}">${esc(dnName(x.type))}</span>
+            <span class="tk-dn-t"><b>${esc(x.name || dnName(x.type) + ' denemesi')}</b><small>${k <= today ? 'sonuçlarını bekliyor' : 'planlandı'}</small></span>
+            <button type="button" class="btn ${k <= today ? 'primary' : 'soft'} small-btn" data-dres="${esc(x.id)}">Sonuçları gir</button>
+            <button type="button" class="tk-del" data-ddel="${esc(x.id)}" aria-label="Deneme planını sil">✕</button></li>`).join('')}${dn.map((e) => `<li class="tk-dn done"><span class="type-tag" data-type="${esc(Deneme.kind(e))}">${esc(Deneme.label(e))}</span>
+            <span class="tk-dn-t"><b>${esc(e.name || Deneme.label(e) + ' denemesi')}</b><small>${Deneme.fmt(Deneme.total(e))} net</small></span>
+            <button type="button" class="btn soft small-btn" data-dgo>Analiz ›</button></li>`).join('')}</ul>` : ''}
+        <form class="tk-dn-form" data-form="deneme" autocomplete="off">
+          <div class="seg tk-dn-types" role="radiogroup" aria-label="Deneme türü">${['TYT', 'AYT', 'BRANS'].map((t) => `<button type="button" role="radio" data-dtype="${t}" class="${t === dnType ? 'active' : ''}" aria-checked="${t === dnType}">${esc(dnName(t))}</button>`).join('')}</div>
+          <div class="tk-row-form"><input id="tk-dname" maxlength="40" placeholder="Adı / yayın (isteğe bağlı)" value="${esc(dnDraft)}" aria-label="Deneme adı"><button class="btn soft" type="submit">Planla</button></div>
+        </form>
+      </section>`;
     root.innerHTML = `<div class="tk-d-head"><h2>${longDate(k)}</h2><span>${rel(k)}</span></div>
       ${rows ? `<ul class="tk-evs">${rows}</ul>` : '<p class="tk-empty">Bu günün henüz notu yok. Aşağıdan ekleyebilirsin 🌸</p>'}
       ${facts.length ? `<ul class="tk-facts">${facts.map((f) => `<li>${f}</li>`).join('')}</ul>` : ''}
+      ${decorHtml}
+      ${dnHtml}
       <section class="tk-sec" aria-label="Bu günün planı">
         <h3>🗓️ Bu günün planı${plan.length ? ` <small>${plan.filter((x) => x.done).length}/${plan.filter((x) => !x.moved).length}</small>` : ''}</h3>
         ${planRows ? `<ul class="tk-plan">${planRows}</ul>` : ''}
@@ -170,7 +215,7 @@ const TakvimUI = (() => {
     if (!app || !$('#takvim-card')) return;
     // yazarken yeniden çizilip yazı kaybolmasın
     const a = document.activeElement;
-    if (a && (a.id === 'tk-text' || a.id === 'tk-ptext')) return;
+    if (a && (a.id === 'tk-text' || a.id === 'tk-ptext' || a.id === 'tk-dname')) return;
     const today = todayKey();
     if (!view) view = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
     if (!sel) sel = today;
@@ -231,7 +276,28 @@ const TakvimUI = (() => {
       }
       const pdel = t.closest('[data-pdel]');
       if (pdel) { if (Planlar.remove(pdel.dataset.pdel)) { app.refresh(); render(); } return; }
-      if (t.closest('[data-session]')) app.addSession(sel);
+      if (t.closest('[data-session]')) { app.addSession(sel); return; }
+      // sticker yapıştır / kaldır, gün rengi
+      const stick = t.closest('[data-stick]');
+      if (stick) {
+        const x = decor(sel);
+        if (x.stickers.length >= 3) { app.toast('🌈', 'Bir güne en fazla 3 sticker', 'Kaldırmak için üstteki stickera dokun'); return; }
+        x.stickers.push(stick.dataset.stick); x.updated = Date.now();
+        app.save(); render(); popSticker();
+        return;
+      }
+      const un = t.closest('[data-unstick]');
+      if (un) { const x = decor(sel); x.stickers.splice(+un.dataset.unstick, 1); x.updated = Date.now(); app.save(); render(); return; }
+      const tn = t.closest('[data-tint]');
+      if (tn) { const x = decor(sel); x.tint = tn.dataset.tint; x.updated = Date.now(); app.save(); render(); return; }
+      // deneme planı
+      const dt = t.closest('[data-dtype]');
+      if (dt) { const i = $('#tk-dname'); if (i) dnDraft = i.value; dnType = dt.dataset.dtype; render(); return; }
+      const dres = t.closest('[data-dres]');
+      if (dres) { DenemeUI.openPlan(dres.dataset.dres); return; }
+      const ddel = t.closest('[data-ddel]');
+      if (ddel) { if (DenemeUI.removePlan(ddel.dataset.ddel)) { app.save(); app.refresh(); render(); app.toast('📝', 'Deneme planı silindi'); } return; }
+      if (t.closest('[data-dgo]')) app.showTab('deneme');
     });
     tab.addEventListener('change', (e) => {
       const t = e.target;
@@ -249,10 +315,24 @@ const TakvimUI = (() => {
     tab.addEventListener('input', (e) => {
       if (e.target.id === 'tk-text') form.text = e.target.value;
       if (e.target.id === 'tk-ptext') planDraft = e.target.value;
+      if (e.target.id === 'tk-dname') dnDraft = e.target.value;
     });
     tab.addEventListener('submit', (e) => {
       e.preventDefault();
       const f = e.target.dataset.form;
+      if (f === 'deneme') {
+        const input = $('#tk-dname'), name = (input ? input.value : dnDraft).trim().slice(0, 40), now = Date.now();
+        if (!Array.isArray(D().denemePlan)) D().denemePlan = [];
+        D().denemePlan.push({ id: 'dp' + U.uid(), date: sel, type: dnType, name, created: now, updated: now });
+        dnDraft = '';
+        if (input) input.blur();
+        app.save();
+        app.refresh();
+        render();
+        app.toast('📝', `${dnName(dnType)} denemesi planlandı`, `${longDate(sel)} · Deneme sekmesinde de görünüyor`);
+        if (sel === todayKey() || sel === key(U.addDays(new Date(), 1))) setTimeout(sayToday, 600);
+        return;
+      }
       if (f === 'plan') {
         const input = $('#tk-ptext'), title = (input ? input.value : planDraft).trim();
         if (!title) { if (input) input.focus(); return; }
@@ -280,6 +360,12 @@ const TakvimUI = (() => {
       if (sel === todayKey() || sel === key(U.addDays(new Date(), 1))) setTimeout(sayToday, 600);
     });
   }
+  // yeni yapışan sticker hafifçe zıplar (hareket azaltılmışsa durur)
+  function popSticker() {
+    const c = $(`#takvim-card [data-day="${sel}"] .tk-st`);
+    if (!c || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    c.classList.add('pop');
+  }
   // açık formdaki kutucuklar (yazı yazılırken çizim atlanabildiği için) kaybolmasın
   function syncForm() {
     const i = $('#tk-text');
@@ -291,7 +377,9 @@ const TakvimUI = (() => {
   let tries = 0;
   function sayToday() {
     const today = todayKey(), tomorrow = key(U.addDays(at(today), 1));
-    const mine = notesOn(today), eve = notesOn(tomorrow).filter((n) => n.remind);
+    // denemeler not gibi söylenir; bir gün önce her zaman haber verilir
+    const asNote = (p) => ({ emoji: '📝', text: Deneme.planTitle(p), remind: true, deneme: true });
+    const mine = notesOn(today).concat(plansOn(today).map(asNote)), eve = notesOn(tomorrow).filter((n) => n.remind).concat(plansOn(tomorrow).map(asNote));
     const todayDue = mine.length && lsGet(SAID_KEY) !== today, eveDue = eve.length && lsGet(EVE_KEY) !== today;
     if (!todayDue && !eveDue) return;
     const busy = app.isFocusing() || !$('#modal').classList.contains('hidden') || app.quietFor(8000) || document.hidden;
@@ -300,12 +388,14 @@ const TakvimUI = (() => {
     const join = (arr) => arr.map((n) => `${n.emoji} ${n.text}`).join(', ');
     if (todayDue) {
       const b = bday(mine);
-      const text = b ? `İyi ki doğdun ${name}! 🎂 Bugün senin günün; takvimine kocaman bir yıldız kondurdum ✨` : `Takvimine baktım: bugün ${join(mine)} ✨ Unutmadım!`;
+      const text = b ? `İyi ki doğdun ${name}! 🎂 Bugün senin günün; takvimine kocaman bir yıldız kondurdum ✨`
+        : `Takvimine baktım: bugün ${join(mine)} ✨ ${mine.some((n) => n.deneme) ? 'Bitince sonuçlarını gir, analizini birlikte yapalım.' : 'Unutmadım!'}`;
       if (app.sayText(text, { speaker: 'luna', emotion: 'happy' })) { lsSet(SAID_KEY, today); if (b) app.celebrate(); }
       if (eveDue) setTimeout(sayToday, 20000);
       return;
     }
-    const text = bday(eve) ? `Yarın senin doğum günün 🎂 Şimdiden heyecanlandım ${name}!` : `Yarın takviminde: ${join(eve)} 🗓️ Unutmayalım diye söylüyorum.`;
+    const text = bday(eve) ? `Yarın senin doğum günün 🎂 Şimdiden heyecanlandım ${name}!`
+      : `Yarın takviminde: ${join(eve)} 🗓️ ${eve.some((n) => n.deneme) ? 'Bu akşam erken uyu, kalemlerini hazırla.' : 'Unutmayalım diye söylüyorum.'}`;
     if (app.sayText(text, { speaker: 'luna', emotion: 'happy' })) lsSet(EVE_KEY, today);
   }
 

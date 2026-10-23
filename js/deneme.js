@@ -33,6 +33,9 @@ const Deneme = (() => {
   const byDate = (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : (a.created || 0) - (b.created || 0));
 
   function list() { return D().denemeler.slice().sort(byDate); }
+  // takvimden planlanan, sonucu henüz girilmemiş denemeler (analize, rozetlere ve grafiklere katılmaz)
+  function planned() { return (Array.isArray(D().denemePlan) ? D().denemePlan : []).slice().sort(byDate); }
+  const planTitle = (p) => `${p.type === 'BRANS' ? 'Branş' : typeName(p.type)} denemesi${p.name ? ': ' + p.name : ''}`;
   function kindList(e) { return list().filter((x) => sameKind(x, e)); }
   function previous(e) {
     const l = kindList(e);
@@ -130,7 +133,7 @@ const Deneme = (() => {
     return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${type} net gelişimi">${g}<polyline class="line-${type.toLowerCase()}" fill="none" points="${pts}"/>${dots}</svg>`;
   }
 
-  return { net, fmt, total, maxQ, rowKeys, label, kind, typeName, list, previous, lastSummary, hasRise, eksikCounts, weakTopics, insights, chart };
+  return { net, fmt, total, maxQ, rowKeys, label, kind, typeName, list, planned, planTitle, previous, lastSummary, hasRise, eksikCounts, weakTopics, insights, chart };
 })();
 
 const DenemeUI = (() => {
@@ -144,7 +147,7 @@ const DenemeUI = (() => {
     const root = $('#deneme-root');
     if (!root) return;
     const l = Deneme.list();
-    const head = `<div class="deneme-actions"><button class="btn primary" data-act="add">＋ Deneme ekle</button><span class="hint">Net = Doğru − Yanlış ÷ 4</span></div>`;
+    const head = `<div class="deneme-actions"><button class="btn primary" data-act="add">＋ Deneme ekle</button><span class="hint">Net = Doğru − Yanlış ÷ 4</span></div>` + plannedCard();
     if (!l.length) {
       root.innerHTML = head + `<div class="card empty-state"><div style="font-size:2rem">📝</div>
         <p><b>Henüz deneme yok.</b></p>
@@ -200,6 +203,32 @@ const DenemeUI = (() => {
       </div>`;
   }
 
+  // takvimden planlanan denemeler: günü gelince "Sonuçları gir" ile ekleme penceresi tarihi, türü ve adı dolu açılır
+  function plannedCard() {
+    const p = Deneme.planned();
+    if (!p.length) return '';
+    const today = U.dateKey(new Date());
+    const when = (k) => { const n = Math.round((new Date(k + 'T12:00:00') - new Date(today + 'T12:00:00')) / 864e5); return n === 0 ? 'bugün' : n === 1 ? 'yarın' : n > 0 ? `${n} gün sonra` : 'sonuçlarını bekliyor'; };
+    return `<div class="card deneme-plan-card"><h2>📅 Planladığın denemeler</h2>
+      <ul class="deneme-plan-list">${p.map((x) => `<li data-plan="${U.esc(x.id)}" class="${x.date <= today ? 'due' : ''}">
+        <span class="type-tag" data-type="${x.type === 'BRANS' ? 'BRANS' : Deneme.typeName(x.type)}">${x.type === 'BRANS' ? 'Branş' : U.esc(Deneme.typeName(x.type))}</span>
+        <span class="dp-text"><b>${U.esc(x.name || 'Deneme')}</b><small>${U.esc(x.date.split('-').reverse().join('.'))} · ${when(x.date)}</small></span>
+        <button class="btn ${x.date <= today ? 'primary' : 'soft'} small-btn" data-act="plan-result">Sonuçları gir</button>
+        <button class="icon-btn" data-act="plan-del" title="Planı sil" aria-label="Planı sil">✕</button></li>`).join('')}</ul>
+      <p class="hint">Takvimde bir güne dokunup yeni deneme planlayabilirsin. Sonuçlarını girince deneme analize katılır.</p></div>`;
+  }
+  function removePlan(id) {
+    const arr = D().denemePlan || [], i = arr.findIndex((x) => x.id === id);
+    if (i < 0) return null;
+    const [gone] = arr.splice(i, 1);
+    Store.forget(gone.id);
+    return gone;
+  }
+  function openPlan(id) {
+    const p = (D().denemePlan || []).find((x) => x.id === id);
+    if (p) openForm(null, p);
+  }
+
   function subjectTable(type) {
     const t = Deneme.list().filter((e) => Deneme.kind(e) === type);
     const last = t[t.length - 1];
@@ -240,15 +269,16 @@ const DenemeUI = (() => {
   }
 
   // ---------- Deneme ekleme / düzenleme penceresi ----------
-  function openForm(existing) {
-    const e = existing ? JSON.parse(JSON.stringify(existing)) : { type: 'TYT', date: U.dateKey(new Date()), name: '', scores: {}, eksik: [], note: '', brans: '' };
+  function openForm(existing, plan) {
+    const e = existing ? JSON.parse(JSON.stringify(existing))
+      : { type: plan ? plan.type : 'TYT', date: plan ? plan.date : U.dateKey(new Date()), name: plan ? plan.name : '', scores: {}, eksik: [], note: '', brans: '' };
     const allKeys = YKS.subjectKeys(field());
     let type = e.type, brans = e.brans || allKeys[0];
     const picked = new Set(e.eksik || []);
 
     const card = App.openModal(`
-      <h3>${existing ? '✏️ Denemeyi düzenle' : '📝 Deneme ekle'}</h3>
-      <p class="sub">Doğru ve yanlış sayılarını gir; netin otomatik hesaplanır.</p>
+      <h3>${existing ? '✏️ Denemeyi düzenle' : plan ? '📝 Deneme sonuçları' : '📝 Deneme ekle'}</h3>
+      <p class="sub">${plan ? 'Takvimde planladığın deneme. ' : ''}Doğru ve yanlış sayılarını gir; netin otomatik hesaplanır.</p>
       <div class="seg" data-role="type">${['TYT', 'AYT', 'BRANS'].map((t) => `<button type="button" data-type="${t}">${t === 'BRANS' ? 'Branş' : Deneme.typeName(t)}</button>`).join('')}</div>
       <div class="form-row two">
         <div><label>Tarih</label><input type="date" data-f="date" value="${U.esc(e.date)}"></div>
@@ -371,6 +401,7 @@ const DenemeUI = (() => {
       const arr = D().denemeler;
       const i = arr.findIndex((x) => x.id === rec.id);
       if (i >= 0) arr[i] = rec; else arr.push(rec);
+      if (plan) removePlan(plan.id); // plan yerine gerçek deneme geçti
       App.save();
       App.closeModal();
       const p = Deneme.previous(rec);
@@ -389,6 +420,12 @@ const DenemeUI = (() => {
       const b = ev.target.closest('button');
       if (!b) return;
       if (b.dataset.act === 'add') return openForm(null);
+      const pl = b.closest('[data-plan]');
+      if (pl) {
+        if (b.dataset.act === 'plan-result') openPlan(pl.dataset.plan);
+        if (b.dataset.act === 'plan-del' && confirm('Bu deneme planı silinsin mi?')) { removePlan(pl.dataset.plan); App.save(); App.refresh(); render(); }
+        return;
+      }
       if (b.dataset.type && b.closest('[data-role="table-seg"]')) { tableType = b.dataset.type; render(); return; }
       const li = b.closest('.deneme-item');
       if (li) {
@@ -420,6 +457,8 @@ const DenemeUI = (() => {
   return {
     init(app) { App = app; bind(); },
     render,
+    openPlan,
+    removePlan,
   };
 })();
 
