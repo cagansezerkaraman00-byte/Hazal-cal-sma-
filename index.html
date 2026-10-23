@@ -138,6 +138,7 @@
       <button data-tab="deneme"><span>📝</span><b>Deneme</b></button>
       <button data-tab="notes"><span>📚</span><b>Notlar</b></button>
       <button data-tab="progress"><span>📈</span><b>İlerleme</b></button>
+      <button data-tab="takvim"><span>📅</span><b>Takvim</b></button>
       <button data-tab="settings"><span>⚙️</span><b>Ayarlar</b></button>
     </nav>
     <main>
@@ -321,6 +322,14 @@
         <div id="deneme-root"></div>
       </section>
       <!-- AYARLAR -->
+      <!-- TAKVİM -->
+      <section class="tab" id="tab-takvim">
+        <div class="grid takvim-grid">
+          <div class="card takvim-card" id="takvim-card"></div>
+          <div class="card takvim-gun" id="takvim-gun"></div>
+          <div class="card takvim-yakin wide-card" id="takvim-yakin"></div>
+        </div>
+      </section>
       <section class="tab" id="tab-settings">
         <div class="card guide">
           <details class="guide-all" id="guide-all">
@@ -681,6 +690,7 @@
   <script src="js/plan.js?v=2.6.4"></script>
   <script src="js/planlar.js?v=2.6.4"></script>
   <script src="js/planlar-ui.js?v=2.6.4"></script>
+  <script src="js/takvim-ui.js?v=2.6.4"></script>
   <script src="js/deneme.js?v=2.6.4"></script>
   <script src="js/notes.js?v=2.6.4"></script>
   <script src="js/giris.js?v=2.6.4"></script>

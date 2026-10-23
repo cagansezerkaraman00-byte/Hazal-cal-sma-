@@ -221,6 +221,7 @@
     if (name === 'notes' && window.NotesUI) NotesUI.render();
     if (name === 'settings') renderSettings();
     if (name === 'home') renderHome();
+    if (name === 'takvim') renderTakvim();
     try { localStorage.setItem('luna-tab', name); } catch (e) { /* yok say */ }
   }
   // ======================================================================
@@ -547,7 +548,8 @@
   function openSessionModal(session, opts = {}) {
     const manual = !session;
     const now = new Date();
-    const s = session || { start: now.getTime() - 3600000, minutes: 60, subjectId: Timer.state().subjectId, note: '', hard: '', rating: null, mood: '' };
+    // takvimden açılınca o günün akşamı önerilir (saat değiştirilebilir)
+    const s = session || { start: opts.date ? new Date(opts.date + 'T19:00:00').getTime() : now.getTime() - 3600000, minutes: 60, subjectId: Timer.state().subjectId, note: '', hard: '', rating: null, mood: '' };
     const preciseShort = !manual && s.minutes > 0 && s.minutes < 1;
     const startD = new Date(s.start);
     const title = opts.justDone ? '🎉 Oturum tamamlandı!' : manual ? '✍️ Çalışmamı ekle' : '✏️ Oturumu düzenle';
@@ -754,6 +756,12 @@
     if (currentTab === 'plan') renderPlanTab();
     if (currentTab === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (currentTab === 'notes' && window.NotesUI) NotesUI.render();
+    if (currentTab === 'takvim') renderTakvim();
+  }
+  // takvimdeki bir hata öbür sekmeleri bozmasın: hata Tanılama'ya yazılır, notlar yerinde kalır
+  function renderTakvim() {
+    if (!window.TakvimUI) return;
+    try { TakvimUI.render(); } catch (e) { ErrLog.add('Takvim: ' + ((e && e.message) || e), 'takvim-ui.js'); }
   }
   // ======================================================================
   // Ana sayfa
@@ -1802,6 +1810,7 @@
     dismissFocus() { focusDismissed = true; renderTimer(Timer.state()); }, // odak sürerken diğer ekranı göster
     refreshHome() { renderHome(); renderHUD(); checkBadges(); },
     refreshSubjects() { renderSubjectSelects(); },
+    addSession(dateKey) { openSessionModal(null, { date: dateKey }); },
     showTab,
     celebrate() { Scene.celebrate(); Sound.chime(); },
     isFocusing() { const s = Timer.state(); return s.running && s.phase === 'focus'; },
@@ -1868,6 +1877,7 @@
     // modüller sayaçtan önce: sayfa kapalıyken biten bir oturum açılışta işlenirken hazır olsunlar
     if (window.PlanUI) safe('Plan', () => PlanUI.init(App));
     if (window.PlanlarUI) safe('Planlar', () => PlanlarUI.init(App));
+    if (window.TakvimUI) safe('Takvim', () => TakvimUI.init(App));
     if (window.UniUI) safe('Dönem', () => UniUI.init(App));
     if (window.DenemeUI) safe('Deneme', () => DenemeUI.init(App));
     if (window.NotesUI) safe('Notlar', () => NotesUI.init(App));

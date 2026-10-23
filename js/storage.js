@@ -135,6 +135,7 @@ const Store = (() => {
     refs: [],       // kaynaklar: {id, type, title, authors:[{family, given}|{literal}], year, container, volume, issue, pages, doi, url, …}
     files: [],      // depo: {id, src: drive|local, rid, name, mime, size, subjectId, kind, note, created}
     cards: [],      // bilgi kartları: {id, subjectId, front, back, box (1-5), due (YYYY-AA-GG), created}
+    dayNotes: [],   // takvim notları: {id, date (YYYY-AA-GG), text, emoji, yearly, remind, created, updated}
     plans: { day: {}, week: {}, month: {}, eod: {}, eodSeq: {} }, // Planlarım: Hazal'ın elle yazdığı planlar (gün / hafta / ay) ve gün sonu notları
     stats: { planItems: 0, planFull: 0, planFullDates: [], cardReviews: 0, friendsMet: false, seen: {} },
     badges: {},     // id -> timestamp
@@ -158,7 +159,7 @@ const Store = (() => {
     out.settings.profile = { ...def.settings.profile, ...(isObj(out.settings.profile) ? out.settings.profile : {}) };
     if (!Array.isArray(out.settings.allowedApps)) out.settings.allowedApps = def.settings.allowedApps.slice();
     delete out.settings.kittenName; // yavrunun adı sabit: Güçlü
-    for (const k of ['subjects', 'questionLogs', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files', 'mistakes', 'refs']) {
+    for (const k of ['subjects', 'questionLogs', 'sessions', 'tasks', 'exams', 'review', 'loveNotes', 'denemeler', 'notes', 'cards', 'files', 'mistakes', 'refs', 'dayNotes']) {
       if (!Array.isArray(out[k])) out[k] = def[k];
     }
     if (!isObj(out.badges)) out.badges = {};
@@ -204,6 +205,14 @@ const Store = (() => {
     for (const c of out.cards) if (isObj(c) && 'box' in c) c.box = box(c.box, 0);
     for (const m of out.mistakes) if (isObj(m) && 'box' in m) m.box = box(m.box, 1);
     for (const c of out.uni.courses) if (isObj(c) && Array.isArray(c.absences)) for (const a of c.absences) if (isObj(a)) a.hours = num(a.hours) || 0;
+    // takvim notları: tarihi bozuk olan atılır; yazı metin, simge kısa kalır (ekrana her zaman kaçışlı yazılır)
+    out.dayNotes = out.dayNotes.filter((n) => isObj(n) && typeof n.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(n.date));
+    for (const n of out.dayNotes) {
+      if (typeof n.id !== 'string' || !n.id) n.id = 'g' + U.uid();
+      n.text = typeof n.text === 'string' ? n.text.slice(0, 60) : '';
+      n.emoji = typeof n.emoji === 'string' && n.emoji.length <= 8 ? n.emoji : '⭐';
+      n.yearly = !!n.yearly; n.remind = !!n.remind; n.created = +n.created || 0; n.updated = +n.updated || 0;
+    }
     if (!isObj(out.deleted)) out.deleted = {};
   }
 
@@ -267,7 +276,7 @@ const Store = (() => {
   const isObj = (x) => x && typeof x === 'object' && !Array.isArray(x);
   const hasIds = (arr) => arr.length > 0 && arr.every((x) => isObj(x) && (typeof x.id === 'string' || typeof x.id === 'number'));
   // izi tutulan listeler: bunlarda silinen kayıt, silinmeden önce alınmış bir yedekten geri gelmez
-  const TRACKED = ['sessions', 'tasks', 'review', 'notes', 'cards', 'denemeler', 'mistakes', 'refs', 'files'];
+  const TRACKED = ['sessions', 'tasks', 'review', 'notes', 'cards', 'denemeler', 'mistakes', 'refs', 'files', 'dayNotes'];
   function mergeIn(obj) {
     const inc = merge(defaults(), obj);
     let added = 0;
