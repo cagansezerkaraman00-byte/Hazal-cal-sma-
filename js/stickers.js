@@ -1,10 +1,9 @@
 /* Sticker defteri: sayfa sayfa stickerlar. Benzer stickerlar aynı bölümde; bölüm 20'den uzunsa birkaç sayfaya bölünür.
-   Görsel stickerlar assets/stickers/<paket>/<ad>.webp (saydam, beyaz kesim kenarlı); güne 'i:<paket>/<ad>' diye yazılır,
-   emoji stickerlar olduğu gibi. Yeni paket: scripts/sticker-kes.py ile kes, aşağıya bölüm olarak ekle (bkz. NOTLAR.md). */
+   Görsel stickerlar assets/stickers/<paket>/<ad>.webp (saydam, beyaz kesim kenarlı); güne 'i:<paket>/<ad>' diye yazılır
+   (eski emoji stickerlar da olduğu gibi gösterilir). Yeni paket: scripts/sticker-kes.py ile kes, aşağıya bölüm olarak ekle (bkz. NOTLAR.md). */
 
 const StickerDefter = (() => {
   const BOLUMLER = [
-    { id: 'mini', title: 'Minikler', icon: '🌈', items: ['🌸', '🌷', '🌈', '⭐', '🌙', '☁️', '🦋', '🍓', '🍒', '🧁', '🎀', '💖', '💫', '🐱', '🐰', '🍀', '🌻', '🍉', '🍁', '❄️', '☕', '📚', '✏️', '🎧'] },
     { id: 'retro', title: 'Retro ve mektuplar', icon: '💌', pack: 'p1', items: ['s01-01', 's01-02', 's01-03', 's01-04', 's01-05', 's01-06', 's01-07', 's01-08', 's01-09', 's01-10', 's01-11', 's01-12', 's01-13', 's01-14', 's01-15', 's01-16', 's01-17', 's01-18', 's01-19', 's01-20', 's01-21', 's08-01', 's08-03', 's08-05', 's08-09', 's08-24', 's07-01', 's07-04', 's07-12'] },
     { id: 'kedi', title: 'Kediler', icon: '🐱', pack: 'p1', items: ['s02-01', 's02-02', 's02-03', 's02-04', 's02-05', 's02-06', 's02-07', 's02-08', 's02-09', 's03-36', 's03-22', 's05-28', 's07-08', 's08-32', 's08-02'] },
     { id: 'altin', title: 'Altın gökyüzü', icon: '✨', pack: 'p1', items: ['s04-01', 's04-02', 's04-03', 's04-04', 's04-05', 's04-06', 's04-07', 's04-08', 's04-09', 's04-10', 's04-11', 's04-15', 's04-16', 's04-17', 's04-18', 's04-19', 's04-20', 's04-21', 's04-22', 's04-24', 's04-25', 's04-26', 's04-27', 's04-29', 's04-30', 's04-31', 's04-32'] },
@@ -16,7 +15,6 @@ const StickerDefter = (() => {
     { id: 'ev', title: 'Sıcacık ev', icon: '🏡', pack: 'p1', items: ['s03-12', 's03-01', 's03-02', 's03-10', 's03-14', 's03-09', 's03-25', 's03-04', 's03-11', 's03-31', 's03-21', 's03-20', 's03-18', 's03-33', 's03-34', 's03-23', 's03-35', 's03-16', 's03-13', 's03-37', 's03-39', 's07-05'] },
   ];
   const PER_PAGE = 20;
-  const RECENT_KEY = 'luna-sticker-son';
   const isImg = (s) => typeof s === 'string' && s.startsWith('i:');
   const src = (s) => 'assets/stickers/' + s.slice(2) + '.webp';
   const all = (b) => (b.pack ? b.items.map((x) => 'i:' + b.pack + '/' + x) : b.items.slice());
@@ -32,9 +30,7 @@ const StickerDefter = (() => {
     if (isImg(s)) return `<img class="${cls}" src="${src(s)}" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">`;
     return `<span class="${cls}">${U.esc(s)}</span>`;
   }
-  function recent() { try { const r = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); return Array.isArray(r) ? r.filter((x) => KNOWN.has(x)).slice(0, 8) : []; } catch (e) { return []; } }
-  function used(s) { try { localStorage.setItem(RECENT_KEY, JSON.stringify([s, ...recent().filter((x) => x !== s)].slice(0, 8))); } catch (e) { /* gizli mod */ } }
-  return { BOLUMLER, PAGES, isImg, src, html, recent, used, known: (s) => KNOWN.has(s) };
+  return { BOLUMLER, PAGES, isImg, src, html, known: (s) => KNOWN.has(s) };
 })();
 
 if (typeof window !== 'undefined') { window.StickerDefter = StickerDefter; }
