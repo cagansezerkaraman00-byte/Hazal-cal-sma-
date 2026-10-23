@@ -7,6 +7,7 @@ const SpotifyPlayback = (() => {
   let message='', playing=false, track=null, position=0, duration=0, connecting=false;
   let embedController=null, embedEpoch=0, embedApiPromise=null, picked='', transferQueue=Promise.resolve();
   let clock=null, observedAt=Date.now(), dragging=false, draft=0, seekBusy=false, seekSequence=0, seekAllowed=true, syncBusy=false, ticks=0;
+  let glideFrame=0, shownKey='';
   const el=()=>document.getElementById('sp-playback');
   const esc=s=>U.esc(String(s||''));
   const icon=name=>{
@@ -39,6 +40,24 @@ const SpotifyPlayback = (() => {
     input.style.setProperty('--sp-progress',`${duration?Math.min(100,value/duration*100):0}%`);
     const elapsed=root.querySelector('[data-live-elapsed]'),total=root.querySelector('[data-live-total]');
     if(elapsed)elapsed.textContent=fmt(value);if(total)total.textContent=fmt(duration);
+    startGlide();
+  }
+  // Çalarken çubuk saniyede bir zıplamak yerine her karede süzülür (yalnızca müzik kutusu açık ve ekran görünürken)
+  const calm=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  function glide(){
+    glideFrame=0;
+    if(!playing||dragging||seekBusy||!device||document.hidden||!document.getElementById('music-card')?.open)return;
+    const input=el()?.querySelector?.('[data-live-seek]');if(!input||input.disabled)return;
+    const value=currentPosition();input.value=String(Math.round(value));
+    input.style.setProperty('--sp-progress',`${duration?Math.min(100,value/duration*100):0}%`);
+    glideFrame=requestAnimationFrame(glide);
+  }
+  function startGlide(){if(!glideFrame&&playing&&!dragging&&typeof requestAnimationFrame==='function'&&!calm())glideFrame=requestAnimationFrame(glide);}
+  // Listede çalan şarkının satırı işaretlenir (çalarken küçük ses çubukları oynar)
+  function markNow(){
+    const list=document.getElementById('sp-song-list');if(!list?.querySelectorAll)return;
+    const keys=[track?.uri,track?.linked_from?.uri,picked].filter(Boolean);
+    list.querySelectorAll('.sp-song-pick').forEach(b=>{const on=keys.includes(b.dataset?.uri);b.classList?.toggle('now',on);b.classList?.toggle('paused',on&&!playing);});
   }
   function acceptState(state){
     if(needsGesture)return; // A stale playing state cannot unlock browser-blocked audio.
@@ -55,7 +74,7 @@ const SpotifyPlayback = (() => {
     if(track&&message==='Müzik Luna’da başlatılıyor…')message='';
     if(dragging||(previous===trackKey()&&previousPlaying===playing&&previousDuration===duration&&previousMessage===message))paintTimeline();else render();
   }
-  function stopClock(){if(clock!==null)clearInterval(clock);clock=null;ticks=0;syncBusy=false;dragging=false;}
+  function stopClock(){if(clock!==null)clearInterval(clock);clock=null;ticks=0;syncBusy=false;dragging=false;if(glideFrame&&typeof cancelAnimationFrame==='function')cancelAnimationFrame(glideFrame);glideFrame=0;}
   function startClock(){
     stopClock();clock=setInterval(async()=>{
       if(document.hidden)return;paintTimeline();
@@ -114,15 +133,22 @@ const SpotifyPlayback = (() => {
     root.hidden=!enabled;const panel=document.getElementById('sp-music-window');if(panel)panel.hidden=!enabled;
     const embed=document.getElementById('spotify-frame');if(embed)embed.hidden=enabled;
     if(!enabled)return;
-    const cover=track?.album?.images?.find(i=>/^https:\/\//.test(i.url||''))?.url;
-    root.innerHTML=`<div class="sp-premium-cover">${cover?`<img src="${esc(cover)}" alt="${esc(track.name)} albüm kapağı">`:'<span aria-hidden="true">♫</span>'}</div><div class="sp-live-heading"><b>🎧 Spotify · Luna oynatıcı</b><span>${device?'Bu cihaz':'Premium'}</span></div>
-      <p class="sp-live-track">${track?esc(track.name):'Müziğin burada, Luna’nın yanında.'}</p>
+    // kapak: gösterildiği boyuta yeten en küçük resim (640 px yerine 300 px: daha hızlı gelir)
+    const covers=(track?.album?.images||[]).filter(i=>/^https:\/\//.test(i.url||''));
+    const cover=(covers.filter(i=>(i.width||0)>=280).sort((a,b)=>a.width-b.width)[0]||covers[0])?.url;
+    const oldCover=root.querySelector?.('.sp-premium-cover img'),key=trackKey(),changed=!!key&&key!==shownKey;shownKey=key;
+    root.innerHTML=`<div class="sp-premium-cover">${cover?`<img src="${esc(cover)}" alt="${esc(track.name)} albüm kapağı" decoding="async">`:'<span aria-hidden="true">♫</span>'}</div><div class="sp-live-heading"><b>🎧 Spotify · Luna oynatıcı</b><span>${device?'Bu cihaz':'Premium'}</span></div>
+      <p class="sp-live-track${changed?' sp-new':''}">${track?esc(track.name):'Müziğin burada, Luna’nın yanında.'}</p>
       <p class="hint">${track?esc((track.artists||[]).map(a=>a.name).join(' · ')):'Aşağıdan dinlemek istediğin şarkıyı seç.'}</p>
-      ${track?`<div class="sp-live-timeline"><input type="range" data-live-seek min="0" max="${duration||1}" step="1000" value="${Math.round(currentPosition())}" aria-label="Şarkıda dinlemek istediğin saniye" ${!device||selectionPending||!seekAllowed||duration<=0?'disabled':''}><div class="sp-live-times"><span data-live-elapsed>${fmt(currentPosition())}</span><span data-live-total>${fmt(duration)}</span></div></div>`:''}
+      ${track?`<div class="sp-live-timeline"><input type="range" data-live-seek min="0" max="${duration||1}" step="any" value="${Math.round(currentPosition())}" aria-label="Şarkıda dinlemek istediğin saniye" ${!device||selectionPending||!seekAllowed||duration<=0?'disabled':''}><div class="sp-live-times"><span data-live-elapsed>${fmt(currentPosition())}</span><span data-live-total>${fmt(duration)}</span></div></div>`:''}
       <div class="sp-live-controls">${device?`<button class="btn soft sp-live-skip" type="button" data-live="previous" ${selectionPending?'disabled':''} aria-label="Önceki şarkı" title="Önceki şarkı">${icon('previous')}</button><button class="btn primary sp-live-toggle" type="button" data-live="toggle" ${selectionPending?'disabled':''} aria-label="${needsGesture?'Sesi aç':playing?'Duraklat':track?'Devam et':'Luna’da dinle'}">${icon(playing?'pause':'play')}</button><button class="btn soft sp-live-skip" type="button" data-live="next" ${selectionPending?'disabled':''} aria-label="Sonraki şarkı" title="Sonraki şarkı">${icon('next')}</button>${!track||selectionPending?`<button class="btn soft sp-live-selected" type="button" data-live="selected">${picked?'Seçilen şarkıyı yeniden dene':'Listeden bir şarkı seç'}</button>`:''}`:`<button class="btn primary" type="button" data-live="connect" ${connecting?'disabled':''}>${connecting?'Oynatıcı hazırlanıyor…':'Luna oynatıcısını aç'}</button>`}</div>
       ${message&&device?'<button class="btn soft" type="button" data-live="reconnect">Bağlantıyı yenile</button>':''}
       <p class="hint" role="status">${esc(message||(!seekAllowed&&track?'Spotify bu içerikte ileri veya geri sarmaya izin vermiyor.':'Çalışma sayacın müzikten bağımsız devam eder.'))}</p>`;
-    paintTimeline();
+    // aynı kapak yeniden yüklenmez (titremez); yeni kapak yumuşakça belirir
+    const img=root.querySelector?.('.sp-premium-cover img');
+    if(img?.getAttribute&&img.replaceWith&&oldCover?.getAttribute&&oldCover.getAttribute('src')===img.getAttribute('src'))img.replaceWith(oldCover);
+    else if(img?.classList&&img.addEventListener&&!calm()){img.classList.add('sp-fade');const show=()=>img.classList.add('ready');if(img.complete)requestAnimationFrame(show);else{img.addEventListener('load',show,{once:true});img.addEventListener('error',show,{once:true});}}
+    paintTimeline();markNow();
     if(restoreSeekFocus)root.querySelector?.('[data-live-seek]')?.focus?.({preventScroll:true});
   }
   function sdk(){
@@ -272,6 +298,11 @@ const SpotifyPlayback = (() => {
       root.addEventListener('pointerdown',e=>{if(e.target.matches?.('[data-live-seek]')){dragging=true;draft=Number(e.target.value);}});
       root.addEventListener('input',e=>{if(!e.target.matches?.('[data-live-seek]'))return;dragging=true;draft=Number(e.target.value);paintTimeline();});
       root.addEventListener('change',async e=>{if(e.target.matches?.('[data-live-seek]'))await seekTo(e.target.value);});
+      root.addEventListener('keydown',e=>{
+        if(!e.target.matches?.('[data-live-seek]')||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','PageUp','PageDown','Home','End'].includes(e.key))return;
+        e.preventDefault();const now=currentPosition(),step=(e.shiftKey?10000:5000)*(e.key==='PageUp'||e.key==='PageDown'?3:1);
+        seekTo(e.key==='Home'?0:e.key==='End'?duration-1000:now+(['ArrowRight','ArrowUp','PageUp'].includes(e.key)?step:-step));
+      });
       root.addEventListener('pointercancel',()=>{dragging=false;paintTimeline();});
       root.addEventListener('focusout',()=>{if(dragging){dragging=false;paintTimeline();}});
       root.addEventListener('click',async e=>{const b=e.target.closest('[data-live]');if(!b)return;try{
@@ -287,7 +318,7 @@ const SpotifyPlayback = (() => {
       else if(b.dataset.live==='next')await skip(1);else if(b.dataset.live==='previous')await skip(-1);
       const current=player,run=generation;const state=await bounded(current.getCurrentState?.(),4000);if(state&&run===generation&&current===player)acceptState(state);
     }catch(err){error(err);}});render();},render,reset,playSelected,seekTo,uri,mountEmbed,chooseTrack,pauseForEmbed,
-    prepare(){if(!config?.hasAccess())return false;render();connect();return true;},
+    prepare(){if(!config?.hasAccess())return false;render();connect();return true;},markNow,
     status(){return {ready:!!device,connecting,playing,track:track?.name||''};}
   };
 })();

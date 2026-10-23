@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.6.4",
+  "tarih": "2026-10-23",
+  "baslik": "Daha akıcı müzik",
+  "notlar": [
+    "🎧 Şarkının ilerleme çubuğu artık saniyede bir zıplamıyor, akıp gidiyor; şarkı değişince kapak ve şarkı adı yumuşakça beliriyor, aynı kapak yeniden yüklenip titremiyor.",
+    "⚡ Bir listeye dokunduğun an şarkıları yüklenmeye başlıyor; daha önce açtığın listeye dönünce şarkılar beklemeden geliyor. Yüklenirken boş ekran yerine şarkı satırlarının taslağı görünüyor.",
+    "🎵 Listede çalan şarkının yanında küçük ses çubukları oynuyor, böylece hangisinin çaldığını hemen görüyorsun."
+  ]
+},
+{
   "surum": "2.6.3",
   "tarih": "2026-10-23",
   "baslik": "Daha sağlam Luna",

@@ -2157,3 +2157,38 @@ body.siir-acik { overflow: hidden; }
 :root[data-tema="zambak"] .card > h2, :root[data-tema="zambak"] .card > summary { color: #f8db8f; }
 :root[data-tema="zambak"] .goal-ring:not(.done) { background: conic-gradient(from 0deg, #ff5f57, #ffa047, #ffd85c, #ff6fd0, #a768ff, #4fb0ff calc(var(--p) * 1%), var(--track) 0); }
 :root[data-tema="zambak"] .seg button.active { background: var(--surface-3h); box-shadow: inset 0 0 0 1px var(--accent-line); }
+
+/* Müzik: akıcı ve hızlı his. Dokununca hafif basılma, çalan şarkıda ses çubukları, yeni kapak ve şarkı adı yumuşakça gelir,
+   şarkılar yüklenirken iskelet satırlar; kaydırma kutunun içinde kalır, uzun listeler yalnızca görünen kısmı çizer. */
+.sp-item, .sp-song-pick, .sp-live-controls .btn { transition: transform .12s ease, background-color .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.sp-item:active, .sp-song-pick:active { transform: scale(.975); }
+.sp-live-controls .btn:active { transform: scale(.93); }
+.sp-lists, .sp-song-rows { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.sp-song-row { content-visibility: auto; contain-intrinsic-size: auto 68px; }
+.sp-premium-cover img.sp-fade { opacity: 0; transform: scale(.97); transition: opacity .3s ease, transform .3s ease; }
+.sp-premium-cover img.sp-fade.ready { opacity: 1; transform: none; }
+.sp-live-track.sp-new { animation: sp-yeni .35s ease both; }
+@keyframes sp-yeni { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.sp-song-pick.now { background: var(--surface-3); box-shadow: inset 3px 0 0 var(--ring); }
+.sp-song-pick.now b { color: var(--accent-ink, var(--text)); }
+.sp-song-pick.now .sp-song-number { position: relative; color: transparent; min-width: 16px; }
+.sp-song-pick.now .sp-song-number::before { content: ''; position: absolute; left: 50%; bottom: 2px; width: 14px; height: 13px; margin-left: -7px;
+  background: linear-gradient(var(--ring), var(--ring)) 0 100% / 3px 45% no-repeat, linear-gradient(var(--ring), var(--ring)) 5px 100% / 3px 90% no-repeat, linear-gradient(var(--ring), var(--ring)) 10px 100% / 3px 65% no-repeat;
+  animation: sp-ses .9s ease-in-out infinite alternate; }
+.sp-song-pick.now.paused .sp-song-number::before { animation-play-state: paused; }
+@keyframes sp-ses {
+  0% { background-size: 3px 45%, 3px 90%, 3px 65%; }
+  50% { background-size: 3px 85%, 3px 40%, 3px 95%; }
+  100% { background-size: 3px 60%, 3px 75%, 3px 35%; }
+}
+.sp-skel-row { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px; }
+.sp-skel-row > span:first-child { width: 16px; height: 12px; border-radius: 4px; }
+.sp-skel-row > span:last-child { flex: 1; display: grid; gap: 7px; }
+.sp-skel-row i { display: block; height: 11px; border-radius: 6px; width: 70%; }
+.sp-skel-row i + i { width: 45%; height: 9px; }
+.sp-skel-row > span:first-child, .sp-skel-row i { background: linear-gradient(90deg, var(--surface-3) 0%, var(--line) 50%, var(--surface-3) 100%) 0 0 / 200% 100%; animation: sp-iskelet 1.2s linear infinite; }
+@keyframes sp-iskelet { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .sp-item:active, .sp-song-pick:active, .sp-live-controls .btn:active { transform: none; }
+  .sp-live-track.sp-new, .sp-song-pick.now .sp-song-number::before, .sp-skel-row > span:first-child, .sp-skel-row i { animation: none; }
+}
