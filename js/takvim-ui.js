@@ -8,12 +8,16 @@
 
 const TakvimUI = (() => {
   const EMOJI = ['🎂', '💖', '🎉', '📚', '📝', '⭐', '🌸', '🎁', '✈️', '🩺'];
-  const STICKERS = ['🌸', '🌷', '🌈', '⭐', '🌙', '☁️', '🦋', '🍓', '🍒', '🧁', '🎀', '💖', '💫', '🐱', '🐰', '🍀', '🌻', '🍉'];
+  const MINI = ['🌸', '🌷', '🌈', '⭐', '🌙', '🦋', '🍓', '🎀']; // defter yüklenemezse hızlı sıra
+  const SD = () => window.StickerDefter || null;
+  const stHtml = (x, cls) => (SD() ? SD().html(x, cls) : `<span class="${cls}">${esc(x)}</span>`);
+  const stName = (x) => (SD() && SD().isImg(x) ? 'sticker' : x);
   const TINTS = [['', 'Renksiz'], ['pembe', 'Pembe'], ['seftali', 'Şeftali'], ['limon', 'Limon'], ['nane', 'Nane'], ['gok', 'Gök mavisi'], ['lila', 'Lila']];
   const MONTH_STICKER = ['❄️', '💝', '🌱', '🌷', '🌼', '☀️', '🍉', '🐚', '📚', '🍁', '☕', '🎄'];
   const SAID_KEY = 'luna-takvim-soz', EVE_KEY = 'luna-takvim-yarin'; // Luna bugünün / yarının notunu söyledi mi (günde bir kez)
   let app = null, bound = false, view = null, sel = '';
   let form = { id: '', text: '', emoji: EMOJI[0], yearly: true, remind: true }, planDraft = '', dnType = 'TYT', dnDraft = '';
+  let bookPage = 0, book = null; // sticker defterinde açık sayfa ve açık pencere
 
   const $ = (s) => document.querySelector(s);
   const D = () => app.data();
@@ -103,7 +107,7 @@ const TakvimUI = (() => {
       const cls = ['tk-cell', k === today ? 'today' : '', k === sel ? 'sel' : '', dow >= 5 ? 'we' : '', dc && dc.tint ? 't-' + dc.tint : ''].join(' ');
       const label = [longDate(k), ...marks.map((x) => x.text), mins[k] ? U.fmtMin(mins[k]) + ' çalışma' : '', plan ? plan + ' plan maddesi' : ''].filter(Boolean).join(', ');
       html += `<button type="button" class="${cls}" data-day="${k}" aria-label="${esc(label)}" aria-pressed="${k === sel}">
-        ${st[0] ? `<span class="tk-st" aria-hidden="true">${st[0]}</span>` : ''}${st[1] ? `<span class="tk-st s2" aria-hidden="true">${st[1]}</span>` : ''}
+        ${st[0] ? stHtml(st[0], 'tk-st') : ''}${st[1] ? stHtml(st[1], 'tk-st s2') : ''}
         <span class="tk-n">${d}</span>${marks.length ? `<span class="tk-mark" aria-hidden="true">${marks.slice(0, 2).map((x) => x.emoji).join('')}${marks.length > 2 ? '<i>+</i>' : ''}</span>` : ''}
         ${lv ? `<span class="tk-star ${lv}" aria-hidden="true">★</span>` : plan && k >= today ? '<span class="tk-dot" aria-hidden="true"></span>' : ''}</button>`;
     }
@@ -152,8 +156,9 @@ const TakvimUI = (() => {
     const editing = !!form.id, dc = decorOn(k), stuck = dc ? dc.stickers : [], tint = dc ? dc.tint : '';
     const decorHtml = `<section class="tk-sec tk-decor" aria-label="Sticker ve gün rengi">
         <h3>🌈 Sticker ve renk ${stuck.length ? `<small>${stuck.length}/3</small>` : ''}</h3>
-        ${stuck.length ? `<div class="tk-stuck">${stuck.map((x, i) => `<button type="button" data-unstick="${i}" aria-label="${x} stickerını kaldır">${x}<i aria-hidden="true">✕</i></button>`).join('')}</div>` : ''}
-        <div class="tk-stickers" role="group" aria-label="Sticker yapıştır">${STICKERS.map((x) => `<button type="button" data-stick="${x}" aria-label="${x} yapıştır">${x}</button>`).join('')}</div>
+        ${stuck.length ? `<div class="tk-stuck">${stuck.map((x, i) => `<button type="button" data-unstick="${i}" aria-label="${esc(stName(x))} stickerını kaldır">${stHtml(x, 'tk-stuck-i')}<i aria-hidden="true">✕</i></button>`).join('')}</div>` : ''}
+        <button type="button" class="tk-book-open" data-book><span aria-hidden="true">📒</span><span><b>Sticker defterini aç</b><small>${SD() ? SD().PAGES.length + ' sayfa, ' + SD().BOLUMLER.length + ' bölüm' : 'Sayfa sayfa stickerlar'}</small></span><span aria-hidden="true">›</span></button>
+        <div class="tk-stickers" role="group" aria-label="Son kullandığın stickerlar">${(SD() && SD().recent().length ? SD().recent() : MINI).map((x) => `<button type="button" data-stick="${esc(x)}" aria-label="${esc(stName(x))} yapıştır">${stHtml(x, 'tk-stickers-i')}</button>`).join('')}</div>
         <div class="tk-tints" role="radiogroup" aria-label="Gün rengi">${TINTS.map(([v, n]) => `<button type="button" role="radio" class="tint-${v || 'yok'}" data-tint="${v}" aria-checked="${v === tint}" aria-label="${n}" title="${n}"></button>`).join('')}</div>
       </section>`;
     const pl = plansOn(k), dn = doneOn(k);
@@ -279,13 +284,8 @@ const TakvimUI = (() => {
       if (t.closest('[data-session]')) { app.addSession(sel); return; }
       // sticker yapıştır / kaldır, gün rengi
       const stick = t.closest('[data-stick]');
-      if (stick) {
-        const x = decor(sel);
-        if (x.stickers.length >= 3) { app.toast('🌈', 'Bir güne en fazla 3 sticker', 'Kaldırmak için üstteki stickera dokun'); return; }
-        x.stickers.push(stick.dataset.stick); x.updated = Date.now();
-        app.save(); render(); popSticker();
-        return;
-      }
+      if (stick) { stickOn(stick.dataset.stick); return; }
+      if (t.closest('[data-book]')) { openBook(); return; }
       const un = t.closest('[data-unstick]');
       if (un) { const x = decor(sel); x.stickers.splice(+un.dataset.unstick, 1); x.updated = Date.now(); app.save(); render(); return; }
       const tn = t.closest('[data-tint]');
@@ -360,6 +360,100 @@ const TakvimUI = (() => {
       if (sel === todayKey() || sel === key(U.addDays(new Date(), 1))) setTimeout(sayToday, 600);
     });
   }
+  // güne sticker yapıştır (en çok 3); defterden de buradan
+  function stickOn(x) {
+    const d = decor(sel);
+    if (d.stickers.length >= 3) { app.toast('🌈', 'Bir güne en fazla 3 sticker', 'Kaldırmak için üstteki stickera dokun'); return false; }
+    d.stickers.push(x); d.updated = Date.now();
+    if (SD()) SD().used(x);
+    app.save(); render(); popSticker();
+    return true;
+  }
+
+  // ---------- Sticker defteri: sayfa çevrilen defter, benzer stickerlar aynı bölümde ----------
+  const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function bookHead() {
+    const d = decorOn(sel), stuck = d ? d.stickers : [];
+    return `<b>${longDate(sel)}</b> ${stuck.length ? stuck.map((x, i) => `<button type="button" class="bk-stuck" data-bk-un="${i}" aria-label="${esc(stName(x))} stickerını kaldır">${stHtml(x, 'bk-stuck-i')}</button>`).join('') : '<span class="bk-empty">henüz sticker yok</span>'}<small>${stuck.length}/3</small>`;
+  }
+  function bookPageHtml(i) {
+    const p = SD().PAGES[i];
+    return `<div class="bk-ph"><b>${p.icon} ${esc(p.title)}</b>${p.parts > 1 ? `<span>${p.part}/${p.parts}</span>` : ''}</div>
+      <div class="bk-grid">${p.items.map((x) => `<button type="button" class="bk-pick" data-pick="${esc(x)}" aria-label="${esc(stName(x))} yapıştır">${stHtml(x, 'bk-st')}</button>`).join('')}</div>`;
+  }
+  function bookTabs() {
+    const pages = SD().PAGES, cur = pages[bookPage].bolum;
+    return SD().BOLUMLER.map((b) => `<button type="button" role="tab" data-bk-go="${pages.findIndex((p) => p.bolum === b.id)}" aria-selected="${b.id === cur}" title="${esc(b.title)}">${b.icon}<span>${esc(b.title)}</span></button>`).join('');
+  }
+  function bookSync() {
+    if (!book) return;
+    const n = SD().PAGES.length;
+    book.querySelector('.bk-day').innerHTML = bookHead();
+    book.querySelector('.bk-tabs').innerHTML = bookTabs();
+    book.querySelector('.bk-count').textContent = `${bookPage + 1} / ${n}`;
+    const sel2 = book.querySelector('.bk-tabs [aria-selected="true"]');
+    if (sel2 && sel2.scrollIntoView) sel2.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+  function turn(to) {
+    const n = SD().PAGES.length;
+    to = (to + n) % n;
+    if (!book || to === bookPage) return;
+    const page = book.querySelector('.bk-page'), dir = to > bookPage ? 'next' : 'prev';
+    const show = () => { bookPage = to; lsSet('luna-defter-sayfa', String(to)); page.innerHTML = bookPageHtml(to); bookSync(); };
+    if (calm() || !page.animate) { show(); return; }
+    // sayfa sırtından kalkar, yarıda yenisine döner
+    const origin = dir === 'next' ? 'left center' : 'right center', sign = dir === 'next' ? -1 : 1;
+    page.style.transformOrigin = origin;
+    const out = page.animate([{ transform: 'perspective(1100px) rotateY(0deg)' }, { transform: `perspective(1100px) rotateY(${sign * 88}deg)`, filter: 'brightness(.82)' }], { duration: 190, easing: 'ease-in' });
+    out.onfinish = () => {
+      show();
+      page.animate([{ transform: `perspective(1100px) rotateY(${-sign * 88}deg)`, filter: 'brightness(.82)' }, { transform: 'perspective(1100px) rotateY(0deg)' }], { duration: 230, easing: 'ease-out' });
+    };
+  }
+  function openBook() {
+    if (!SD()) return;
+    const n = SD().PAGES.length, saved = +lsGet('luna-defter-sayfa');
+    bookPage = Number.isInteger(saved) && saved >= 0 && saved < n ? saved : 0;
+    book = app.openModal(`<div class="bk">
+        <div class="bk-top"><h3>📒 Sticker defteri</h3><button type="button" class="bk-x" data-bk="close" aria-label="Defteri kapat">✕</button></div>
+        <p class="bk-day"></p>
+        <div class="bk-tabs" role="tablist" aria-label="Bölümler"></div>
+        <div class="bk-book"><div class="bk-spine" aria-hidden="true">${'<i></i>'.repeat(9)}</div><div class="bk-page">${bookPageHtml(bookPage)}</div></div>
+        <div class="bk-nav"><button type="button" class="tk-nav" data-bk="prev" aria-label="Önceki sayfa">‹</button><span class="bk-count"></span><button type="button" class="tk-nav" data-bk="next" aria-label="Sonraki sayfa">›</button></div>
+        <p class="hint">Bir stickera dokun, ${longDate(sel)} gününe yapışsın. Sayfayı parmağınla kaydırarak da çevirebilirsin.</p>
+      </div>`);
+    book.classList.add('wide', 'bk-card');
+    bookSync();
+    let x0 = null, y0 = 0, swiped = false;
+    const area = book.querySelector('.bk-book');
+    area.addEventListener('pointerdown', (e) => { x0 = e.clientX; y0 = e.clientY; swiped = false; });
+    area.addEventListener('pointerup', (e) => {
+      if (x0 == null) return;
+      const dx = e.clientX - x0, dy = e.clientY - y0;
+      x0 = null;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) { swiped = true; turn(bookPage + (dx < 0 ? 1 : -1)); }
+    });
+    area.addEventListener('pointercancel', () => { x0 = null; });
+    book.addEventListener('click', (e) => {
+      const t = e.target;
+      const b = t.closest('[data-bk]');
+      if (b) { const a = b.dataset.bk; if (a === 'close') { app.closeModal(); book = null; } else turn(bookPage + (a === 'next' ? 1 : -1)); return; }
+      const go = t.closest('[data-bk-go]');
+      if (go) { turn(+go.dataset.bkGo); return; }
+      const un = t.closest('[data-bk-un]');
+      if (un) { const d = decor(sel); d.stickers.splice(+un.dataset.bkUn, 1); d.updated = Date.now(); app.save(); render(); bookSync(); return; }
+      const pk = t.closest('[data-pick]');
+      if (pk) {
+        if (swiped) { swiped = false; return; } // kaydırma dokunuş sayılmasın
+        if (stickOn(pk.dataset.pick)) {
+          bookSync();
+          if (!calm() && pk.animate) pk.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.25) rotate(-8deg)' }, { transform: 'scale(1)' }], { duration: 320 });
+        }
+      }
+    });
+    book.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') turn(bookPage + 1); if (e.key === 'ArrowLeft') turn(bookPage - 1); });
+  }
+
   // yeni yapışan sticker hafifçe zıplar (hareket azaltılmışsa durur)
   function popSticker() {
     const c = $(`#takvim-card [data-day="${sel}"] .tk-st`);

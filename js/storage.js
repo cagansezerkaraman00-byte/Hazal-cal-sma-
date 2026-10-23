@@ -219,7 +219,8 @@ const Store = (() => {
     out.dayDecor = out.dayDecor.filter((x) => isObj(x) && typeof x.date === 'string' && DAY.test(x.date));
     for (const x of out.dayDecor) {
       x.id = 'dc-' + x.date;
-      x.stickers = (Array.isArray(x.stickers) ? x.stickers : []).filter((s) => typeof s === 'string' && s && s.length <= 8).slice(0, 3);
+      // emoji (kısa) ya da defterdeki görsel ('i:paket/ad')
+      x.stickers = (Array.isArray(x.stickers) ? x.stickers : []).filter((s) => typeof s === 'string' && s && (s.length <= 8 || /^i:[a-z0-9]{1,12}\/[a-z0-9-]{1,30}$/.test(s))).slice(0, 3);
       if (!TINTS.includes(x.tint)) x.tint = '';
       x.updated = +x.updated || 0;
     }
