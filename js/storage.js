@@ -136,7 +136,7 @@ const Store = (() => {
     files: [],      // depo: {id, src: drive|local, rid, name, mime, size, subjectId, kind, note, created}
     cards: [],      // bilgi kartları: {id, subjectId, front, back, box (1-5), due (YYYY-AA-GG), created}
     dayNotes: [],   // takvim notları: {id, date (YYYY-AA-GG), text, emoji, yearly, remind, created, updated}
-    dayDecor: [],   // takvim süsleri: {id: 'dc-YYYY-AA-GG', date, stickers: [en çok 3], tint (gün rengi), updated}
+    dayDecor: [],   // takvim süsleri: {id: 'dc-YYYY-AA-GG', date, stickers: [en çok 3], tint (gün rengi), oto (renk stickerdan mı), updated}
     denemePlan: [], // takvimden planlanan denemeler: {id, date, type: TYT|AYT|BRANS, name, created, updated}; sonuç girilince denemelere geçer
     plans: { day: {}, week: {}, month: {}, eod: {}, eodSeq: {} }, // Planlarım: Hazal'ın elle yazdığı planlar (gün / hafta / ay) ve gün sonu notları
     stats: { planItems: 0, planFull: 0, planFullDates: [], cardReviews: 0, friendsMet: false, seen: {} },
@@ -222,6 +222,7 @@ const Store = (() => {
       // emoji (kısa) ya da defterdeki görsel ('i:paket/ad')
       x.stickers = (Array.isArray(x.stickers) ? x.stickers : []).filter((s) => typeof s === 'string' && s && (s.length <= 8 || /^i:[a-z0-9]{1,12}\/[a-z0-9-]{1,30}$/.test(s))).slice(0, 3);
       if (!TINTS.includes(x.tint)) x.tint = '';
+      if (typeof x.oto !== 'boolean') delete x.oto; // gün rengi stickerdan mı geldi (true) yoksa elle mi seçildi (false)
       x.updated = +x.updated || 0;
     }
     out.denemePlan = out.denemePlan.filter((x) => isObj(x) && typeof x.date === 'string' && DAY.test(x.date));

@@ -2230,13 +2230,15 @@ body.siir-acik { overflow: hidden; }
 .tk-cell.today .tk-n { background: var(--pink); color: #fff; box-shadow: 0 0 0 3px var(--pink-soft), 0 0 12px rgba(242, 120, 159, .6); }
 .tk-cell.sel { box-shadow: inset 0 0 0 2px var(--pink); }
 .tk-cell.sel:not([class*=" t-"]) { background: var(--pink-soft); }
-/* gün rengi (yarı saydam: üç temada da yumuşak durur) */
-.tk-cell.t-pembe { background: rgba(255, 143, 190, .34); }
-.tk-cell.t-seftali { background: rgba(255, 168, 110, .34); }
-.tk-cell.t-limon { background: rgba(255, 214, 70, .36); }
-.tk-cell.t-nane { background: rgba(80, 210, 160, .30); }
-.tk-cell.t-gok { background: rgba(100, 175, 255, .30); }
-.tk-cell.t-lila { background: rgba(170, 130, 255, .32); }
+/* gün rengi (yarı saydam: üç temada da yumuşak durur). Stickerın durduğu sol alt köşeden yayılan bir ışık gibi boyanır. */
+.tk-cell.t-pembe { --tk-t: 255, 143, 190; }
+.tk-cell.t-seftali { --tk-t: 255, 168, 110; }
+.tk-cell.t-limon { --tk-t: 255, 214, 70; }
+.tk-cell.t-nane { --tk-t: 80, 210, 160; }
+.tk-cell.t-gok { --tk-t: 100, 175, 255; }
+.tk-cell.t-lila { --tk-t: 170, 130, 255; }
+.tk-cell[class*=" t-"] { background: radial-gradient(circle at 18% 88%, rgba(var(--tk-t), .62), rgba(var(--tk-t), .28) 75%); box-shadow: inset 0 0 0 1px rgba(var(--tk-t), .45); }
+.tk-cell.sel[class*=" t-"] { box-shadow: inset 0 0 0 2px var(--pink); }
 /* güne yapışan stickerlar */
 .tk-st { position: absolute; left: 1px; bottom: 0; font-size: 17px; line-height: 1; transform: rotate(-12deg); filter: drop-shadow(0 1px 1px rgba(30, 10, 40, .22)); pointer-events: none; }
 .tk-st.s2 { left: auto; bottom: auto; right: 0; top: 1px; font-size: 12px; transform: rotate(14deg); }
@@ -2326,9 +2328,27 @@ body.siir-acik { overflow: hidden; }
 .dp-text small { color: var(--muted); font-weight: 700; }
 @media (max-width: 360px) { .tk-cell { font-size: 12px; border-radius: 10px; } .tk-n { width: 21px; height: 21px; } .tk-month span { font-size: 22px; } .tk-st { font-size: 15px; } }
 @media (prefers-reduced-motion: reduce) { .tk-nav:active { transform: none; } .tk-st.pop { animation: none; } }
-/* görsel stickerlar (defterden) */
-img.tk-st { width: 21px; height: 21px; object-fit: contain; }
-img.tk-st.s2 { width: 15px; height: 15px; }
+/* görsel stickerlar (defterden): gün kutusunun boyuna göre büyür */
+img.tk-st { left: -2px; bottom: -2px; width: 54%; max-width: 62px; height: auto; aspect-ratio: 1; object-fit: contain; }
+img.tk-st.s2 { left: auto; bottom: auto; right: -2px; top: -2px; width: 36%; max-width: 40px; }
+/* "Güne not al": günün sayfasında en üstte, pembe kutu */
+.tk-note-form { background: var(--pink-soft); border-radius: 14px; padding: 12px; border-top: 0; }
+.takvim-gun.gel > * { animation: tk-gel .38s cubic-bezier(.2, .8, .3, 1) both; }
+.takvim-gun.gel > :nth-child(2) { animation-delay: .03s; }
+.takvim-gun.gel > :nth-child(3) { animation-delay: .06s; }
+.takvim-gun.gel > :nth-child(n+4) { animation-delay: .09s; }
+@keyframes tk-gel { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+/* son kullanılan stickerlar: tek dokunuşla güne */
+.tk-son { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tk-son > small { font-size: 12px; font-weight: 800; color: var(--muted); }
+.tk-son > div { display: flex; gap: 6px; flex-wrap: wrap; }
+.tk-son button { width: 40px; height: 40px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); cursor: pointer; transition: transform .15s; }
+.tk-son button:nth-child(odd) { transform: rotate(-4deg); }
+.tk-son button:nth-child(even) { transform: rotate(3deg); }
+.tk-son button:active { transform: scale(.9); }
+.tk-son-i { display: block; width: 100%; height: 100%; object-fit: contain; }
+.tk-hint { margin: 0; font-size: 12px; font-weight: 700; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .takvim-gun.gel > * { animation: none; } .tk-son button { transition: none; } }
 .tk-stuck-i { display: block; width: 36px; height: 36px; object-fit: contain; margin: auto; }
 span.tk-stuck-i { width: auto; height: auto; }
 .tk-stuck > button:nth-child(1) { transform: rotate(-6deg); }
@@ -2409,6 +2429,9 @@ span.bk-st { width: auto; height: auto; font-size: 26px; filter: none; }
 .df-flip { position: relative; filter: drop-shadow(0 25px 22px #22251c30); }
 .df-flip .stf__wrapper { height: 100%; }
 .df-flip .stf__block { perspective: 4200px; } /* sert kapak dönerken yakın kenarı fazla büyüyüp taşmasın */
+/* kapak dönerken defterin boş tarafına düşen gölge çizilmez: kapalı defterin yanında gri bir kutu belirmesin */
+.df-flip.kapak-on .stf__hardShadow[style*="rotateY(180deg)"], .df-flip.kapak-on .stf__hardInnerShadow[style*="rotateY(180deg)"],
+.df-flip.kapak-arka .stf__hardShadow:not([style*="rotateY(180deg)"]), .df-flip.kapak-arka .stf__hardInnerShadow:not([style*="rotateY(180deg)"]) { display: none !important; }
 /* sayfalar (Lilium): ince kenar, sırta doğru hafif gölge, dış kenarda ışık */
 .df-sayfa { overflow: hidden; background: #fcfaf6; border: 1px solid #b4b3a254; }
 .df-sayfa::after { content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(90deg, #1d231a15, transparent 7%, transparent 92%, #fff4); }

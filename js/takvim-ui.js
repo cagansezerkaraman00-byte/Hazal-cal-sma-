@@ -2,7 +2,8 @@
    özel günler ve sınavlar, o günkü çalışma, sticker ve gün rengi, deneme planı, o günün planı (Planlarım ile aynı liste)
    ve geçmiş bir güne çalışma ekleme.
    Notlar D().dayNotes: {id, date: YYYY-AA-GG, text, emoji, yearly, remind, created, updated}.
-   Süsler D().dayDecor: {id: 'dc-' + tarih, date, stickers: [en çok 3], tint, updated}.
+   Süsler D().dayDecor: {id: 'dc-' + tarih, date, stickers: [en çok 3], tint, oto, updated}. Sticker yapıştırılınca gün onun rengine
+   boyanır (oto: true); rengi elle seçtiysen (oto: false) dokunulmaz.
    Planlanan denemeler D().denemePlan: Deneme sekmesinde de görünür; sonuç girilince gerçek denemeye dönüşüp analize katılır.
    Not günü gelince sayfanın üstünde yazar, Luna da bir kez söyler; "bir gün önce haber ver" açıksa (ve denemelerde her zaman) bir gün önceden de. */
 
@@ -76,6 +77,25 @@ const TakvimUI = (() => {
     if (!x) { x = { id: 'dc-' + k, date: k, stickers: [], tint: '', updated: 0 }; decorList().push(x); }
     return x;
   }
+  // gün, üstündeki ilk renkli stickerın rengine boyanır; rengi sen seçtiysen (ya da bu özellikten önce seçtiysen) o kalır
+  function autoTint(d) {
+    if (d.oto === false || (d.oto !== true && d.tint)) return;
+    const t = (SD() && d.stickers.map((x) => SD().tint(x)).find(Boolean)) || '';
+    d.tint = t;
+    if (t) d.oto = true; else delete d.oto;
+  }
+  // görünen gün rengi: kayıtlı renk; yoksa (elle "Renksiz" seçilmediyse) ilk renkli stickerın rengi
+  const tintOf = (d) => (!d ? '' : d.tint || (d.oto !== false && SD() && d.stickers.map((x) => SD().tint(x)).find(Boolean)) || '');
+  // son yapıştırdığın stickerlar (en yeni önce): defteri açmadan tek dokunuşla yapıştırmak için
+  function recentStickers(k) {
+    const on = new Set(decorOn(k) ? decorOn(k).stickers : []), out = [];
+    if (!SD()) return out;
+    for (const x of decorList().slice().sort((a, b) => (b.updated || 0) - (a.updated || 0))) {
+      for (const st of x.stickers) if (SD().isImg(st) && SD().known(st) && !on.has(st) && !out.includes(st)) out.push(st);
+      if (out.length >= 6) break;
+    }
+    return out.slice(0, 6);
+  }
   const deneme = () => !programMode() && !!window.Deneme && !!window.DenemeUI;
   // Üniversite modu (ileride): burası vize / final / proje olacak; şimdilik deneme yalnızca YKS modunda (bkz. NOTLAR.md)
   const plansOn = (k) => (deneme() ? (D().denemePlan || []).filter((x) => x && x.date === k) : []);
@@ -103,7 +123,7 @@ const TakvimUI = (() => {
     for (let d = 1; d <= days; d++) {
       const k = key(new Date(y, m, d, 12)), dow = (pad + d - 1) % 7, marks = marksOf(k), dc = decorOn(k);
       const lv = k <= today ? level(mins[k] || 0) : '', plan = planOn(k).length, st = dc ? dc.stickers : [];
-      const cls = ['tk-cell', k === today ? 'today' : '', k === sel ? 'sel' : '', dow >= 5 ? 'we' : '', dc && dc.tint ? 't-' + dc.tint : ''].join(' ');
+      const tn = tintOf(dc), cls = ['tk-cell', k === today ? 'today' : '', k === sel ? 'sel' : '', dow >= 5 ? 'we' : '', tn ? 't-' + tn : ''].join(' ');
       const label = [longDate(k), ...marks.map((x) => x.text), mins[k] ? U.fmtMin(mins[k]) + ' çalışma' : '', plan ? plan + ' plan maddesi' : ''].filter(Boolean).join(', ');
       html += `<button type="button" class="${cls}" data-day="${k}" aria-label="${esc(label)}" aria-pressed="${k === sel}">
         ${st[0] ? stHtml(st[0], 'tk-st') : ''}${st[1] ? stHtml(st[1], 'tk-st s2') : ''}
@@ -152,13 +172,15 @@ const TakvimUI = (() => {
       ? `<li class="tk-pl moved"><span>↪</span><span class="tk-pl-t">${esc(it.title)}</span><small>taşındı</small></li>`
       : `<li class="tk-pl${it.done ? ' done' : ''}"><label><input type="checkbox" data-pdone="${esc(it.id)}" ${it.done ? 'checked' : ''}><span class="tk-pl-t">${esc(it.title)}</span></label>
           <button type="button" class="tk-del" data-pdel="${esc(it.id)}" aria-label="${esc(it.title)} maddesini sil">✕</button></li>`).join('');
-    const editing = !!form.id, dc = decorOn(k), stuck = dc ? dc.stickers : [], tint = dc ? dc.tint : '';
+    const editing = !!form.id, dc = decorOn(k), stuck = dc ? dc.stickers : [], tint = tintOf(dc), recent = recentStickers(k);
     const decorHtml = `<section class="tk-sec tk-decor" aria-label="Sticker ve gün rengi">
         <h3>🌈 Sticker ve renk ${stuck.length ? `<small>${stuck.length}/3</small>` : ''}</h3>
         <div class="tk-stuck">${[0, 1, 2].map((i) => stuck[i]
           ? `<button type="button" data-unstick="${i}" aria-label="${esc(stName(stuck[i]))} stickerını kaldır">${stHtml(stuck[i], 'tk-stuck-i')}<i aria-hidden="true">✕</i></button>`
           : `<button type="button" class="empty" data-book aria-label="Boş yer: sticker defterini aç"><span aria-hidden="true">＋</span></button>`).join('')}
           ${SD() ? `<button type="button" class="tk-book-btn" data-book aria-label="Sticker defterini aç"><span class="tk-book-ic" aria-hidden="true"></span><small>Sticker defteri</small></button>` : ''}</div>
+        ${recent.length && stuck.length < 3 ? `<div class="tk-son"><small>Son kullandıkların</small><div>${recent.map((x) => `<button type="button" data-stick="${esc(x)}" aria-label="Bu stickerı güne yapıştır">${stHtml(x, 'tk-son-i')}</button>`).join('')}</div></div>` : ''}
+        ${stuck.length ? '' : '<p class="tk-hint">Bir sticker yapıştır, gün onun rengine boyansın ✨</p>'}
         <div class="tk-tints" role="radiogroup" aria-label="Gün rengi">${TINTS.map(([v, n]) => `<button type="button" role="radio" class="tint-${v || 'yok'}" data-tint="${v}" aria-checked="${v === tint}" aria-label="${n}" title="${n}"></button>`).join('')}</div>
       </section>`;
     const pl = plansOn(k), dn = doneOn(k);
@@ -176,7 +198,18 @@ const TakvimUI = (() => {
         </form>
       </section>`;
     root.innerHTML = `<div class="tk-d-head"><h2>${longDate(k)}</h2><span>${rel(k)}</span></div>
-      ${rows ? `<ul class="tk-evs">${rows}</ul>` : '<p class="tk-empty">Bu günün henüz notu yok. Aşağıdan ekleyebilirsin 🌸</p>'}
+      ${rows ? `<ul class="tk-evs">${rows}</ul>` : ''}
+      <form class="tk-sec tk-note-form${editing ? ' editing' : ''}" data-form="note" autocomplete="off">
+        <h3>${editing ? '✎ Notu düzenle' : '📝 Güne not al'}</h3>
+        <div class="tk-add-row">
+          <input id="tk-text" maxlength="60" placeholder="Doğum günüm, sınav, buluşma…" value="${esc(form.text)}" aria-label="Not">
+          <button class="btn primary" type="submit">${editing ? 'Kaydet' : 'Ekle'}</button>
+        </div>
+        <div class="tk-emojis" role="radiogroup" aria-label="Not simgesi">${EMOJI.map((e) => `<button type="button" role="radio" data-emoji="${e}" aria-checked="${e === form.emoji}">${e}</button>`).join('')}</div>
+        <label class="tk-check"><input type="checkbox" data-opt="yearly" ${form.yearly ? 'checked' : ''}> Her yıl tekrarla (doğum günü gibi)</label>
+        <label class="tk-check"><input type="checkbox" data-opt="remind" ${form.remind ? 'checked' : ''}> Bir gün önce Luna haber versin</label>
+        ${editing ? '<button type="button" class="tk-back" data-cancel>Vazgeç</button>' : ''}
+      </form>
       ${facts.length ? `<ul class="tk-facts">${facts.map((f) => `<li>${f}</li>`).join('')}</ul>` : ''}
       ${decorHtml}
       ${dnHtml}
@@ -188,17 +221,6 @@ const TakvimUI = (() => {
           <button class="btn soft" type="submit">Ekle</button>
         </form>
       </section>
-      <form class="tk-sec tk-note-form${editing ? ' editing' : ''}" data-form="note" autocomplete="off">
-        <h3>${editing ? '✎ Notu düzenle' : '💌 Bu güne not ekle'}</h3>
-        <div class="tk-add-row">
-          <input id="tk-text" maxlength="60" placeholder="Doğum günüm, sınav, buluşma…" value="${esc(form.text)}" aria-label="Not">
-          <button class="btn primary" type="submit">${editing ? 'Kaydet' : 'Ekle'}</button>
-        </div>
-        <div class="tk-emojis" role="radiogroup" aria-label="Not simgesi">${EMOJI.map((e) => `<button type="button" role="radio" data-emoji="${e}" aria-checked="${e === form.emoji}">${e}</button>`).join('')}</div>
-        <label class="tk-check"><input type="checkbox" data-opt="yearly" ${form.yearly ? 'checked' : ''}> Her yıl tekrarla (doğum günü gibi)</label>
-        <label class="tk-check"><input type="checkbox" data-opt="remind" ${form.remind ? 'checked' : ''}> Bir gün önce Luna haber versin</label>
-        ${editing ? '<button type="button" class="tk-back" data-cancel>Vazgeç</button>' : ''}
-      </form>
       ${k <= today ? '<button type="button" class="btn soft wide" data-session>＋ Bu güne çalışma ekle</button>' : ''}`;
   }
 
@@ -229,11 +251,17 @@ const TakvimUI = (() => {
     renderSoon(today);
   }
   function pick(k, scroll) {
-    if (sel !== k) form = blank();
+    const changed = sel !== k;
+    if (changed) form = blank();
     sel = k;
     view = new Date(at(k).getFullYear(), at(k).getMonth(), 1, 12);
     render();
     const day = $('#takvim-gun');
+    // yeni günün sayfası sağdan süzülerek gelir (hareket azaltılmışsa hemen)
+    if (changed && day && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      day.classList.remove('gel'); void day.offsetWidth; day.classList.add('gel');
+      day.addEventListener('animationend', () => day.classList.remove('gel'), { once: true });
+    }
     if (scroll && day && day.getBoundingClientRect().top > window.innerHeight - 140) day.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   }
 
@@ -287,9 +315,9 @@ const TakvimUI = (() => {
       if (stick) { stickOn(stick.dataset.stick); return; }
       if (t.closest('[data-book]')) { openBook(); return; }
       const un = t.closest('[data-unstick]');
-      if (un) { const x = decor(sel); x.stickers.splice(+un.dataset.unstick, 1); x.updated = Date.now(); app.save(); render(); return; }
+      if (un) { const x = decor(sel); x.stickers.splice(+un.dataset.unstick, 1); autoTint(x); x.updated = Date.now(); app.save(); render(); return; }
       const tn = t.closest('[data-tint]');
-      if (tn) { const x = decor(sel); x.tint = tn.dataset.tint; x.updated = Date.now(); app.save(); render(); return; }
+      if (tn) { const x = decor(sel); x.tint = tn.dataset.tint; x.oto = false; x.updated = Date.now(); app.save(); render(); return; }
       // deneme planı
       const dt = t.closest('[data-dtype]');
       if (dt) { const i = $('#tk-dname'); if (i) dnDraft = i.value; dnType = dt.dataset.dtype; render(); return; }
@@ -364,7 +392,7 @@ const TakvimUI = (() => {
   function stickOn(x) {
     const d = decor(sel);
     if (d.stickers.length >= 3) { app.toast('🌈', 'Bir güne en fazla 3 sticker', 'Kaldırmak için üstteki stickera dokun'); return false; }
-    d.stickers.push(x); d.updated = Date.now();
+    d.stickers.push(x); autoTint(d); d.updated = Date.now();
     app.save(); render(); popSticker();
     return true;
   }
@@ -450,7 +478,7 @@ const TakvimUI = (() => {
       const b = t.closest('[data-bk]');
       if (b) { if (b.dataset.bk === 'close') { app.closeModal(); book = null; } else turn(b.dataset.bk === 'next' ? 1 : -1); return; }
       const un = t.closest('[data-bk-un]');
-      if (un) { const d = decor(sel); d.stickers.splice(+un.dataset.bkUn, 1); d.updated = Date.now(); app.save(); render(); bookSync(); return; }
+      if (un) { const d = decor(sel); d.stickers.splice(+un.dataset.bkUn, 1); autoTint(d); d.updated = Date.now(); app.save(); render(); bookSync(); return; }
       const pk = t.closest('[data-pick]');
       if (pk) {
         if (swiped) { swiped = false; return; } // kaydırma dokunuş sayılmasın
@@ -468,14 +496,14 @@ const TakvimUI = (() => {
   // Sayfalar yalnızca alttaki oklarla (bilgisayarda klavye oklarıyla da) çevrilir: sürükleme, kaydırma ve köşe kıvırma kapalı.
   // Her zaman iki sayfa yan yana; dik telefonda sayfa daralınca stickerlar küçülmesin diye sayfa başına 2 × 3 dizilir.
   // Kapak ve kâğıt Hazal'ın tasarımları (assets/defter/<ad>/). Kütüphane yüklenemezse (ilk açılış internetsiz) basit defter açılır.
-  const FLIP_SRC = 'vendor/page-flip-2.0.7/page-flip.browser.js', FLIP_MS = 780, DAR = 230;
+  const FLIP_SRC = 'vendor/page-flip-2.0.7/page-flip.browser.js', FLIP_MS = 900, DAR = 230;
   // alan: stickerların süslere binmediği bölge (yüzde: üst, sağ, alt, sol); yazi: başlık rengi; sahne, isik, vurgu: Lilium renkleri
   const DEFTERLER = {
     'leylak-inci': { ad: 'İnci Düşü', kagit: 'Noktalı', yazi: '#7a67a3', alan: [11, 8, 20, 8], sahne: '#ddd9e5', isik: '#f6efff', vurgu: '#9d8daf' },
-    'siyah-yildizli': { ad: 'Ay Işığı', kagit: 'Çizgili', yazi: '#4a4658', alan: [10, 8, 21, 8], sahne: '#d6d8d2', isik: '#edf0df', vurgu: '#a9ad9b' },
-    'pembe-kurdele': { ad: 'Gül Kurusu', kagit: 'Çizgili', yazi: '#8e2e3e', alan: [10, 9, 26, 9], sahne: '#e5d6d1', isik: '#ffede4', vurgu: '#9d5e66' },
-    'krem-botanik': { ad: 'Saklı Bahçe', kagit: 'Çizgili', yazi: '#6c7a4c', alan: [15, 10, 14, 10], sahne: '#dde0d2', isik: '#f7f0d8', vurgu: '#8b997b' },
-    'mavi-kelebek': { ad: 'Mavi Rüya', kagit: 'Kareli', yazi: '#46699a', alan: [11, 9, 13, 9], sahne: '#d7e2e8', isik: '#effaff', vurgu: '#769aac' },
+    'siyah-yildizli': { ad: 'Ay Işığı', kagit: 'Noktalı', yazi: '#4a4658', alan: [10, 8, 25, 8], sahne: '#d6d8d2', isik: '#edf0df', vurgu: '#a9ad9b' },
+    'pembe-kurdele': { ad: 'Gül Kurusu', kagit: 'Noktalı', yazi: '#8e2e3e', alan: [10, 9, 26, 9], sahne: '#e5d6d1', isik: '#ffede4', vurgu: '#9d5e66' },
+    'krem-botanik': { ad: 'Saklı Bahçe', kagit: 'Noktalı', yazi: '#6c7a4c', alan: [15, 10, 14, 10], sahne: '#dde0d2', isik: '#f7f0d8', vurgu: '#8b997b' },
+    'mavi-kelebek': { ad: 'Mavi Rüya', kagit: 'Noktalı', yazi: '#46699a', alan: [11, 9, 13, 9], sahne: '#d7e2e8', isik: '#effaff', vurgu: '#769aac' },
   };
   // seçilmediyse sitenin temasına uyan defter: Lavanta → İnci Düşü, Gece ve Zambak → Ay Işığı
   function defterId() {
@@ -539,6 +567,30 @@ const TakvimUI = (() => {
     return p ? p.items[0] : 0;
   }
   const abs = (u) => new URL(u, location.href).href; // css değişkenindeki url() stil dosyasına göre çözülmesin
+  // css'teki cubic-bezier gibi: x geçen zaman, sonuç alınan yol
+  function bezier(x1, y1, x2, y2) {
+    const f = (a, b, t) => 3 * a * t * (1 - t) * (1 - t) + 3 * b * t * t * (1 - t) + t * t * t;
+    return (x) => {
+      let lo = 0, hi = 1, t = x;
+      for (let i = 0; i < 24; i++) { const v = f(x1, x2, t); if (Math.abs(v - x) < 1e-4) break; if (v < x) lo = t; else hi = t; t = (lo + hi) / 2; }
+      return f(y1, y2, t);
+    };
+  }
+  const SAYFA_EGRI = bezier(0.4, 0.1, 0.2, 1);
+  // Kütüphane sayfayı baştan sona aynı hızla çevirip birden durdurur. Kareleri bu eğriye göre yeniden sıralarız:
+  // sayfa yumuşak kalkar, ortada hızlanır, yere yavaşça iner (süre ve kare sayısı aynı kalır).
+  function smooth(pf) {
+    const r = pf.getRender();
+    if (!r || typeof r.startAnimation !== 'function') return;
+    const start = r.startAnimation.bind(r);
+    r.startAnimation = (frames, duration, done) => {
+      const n = frames.length;
+      if (n < 3 || calm()) return start(frames, duration, done);
+      const eased = [];
+      for (let k = 0; k < n; k++) eased.push(frames[Math.round(SAYFA_EGRI(k / (n - 1)) * (n - 1))]);
+      return start(eased, duration, done);
+    };
+  }
   function buildFlip(anchor) {
     const id = defterId(), d = DEFTERLER[id];
     stopSync();
@@ -572,6 +624,7 @@ const TakvimUI = (() => {
       // sayfa itilmez, sürüklenmez, köşesi kıvrılmaz: yalnızca oklar
       useMouseEvents: false, showPageCorners: false, disableFlipByClick: true, mobileScrollSupport: false,
     });
+    smooth(flip);
     flip.loadFromHTML(leaves);
     flip.on('flip', (e) => place(e.data));
     flip.on('changeState', (e) => { if (e.data === 'read') place(flip.getCurrentPageIndex()); });
@@ -582,6 +635,8 @@ const TakvimUI = (() => {
     stopSync();
     if (!scene || !flip) return;
     const n = flip.getPageCount(), kitap = scene.querySelector('.df-kitap');
+    const el = kitap.querySelector('.df-flip');
+    if (el) el.classList.remove('kapak-on', 'kapak-arka');
     if (instant) kitap.style.transition = 'none';
     kitap.style.transform = '';
     kitap.dataset.position = i <= 0 ? 'front' : i >= n - 1 ? 'back' : 'open';
@@ -619,6 +674,8 @@ const TakvimUI = (() => {
     const i = flip.getCurrentPageIndex(), n = flip.getPageCount();
     if (dir > 0 ? i >= n - 1 : i <= 0) return;
     syncSide = dir > 0 ? (i === 0 ? 'front' : i >= n - 3 ? 'back' : '') : (i >= n - 1 ? 'back' : i <= 2 ? 'front' : '');
+    // kapak dönerken kütüphane gölgeyi defterin boş tarafına da çizer (arkadan gri bir şey çıkıyor gibi); o gölge gizlenir
+    if (syncSide) scene.querySelector('.df-flip').classList.add(syncSide === 'back' ? 'kapak-arka' : 'kapak-on');
     if (syncSide && !calm()) { stopSync(); syncAt = performance.now(); syncRaf = requestAnimationFrame(syncShift); }
     if (dir > 0) flip.flipNext('bottom'); else flip.flipPrev('bottom');
   }
@@ -718,7 +775,7 @@ const TakvimUI = (() => {
         return;
       }
       const un = t.closest('[data-bk-un]');
-      if (un) { const d = decor(sel); d.stickers.splice(+un.dataset.bkUn, 1); d.updated = Date.now(); app.save(); render(); sceneSync(); return; }
+      if (un) { const d = decor(sel); d.stickers.splice(+un.dataset.bkUn, 1); autoTint(d); d.updated = Date.now(); app.save(); render(); sceneSync(); return; }
       const pk = t.closest('[data-pick]');
       if (pk && stickOn(pk.dataset.pick)) {
         sceneSync();
