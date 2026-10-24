@@ -6,6 +6,15 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.7.2",
+  "tarih": "2026-10-24",
+  "baslik": "Göz almayan açılış",
+  "notlar": [
+    "🌙 Luna açılırken artık parlak açık lila bir ekran yok: koyu bir alacakaranlık moru zeminde kedi yumuşakça parlıyor, altında \"Luna\" ve küçük noktalar; uygulama hazır olunca usulca kayboluyor. Gece gözünü almaz.",
+    "📱 Telefonun kendi açılış rengi de koyulaştı; telefon bunu kendisi güncellediği için bir gün kadar sürebilir."
+  ]
+},
+{
   "surum": "2.7.1",
   "tarih": "2026-10-24",
   "baslik": "Yeni ayraç",
