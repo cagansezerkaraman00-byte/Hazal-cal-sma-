@@ -1,4 +1,4 @@
-/* Takvim: mevsim ve özel günler (yılbaşı, Ramazan/Kurban Bayramı, ulusal bayramlar, 14 Şubat).
+/* Takvim: mevsim ve özel günler (yılbaşı, Ramazan/Kurban Bayramı, ulusal bayramlar, 14 Şubat, 14 Ağustos: Hazal'ın doğum günü).
    Dini bayramlar Diyanet takviminden (2026-2028); diğer yıllar için tarayıcının Hicri (Ümmü'l-Kurâ) takvimi kullanılır. */
 
 const Takvim = (() => {
@@ -52,6 +52,8 @@ const Takvim = (() => {
     const mmdd = md(d);
     if (mmdd >= '12-24' || mmdd <= '01-02') out.push({ key: 'yilbasi', name: 'Yeni yıl', emoji: '🎄', fireworks: mmdd === '12-31' || mmdd === '01-01' });
     if (mmdd === '02-14') out.push({ key: 'sevgililer', name: 'Sevgililer Günü', emoji: '💘' });
+    // Çağan'ın notu; takvimde günün altında yazar, Luna o sabah iletir
+    if (mmdd === '08-14') out.push({ key: 'dogumgunu', name: "Hazal'ın doğum günü", emoji: '🎂', not: 'Her şeyimi kazandığım zaman 💖' });
     if (ULUSAL[mmdd]) out.push({ key: 'ulusal', name: ULUSAL[mmdd], emoji: '🇹🇷' });
     const known = DINI[y];
     if (known) {

@@ -2267,6 +2267,7 @@ body.siir-acik { overflow: hidden; }
 .tk-ev { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--surface-2); }
 .tk-ev.mine { background: var(--pink-soft); padding: 0 4px 0 0; }
 .tk-ev.mine.editing { box-shadow: inset 0 0 0 2px var(--pink); }
+.tk-ev.dogum { background: var(--pink-soft); box-shadow: inset 0 0 0 1px var(--pink); }
 .tk-ev-edit { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .tk-ev-e { font-size: 20px; line-height: 1; }
 .tk-ev-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -2397,7 +2398,7 @@ span.bk-st { width: auto; height: auto; font-size: 26px; filter: none; }
 @media (prefers-reduced-motion: reduce) { .bk-arrow:active, .tk-book-btn:active .tk-book-ic { transform: none; } }
 /* Gerçek defter sahnesi: ekranı kaplar; her zaman iki sayfa (dikken aynı defter, küçük). Ölçü, gölge, kayma ve sahne Lilium
    defterinden; kapak ve kâğıt Hazal'ın tasarımları. Sahne rengi, ışığı ve vurgusu seçilen deftere göre değişir. */
-.df-sahne { --df-kapak: none; --df-kagit: none; --df-sahne: #ddd9e5; --df-isik: #f6efff; --df-vurgu: #9d8daf; --df-murekkep: #353b35;
+.df-sahne { --df-kapak: none; --df-kagit: none; --df-sahne: #ddd9e5; --df-isik: #f6efff; --df-vurgu: #9d8daf; --df-kurdele: #8b74c4; --df-murekkep: #353b35;
   position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; isolation: isolate; overflow: hidden; color: var(--df-murekkep);
   background: var(--df-sahne); transition: background 1s; animation: df-gel .32s ease both;
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
@@ -2433,14 +2434,16 @@ span.bk-st { width: auto; height: auto; font-size: 26px; filter: none; }
   background: repeating-linear-gradient(90deg, #fbf8f2 0 1px, #dcd4c7 1px 2px); }
 .df-blok.sol { --x: var(--sol); right: 100%; border-radius: 3px 0 0 3px; }
 .df-blok.sag { --x: var(--sag); left: 100%; border-radius: 0 3px 3px 0; }
-/* kurdele ayraç: sırttan sarkar, ucu defterin altından görünür; sayfa dönerken hafifçe sallanır */
-.df-kurdele { --en: max(5px, calc(var(--page-w) * .04)); position: absolute; top: 92%; left: calc(50% + var(--page-w) * .12); width: var(--en); height: calc(var(--page-w) * .2);
-  pointer-events: none; transform-origin: 50% 0; transform: rotate(3deg); transition: left .65s cubic-bezier(.22, .7, .25, 1);
-  background: linear-gradient(90deg, rgba(0, 0, 0, .2), transparent 35%, rgba(255, 255, 255, .22) 55%, rgba(0, 0, 0, .14)), var(--df-vurgu);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .2)); }
-.df-kitap[data-position="back"] .df-kurdele { left: calc(50% - var(--page-w) * .12 - var(--en)); }
+/* kurdele ayraç: sırtın ortasından, sayfaların arasından çıkıp defterin altından sarkar; saten, ucu V kesik.
+   Defterle tek parça kayar (kendi geçişi yok), sayfa dönerken hafifçe sallanır. */
+.df-kurdele { --en: max(9px, calc(var(--page-w) * .055)); position: absolute; top: 86%; left: calc(50% + var(--kx, -0.5) * var(--en)); width: var(--en); height: calc(var(--page-w) * .21 + var(--kboy, calc(var(--page-w) * .23)));
+  pointer-events: none; transform-origin: 50% 0; transform: rotate(2.5deg);
+  background: linear-gradient(90deg, rgba(0, 0, 0, .3), rgba(255, 255, 255, .32) 36%, rgba(255, 255, 255, .08) 56%, rgba(0, 0, 0, .32)), var(--df-kurdele, var(--df-vurgu));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%); filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .22)); }
 .df-kurdele.sallan { animation: df-sallan 1.1s ease-out; }
-@keyframes df-sallan { 0% { transform: rotate(3deg); } 25% { transform: rotate(-6deg); } 55% { transform: rotate(5deg); } 80% { transform: rotate(1deg); } 100% { transform: rotate(3deg); } }
+@keyframes df-sallan { 0% { transform: rotate(2.5deg); } 25% { transform: rotate(-5deg); } 55% { transform: rotate(4deg); } 80% { transform: rotate(1deg); } 100% { transform: rotate(2.5deg); } }
+/* kapak dönerken sayfa yığını kapakla aynı anda açılıp kapanır (geçiş yerine her karede ayarlanır) */
+.df-kitap.senk .df-blok { transition: none; }
 /* sayfadan kalkıp alttaki yerine uçan sticker */
 .df-ucan { position: fixed; z-index: 10; margin: 0; object-fit: contain; pointer-events: none; will-change: transform; }
 .df-flip .stf__wrapper { height: 100%; }
@@ -2508,4 +2511,4 @@ span.bk-st { width: auto; height: auto; font-size: 26px; filter: none; }
 .df-sec[aria-pressed="true"] small { border-color: var(--df-murekkep); }
 @media (orientation: landscape) and (max-height: 520px) { .df-alan { margin-top: 8px; margin-bottom: 0; } .df-alt { padding-bottom: 6px; } .df-x { top: 6px; } .df-etiket { top: 18px; } }
 @media (max-width: 520px) { .df-alt { gap: 10px; } .df-gun { flex-direction: column; gap: 3px; padding: 4px 8px 6px; border-radius: 16px; } .df-gun > span { font-size: 11px; white-space: nowrap; } }
-@media (prefers-reduced-motion: reduce) { .df-sahne, .df-kitap, .df-kurdele.sallan { animation: none; } .df-kitap, .df-alan, .df-mini, .df-renk, .df-blok, .df-kurdele { transition: none; } .df-ok:active { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .df-sahne, .df-kitap, .df-kurdele.sallan { animation: none; } .df-kitap, .df-alan, .df-mini, .df-renk, .df-blok { transition: none; } .df-ok:active { transform: none; } }

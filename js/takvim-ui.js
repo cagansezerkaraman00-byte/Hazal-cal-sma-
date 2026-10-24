@@ -45,7 +45,7 @@ const TakvimUI = (() => {
         else if (md === '12-31') out.push({ emoji: '🎄', text: 'Yılbaşı gecesi' });
         continue;
       }
-      out.push({ emoji: e.emoji, text: e.name });
+      out.push({ emoji: e.emoji, text: e.name, sub: e.not || '', dogum: e.key === 'dogumgunu' });
     }
     if (programMode()) {
       for (const e of D().uni.events || []) if (e && e.date === k) out.push({ emoji: (Uni.EVENT_KINDS[e.kind] || ['📌'])[0], text: Uni.evName(e) });
@@ -111,7 +111,7 @@ const TakvimUI = (() => {
     const t = marksOf(today).map((m) => `${m.emoji} ${esc(m.text)}`);
     if (t.length) return `<p class="tk-ribbon"><b>Bugün:</b> ${t.join(' · ')}</p>`;
     for (let i = 1; i <= 14; i++) { // bugün bir şey yoksa önümüzdeki iki haftanın ilk notu
-      const k = key(U.addDays(at(today), i)), n = notesOn(k)[0];
+      const k = key(U.addDays(at(today), i)), n = notesOn(k)[0] || special(k).find((x) => x.dogum);
       if (n) return `<p class="tk-ribbon soon"><b>Yaklaşan:</b> ${n.emoji} ${esc(n.text)} · ${rel(k).toLowerCase()}</p>`;
     }
     return '';
@@ -162,7 +162,7 @@ const TakvimUI = (() => {
     const rows = mine.map((n) => `<li class="tk-ev mine${n.id === form.id ? ' editing' : ''}"><button type="button" class="tk-ev-edit" data-edit="${esc(n.id)}" aria-label="${esc(n.text)} notunu düzenle">
           <span class="tk-ev-e">${n.emoji}</span><span class="tk-ev-t"><b>${esc(n.text)}</b><small>${[n.yearly ? 'her yıl' : '', n.remind ? 'bir gün önce haber verir' : ''].filter(Boolean).join(' · ') || 'dokun, düzenle'}</small></span><span class="tk-pen" aria-hidden="true">✎</span></button>
         <button type="button" class="tk-del" data-del="${esc(n.id)}" aria-label="${esc(n.text)} notunu sil">✕</button></li>`)
-      .concat(sp.map((s) => `<li class="tk-ev"><span class="tk-ev-e">${s.emoji}</span><span class="tk-ev-t"><b>${esc(s.text)}</b></span></li>`)).join('');
+      .concat(sp.map((s) => `<li class="tk-ev${s.dogum ? ' dogum' : ''}"><span class="tk-ev-e">${s.emoji}</span><span class="tk-ev-t"><b>${esc(s.text)}</b>${s.sub ? `<small>${esc(s.sub)}</small>` : ''}</span></li>`)).join('');
     const facts = [];
     if (k <= today && mins) facts.push(`⭐ ${k === today ? 'Bugün şimdiye kadar' : 'O gün'} ${U.fmtMin(mins)} çalıştın${mins >= goal ? ' · hedef tamam 🎯' : ''}`);
     else if (k < today) facts.push('🌙 O gün çalışma kaydı yok; dinlenmek de yolun parçası.');
@@ -500,13 +500,14 @@ const TakvimUI = (() => {
   // Her zaman iki sayfa yan yana; dik telefonda sayfa daralınca stickerlar küçülmesin diye sayfa başına 2 × 3 dizilir.
   // Kapak ve kâğıt Hazal'ın tasarımları (assets/defter/<ad>/). Kütüphane yüklenemezse (ilk açılış internetsiz) basit defter açılır.
   const FLIP_SRC = 'vendor/page-flip-2.0.7/page-flip.browser.js', FLIP_MS = 900, DAR = 230;
-  // alan: stickerların süslere binmediği bölge (yüzde: üst, sağ, alt, sol); yazi: başlık rengi; sahne, isik, vurgu: Lilium renkleri
+  // alan: stickerların süslere binmediği bölge (yüzde: üst, sağ, alt, sol); yazi: başlık rengi; sahne, isik, vurgu: Lilium renkleri;
+  // kurdele: ayracın saten rengi
   const DEFTERLER = {
-    'leylak-inci': { ad: 'İnci Düşü', kagit: 'Noktalı', yazi: '#7a67a3', alan: [11, 8, 20, 8], sahne: '#ddd9e5', isik: '#f6efff', vurgu: '#9d8daf' },
-    'siyah-yildizli': { ad: 'Ay Işığı', kagit: 'Noktalı', yazi: '#4a4658', alan: [10, 8, 25, 8], sahne: '#d6d8d2', isik: '#edf0df', vurgu: '#a9ad9b' },
-    'pembe-kurdele': { ad: 'Gül Kurusu', kagit: 'Noktalı', yazi: '#8e2e3e', alan: [10, 9, 26, 9], sahne: '#e5d6d1', isik: '#ffede4', vurgu: '#9d5e66' },
-    'krem-botanik': { ad: 'Saklı Bahçe', kagit: 'Noktalı', yazi: '#6c7a4c', alan: [15, 10, 14, 10], sahne: '#dde0d2', isik: '#f7f0d8', vurgu: '#8b997b' },
-    'mavi-kelebek': { ad: 'Mavi Rüya', kagit: 'Noktalı', yazi: '#46699a', alan: [11, 9, 13, 9], sahne: '#d7e2e8', isik: '#effaff', vurgu: '#769aac' },
+    'leylak-inci': { ad: 'İnci Düşü', kagit: 'Noktalı', yazi: '#7a67a3', alan: [11, 8, 20, 8], sahne: '#ddd9e5', isik: '#f6efff', vurgu: '#9d8daf', kurdele: '#8b74c4' },
+    'siyah-yildizli': { ad: 'Ay Işığı', kagit: 'Noktalı', yazi: '#4a4658', alan: [10, 8, 25, 8], sahne: '#d6d8d2', isik: '#edf0df', vurgu: '#a9ad9b', kurdele: '#c2a25a' },
+    'pembe-kurdele': { ad: 'Gül Kurusu', kagit: 'Noktalı', yazi: '#8e2e3e', alan: [10, 9, 26, 9], sahne: '#e5d6d1', isik: '#ffede4', vurgu: '#9d5e66', kurdele: '#9b2f45' },
+    'krem-botanik': { ad: 'Saklı Bahçe', kagit: 'Noktalı', yazi: '#6c7a4c', alan: [15, 10, 14, 10], sahne: '#dde0d2', isik: '#f7f0d8', vurgu: '#8b997b', kurdele: '#7a9160' },
+    'mavi-kelebek': { ad: 'Mavi Rüya', kagit: 'Noktalı', yazi: '#46699a', alan: [11, 9, 13, 9], sahne: '#d7e2e8', isik: '#effaff', vurgu: '#769aac', kurdele: '#5a82b8' },
   };
   // seçilmediyse sitenin temasına uyan defter: Lavanta → İnci Düşü, Gece ve Zambak → Ay Işığı
   function defterId() {
@@ -569,10 +570,11 @@ const TakvimUI = (() => {
     pages.push('<div class="df-sayfa df-kapak df-arka" data-density="hard"></div>');
     return pages.join('');
   }
-  // Lilium ölçüsü: sayfa 2:3, iki sayfa alana sığar (dikken genişliğe, yanken yüksekliğe göre)
+  // Lilium ölçüsü: sayfa 2:3, iki sayfa alana sığar (dikken genişliğe, yanken yüksekliğe göre); altta ayracın ucuna biraz yer kalır
+  const kurdeleYeri = (area) => Math.min(30, Math.round(area.clientHeight * 0.06));
   function sizeFor() {
     const area = scene.querySelector('.df-alan');
-    return Math.max(60, Math.floor(Math.min(area.clientHeight / 1.5, area.clientWidth / 2, 560)));
+    return Math.max(60, Math.floor(Math.min((area.clientHeight - kurdeleYeri(area)) / 1.5, area.clientWidth / 2, 560)));
   }
   // açık sayfadaki ilk sticker: ekran dönüp diziliş değişince defter aynı yerden açılsın (0 ön kapak, -1 arka kapak)
   function anchorNow() {
@@ -633,6 +635,9 @@ const TakvimUI = (() => {
     el.className = 'df-flip' + (dar ? ' dar' : '');
     el.style.width = pageW * 2 + 'px'; el.style.height = h + 'px';
     kitap.style.setProperty('--page-w', pageW + 'px');
+    // ayracın defterin altından sarkan kısmı alttaki şeride değmeyecek kadar (V ucu hep görünsün)
+    const alan = scene.querySelector('.df-alan'), bos = (alan.clientHeight - h) / 2 + 4;
+    kitap.style.setProperty('--kboy', Math.round(Math.max(14, Math.min(pageW * 0.23, bos))) + 'px');
     kitap.appendChild(el);
     scene.dataset.tasarim = id;
     scene.style.setProperty('--df-kapak', `url("${abs(`assets/defter/${id}/kapak.webp`)}")`);
@@ -640,6 +645,7 @@ const TakvimUI = (() => {
     scene.style.setProperty('--df-sahne', d.sahne);
     scene.style.setProperty('--df-isik', d.isik);
     scene.style.setProperty('--df-vurgu', d.vurgu);
+    scene.style.setProperty('--df-kurdele', d.kurdele);
     scene.querySelector('.df-etiket b').textContent = `${d.ad} · ${d.kagit}`.toLocaleUpperCase('tr');
     shown = contentPages(dar);
     el.innerHTML = flipPages(id);
@@ -671,11 +677,13 @@ const TakvimUI = (() => {
     kitap.style.transform = '';
     kitap.dataset.position = i <= 0 ? 'front' : i >= n - 1 ? 'back' : 'open';
     if (instant) { void kitap.offsetWidth; kitap.style.transition = ''; }
-    // kenardaki sayfa yığını: solda çevrilenler, sağda kalanlar (kapalıyken görünmez)
-    const open = i > 0 && i < n - 1, done = open ? Math.min(1, (i - 1) / Math.max(1, n - 3)) : 0;
+    // kenardaki sayfa yığını: solda çevrilenler, sağda kalanlar (kapalıyken görünmez; arka kapakta hepsi solda)
+    kitap.classList.remove('senk');
+    const open = i > 0 && i < n - 1, done = open ? Math.min(1, (i - 1) / Math.max(1, n - 3)) : i >= n - 1 ? 1 : 0;
     kitap.style.setProperty('--acik', open ? 1 : 0);
     kitap.style.setProperty('--sol', done.toFixed(3));
     kitap.style.setProperty('--sag', (1 - done).toFixed(3));
+    kitap.style.setProperty('--kx', open ? KX.acik : i >= n - 1 ? KX.arka : KX.on);
     scene.querySelector('[data-df="prev"]').disabled = i <= 0;
     scene.querySelector('[data-df="next"]').disabled = i >= n - 1;
     const nums = [i - 1, i].filter((x) => x >= 1 && x <= shown.length);
@@ -685,6 +693,8 @@ const TakvimUI = (() => {
   // Kapak (ya da arka kapak) dönerken defterin kayması her karede yaprağın gerçek açısından hesaplanır: dik telefonda da
   // açılan kapak ekrandan taşmaz, defter kapakla aynı anda ortaya gelir.
   let syncRaf = 0, syncSide = '', syncAt = 0;
+  // ayracın sırta göre yeri (kendi eninin katı): kapalıyken kapağın altında kalır, açıkken iki sayfanın arasından çıkar
+  const KX = { on: 0.25, acik: -0.5, arka: -1.25 };
   const angleOf = (el) => { const m = el && /rotateY\((-?[\d.]+)deg\)/.exec(el.style.transform || ''); return m ? ((+m[1] % 360) + 360) % 360 : null; };
   const seen = (el) => el && getComputedStyle(el).display !== 'none';
   function syncShift() {
@@ -699,6 +709,11 @@ const TakvimUI = (() => {
       const kitap = scene.querySelector('.df-kitap');
       kitap.style.transition = 'none';
       kitap.style.transform = `translateX(${syncSide === 'back' ? pageW / 2 * (1 - p) : -pageW / 2 * p}px)`;
+      // sayfa yığını kapakla birlikte belirir / kaybolur; ayraç da kapağın altına girip çıkar
+      const ac = syncSide === 'back' ? p : 1 - p;
+      kitap.classList.add('senk');
+      kitap.style.setProperty('--acik', ac.toFixed(3));
+      kitap.style.setProperty('--kx', (KX.acik * ac + (syncSide === 'back' ? KX.arka : KX.on) * (1 - ac)).toFixed(3));
     }
     syncRaf = requestAnimationFrame(syncShift);
   }
@@ -903,16 +918,18 @@ const TakvimUI = (() => {
     const today = todayKey(), tomorrow = key(U.addDays(at(today), 1));
     // denemeler not gibi söylenir; bir gün önce her zaman haber verilir
     const asNote = (p) => ({ emoji: '📝', text: Deneme.planTitle(p), remind: true, deneme: true });
-    const mine = notesOn(today).concat(plansOn(today).map(asNote)), eve = notesOn(tomorrow).filter((n) => n.remind).concat(plansOn(tomorrow).map(asNote));
+    // takvimin bildiği doğum günü (14 Ağustos) de not gibi söylenir, bir gün önce de haber verilir
+    const dogum = (k) => special(k).filter((x) => x.dogum).map((x) => ({ emoji: x.emoji, text: x.text, sub: x.sub, remind: true, dogum: true }));
+    const mine = notesOn(today).concat(plansOn(today).map(asNote), dogum(today)), eve = notesOn(tomorrow).filter((n) => n.remind).concat(plansOn(tomorrow).map(asNote), dogum(tomorrow));
     const todayDue = mine.length && lsGet(SAID_KEY) !== today, eveDue = eve.length && lsGet(EVE_KEY) !== today;
     if (!todayDue && !eveDue) return;
     const busy = app.isFocusing() || !$('#modal').classList.contains('hidden') || app.quietFor(8000) || document.hidden;
     if (busy) { if (++tries < 40) setTimeout(sayToday, 15000); return; }
-    const name = D().settings.name || 'canım', bday = (arr) => arr.find((n) => /doğum ?günüm/i.test(n.text));
+    const name = D().settings.name || 'canım', bday = (arr) => arr.find((n) => n.dogum) || arr.find((n) => /doğum ?günüm/i.test(n.text));
     const join = (arr) => arr.map((n) => `${n.emoji} ${n.text}`).join(', ');
     if (todayDue) {
       const b = bday(mine);
-      const text = b ? `İyi ki doğdun ${name}! 🎂 Bugün senin günün; takvimine kocaman bir yıldız kondurdum ✨`
+      const text = b ? `İyi ki doğdun ${name}! 🎂 Bugün senin günün; takvimine kocaman bir yıldız kondurdum ✨${b.sub ? ` Çağan da takvimine bir not bırakmış: “${b.sub}”` : ''}`
         : `Takvimine baktım: bugün ${join(mine)} ✨ ${mine.some((n) => n.deneme) ? 'Bitince sonuçlarını gir, analizini birlikte yapalım.' : 'Unutmadım!'}`;
       if (app.sayText(text, { speaker: 'luna', emotion: 'happy' })) { lsSet(SAID_KEY, today); if (b) app.celebrate(); }
       if (eveDue) setTimeout(sayToday, 20000);

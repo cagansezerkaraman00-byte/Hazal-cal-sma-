@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.7.1",
+  "tarih": "2026-10-24",
+  "baslik": "Yeni ayraç",
+  "notlar": [
+    "🎀 Sticker defterinin ayracı yenilendi: sırttan, sayfaların arasından sarkan saten bir kurdele; her defterin kendi renginde. Defter kapanırken artık geriden gelmiyor, kapakla birlikte kayıyor.",
+    "📚 Defterin kenarındaki sayfa yığını da kapak açılıp kapanırken onunla aynı anda belirip kayboluyor.",
+    "💖 Takvime çok özel bir gün eklendi; zamanı gelince görürsün."
+  ]
+},
+{
   "surum": "2.7",
   "tarih": "2026-10-24",
   "baslik": "Takvim ve sticker defteri",
