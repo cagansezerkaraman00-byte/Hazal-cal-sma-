@@ -28,9 +28,10 @@ const StickerDefter = (() => {
   const KNOWN = new Set(PAGES.flatMap((p) => p.items));
   const RENK_AD = { p: 'pembe', s: 'seftali', l: 'limon', n: 'nane', g: 'gok', v: 'lila' }, RENK = new Map();
   for (const b of BOLUMLER) all(b).forEach((x, i) => { const r = RENK_AD[(b.renk || '')[i]]; if (r) RENK.set(x, r); });
-  // takvim hücresi ve defter için tek biçim (görsel tembel yüklenir; bozuk dosya sessizce gizlenir)
-  function html(s, cls = '') {
-    if (isImg(s)) return `<img class="${cls}" src="${src(s)}" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">`;
+  // takvim hücresi ve defter için tek biçim; bozuk dosya sessizce gizlenir. Defter sayfalarında görsel tembel yüklenir (lazy);
+  // takvimde ve gün sayfasında hemen çizilir, yoksa her yeniden çizimde bir an kaybolup gelir.
+  function html(s, cls = '', lazy = false) {
+    if (isImg(s)) return `<img class="${cls}" src="${src(s)}" alt=""${lazy ? ' loading="lazy" decoding="async"' : ''} onerror="this.style.visibility='hidden'">`;
     return `<span class="${cls}">${U.esc(s)}</span>`;
   }
   return { BOLUMLER, PAGES, isImg, src, html, known: (s) => KNOWN.has(s), tint: (s) => RENK.get(s) || '' };

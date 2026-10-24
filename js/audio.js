@@ -227,6 +227,23 @@ const Sound = (() => {
       if (!Store.data.settings.sound) return;
       tone(880, 0, 0.25, 'sine', 0.08);
     },
+    // sticker defteri: sayfa çevrilirken kısa bir kâğıt hışırtısı
+    page() {
+      if (!Store.data.settings.sound) return;
+      const c = ac(); if (!c) return;
+      const len = Math.floor(c.sampleRate * 0.34), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) { const t = i / len; d[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * t) * Math.pow(1 - t, 0.6) * 0.5; }
+      const src = c.createBufferSource(), bp = c.createBiquadFilter(), g = c.createGain();
+      src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 1500; bp.Q.value = 0.6; g.gain.value = 0.22;
+      src.connect(bp).connect(g).connect(c.destination);
+      src.start();
+    },
+    // sticker güne yapışınca yumuşak bir "pıt"
+    stick() {
+      if (!Store.data.settings.sound) return;
+      tone(523.25, 0, 0.12, 'sine', 0.07);
+      tone(783.99, 0.05, 0.16, 'sine', 0.05);
+    },
     async meow() {
       if (!Store.data.settings.sound) return;
       try {

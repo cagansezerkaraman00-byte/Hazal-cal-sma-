@@ -2240,10 +2240,10 @@ body.siir-acik { overflow: hidden; }
 .tk-cell[class*=" t-"] { background: radial-gradient(circle at 18% 88%, rgba(var(--tk-t), .62), rgba(var(--tk-t), .28) 75%); box-shadow: inset 0 0 0 1px rgba(var(--tk-t), .45); }
 .tk-cell.sel[class*=" t-"] { box-shadow: inset 0 0 0 2px var(--pink); }
 /* güne yapışan stickerlar */
-.tk-st { position: absolute; left: 1px; bottom: 0; font-size: 17px; line-height: 1; transform: rotate(-12deg); filter: drop-shadow(0 1px 1px rgba(30, 10, 40, .22)); pointer-events: none; }
-.tk-st.s2 { left: auto; bottom: auto; right: 0; top: 1px; font-size: 12px; transform: rotate(14deg); }
-.tk-st.pop { animation: tk-pop .45s ease-out; }
-@keyframes tk-pop { 0% { transform: scale(.2) rotate(-40deg); } 70% { transform: scale(1.3) rotate(-6deg); } 100% { transform: rotate(-12deg); } }
+.tk-st { position: absolute; left: 1px; bottom: 0; font-size: 17px; line-height: 1; transform: rotate(var(--r, -12deg)); filter: drop-shadow(0 1px 1px rgba(30, 10, 40, .22)); pointer-events: none; }
+.tk-st.s2 { left: auto; bottom: auto; right: 0; top: 1px; font-size: 12px; transform: rotate(var(--r2, 14deg)); }
+.tk-st.pop { animation: tk-pop .5s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes tk-pop { 0% { transform: scale(.2) rotate(-40deg); opacity: 0; } 60% { transform: scale(1.25) rotate(-4deg); opacity: 1; } 100% { transform: rotate(var(--r, -12deg)); } }
 .tk-corner { position: absolute; top: -18px; right: -8px; z-index: 1; font-size: 34px; line-height: 1; transform: rotate(14deg); filter: drop-shadow(0 2px 2px rgba(30, 10, 40, .25)); pointer-events: none; }
 .tk-mark { font-size: 11px; line-height: 1; white-space: nowrap; }
 .tk-mark i { font-style: normal; font-size: 9px; color: var(--muted); }
@@ -2427,6 +2427,22 @@ span.bk-st { width: auto; height: auto; font-size: 26px; filter: none; }
 .df-kitap[data-position="back"] { transform: translateX(calc(var(--page-w) * .5)); }
 @keyframes df-belir { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
 .df-flip { position: relative; filter: drop-shadow(0 25px 22px #22251c30); }
+/* kenardaki sayfa yığını: açık defterde solda çevrilen, sağda kalan sayfaların kalınlığı (kapalıyken yok) */
+.df-blok { --kalin: max(2px, min(9px, calc(var(--page-w) * .03))); position: absolute; top: 1.2%; bottom: 1.4%; pointer-events: none;
+  width: calc(var(--acik, 0) * (1.5px + var(--kalin) * var(--x, 0))); transition: width .45s ease; box-shadow: 0 2px 3px rgba(40, 30, 20, .14);
+  background: repeating-linear-gradient(90deg, #fbf8f2 0 1px, #dcd4c7 1px 2px); }
+.df-blok.sol { --x: var(--sol); right: 100%; border-radius: 3px 0 0 3px; }
+.df-blok.sag { --x: var(--sag); left: 100%; border-radius: 0 3px 3px 0; }
+/* kurdele ayraç: sırttan sarkar, ucu defterin altından görünür; sayfa dönerken hafifçe sallanır */
+.df-kurdele { --en: max(5px, calc(var(--page-w) * .04)); position: absolute; top: 92%; left: calc(50% + var(--page-w) * .12); width: var(--en); height: calc(var(--page-w) * .2);
+  pointer-events: none; transform-origin: 50% 0; transform: rotate(3deg); transition: left .65s cubic-bezier(.22, .7, .25, 1);
+  background: linear-gradient(90deg, rgba(0, 0, 0, .2), transparent 35%, rgba(255, 255, 255, .22) 55%, rgba(0, 0, 0, .14)), var(--df-vurgu);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .2)); }
+.df-kitap[data-position="back"] .df-kurdele { left: calc(50% - var(--page-w) * .12 - var(--en)); }
+.df-kurdele.sallan { animation: df-sallan 1.1s ease-out; }
+@keyframes df-sallan { 0% { transform: rotate(3deg); } 25% { transform: rotate(-6deg); } 55% { transform: rotate(5deg); } 80% { transform: rotate(1deg); } 100% { transform: rotate(3deg); } }
+/* sayfadan kalkıp alttaki yerine uçan sticker */
+.df-ucan { position: fixed; z-index: 10; margin: 0; object-fit: contain; pointer-events: none; will-change: transform; }
 .df-flip .stf__wrapper { height: 100%; }
 .df-flip .stf__block { perspective: 4200px; } /* sert kapak dönerken yakın kenarı fazla büyüyüp taşmasın */
 /* kapak dönerken defterin boş tarafına düşen gölge çizilmez: kapalı defterin yanında gri bir kutu belirmesin */
@@ -2454,13 +2470,18 @@ span.bk-st { width: auto; height: auto; font-size: 26px; filter: none; }
 .df-alan2 .bk-cell:nth-child(4n+1) .bk-st { transform: rotate(-5deg); }
 .df-alan2 .bk-cell:nth-child(4n+3) .bk-st { transform: rotate(4deg); }
 .df-sayfa .bk-st { pointer-events: none; } /* dokunuş düğmeye gitsin, resim sürüklenmesin */
+/* o güne zaten yapışmış sticker: köşede küçük ✓ */
+.df-alan2 .bk-cell.on::after { content: '✓'; position: absolute; top: 0; right: 4%; display: grid; place-items: center; width: max(14px, calc(var(--page-w) * .07)); aspect-ratio: 1;
+  border-radius: 50%; background: var(--df-vurgu); color: #fff; font-size: max(9px, calc(var(--page-w) * .042)); font-weight: 900; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); }
+/* simgeden büyüyerek gelirken defterin kendi belirme hareketi çalışmaz */
+.df-sahne.buyu .df-kitap { animation: none; }
 /* ilk sayfa: defterin adı (Lilium'un yazı tipi gibi) */
 .df-ilk { align-items: center; justify-content: center; gap: 4%; text-align: center; }
 .df-ilk p { margin: 0; font: italic 400 max(13px, calc(var(--page-w) * .085)) / 1.3 Georgia, 'Times New Roman', serif; }
 .df-ilk small { font-size: max(9px, calc(var(--page-w) * .045)); font-weight: 700; opacity: .75; }
 .df-no { position: absolute; bottom: 2%; left: 0; right: 0; z-index: 4; text-align: center; font-size: max(8px, calc(var(--page-w) * .032)); color: #696953; }
 /* alt şerit: oklar (Lilium'un yuvarlak düğmeleri), günün 3 yeri, kapak seçimi */
-.df-alt { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 12px 14px; }
+.df-alt { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 6px 12px 14px; }
 .df-ok { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; border: 1px solid #5c625b28; background: #ffffff40; color: var(--df-murekkep); cursor: pointer; transition: background .2s, opacity .2s; }
 .df-ok:hover { background: #ffffff90; }
 .df-ok:active { transform: scale(.92); }
@@ -2474,7 +2495,7 @@ span.bk-st { width: auto; height: auto; font-size: 26px; filter: none; }
   box-shadow: 4px 7px 9px #2e2a2830, 1px 1px 1px #28251e44; transform: rotate(-5deg); transition: transform .3s; }
 .df-renk[aria-expanded="true"] { transform: rotate(0) translateY(-3px); }
 /* Lilium rafı: eğik küçük defterler; seçilen düzelir ve öne çıkar */
-.df-secici { display: flex; justify-content: center; gap: 14px; padding: 6px 12px 2px; overflow-x: auto; }
+.df-secici { position: relative; z-index: 1; display: flex; justify-content: center; gap: 14px; padding: 6px 12px 2px; overflow-x: auto; }
 .df-secici[hidden] { display: none; }
 .df-sec { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; color: var(--df-murekkep); font: inherit; cursor: pointer; padding: 6px 2px 0; }
 .df-mini { position: relative; display: block; width: 44px; height: 66px; border-radius: 1px 3px 3px 1px; overflow: hidden; transform: rotate(-5deg) rotateY(-9deg);
@@ -2487,4 +2508,4 @@ span.bk-st { width: auto; height: auto; font-size: 26px; filter: none; }
 .df-sec[aria-pressed="true"] small { border-color: var(--df-murekkep); }
 @media (orientation: landscape) and (max-height: 520px) { .df-alan { margin-top: 8px; margin-bottom: 0; } .df-alt { padding-bottom: 6px; } .df-x { top: 6px; } .df-etiket { top: 18px; } }
 @media (max-width: 520px) { .df-alt { gap: 10px; } .df-gun { flex-direction: column; gap: 3px; padding: 4px 8px 6px; border-radius: 16px; } .df-gun > span { font-size: 11px; white-space: nowrap; } }
-@media (prefers-reduced-motion: reduce) { .df-sahne, .df-kitap { animation: none; } .df-kitap, .df-alan, .df-mini, .df-renk { transition: none; } .df-ok:active { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .df-sahne, .df-kitap, .df-kurdele.sallan { animation: none; } .df-kitap, .df-alan, .df-mini, .df-renk, .df-blok, .df-kurdele { transition: none; } .df-ok:active { transform: none; } }

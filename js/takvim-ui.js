@@ -10,7 +10,7 @@
 const TakvimUI = (() => {
   const EMOJI = ['🎂', '💖', '🎉', '📚', '📝', '⭐', '🌸', '🎁', '✈️', '🩺'];
   const SD = () => window.StickerDefter || null;
-  const stHtml = (x, cls) => (SD() ? SD().html(x, cls) : `<span class="${cls}">${esc(x)}</span>`);
+  const stHtml = (x, cls, lazy) => (SD() ? SD().html(x, cls, lazy) : `<span class="${cls}">${esc(x)}</span>`);
   const stName = (x) => (SD() && SD().isImg(x) ? 'sticker' : x);
   const TINTS = [['', 'Renksiz'], ['pembe', 'Pembe'], ['seftali', 'Şeftali'], ['limon', 'Limon'], ['nane', 'Nane'], ['gok', 'Gök mavisi'], ['lila', 'Lila']];
   const MONTH_STICKER = ['❄️', '💝', '🌱', '🌷', '🌼', '☀️', '🍉', '🐚', '📚', '🍁', '☕', '🎄'];
@@ -125,7 +125,9 @@ const TakvimUI = (() => {
       const lv = k <= today ? level(mins[k] || 0) : '', plan = planOn(k).length, st = dc ? dc.stickers : [];
       const tn = tintOf(dc), cls = ['tk-cell', k === today ? 'today' : '', k === sel ? 'sel' : '', dow >= 5 ? 'we' : '', tn ? 't-' + tn : ''].join(' ');
       const label = [longDate(k), ...marks.map((x) => x.text), mins[k] ? U.fmtMin(mins[k]) + ' çalışma' : '', plan ? plan + ' plan maddesi' : ''].filter(Boolean).join(', ');
-      html += `<button type="button" class="${cls}" data-day="${k}" aria-label="${esc(label)}" aria-pressed="${k === sel}">
+      // her günün stickerı biraz farklı açıyla durur (elle yapıştırılmış gibi)
+      const tilt = st.length ? ` style="--r:${[-14, -8, -17, -5, -11, -19, -7][d % 7] + (d % 3) * 2}deg;--r2:${[9, 15, 6, 13, 18][d % 5]}deg"` : '';
+      html += `<button type="button" class="${cls}" data-day="${k}"${tilt} aria-label="${esc(label)}" aria-pressed="${k === sel}">
         ${st[0] ? stHtml(st[0], 'tk-st') : ''}${st[1] ? stHtml(st[1], 'tk-st s2') : ''}
         <span class="tk-n">${d}</span>${marks.length ? `<span class="tk-mark" aria-hidden="true">${marks.slice(0, 2).map((x) => x.emoji).join('')}${marks.length > 2 ? '<i>+</i>' : ''}</span>` : ''}
         ${lv ? `<span class="tk-star ${lv}" aria-hidden="true">★</span>` : plan && k >= today ? '<span class="tk-dot" aria-hidden="true"></span>' : ''}</button>`;
@@ -400,15 +402,16 @@ const TakvimUI = (() => {
   // ---------- Sticker defteri: envanter gibi; kapağı açılır, oklarla sayfa sayfa çevrilir ----------
   // Kapak ve kâğıt görselleri css'teki --bk-kapak / --bk-kagit ile gelir (Hazal'ın tasarımı gelince yalnızca oraya yazılır).
   const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const slotHtml = (x, i) => (x
+    ? `<button type="button" class="bk-slot full" data-bk-un="${i}" data-st="${esc(x)}" aria-label="${esc(stName(x))} stickerını kaldır">${stHtml(x, 'bk-st')}</button>`
+    : '<span class="bk-slot" aria-hidden="true"></span>');
   function slots() {
     const d = decorOn(sel), stuck = d ? d.stickers : [];
-    return [0, 1, 2].map((i) => (stuck[i]
-      ? `<button type="button" class="bk-slot full" data-bk-un="${i}" aria-label="${esc(stName(stuck[i]))} stickerını kaldır">${stHtml(stuck[i], 'bk-st')}</button>`
-      : '<span class="bk-slot" aria-hidden="true"></span>')).join('');
+    return [0, 1, 2].map((i) => slotHtml(stuck[i], i)).join('');
   }
   function pageHtml(p) {
     return `<div class="bk-ph"><b>${p.icon} ${esc(p.title)}</b>${p.parts > 1 ? `<span>${p.part}/${p.parts}</span>` : ''}</div>
-      <div class="bk-grid">${p.items.map((x) => `<button type="button" class="bk-cell" data-pick="${esc(x)}" aria-label="${esc(p.title)} stickerı yapıştır">${stHtml(x, 'bk-st')}</button>`).join('')}</div>`;
+      <div class="bk-grid">${p.items.map((x) => `<button type="button" class="bk-cell" data-pick="${esc(x)}" aria-label="${esc(p.title)} stickerı yapıştır">${stHtml(x, 'bk-st', true)}</button>`).join('')}</div>`;
   }
   function bookSync() {
     if (!book) return;
@@ -539,13 +542,27 @@ const TakvimUI = (() => {
     out.forEach((p) => { p.parts = count[p.bolum]; });
     return out;
   }
+  // ilk sayfadaki küçük not: bu ay kaç güne sticker yapıştırdın
+  function titleNote() {
+    const m = todayKey().slice(0, 7);
+    let days = 0, n = 0;
+    for (const x of decorList()) if (x.date.slice(0, 7) === m && x.stickers.length) { days++; n += x.stickers.length; }
+    return n ? `Bu ay ${days} güne ${n} sticker yapıştırdın 🌸` : 'Bir stickera dokun, güne yapışsın';
+  }
+  // o güne yapışmış stickerlar defterde küçük bir ✓ ile işaretli; ilk sayfadaki not da güncellenir
+  function markOn() {
+    if (!scene) return;
+    const on = new Set(decorOn(sel) ? decorOn(sel).stickers : []);
+    scene.querySelectorAll('.df-flip [data-pick]').forEach((b) => b.classList.toggle('on', on.has(b.dataset.pick)));
+    scene.querySelectorAll('.df-ilk small').forEach((x) => { x.textContent = titleNote(); });
+  }
   // Lilium sırası: sert ön kapak, kâğıt sayfalar (ilki defterin adı), sert arka kapak; arka kapak sola düşsün diye sayfa sayısı çift
   function flipPages(id) {
     const d = DEFTERLER[id], name = esc(D().settings.name || ''), a = d.alan;
     const area = `top:${a[0]}%;right:${a[1]}%;bottom:${a[2]}%;left:${a[3]}%;color:${d.yazi}`;
     const pages = [
       '<div class="df-sayfa df-kapak" data-density="hard"></div>',
-      `<div class="df-sayfa df-kagit"><div class="df-alan2 df-ilk" style="${area}"><p>${name ? name + "'ın" : 'Benim'}<br>sticker defteri</p><small>Bir stickera dokun, güne yapışsın</small></div></div>`,
+      `<div class="df-sayfa df-kagit"><div class="df-alan2 df-ilk" style="${area}"><p>${name ? name + "'ın" : 'Benim'}<br>sticker defteri</p><small>${esc(titleNote())}</small></div></div>`,
     ];
     shown.forEach((p, i) => pages.push(`<div class="df-sayfa df-kagit"><div class="df-alan2" style="${area}">${pageHtml(p)}</div><span class="df-no">${String(i + 1).padStart(2, '0')}</span></div>`));
     if (pages.length % 2 === 0) pages.push('<div class="df-sayfa df-kagit"></div>');
@@ -576,9 +593,11 @@ const TakvimUI = (() => {
       return f(y1, y2, t);
     };
   }
-  const SAYFA_EGRI = bezier(0.4, 0.1, 0.2, 1);
-  // Kütüphane sayfayı baştan sona aynı hızla çevirip birden durdurur. Kareleri bu eğriye göre yeniden sıralarız:
-  // sayfa yumuşak kalkar, ortada hızlanır, yere yavaşça iner (süre ve kare sayısı aynı kalır).
+  // Kütüphane köşeyi sabit hızla taşır; sayfanın kendisi bu yüzden zaten hızlı kalkıp yavaş iner (ölçtük: sürenin yarısında
+  // yolun üçte ikisi). Kareleri, bu doğal yavaşlamayı da hesaba katıp toplamda şu eğriyi verecek biçimde yeniden sıralarız:
+  // sayfa hemen kıpırdar, ortada akıp gider, yere yumuşakça oturur (süre ve kare sayısı aynı kalır).
+  const HEDEF = bezier(0.35, 0, 0.3, 1);
+  const SAYFA_EGRI = (t) => 1 - Math.pow(1 - HEDEF(t), 0.6);
   function smooth(pf) {
     const r = pf.getRender();
     if (!r || typeof r.startAnimation !== 'function') return;
@@ -591,11 +610,21 @@ const TakvimUI = (() => {
       return start(eased, duration, done);
     };
   }
+  // Kütüphanenin çizim döngüsü destroy'dan sonra da durmaz, her karede kopmuş sayfaları çizmeye devam eder (defter her
+  // kurulduğunda bir döngü daha birikir). Kapatırken çizimi boşa çıkarıp sayfaları bırakırız: telefon yorulmaz, bellek dolmaz.
+  function retire(pf) {
+    if (!pf) return;
+    try { pf.destroy(); } catch (e) { /* yok say */ }
+    const r = pf.getRender && pf.getRender();
+    if (!r) return;
+    for (const k of Object.keys(r)) r[k] = null;
+    r.render = r.update = r.drawFrame = () => {};
+  }
   function buildFlip(anchor) {
     const id = defterId(), d = DEFTERLER[id];
     stopSync();
     // kütüphane kapanırken kök kutuyu da siler: her kurulumda yeni kutu
-    if (flip) { try { flip.destroy(); } catch (e) { /* yok say */ } flip = null; }
+    retire(flip); flip = null;
     const kitap = scene.querySelector('.df-kitap'), old = kitap.querySelector('.df-flip');
     if (old) old.remove();
     const el = document.createElement('div');
@@ -624,8 +653,9 @@ const TakvimUI = (() => {
       // sayfa itilmez, sürüklenmez, köşesi kıvrılmaz: yalnızca oklar
       useMouseEvents: false, showPageCorners: false, disableFlipByClick: true, mobileScrollSupport: false,
     });
-    smooth(flip);
     flip.loadFromHTML(leaves);
+    smooth(flip); // çizim bölümü loadFromHTML'de kurulur; eğri ondan sonra takılır
+    markOn();
     flip.on('flip', (e) => place(e.data));
     flip.on('changeState', (e) => { if (e.data === 'read') place(flip.getCurrentPageIndex()); });
     place(flip.getCurrentPageIndex(), true);
@@ -641,6 +671,11 @@ const TakvimUI = (() => {
     kitap.style.transform = '';
     kitap.dataset.position = i <= 0 ? 'front' : i >= n - 1 ? 'back' : 'open';
     if (instant) { void kitap.offsetWidth; kitap.style.transition = ''; }
+    // kenardaki sayfa yığını: solda çevrilenler, sağda kalanlar (kapalıyken görünmez)
+    const open = i > 0 && i < n - 1, done = open ? Math.min(1, (i - 1) / Math.max(1, n - 3)) : 0;
+    kitap.style.setProperty('--acik', open ? 1 : 0);
+    kitap.style.setProperty('--sol', done.toFixed(3));
+    kitap.style.setProperty('--sag', (1 - done).toFixed(3));
     scene.querySelector('[data-df="prev"]').disabled = i <= 0;
     scene.querySelector('[data-df="next"]').disabled = i >= n - 1;
     const nums = [i - 1, i].filter((x) => x >= 1 && x <= shown.length);
@@ -678,8 +713,48 @@ const TakvimUI = (() => {
     if (syncSide) scene.querySelector('.df-flip').classList.add(syncSide === 'back' ? 'kapak-arka' : 'kapak-on');
     if (syncSide && !calm()) { stopSync(); syncAt = performance.now(); syncRaf = requestAnimationFrame(syncShift); }
     if (dir > 0) flip.flipNext('bottom'); else flip.flipPrev('bottom');
+    if (window.Sound && Sound.page) Sound.page();
+    // kurdele sayfa dönerken hafifçe sallanır
+    const rb = scene.querySelector('.df-kurdele');
+    if (rb && !calm()) { rb.classList.remove('sallan'); void rb.offsetWidth; rb.classList.add('sallan'); }
   }
-  function sceneSync() { if (scene) scene.querySelector('.df-slots').innerHTML = slots(); }
+  // Stickera dokununca sayfadan kalkar, alttaki yerine uçup yapışır (hareket azaltılmışsa hemen yerinde görünür)
+  function flyTo(img, slotIndex) {
+    const slot = scene && scene.querySelectorAll('.df-slots .bk-slot')[slotIndex];
+    const target = slot && slot.querySelector('.bk-st');
+    const land = () => {
+      if (target) target.style.visibility = '';
+      if (slot && slot.animate && !calm()) slot.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.2) rotate(-4deg)' }, { transform: 'scale(1)' }], { duration: 280, easing: 'ease-out' });
+      if (window.Sound && Sound.stick) Sound.stick();
+    };
+    if (!img || !target || calm() || !img.animate) { land(); return; }
+    const a = img.getBoundingClientRect(), b = target.getBoundingClientRect();
+    if (!a.width || !b.width) { land(); return; }
+    const ghost = img.cloneNode();
+    ghost.className = 'df-ucan';
+    Object.assign(ghost.style, { left: a.left + 'px', top: a.top + 'px', width: a.width + 'px', height: a.height + 'px' });
+    scene.appendChild(ghost);
+    target.style.visibility = 'hidden';
+    const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2), k = b.width / a.width;
+    ghost.animate([
+      { transform: 'translate(0, 0) scale(1) rotate(0deg)', filter: 'drop-shadow(0 2px 2px rgba(40, 20, 60, .25))' },
+      { transform: `translate(${dx * 0.2}px, ${dy * 0.2 - 36}px) scale(1.28) rotate(-10deg)`, filter: 'drop-shadow(0 14px 12px rgba(40, 20, 60, .3))', offset: 0.35 },
+      { transform: `translate(${dx}px, ${dy}px) scale(${k}) rotate(-4deg)`, filter: 'drop-shadow(0 1px 1px rgba(40, 20, 60, .25))' },
+    ], { duration: 580, easing: 'cubic-bezier(.3, .6, .25, 1)' }).onfinish = () => { ghost.remove(); land(); };
+  }
+  // yalnızca değişen yer yeniden çizilir: duran stickerın resmi yeniden yüklenip bir an kaybolmasın
+  function sceneSync() {
+    if (!scene) return;
+    const box = scene.querySelector('.df-slots'), d = decorOn(sel), stuck = d ? d.stickers : [];
+    if (box.children.length !== 3) { box.innerHTML = slots(); return; }
+    [0, 1, 2].forEach((i) => {
+      const cur = box.children[i], want = stuck[i] || '';
+      if ((cur.dataset.st || '') === want && (!want || +cur.dataset.bkUn === i)) return;
+      const t = document.createElement('div');
+      t.innerHTML = slotHtml(want, i);
+      cur.replaceWith(t.firstElementChild);
+    });
+  }
   // ekran dönünce ya da boyu değişince defter yeni ölçüyle aynı sayfadan yeniden kurulur (Lilium gibi)
   let resizeT = 0;
   function onResize() {
@@ -706,11 +781,32 @@ const TakvimUI = (() => {
     if (!scene) return;
     stopSync();
     const sc = scene;
+    grow(false);
     scene = null;
     window.removeEventListener('resize', onResize);
     document.removeEventListener('keydown', onKey, true);
     sc.classList.add('kapaniyor');
-    setTimeout(() => { if (flip) { try { flip.destroy(); } catch (e) { /* yok say */ } flip = null; } sc.remove(); }, calm() ? 0 : 280);
+    setTimeout(() => {
+      retire(flip); flip = null; sc.remove();
+      // defterde yapıştırılan sticker takvimde de zıplasın (perdenin arkasında görünmüyordu)
+      if (stuckHere) { stuckHere = false; popSticker(); }
+    }, calm() ? 0 : 280);
+  }
+  // Defter, takvimdeki küçük defter simgesinden büyüyerek gelir; kapanınca ona küçülerek döner
+  let stuckHere = false;
+  function grow(opening) {
+    const ic = $('#takvim-gun .tk-book-ic') || $('#takvim-gun [data-book]');
+    const area = scene && scene.querySelector('.df-alan'), kitap = area && area.querySelector('.df-kitap');
+    if (!ic || !kitap || calm() || !area.animate) return;
+    const a = ic.getBoundingClientRect(), r = kitap.getBoundingClientRect(), box = area.getBoundingClientRect();
+    if (!a.width || !r.width) return;
+    // kapalıyken görünen yalnızca kapak (sağ yarı); açıkken bütün defter
+    const front = kitap.dataset.position === 'front', w = front ? r.width / 2 : r.width;
+    const cx = front ? r.left + r.width * 0.75 : r.left + r.width / 2, cy = r.top + r.height / 2;
+    const to = `translate(${a.left + a.width / 2 - cx}px, ${a.top + a.height / 2 - cy}px) scale(${Math.max(0.05, a.width / w)})`;
+    area.style.transformOrigin = `${cx - box.left}px ${cy - box.top}px`;
+    const frames = [{ transform: to, opacity: 0.5 }, { transform: 'none', opacity: 1 }];
+    area.animate(opening ? frames : frames.reverse(), { duration: opening ? 620 : 300, easing: opening ? 'cubic-bezier(.45, .05, .2, 1)' : 'cubic-bezier(.5, 0, .9, .4)', fill: opening ? 'none' : 'forwards' });
   }
   function onKey(e) {
     if (!scene) return;
@@ -734,7 +830,7 @@ const TakvimUI = (() => {
     scene.setAttribute('role', 'dialog'); scene.setAttribute('aria-modal', 'true'); scene.setAttribute('aria-label', 'Sticker defteri');
     scene.innerHTML = `<div class="df-etiket"><i></i><b></b><span class="df-sayac" aria-live="polite"></span></div>
       <button type="button" class="df-x" data-df="close" aria-label="Defteri kapat">${ARROW('m6 6 12 12M6 18 18 6')}</button>
-      <div class="df-alan"><div class="df-kitap"></div></div>
+      <div class="df-alan"><div class="df-kitap"><i class="df-blok sol" aria-hidden="true"></i><i class="df-blok sag" aria-hidden="true"></i><i class="df-kurdele" aria-hidden="true"></i></div></div>
       <div class="df-secici" hidden>${chooser()}</div>
       <div class="df-alt">
         <button type="button" class="df-ok" data-df="prev" aria-label="Önceki sayfa">${ARROW('m14 6-6 6 6 6')}</button>
@@ -745,10 +841,12 @@ const TakvimUI = (() => {
     document.body.appendChild(scene);
     sceneSync();
     buildFlip(0);
+    stuckHere = false;
+    if (!calm() && $('#takvim-gun .tk-book-ic')) { scene.classList.add('buyu'); grow(true); }
     window.addEventListener('resize', onResize);
     document.addEventListener('keydown', onKey, true);
     // açılış: kapalı defter ortada belirir, az sonra kapak kendiliğinden açılır
-    setTimeout(() => { if (scene && flip && flip.getCurrentPageIndex() === 0) go(1); }, calm() ? 0 : 700);
+    setTimeout(() => { if (scene && flip && flip.getCurrentPageIndex() === 0) go(1); }, calm() ? 0 : 900); // simgeden büyüme bitince kısa bir an durup açılır
     scene.addEventListener('click', (e) => {
       const t = e.target;
       const b = t.closest('[data-df]');
@@ -775,12 +873,13 @@ const TakvimUI = (() => {
         return;
       }
       const un = t.closest('[data-bk-un]');
-      if (un) { const d = decor(sel); d.stickers.splice(+un.dataset.bkUn, 1); autoTint(d); d.updated = Date.now(); app.save(); render(); sceneSync(); return; }
+      if (un) { const d = decor(sel); d.stickers.splice(+un.dataset.bkUn, 1); autoTint(d); d.updated = Date.now(); app.save(); render(); sceneSync(); markOn(); return; }
       const pk = t.closest('[data-pick]');
       if (pk && stickOn(pk.dataset.pick)) {
+        stuckHere = true;
         sceneSync();
-        const img = pk.querySelector('.bk-st');
-        if (!calm() && img && img.animate) img.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.25) rotate(-8deg)' }, { transform: 'scale(1)' }], { duration: 320 });
+        markOn();
+        flyTo(pk.querySelector('.bk-st'), decor(sel).stickers.length - 1);
       }
     });
   }
@@ -789,7 +888,7 @@ const TakvimUI = (() => {
   function popSticker() {
     const c = $(`#takvim-card [data-day="${sel}"] .tk-st`);
     if (!c || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    c.classList.add('pop');
+    c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); // defter kapanınca yeniden zıplayabilsin
   }
   // açık formdaki kutucuklar (yazı yazılırken çizim atlanabildiği için) kaybolmasın
   function syncForm() {
