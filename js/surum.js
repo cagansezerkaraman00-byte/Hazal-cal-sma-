@@ -6,6 +6,19 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.7.3",
+  "tarih": "2026-10-24",
+  "baslik": "Daha akıcı Luna",
+  "notlar": [
+    "⚡ Luna daha hızlı açılıyor: açılıştaki iş yarı yarıya azaldı. Luna'nın çizimi tek seferde hazırlanıyor, Vesper ile Güçlü'nün çizimleri de sen bir şeyle uğraşmazken arkada hazırlanıyor.",
+    "↩️ Geri tuşu artık Instagram'daki gibi çalışıyor: açık pencereyi, sticker defterini, şiiri ya da dosyayı kapatıyor; başka sekmedeysen Çalış'a dönüyor. Uygulama yanlışlıkla kapanmıyor.",
+    "📅 Takvimde not yazarken başka bir güne, bir simgeye ya da deneme türüne dokununca artık hemen değişiyor (iPhone ve iPad'de dokunuş boşa gidiyordu).",
+    "📈 İlerleme sekmesi daha hafif açılıyor; ekranda olmayan grafikler sen kaydırınca çiziliyor.",
+    "👆 Düğmelere uzun basınca yazıları seçilip menü açılmıyor; her şey bir uygulama gibi.",
+    "📒 Sticker defteri kapanırken hızlıca bir yere dokununca arkada oluşan küçük bir hata giderildi."
+  ]
+},
+{
   "surum": "2.7.2",
   "tarih": "2026-10-24",
   "baslik": "Göz almayan açılış",

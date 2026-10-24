@@ -224,6 +224,7 @@
     if (name === 'home') renderHome();
     if (name === 'takvim') renderTakvim();
     try { localStorage.setItem('luna-tab', name); } catch (e) { /* yok say */ }
+    Geri.sync();
   }
   // ======================================================================
   // Zamanlayıcı arayüzü
@@ -727,6 +728,61 @@
     if (modalDirty && !confirm('Yazdıkların kaydedilmedi. Pencere kapatılsın mı?')) return;
     closeModal();
   }
+  // ======================================================================
+  // Geri tuşu (Android; iPhone'da kenardan kaydırma): uygulamadan çıkmadan önce açık defteri, şiiri, pencereyi ya da
+  // dosyayı kapatır; başka sekmedeysen Çalış'a döner. Bir şey açıkken geçmişte tek bir koruma adımı durur.
+  // ======================================================================
+  const Geri = (() => {
+    let on = false, guard = false, skip = 0, queued = false, leaving = false;
+    const shown = (sel) => { const el = $(sel); return el && !el.classList.contains('hidden') ? el : null; };
+    const press = (sel) => { const b = $(sel); return b && (() => b.click()); };
+    // en üstteki önce
+    const layers = [
+      () => press('body > .df-sahne:not(.kapaniyor) [data-df="close"]'),
+      () => siirEl && (() => { const tam = siirEl.querySelector('.sg-tam'); if (tam) tam.remove(); else closeSiir(); }),
+      () => shown('#modal') && dismissModal,
+      () => shown('#viewer') && press('#viewer [data-vw="close"]'),
+    ];
+    function top() {
+      for (const l of layers) { const f = l(); if (f) return f; }
+      return currentTab !== 'home' ? () => showTab('home') : null;
+    }
+    function sync() {
+      queued = false;
+      if (!on || leaving) return;
+      const want = !!top();
+      if (want && !guard) { try { history.pushState({ lunaGeri: 1 }, ''); guard = true; } catch (e) { /* yok say */ } }
+      else if (!want && guard) { guard = false; skip++; history.back(); }
+    }
+    const later = () => { if (!queued) { queued = true; Promise.resolve().then(sync); } };
+    function start() {
+      if (typeof history === 'undefined' || !history.pushState || typeof MutationObserver === 'undefined') return; // çok eski tarayıcı
+      on = true;
+      if (history.state && history.state.lunaGeri) try { history.replaceState(null, ''); } catch (e) { /* yok say */ }
+      window.addEventListener('popstate', () => {
+        if (leaving) return;
+        if (skip) { skip--; return; }
+        guard = false;
+        const f = top();
+        if (f) f();
+        later();
+      });
+      const mo = new MutationObserver(later);
+      mo.observe(document.body, { childList: true });
+      ['#modal', '#viewer'].forEach((sel) => { if ($(sel)) mo.observe($(sel), { attributes: true, attributeFilter: ['class'] }); });
+      later();
+    }
+    // yenilemeden önce koruma adımı geri alınır: sonra geri tuşu uygulamayı yeniden açmasın, kapatsın
+    function reload() {
+      leaving = true;
+      if (!guard) { location.reload(); return; }
+      guard = false;
+      window.addEventListener('popstate', () => location.reload(), { once: true });
+      history.back();
+      setTimeout(() => location.reload(), 600);
+    }
+    return { start, sync: later, reload };
+  })();
   // ======================================================================
   // Veri değişince
   // ======================================================================
@@ -1630,7 +1686,7 @@
             if (b.dataset.imp === 'replace') {
               if (!confirm('Bu cihazdaki bütün veriler yedektekiyle değişecek. Emin misin?')) return;
               if (!Store.importJSON(obj)) { toast('⚠️', 'Yedek bu cihaza yazılamadı', 'Depolama dolu olabilir; Notlar → Kütüphane’den yer açıp tekrar dene', 8000); return; }
-              location.reload();
+              Geri.reload();
               return;
             }
             const added = Store.mergeJSON(obj);
@@ -1648,7 +1704,7 @@
     $('#reset').addEventListener('click', () => {
       if (!confirm('Bütün oturumlar, denemeler, notlar ve ayarlar silinecek. Önce "Yedek al" ile bir kopya saklamanı öneririm. Devam edilsin mi?')) return;
       if (!confirm('Gerçekten emin misin? Bu geri alınamaz.')) return;
-      Store.reset(); location.reload();
+      Store.reset(); Geri.reload();
     });
   }
   function renderFooter() {
@@ -1813,6 +1869,7 @@
     refreshSubjects() { renderSubjectSelects(); },
     addSession(dateKey) { openSessionModal(null, { date: dateKey }); },
     showTab,
+    reload: () => Geri.reload(),
     celebrate() { Scene.celebrate(); Sound.chime(); },
     isFocusing() { const s = Timer.state(); return s.running && s.phase === 'focus'; },
     // kullanıcı bir işin ortasında mı (sayaç, açık pencere, görüntüleyici): sessiz güncelleme beklesin
@@ -2000,8 +2057,9 @@
     let saved = 'home';
     try { saved = localStorage.getItem('luna-tab') || 'home'; } catch (e) { /* yok say */ }
     if ($('#tab-' + saved)) showTab(saved);
+    Geri.start();
     greetOnOpen();
-    checkBadges();
+    (window.requestIdleCallback || ((f) => setTimeout(f, 1200)))(checkBadges, { timeout: 3000 }); // açılışı bekletmesin
     if (Store.loadError) setTimeout(() => toast('🛟', 'Verilerin okunamadı', 'Bozulmasın diye kopyası alındı: Ayarlar → Veriler', 9000), 1500);
     safe('Bildirimler', () => LunaNotify.init(App));
     safe('Mini sayaç', () => MiniTimer.init(App,()=>weatherNow));

@@ -594,16 +594,36 @@ const Scene = (() => {
     c.width = w; c.height = h;
     return c;
   }
+  // renk dizesi → RGBA (tuvalin kendi okuduğu değer; yarı saydamlar da birebir aynı çıkar)
+  const RGBA = new Map();
+  let rgbaG = null;
+  function rgba(col) {
+    let v = RGBA.get(col);
+    if (v) return v;
+    const m = /^#([0-9a-f]{6})$/i.exec(col);
+    if (m) { const n = parseInt(m[1], 16); v = [n >> 16, (n >> 8) & 255, n & 255, 255]; }
+    else {
+      if (!rgbaG) rgbaG = makeCanvas(1, 1).getContext('2d', { willReadFrequently: true });
+      rgbaG.clearRect(0, 0, 1, 1); rgbaG.fillStyle = col; rgbaG.fillRect(0, 0, 1, 1);
+      v = Array.from(rgbaG.getImageData(0, 0, 1, 1).data);
+    }
+    RGBA.set(col, v);
+    return v;
+  }
+  // pikselleri tek seferde yaz (her piksele ayrı fillRect açılışı yavaşlatıyordu)
   function paint(rows, pal, flip) {
-    const w = rows[0].length, c = makeCanvas(w, rows.length), g = c.getContext('2d');
-    rows.forEach((row, j) => {
+    const w = rows[0].length, h = rows.length, c = makeCanvas(w, h), g = c.getContext('2d');
+    const img = g.createImageData(w, h), d = img.data;
+    for (let j = 0; j < h; j++) {
+      const row = rows[j];
       for (let i = 0; i < w; i++) {
         const ch = row[i];
         if (ch === '.') continue;
-        g.fillStyle = pal[ch] || '#f0f';
-        g.fillRect(flip ? w - 1 - i : i, j, 1, 1);
+        const v = rgba(pal[ch] || '#f0f'), o = (j * w + (flip ? w - 1 - i : i)) * 4;
+        d[o] = v[0]; d[o + 1] = v[1]; d[o + 2] = v[2]; d[o + 3] = v[3];
       }
-    });
+    }
+    g.putImageData(img, 0, 0);
     return c;
   }
   function disc(g, cx, cy, rad, color) {
@@ -645,11 +665,11 @@ const Scene = (() => {
     });
     // Vesper (Luna'nın pozları) ve yavru Güçlü
     const sprite = (rows, hx, pal) => ({ c: [paint(rows, pal), paint(rows, pal, true)], w: rows[0].length, h: rows.length, hx });
-    SP.vesper = {};
-    for (const k of Object.keys(R)) SP.vesper[k] = sprite(R[k].rows, R[k].hx, VES_PAL);
-    SP.kitten = {};
-    const KR = kittenRows();
-    for (const k in KR) SP.kitten[k] = sprite(KR[k].rows, KR[k].hx, KIT_PAL);
+    // ilk istendiklerinde boyanırlar (açılışta değil; boşta önceden hazırlanır)
+    const later = (key, build) => Object.defineProperty(SP, key, { configurable: true, enumerable: true,
+      get() { const v = build(); Object.defineProperty(SP, key, { value: v, enumerable: true }); return v; } });
+    later('vesper', () => { const o = {}; for (const k of Object.keys(R)) o[k] = sprite(R[k].rows, R[k].hx, VES_PAL); return o; });
+    later('kitten', () => { const o = {}, KR = kittenRows(); for (const k in KR) o[k] = sprite(KR[k].rows, KR[k].hx, KIT_PAL); return o; });
     // süsler
     SP.fener = ['#ff5d6c', '#ffd84d', '#3fc1b0', '#b48bff'].map((f) => paint(DECO.fener, { k: '#4a3a52', f, F: mixHex(f, '#ffffff', 0.45) }));
     SP.kalp = paint(DECO.kalp, { h: '#ff6b9a' });
@@ -2290,6 +2310,8 @@ const Scene = (() => {
       cv.addEventListener('pointerdown', hit);
       cv.addEventListener('click', starTap);
       wake();
+      const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1500));
+      idle(() => [SP.vesper, SP.kitten]);
     },
     setMode(m) {
       mode = m;

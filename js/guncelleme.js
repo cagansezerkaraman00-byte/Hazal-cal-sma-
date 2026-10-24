@@ -93,7 +93,7 @@ const Guncelleme = (() => {
     reloading = true;
     applying = true;
     App.allowExit('guncelleme'); // yenileme anı "uygulamadan çıkış" sayılmasın
-    location.reload();
+    App.reload();
   }
   async function apply() {
     if (applying) return;
@@ -318,7 +318,7 @@ const Guncelleme = (() => {
   function tryAutoReload() {
     if (!swReady || applying || App.isBusy()) return;
     applying = true;
-    location.reload();
+    App.reload();
   }
 
   return {

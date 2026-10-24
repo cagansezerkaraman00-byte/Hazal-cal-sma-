@@ -30,6 +30,7 @@ const TakvimUI = (() => {
   const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* gizli mod */ } };
   const blank = () => ({ id: '', text: '', emoji: EMOJI[0], yearly: true, remind: true });
+  const TYPING = ['tk-text', 'tk-ptext', 'tk-dname']; // bunlara yazılırken sayfa arkadan yeniden çizilmez
 
   // o günün notları: o tarihe yazılanlar + her yıl tekrar edenler (yazıldığı yıldan sonra)
   function notesOn(k) {
@@ -244,7 +245,7 @@ const TakvimUI = (() => {
     if (!app || !$('#takvim-card')) return;
     // yazarken yeniden çizilip yazı kaybolmasın
     const a = document.activeElement;
-    if (a && (a.id === 'tk-text' || a.id === 'tk-ptext' || a.id === 'tk-dname')) return;
+    if (a && TYPING.includes(a.id)) return;
     const today = todayKey();
     if (!view) view = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
     if (!sel) sel = today;
@@ -273,6 +274,9 @@ const TakvimUI = (() => {
     bound = true;
     tab.addEventListener('click', (e) => {
       const t = e.target;
+      // iPhone'da düğmeye dokunmak yazı kutusundan çıkarmaz; çıkmazsa sayfa çizilmez, dokunuş boşa gider
+      const a = document.activeElement;
+      if (a && TYPING.includes(a.id) && t.closest('button')) a.blur();
       const nav = t.closest('[data-nav]');
       if (nav) {
         const n = +nav.dataset.nav, now = new Date();
@@ -863,6 +867,7 @@ const TakvimUI = (() => {
     // açılış: kapalı defter ortada belirir, az sonra kapak kendiliğinden açılır
     setTimeout(() => { if (scene && flip && flip.getCurrentPageIndex() === 0) go(1); }, calm() ? 0 : 900); // simgeden büyüme bitince kısa bir an durup açılır
     scene.addEventListener('click', (e) => {
+      if (!scene) return; // kapanırken (son 280 ms) dokunuşlar yok sayılır
       const t = e.target;
       const b = t.closest('[data-df]');
       if (b) {
@@ -941,7 +946,7 @@ const TakvimUI = (() => {
   }
 
   return {
-    init(a) { app = a; bind(); render(); setTimeout(sayToday, 6000); },
+    init(a) { app = a; bind(); setTimeout(sayToday, 6000); }, // sekme açılınca çizilir
     render() { bind(); render(); },
     open(k) { pick(k || todayKey(), false); },
     notesOn,
