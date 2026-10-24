@@ -6,6 +6,18 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.7",
+  "tarih": "2026-10-24",
+  "baslik": "Takvim ve sticker defteri",
+  "notlar": [
+    "📅 Yeni Takvim sekmesi: telli, pembe ve yıldızlı bir masa takvimi. Bir güne dokun, en üstteki \"Güne not al\" ile doğum günlerini, buluşmaları yaz; istersen her yıl tekrarlasın, bir gün önce de haber vereyim.",
+    "📝 Denemelerini takvimden planla: Deneme sekmesinde de görünür, sonucunu girince analizine katılır. O gün ve bir gün önce sana hatırlatırım.",
+    "📒 Sticker defteri: beş zambaklı defter, gerçek bir defter gibi sayfa sayfa çevriliyor. 216 sticker arasından birine dokun, uçup güne yapışsın.",
+    "🌈 Sticker yapıştırdığın gün, stickerın rengine boyanır; son kullandığın stickerlar da tek dokunuşla elinin altında.",
+    "🗓️ Her günün sayfasında o günün planı ve çalışman da var; unuttuğun bir çalışmayı geçmiş bir güne ekleyebilirsin."
+  ]
+},
+{
   "surum": "2.6.4",
   "tarih": "2026-10-23",
   "baslik": "Daha akıcı müzik",

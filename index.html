@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr" data-theme="light" data-surum="2.6.4">
+<html lang="tr" data-theme="light" data-surum="2.7">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -104,8 +104,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css?v=2.6.4">
-  <script src="js/kurulum.js?v=2.6.4"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.7">
+  <script src="js/kurulum.js?v=2.7"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -381,6 +381,17 @@
               <li>Deneme eklerken TYT / AYT / Branş seç, her dersin doğru-yanlışını gir. Doğru + yanlış dersin soru sayısını geçemez.</li>
               <li><b>Eksik çıkan konuları</b> işaretlersen, onları YKS'deki soru ağırlığıyla çarpıp <b>öncelikli konular</b> listesi yaparım; "Çalış ▶" ile hemen başlarsın, 📌 ile tekrar listesine eklersin.</li>
               <li>Grafik netlerinin zaman içindeki gidişini, tablo her dersin son netini ve değişimini gösterir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📅 Takvim ve sticker defteri</summary>
+            <ul>
+              <li><b>Takvim</b> sekmesinde bir güne dokun; o günün sayfası açılır (telefonda takvimin altında, tablette yanında). En üstteki <b>📝 Güne not al</b> ile "Doğum günüm 🎂" gibi notlar yaz. <b>Her yıl tekrarla</b> açıksa not her yıl o gün görünür; <b>Bir gün önce haber versin</b> açıksa bir gün önceden söylerim.</li>
+              <li>Notu olan günde küçük simgesi durur; o gün gelince takvimin başında yazar, ben de bir kez hatırlatırım. Bayramları, yılbaşını ve YKS günlerini takvim kendisi bilir.</li>
+              <li><b>📝 Deneme:</b> bir güne TYT, AYT ya da branş denemesi planla. Deneme sekmesinde de görünür; "Sonuçları gir" deyince form hazır açılır, kaydedince analizine katılır.</li>
+              <li><b>🌈 Sticker ve renk:</b> bir güne en çok 3 sticker yapıştırırsın; gün, ilk stickerın rengine boyanır. Rengi alttaki yuvarlaklardan kendin de seçebilirsin ("Renksiz" dahil); senin seçtiğin kalır. Yapışan stickera dokununca kalkar.</li>
+              <li><b>📒 Sticker defteri:</b> defter simgesine dokun. Sayfaları alttaki ‹ › oklarla çevir; bir stickera dokununca güne uçup yapışır, o güne yapışmış olanların köşesinde ✓ durur. Sağ alttaki küçük kapaktan beş defterden birini seçersin; seçtiğin kalır.</li>
+              <li>Günün sayfasında o günün planı da var (Planlarım ile aynı liste); unuttuğun bir çalışmayı geçmiş bir güne ekleyebilirsin.</li>
             </ul>
           </details>
           <details>
@@ -677,40 +688,40 @@
   </div>
   <div class="toasts" id="toasts"></div>
   <div id="timer-end-alert" class="timer-end-alert" role="status" hidden><span id="timer-end-message"></span><button type="button" class="btn soft" id="dismiss-timer-alarm">Tamam</button></div>
-  <script src="js/storage.js?v=2.6.4"></script>
-  <script src="js/surum.js?v=2.6.4"></script>
-  <script src="js/messages.js?v=2.6.4"></script>
-  <script src="js/audio.js?v=2.6.4"></script>
-  <script src="js/takvim.js?v=2.6.4"></script>
-  <script src="js/scene.js?v=2.6.4"></script>
-  <script src="js/timer.js?v=2.6.4"></script>
-  <script src="js/stats.js?v=2.6.4"></script>
-  <script src="js/weather.js?v=2.6.4"></script>
-  <script src="js/yks.js?v=2.6.4"></script>
-  <script src="js/plan.js?v=2.6.4"></script>
-  <script src="js/planlar.js?v=2.6.4"></script>
-  <script src="js/planlar-ui.js?v=2.6.4"></script>
-  <script src="js/stickers.js?v=2.6.4"></script>
-  <script src="js/takvim-ui.js?v=2.6.4"></script>
-  <script src="js/deneme.js?v=2.6.4"></script>
-  <script src="js/notes.js?v=2.6.4"></script>
-  <script src="js/giris.js?v=2.6.4"></script>
-  <script src="js/depo.js?v=2.6.4"></script>
-  <script src="js/depo-ui.js?v=2.6.4"></script>
-  <script src="js/hata.js?v=2.6.4"></script>
-  <script src="js/kaynak.js?v=2.6.4"></script>
-  <script src="js/kaynak-ui.js?v=2.6.4"></script>
-  <script src="js/badges.js?v=2.6.4"></script>
-  <script src="js/spotify-config.js?v=2.6.4"></script>
-  <script src="js/spotify-playback.js?v=2.6.4"></script>
-  <script src="js/spotify.js?v=2.6.4"></script>
-  <script src="js/uni.js?v=2.6.4"></script>
-  <script src="js/uni-ui.js?v=2.6.4"></script>
-  <script src="js/diag.js?v=2.6.4"></script>
-  <script src="js/guncelleme.js?v=2.6.4"></script>
-  <script src="js/notifications.js?v=2.6.4"></script>
-  <script src="js/mini-timer.js?v=2.6.4"></script>
-  <script src="js/app.js?v=2.6.4"></script>
+  <script src="js/storage.js?v=2.7"></script>
+  <script src="js/surum.js?v=2.7"></script>
+  <script src="js/messages.js?v=2.7"></script>
+  <script src="js/audio.js?v=2.7"></script>
+  <script src="js/takvim.js?v=2.7"></script>
+  <script src="js/scene.js?v=2.7"></script>
+  <script src="js/timer.js?v=2.7"></script>
+  <script src="js/stats.js?v=2.7"></script>
+  <script src="js/weather.js?v=2.7"></script>
+  <script src="js/yks.js?v=2.7"></script>
+  <script src="js/plan.js?v=2.7"></script>
+  <script src="js/planlar.js?v=2.7"></script>
+  <script src="js/planlar-ui.js?v=2.7"></script>
+  <script src="js/stickers.js?v=2.7"></script>
+  <script src="js/takvim-ui.js?v=2.7"></script>
+  <script src="js/deneme.js?v=2.7"></script>
+  <script src="js/notes.js?v=2.7"></script>
+  <script src="js/giris.js?v=2.7"></script>
+  <script src="js/depo.js?v=2.7"></script>
+  <script src="js/depo-ui.js?v=2.7"></script>
+  <script src="js/hata.js?v=2.7"></script>
+  <script src="js/kaynak.js?v=2.7"></script>
+  <script src="js/kaynak-ui.js?v=2.7"></script>
+  <script src="js/badges.js?v=2.7"></script>
+  <script src="js/spotify-config.js?v=2.7"></script>
+  <script src="js/spotify-playback.js?v=2.7"></script>
+  <script src="js/spotify.js?v=2.7"></script>
+  <script src="js/uni.js?v=2.7"></script>
+  <script src="js/uni-ui.js?v=2.7"></script>
+  <script src="js/diag.js?v=2.7"></script>
+  <script src="js/guncelleme.js?v=2.7"></script>
+  <script src="js/notifications.js?v=2.7"></script>
+  <script src="js/mini-timer.js?v=2.7"></script>
+  <script src="js/app.js?v=2.7"></script>
 </body>
 </html>
 
