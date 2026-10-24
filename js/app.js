@@ -105,11 +105,12 @@
     const zambak = t === 'zambak'; // şiirdeki gece: koyu temanın üstüne kendi renkleri
     const dark = zambak || t === 'dark' || (t === 'auto' && Scene.sunInfo().elev < -4);
     const v = dark ? 'dark' : 'light', tema = zambak ? 'zambak' : '';
+    // durum çubuğu rengi: sayfa açılış ekranının koyu rengiyle başlar, ilk çağrıda temaya geçer
+    const meta = document.querySelector('meta[name="theme-color"]'), bar = zambak ? '#050d24' : dark ? '#21182f' : '#f3ecfb';
+    if (meta && meta.content !== bar) meta.content = bar;
     if (root.dataset.theme === v && (root.dataset.tema || '') === tema) return;
     root.dataset.theme = v;
     if (tema) root.dataset.tema = tema; else delete root.dataset.tema;
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = zambak ? '#050d24' : dark ? '#21182f' : '#f3ecfb';
   }
   // ======================================================================
   // Hava durumu
