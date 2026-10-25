@@ -353,19 +353,34 @@ const PlanlarUI = (() => {
   }
 
   // ---------- Ekle / düzenle penceresi ----------
+  // Ders seçilince konu listesinde yalnızca o dersin konuları çıkar: Fizik → TYT Fizik ve AYT Fizik konularının hepsi.
+  // Ders seçilmediyse (ya da elle eklenmiş, YKS'de karşılığı olmayan bir dersse) alanın bütün konuları.
+  function yksKeysFor(subjectId) {
+    const s = subjectId ? D().subjects.find((x) => x.id === subjectId) || subj(subjectId) : null;
+    let keys = s && Array.isArray(s.yks) ? s.yks.filter((k) => YKS.SUBJECTS[k]) : [];
+    if (s && !keys.length) { // eşleşmesi kaydedilmemiş ders: adı bir YKS dersininkiyle aynıysa (ör. "Fizik") onun TYT ve AYT konuları
+      const ad = String(s.name || '').toLocaleLowerCase('tr-TR');
+      keys = Object.keys(YKS.SUBJECTS).filter((k) => YKS.SUBJECTS[k].short.toLocaleLowerCase('tr-TR') === ad);
+    }
+    return keys.length ? keys : YKS.subjectKeys();
+  }
+  function yksOptions(subjectId, selected) {
+    const keys = yksKeysFor(subjectId).slice(), t = selected && YKS.topic(selected);
+    if (t && !keys.includes(t.subjectKey)) keys.push(t.subjectKey); // seçili konu başka dersteyse kaybolmasın
+    return keys.map((k) => {
+      const s = YKS.SUBJECTS[k];
+      return `<optgroup label="${esc(s.name)}">${s.topics.map((x) => `<option value="${esc(x.id)}"${selected === x.id ? ' selected' : ''}>${STATUS_ICON[YKS.status(x.id)] || '○'} ${esc(x.name)}</option>`).join('')}</optgroup>`;
+    }).join('');
+  }
+  const uniCourses = () => (D().uni && Array.isArray(D().uni.courses) ? D().uni.courses.filter((c) => c && Array.isArray(c.topics) && c.topics.some((t) => t && t.title)) : []);
+  function uniOptions(subjectId, selected) {
+    const all = uniCourses(), mine = subjectId ? all.filter((c) => c.subjectId === subjectId) : [];
+    return (mine.length ? mine : all).map((c) => `<optgroup label="${esc(c.name)}">${c.topics.map((t, i) => (t && t.title ? `<option value="u:${esc(c.id)}:${i}"${selected === `u:${c.id}:${i}` ? ' selected' : ''}>${esc(t.title)}</option>` : '')).join('')}</optgroup>`).join('');
+  }
   function topicPicker(it, prog) {
-    if (!prog && window.YKS && typeof YKS.field === 'function' && YKS.field()) {
-      const groups = YKS.subjectKeys().map((k) => {
-        const s = YKS.SUBJECTS[k];
-        return `<optgroup label="${esc(s.name)}">${s.topics.map((t) => `<option value="${esc(t.id)}"${it && it.topicId === t.id ? ' selected' : ''}>${STATUS_ICON[YKS.status(t.id)] || '○'} ${esc(t.name)}</option>`).join('')}</optgroup>`;
-      }).join('');
-      return { kind: 'yks', html: `<label class="field">Konudan seç (isteğe bağlı) <select data-f="topic"><option value="">—</option>${groups}</select></label>` };
-    }
-    const cs = prog && D().uni && Array.isArray(D().uni.courses) ? D().uni.courses.filter((c) => c && Array.isArray(c.topics) && c.topics.some((t) => t && t.title)) : [];
-    if (cs.length) {
-      const groups = cs.map((c) => `<optgroup label="${esc(c.name)}">${c.topics.map((t, i) => (t && t.title ? `<option value="u:${esc(c.id)}:${i}">${esc(t.title)}</option>` : '')).join('')}</optgroup>`).join('');
-      return { kind: 'uni', html: `<label class="field">Konudan seç (isteğe bağlı) <select data-f="topic"><option value="">—</option>${groups}</select></label>` };
-    }
+    const sid = it ? it.subjectId : '', label = (opts) => `<label class="field">Konudan seç (isteğe bağlı) <select data-f="topic"><option value="">—</option>${opts}</select></label>`;
+    if (!prog && window.YKS && typeof YKS.field === 'function' && YKS.field()) return { kind: 'yks', html: label(yksOptions(sid, it && it.topicId)) };
+    if (prog && uniCourses().length) return { kind: 'uni', html: label(uniOptions(sid, '')) };
     return { kind: '', html: '' };
   }
   // düzenleme penceresindeki "Bu madde … taşındı"
@@ -407,7 +422,16 @@ const PlanlarUI = (() => {
       <div class="modal-actions">${it ? '<button class="btn danger" data-act="del" type="button">Sil</button><span style="flex:1"></span>' : ''}<button class="btn soft" data-act="cancel" type="button">Vazgeç</button><button class="btn primary" data-act="save" type="button">Kaydet</button></div>`);
     const q = (k) => card.querySelector(`[data-f="${k}"]`);
     let auto = ''; // konudan otomatik yazılan son başlık (Hazal değiştirdiyse dokunulmaz)
-    const topicSel = q('topic');
+    const topicSel = q('topic'), subjSel = q('subject');
+    // ders değişince konu listesi o dersin konularına daralır; seçili konu o derste değilse ve başlığı konudan geldiyse ikisi de temizlenir
+    const fillTopics = () => {
+      if (!topicSel) return;
+      const cur = topicSel.value;
+      topicSel.innerHTML = `<option value="">—</option>${topic.kind === 'yks' ? yksOptions(subjSel.value, '') : uniOptions(subjSel.value, '')}`;
+      if (cur && [...topicSel.options].some((o) => o.value === cur)) topicSel.value = cur;
+      else { topicSel.value = ''; const ti = q('title'); if (auto && ti.value === auto) { ti.value = ''; auto = ''; } }
+    };
+    if (topicSel) subjSel.addEventListener('change', fillTopics);
     if (topicSel) topicSel.addEventListener('change', () => {
       const v = topicSel.value;
       if (!v) return;
@@ -424,7 +448,7 @@ const PlanlarUI = (() => {
       }
       const ti = q('title');
       if (!ti.value.trim() || ti.value === auto) { ti.value = String(name).slice(0, 120); auto = ti.value; }
-      if (sid && D().subjects.some((x) => x.id === sid)) q('subject').value = sid;
+      if (sid && D().subjects.some((x) => x.id === sid) && subjSel.value !== sid) { subjSel.value = sid; fillTopics(); } // konu önce seçildiyse ders de seçilir, liste o derse daralır
     });
     const done = () => { App.closeModal(); invalidate(); App.refresh(); };
     card.addEventListener('click', (e) => {

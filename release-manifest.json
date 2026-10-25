@@ -1,7 +1,7 @@
 {
-  "version": "2.8",
+  "version": "2.8.1",
   "files": {
-    "index.html": "8a394c03b5d2433e2f0dc256853c9a042d6cbdc20c215e09f8a5846c20afb061",
+    "index.html": "31c588a3c693e3092476e505f1c141715a84146a6229d4527718554aa1bc97d2",
     "manifest.webmanifest": "43dec4f4891723105d49d755658101937342b648d52113a0ea2191d4fb4b384a",
     "css/style.css": "6db4fb9fa220dbe178f5073cb8cb349dc0d6bc0d8327a13b944d0ec0dba3d34b",
     "js/app.js": "05066cce01df8feeacd204cb22301302ae790148fd69dae643673d38c15c4bf8",
@@ -25,7 +25,7 @@
     "js/notes.js": "0351364338ebee68cddb1906c61517f4e7c355eed89d53a2cba5c24a4067149a",
     "js/notifications.js": "497ba6030427fca57b32db645bea96f25e10f180821d09180428c2e36edc129c",
     "js/plan.js": "f36e2013061c95d4453192fdf23abc838732f6622c1fa48f0310ba9673d979f4",
-    "js/planlar-ui.js": "a38376a537465de64dda5a1c8f0bd5bd7a29641a00fdd4ab754c6cffddea78a5",
+    "js/planlar-ui.js": "6c0a45a0ef0b923d72de10483ccdc5af380afca553bd2770f9541aadeb559e48",
     "js/planlar.js": "f9c06b6796745a99e8dbcf2d753353fe76ff9d9bff89432e0d0254d243e2dd8e",
     "js/scene.js": "2b76a2760fc21037d74244a82dc74f0aad4b488478b48fe2a1544f6544b24e31",
     "js/spotify-config.js": "66fdbb5e64271002740e7a6f0fe157209e11cb927ad21291d051470643d58813",
@@ -34,7 +34,7 @@
     "js/stats.js": "979d57b8e8ca382540e826cc667fa815e2ba247b144caebafd7df50a6ed9a36d",
     "js/stickers.js": "662127fa04c8f69a58c0556af3bf172df04cf402eaee275918a19036b3857bc2",
     "js/storage.js": "3229b4657e02d282e94b135ec955a37c76570dd36e644d452bd614af651f4d7e",
-    "js/surum.js": "291494615aaa73feb41d600a7529e934b4472ed060cf76fc9376740533372042",
+    "js/surum.js": "7cc8f2e6cb257398849a8a38b14f3a383dabcff6848e10207dc3ba7c2a6ee7e0",
     "js/takvim-ui.js": "b15e1819abe010dbdc11122b79635f0f90119f2188fcd2b457b4fa4058810b50",
     "js/takvim.js": "4ed7da5ef2645cc8799cde35e985cbe0604bd45a2dfa3160aec3674fe5bb61c6",
     "js/timer.js": "02314c2eabe8ce42fa8578572e74ab4ceb22ffb9d5f96ebb6abb10f96cb7759c",

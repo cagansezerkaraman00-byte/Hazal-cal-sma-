@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.8.1",
+  "tarih": "2026-10-25",
+  "baslik": "Ders seçince yalnızca onun konuları",
+  "notlar": [
+    "📝 Plan maddesi eklerken bir ders seçince konu listesinde artık yalnızca o dersin konuları çıkıyor; başka derslerin arasında kaydırmana gerek yok.",
+    "🧲 Fizik seçince TYT Fizik ve AYT Fizik konularının hepsi bir arada geliyor; Matematik, Kimya ve diğer derslerde de TYT ve AYT konuları birlikte.",
+    "🔁 Önce konuyu seçersen ders kendiliğinden seçiliyor ve liste o derse daralıyor; dersi değiştirince eski dersin konusu temizleniyor."
+  ]
+},
+{
   "surum": "2.8",
   "tarih": "2026-10-25",
   "baslik": "Hazal'ın Küçük Dünyası",
