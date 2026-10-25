@@ -214,6 +214,8 @@ const Planlar = (() => {
         }
       }
     }
+    // Küçük Dünya: günün ilk biten maddesi ve tamamlanan gün odaya eşya getirir (gün başına bir kez)
+    if (on && !was && f.scope === 'day' && typeof Dunya !== 'undefined') { try { Dunya.planBitti(f.key, fullDay, t); } catch (e) { /* oda ödülü planı bozmasın */ } }
     Store.save();
     return { item: it, fullDay };
   }

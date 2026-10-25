@@ -6,16 +6,17 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
-  "surum": "2.7.3",
-  "tarih": "2026-10-24",
-  "baslik": "Daha akıcı Luna",
+  "surum": "2.8",
+  "tarih": "2026-10-25",
+  "baslik": "Hazal'ın Küçük Dünyası",
   "notlar": [
-    "⚡ Luna daha hızlı açılıyor: açılıştaki iş yarı yarıya azaldı. Luna'nın çizimi tek seferde hazırlanıyor, Vesper ile Güçlü'nün çizimleri de sen bir şeyle uğraşmazken arkada hazırlanıyor.",
-    "↩️ Geri tuşu artık Instagram'daki gibi çalışıyor: açık pencereyi, sticker defterini, şiiri ya da dosyayı kapatıyor; başka sekmedeysen Çalış'a dönüyor. Uygulama yanlışlıkla kapanmıyor.",
-    "📅 Takvimde not yazarken başka bir güne, bir simgeye ya da deneme türüne dokununca artık hemen değişiyor (iPhone ve iPad'de dokunuş boşa gidiyordu).",
-    "📈 İlerleme sekmesi daha hafif açılıyor; ekranda olmayan grafikler sen kaydırınca çiziliyor.",
-    "👆 Düğmelere uzun basınca yazıları seçilip menü açılmıyor; her şey bir uygulama gibi.",
-    "📒 Sticker defteri kapanırken hızlıca bir yere dokununca arkada oluşan küçük bir hata giderildi."
+    "🏡 Yeni: Hazal'ın Küçük Dünyası. Çalış sekmesindeki karta dokun; yıldızlı pencerenin önünde Luna, Vesper ve Güçlü'nün birlikte dinlendiği odan açılır.",
+    "🏅 Bugüne kadar kazandığın bütün rozetler odanı süslüyor: duvarda çerçeveler, kitaplıkta kupalar, madalyalar ve kitaplar. Bir rozete dokununca kartı açılır; yeni rozetler kendiliğinden eklenir, hiçbiri silinmez.",
+    "🪴 Planından günün ilk maddesini bitirince odana bir eşya gelir, günün planı tamamen bitince bir tane daha: lavanta, minder, yıldız lambası, mum, kedi yatağı ve daha fazlası. Yerlerini sen seçersin; şimdiye kadarki emeğin de odanı ilk açışında hediye olarak bekliyor.",
+    "💌 Çağan'dan mektup kutusu: mektuplar kendi gününde ya da emeğin bir eşiğe varınca açılır; açtıklarını istediğin zaman yeniden okursun.",
+    "🔥 Seri rozetleri artık doğru sayılıyor; hak ettiğin seri rozetleri gelecek.",
+    "⚡ Luna daha hızlı açılıyor; geri tuşu açık pencereyi, defteri ya da odayı kapatıyor, başka sekmedeysen Çalış'a dönüyor. Uygulama yanlışlıkla kapanmıyor.",
+    "📒 Sticker defterinin sayfa ve yapıştırma sesleri artık çalıyor; takvimde iPhone ve iPad'de dokunuşların boşa gitmesi giderildi."
   ]
 },
 {

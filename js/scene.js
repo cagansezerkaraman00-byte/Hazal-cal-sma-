@@ -2337,6 +2337,8 @@ const Scene = (() => {
     today() { return { season, events: events.slice() }; },
     // hemen bir ip oyunu başlat (odaklanırken yok sayılır)
     play() { if (mode !== 'focus') { nextPlay = 0; startPlay(); } },
+    // Küçük Dünya için: bir kedinin bir pozunun hazır çizimi ({ c: tuval, w, h }); dir 1 = aynalanmış. Çizimlere dokunmaz, yalnızca okur.
+    catSprite(kind, pose, dir = 0) { const k = sprites()[kind], p = k && k[pose]; return p ? { c: p.c[dir ? 1 : 0], w: p.w, h: p.h } : null; },
     // Luna'nın küçük portresi (rapor başlığı vb.)
     sleepingCompanions(canvas, t = 0) {
       const g=canvas.getContext('2d'), bank=sprites();

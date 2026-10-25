@@ -732,7 +732,7 @@ const TakvimUI = (() => {
     if (syncSide) scene.querySelector('.df-flip').classList.add(syncSide === 'back' ? 'kapak-arka' : 'kapak-on');
     if (syncSide && !calm()) { stopSync(); syncAt = performance.now(); syncRaf = requestAnimationFrame(syncShift); }
     if (dir > 0) flip.flipNext('bottom'); else flip.flipPrev('bottom');
-    if (window.Sound && Sound.page) Sound.page();
+    if (typeof Sound !== 'undefined' && Sound.page) Sound.page();
     // kurdele sayfa dönerken hafifçe sallanır
     const rb = scene.querySelector('.df-kurdele');
     if (rb && !calm()) { rb.classList.remove('sallan'); void rb.offsetWidth; rb.classList.add('sallan'); }
@@ -744,7 +744,7 @@ const TakvimUI = (() => {
     const land = () => {
       if (target) target.style.visibility = '';
       if (slot && slot.animate && !calm()) slot.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.2) rotate(-4deg)' }, { transform: 'scale(1)' }], { duration: 280, easing: 'ease-out' });
-      if (window.Sound && Sound.stick) Sound.stick();
+      if (typeof Sound !== 'undefined' && Sound.stick) Sound.stick();
     };
     if (!img || !target || calm() || !img.animate) { land(); return; }
     const a = img.getBoundingClientRect(), b = target.getBoundingClientRect();

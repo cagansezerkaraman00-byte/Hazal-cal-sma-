@@ -169,7 +169,7 @@ const Badges = (() => {
       sessions: s.sessions.length,
       hours: total / 60,
       continuousSeconds, maxSession, pomo, shine, early, owl, weekend, goalDays, maxPomoDay, maxSubjDay, special,
-      streak: window.Stats ? Stats.bestStreak() : 0,
+      streak: typeof Stats !== 'undefined' ? Stats.bestStreak() : 0, // Stats tarayıcıda window'a bağlı değil; eskiden window üstünden sorulduğu için seri rozetleri hiç kazanılamıyordu
       topics: window.YKS ? YKS.doneCount() : 0,
       subjFull,
       denemeler: s.denemeler.length,

@@ -14,3 +14,14 @@ Uygulamada görünmez; ileride yapılacak işleri unutmamak için.
   2. Yarım kalan parçaları ayıkla, iyi olanları yeni bir pakete (`p2` gibi) kopyala.
   3. `js/stickers.js` içinde benzerleri aynı bölüme ekle ya da yeni bölüm aç (bir bölüm 20'den uzunsa kendiliğinden birkaç sayfaya bölünür).
 - Görseller servis çalışanında `luna-stickers-1` önbelleğine ilk görüldüğünde girer; dosya adı değişmedikçe güncellenmez (bir sticker değişirse yeni adla ekle).
+
+## Geri dönüş noktası
+
+- **2.8 (Hazal'ın Küçük Dünyası) öncesi:** canlıdaki son sürüm **2.7.2**, commit `047fa18`. Yerelde `eski-2.7.2` dalı bu commit'i gösterir; commit uzak daldaki geçmişte de durur.
+- "Her şeyi geri al" denirse: 2.7.2'nin kodu daha yüksek bir sürüm numarasıyla (ör. 2.8.1) yeniden yayınlanır; telefonlar onu güncelleme olarak alır. Veriler silinmez: eski sürüm tanımadığı `dunya` alanını olduğu gibi saklar, rozetler ve planlar yerinde kalır.
+
+## Çağan'ın mektupları (Küçük Dünya)
+
+- Mektuplar `js/mektuplar.js` içinde, kodlu (base64) durur. Yeni mektup: metni bir dosyaya yaz (ilk satır hitap, sonra boş satırla ayrılmış paragraflar), `node scripts/mektup-kodla.cjs mektup.txt` çıktısını listenin sonuna `metin` olarak ekle.
+- Açılma koşulu: `{ tur: 'madde', sayi: 10 }` (o kadar plan maddesi bitince; şimdiye kadar bitenler de sayılır), `{ tur: 'tarih', tarih: 'YYYY-AA-GG' }`, `{ tur: 'serbest' }` (istediği zaman).
+- Mektupların içeriğini yalnızca Çağan yazar; uydurma anı ya da olay eklenmez.

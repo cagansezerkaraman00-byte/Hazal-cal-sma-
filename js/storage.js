@@ -138,6 +138,7 @@ const Store = (() => {
     dayNotes: [],   // takvim notları: {id, date (YYYY-AA-GG), text, emoji, yearly, remind, created, updated}
     dayDecor: [],   // takvim süsleri: {id: 'dc-YYYY-AA-GG', date, stickers: [en çok 3], tint (gün rengi), oto (renk stickerdan mı), updated}
     denemePlan: [], // takvimden planlanan denemeler: {id, date, type: TYT|AYT|BRANS, name, created, updated}; sonuç girilince denemelere geçer
+    dunya: { esyalar: [], odul: {}, acildi: {}, hosgeldin: 0, gorulen: 0 }, // Hazal'ın Küçük Dünyası: kazanılan eşyalar, günlük ödül izi, okunan mektuplar
     plans: { day: {}, week: {}, month: {}, eod: {}, eodSeq: {} }, // Planlarım: Hazal'ın elle yazdığı planlar (gün / hafta / ay) ve gün sonu notları
     stats: { planItems: 0, planFull: 0, planFullDates: [], cardReviews: 0, friendsMet: false, seen: {} },
     badges: {},     // id -> timestamp
@@ -233,6 +234,23 @@ const Store = (() => {
       x.created = +x.created || 0; x.updated = +x.updated || 0;
     }
     if (!isObj(out.deleted)) out.deleted = {};
+    // Küçük Dünya: biçimi bozuk alan düzeltilir, eşya ve ödül izi asla silinmez (tanınmayan eşya türü de saklanır)
+    const dn = isObj(out.dunya) ? out.dunya : {};
+    const ESYA = /^[a-z]{2,16}$/, YER = /^[a-z0-9-]{0,20}$/;
+    const esyalar = [];
+    for (const x of Array.isArray(dn.esyalar) ? dn.esyalar : []) {
+      if (!isObj(x) || !ESYA.test(x.tur) || esyalar.some((y) => y.tur === x.tur)) continue;
+      const renkler = [...new Set((Array.isArray(x.renkler) ? x.renkler : [0]).map((r) => +r).filter((r) => Number.isInteger(r) && r >= 0 && r <= 9))];
+      if (!renkler.length) renkler.push(0);
+      const renk = renkler.includes(+x.renk) ? +x.renk : renkler[0];
+      esyalar.push({ id: 'es-' + x.tur, tur: x.tur, renk, renkler, yer: typeof x.yer === 'string' && YER.test(x.yer) ? x.yer : '', at: +x.at || 0, updated: +x.updated || 0 });
+    }
+    const dolu = new Set();
+    for (const x of esyalar) { if (x.yer && dolu.has(x.yer)) x.yer = ''; if (x.yer) dolu.add(x.yer); } // bir yerde tek eşya
+    const odul = {}, acildi = {};
+    if (isObj(dn.odul)) for (const k of Object.keys(dn.odul)) if (/^(ilk|tam):\d{4}-\d{2}-\d{2}$/.test(k) && typeof dn.odul[k] === 'string') odul[k] = dn.odul[k].slice(0, 24);
+    if (isObj(dn.acildi)) for (const k of Object.keys(dn.acildi)) if (/^[\w-]{1,24}$/.test(k) && typeof dn.acildi[k] === 'string' && DAY.test(dn.acildi[k])) acildi[k] = dn.acildi[k];
+    out.dunya = { ...dn, esyalar, odul, acildi, hosgeldin: +dn.hosgeldin || 0, gorulen: +dn.gorulen || 0 };
   }
 
   // Planlarım: anahtarlar (YYYY-AA-GG / YYYY-AA) ve maddeler beklenen biçimde kalır; geçerli kayıtlara dokunulmaz.

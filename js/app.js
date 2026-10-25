@@ -741,6 +741,9 @@
       () => press('body > .df-sahne:not(.kapaniyor) [data-df="close"]'),
       () => siirEl && (() => { const tam = siirEl.querySelector('.sg-tam'); if (tam) tam.remove(); else closeSiir(); }),
       () => shown('#modal') && dismissModal,
+      () => press('body > .dn-sahne:not(.kapaniyor) .dn-perde:not([hidden]) [data-dn="mektup-kapat"]'), // Küçük Dünya: mektup, yer seçimi, oda
+      () => press('body > .dn-sahne:not(.kapaniyor) .dn-yerbar:not([hidden]) [data-vazgec]'),
+      () => press('body > .dn-sahne:not(.kapaniyor) [data-dn="kapat"]'),
       () => shown('#viewer') && press('#viewer [data-vw="close"]'),
     ];
     function top() {
@@ -1027,6 +1030,7 @@
         <div class="progress"><i style="width:${pct}%"></i></div>`;
     }
     renderMektup();
+    if (window.DunyaUI) { try { DunyaUI.kart(); } catch (e) { ErrLog.add('Küçük Dünya: ' + ((e && e.message) || e), 'dunya-ui.js'); } }
     renderSiir();
     renderWelcome(mins, pct);
     const tp = $('#today-plan');
@@ -1943,6 +1947,7 @@
     if (window.HataUI) safe('Hata defteri', () => HataUI.init(App));
     if (window.KaynakUI) safe('Kaynaklar', () => KaynakUI.init(App));
     if (window.Badges) safe('Rozetler', () => Badges.init(App));
+    if (window.DunyaUI) safe('Küçük Dünya', () => DunyaUI.init(App));
     if (window.SpotifyLink) safe('Spotify', () => SpotifyLink.init(App));
     if (window.Diag) safe('Tanılama', () => Diag.init(App));
     renderSubjectSelects();

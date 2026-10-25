@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr" data-theme="light" data-surum="2.7.3">
+<html lang="tr" data-theme="light" data-surum="2.8">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -133,8 +133,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css?v=2.7.3">
-  <script src="js/kurulum.js?v=2.7.3"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.8">
+  <script src="js/kurulum.js?v=2.8"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -177,6 +177,7 @@
       <section class="tab active" id="tab-home">
         <div class="grid">
           <div class="card welcome wide-card" id="welcome"></div>
+          <div class="card wide-card dunya-kart" id="dunya-kart" hidden></div>
           <div class="card timer-card">
             <button class="focus-exit" id="focus-exit" type="button" title="Sayaç çalışmaya devam eder; sahnedeki küçük sayaca dokununca geri dönersin">Diğer ekranlar ↗</button>
             <div class="seg" id="kind-seg">
@@ -423,6 +424,17 @@
               <li><b>🌈 Sticker ve renk:</b> bir güne en çok 3 sticker yapıştırırsın; gün, ilk stickerın rengine boyanır. Rengi alttaki yuvarlaklardan kendin de seçebilirsin ("Renksiz" dahil); senin seçtiğin kalır. Yapışan stickera dokununca kalkar.</li>
               <li><b>📒 Sticker defteri:</b> defter simgesine dokun. Sayfaları alttaki ‹ › oklarla çevir; bir stickera dokununca güne uçup yapışır, o güne yapışmış olanların köşesinde ✓ durur. Sağ alttaki küçük kapaktan beş defterden birini seçersin; seçtiğin kalır.</li>
               <li>Günün sayfasında o günün planı da var (Planlarım ile aynı liste); unuttuğun bir çalışmayı geçmiş bir güne ekleyebilirsin.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🏡 Hazal'ın Küçük Dünyası</summary>
+            <ul>
+              <li>Çalış sekmesindeki <b>Hazal'ın Küçük Dünyası</b> kartına dokun: yıldızlı pencerenin önünde Luna, Vesper ve Güçlü'nün dinlendiği odan açılır. Telefonda odayı sağa sola kaydırabilirsin.</li>
+              <li><b>Rozetlerin odayı süsler:</b> ilk adımlar, denemeler ve özel günler duvarda çerçeve; süre rozetleri kupa, seriler madalya; konular, odak ve kesintisiz çalışma kitaplıkta kitap olur. Bir rozete dokununca kartı açılır. Rozetlerin hiç silinmez, yenileri kendiliğinden eklenir.</li>
+              <li><b>Eşyalar:</b> Planlarım'da bir günün ilk maddesini bitirince odana bir eşya gelir; günün planı tamamen bitince bir tane daha. İşareti kaldırıp yeniden koymak ikinci eşya getirmez. Eşyalar bitince renkli olanların yeni renkleri gelir.</li>
+              <li>Eşyaya odada ya da listede dokunup <b>Yerini seç</b>: parlayan yerlerden birine koy, dilersen dolaba kaldır. Renkli eşyaların rengini listeden değiştirirsin.</li>
+              <li><b>Mektup kutusu:</b> Çağan'ın mektupları burada durur; her biri kendi gününde ya da emeğin bir eşiğe varınca açılır, açtıklarını istediğin zaman yeniden okursun.</li>
+              <li>Ara verdiğin günlerde odandan hiçbir şey kaybolmaz; eşyaların ve okuduğun mektuplar yedeğine de girer.</li>
             </ul>
           </details>
           <details>
@@ -719,40 +731,43 @@
   </div>
   <div class="toasts" id="toasts"></div>
   <div id="timer-end-alert" class="timer-end-alert" role="status" hidden><span id="timer-end-message"></span><button type="button" class="btn soft" id="dismiss-timer-alarm">Tamam</button></div>
-  <script src="js/storage.js?v=2.7.3"></script>
-  <script src="js/surum.js?v=2.7.3"></script>
-  <script src="js/messages.js?v=2.7.3"></script>
-  <script src="js/audio.js?v=2.7.3"></script>
-  <script src="js/takvim.js?v=2.7.3"></script>
-  <script src="js/scene.js?v=2.7.3"></script>
-  <script src="js/timer.js?v=2.7.3"></script>
-  <script src="js/stats.js?v=2.7.3"></script>
-  <script src="js/weather.js?v=2.7.3"></script>
-  <script src="js/yks.js?v=2.7.3"></script>
-  <script src="js/plan.js?v=2.7.3"></script>
-  <script src="js/planlar.js?v=2.7.3"></script>
-  <script src="js/planlar-ui.js?v=2.7.3"></script>
-  <script src="js/stickers.js?v=2.7.3"></script>
-  <script src="js/takvim-ui.js?v=2.7.3"></script>
-  <script src="js/deneme.js?v=2.7.3"></script>
-  <script src="js/notes.js?v=2.7.3"></script>
-  <script src="js/giris.js?v=2.7.3"></script>
-  <script src="js/depo.js?v=2.7.3"></script>
-  <script src="js/depo-ui.js?v=2.7.3"></script>
-  <script src="js/hata.js?v=2.7.3"></script>
-  <script src="js/kaynak.js?v=2.7.3"></script>
-  <script src="js/kaynak-ui.js?v=2.7.3"></script>
-  <script src="js/badges.js?v=2.7.3"></script>
-  <script src="js/spotify-config.js?v=2.7.3"></script>
-  <script src="js/spotify-playback.js?v=2.7.3"></script>
-  <script src="js/spotify.js?v=2.7.3"></script>
-  <script src="js/uni.js?v=2.7.3"></script>
-  <script src="js/uni-ui.js?v=2.7.3"></script>
-  <script src="js/diag.js?v=2.7.3"></script>
-  <script src="js/guncelleme.js?v=2.7.3"></script>
-  <script src="js/notifications.js?v=2.7.3"></script>
-  <script src="js/mini-timer.js?v=2.7.3"></script>
-  <script src="js/app.js?v=2.7.3"></script>
+  <script src="js/storage.js?v=2.8"></script>
+  <script src="js/surum.js?v=2.8"></script>
+  <script src="js/messages.js?v=2.8"></script>
+  <script src="js/audio.js?v=2.8"></script>
+  <script src="js/takvim.js?v=2.8"></script>
+  <script src="js/scene.js?v=2.8"></script>
+  <script src="js/timer.js?v=2.8"></script>
+  <script src="js/stats.js?v=2.8"></script>
+  <script src="js/weather.js?v=2.8"></script>
+  <script src="js/yks.js?v=2.8"></script>
+  <script src="js/plan.js?v=2.8"></script>
+  <script src="js/planlar.js?v=2.8"></script>
+  <script src="js/planlar-ui.js?v=2.8"></script>
+  <script src="js/stickers.js?v=2.8"></script>
+  <script src="js/takvim-ui.js?v=2.8"></script>
+  <script src="js/deneme.js?v=2.8"></script>
+  <script src="js/notes.js?v=2.8"></script>
+  <script src="js/giris.js?v=2.8"></script>
+  <script src="js/depo.js?v=2.8"></script>
+  <script src="js/depo-ui.js?v=2.8"></script>
+  <script src="js/hata.js?v=2.8"></script>
+  <script src="js/kaynak.js?v=2.8"></script>
+  <script src="js/kaynak-ui.js?v=2.8"></script>
+  <script src="js/badges.js?v=2.8"></script>
+  <script src="js/mektuplar.js?v=2.8"></script>
+  <script src="js/dunya.js?v=2.8"></script>
+  <script src="js/dunya-ui.js?v=2.8"></script>
+  <script src="js/spotify-config.js?v=2.8"></script>
+  <script src="js/spotify-playback.js?v=2.8"></script>
+  <script src="js/spotify.js?v=2.8"></script>
+  <script src="js/uni.js?v=2.8"></script>
+  <script src="js/uni-ui.js?v=2.8"></script>
+  <script src="js/diag.js?v=2.8"></script>
+  <script src="js/guncelleme.js?v=2.8"></script>
+  <script src="js/notifications.js?v=2.8"></script>
+  <script src="js/mini-timer.js?v=2.8"></script>
+  <script src="js/app.js?v=2.8"></script>
 </body>
 </html>
 
