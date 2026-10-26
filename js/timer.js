@@ -22,6 +22,7 @@ const Timer = (() => {
       cycle: keep.cycle || 0,
       subjectId: keep.subjectId != null ? keep.subjectId : '', // '' = Genel, bilerek seçilebilir
       intent: keep.intent || '',  // "bu oturumda ne yapacağım?"
+      planId: keep.planId || '',  // Bugün kartındaki plan maddesinden başlatıldıysa o madde (süresi ona yazılır)
     };
   }
 
@@ -71,6 +72,7 @@ const Timer = (() => {
       seconds: sec,
       subjectId: x.subjectId,
       intent: x.intent || '',
+      ...(x.planId ? { planId: x.planId } : {}),
       kind: x.kind,
       exam: x.exam || null,
       endReason,
@@ -94,10 +96,11 @@ const Timer = (() => {
   // devamı bugün aynı ders ve hedefle, kalan süreyle yeni oturum olarak başlar (bugünün dakikaları bugüne yazılır).
   function splitAtPause() {
     const x = st(), left = countdown() ? Math.max(1, Math.round(duration() - x.accum / 1000)) : null;
-    const carry = { intent: x.intent, exam: x.exam };
+    const carry = { intent: x.intent, planId: x.planId, exam: x.exam };
     finishFocus(x.accum / 1000, x.pausedAt, 'split');
     const nx = st();
     nx.intent = carry.intent;
+    nx.planId = carry.planId || '';
     if (left) { nx.targetSeconds = Math.min(86399, left); nx.exam = carry.exam; }
   }
 
@@ -251,6 +254,7 @@ const Timer = (() => {
     },
     setSubject(id) { st().subjectId = id; persist(); },
     setIntent(text) { st().intent = String(text || '').slice(0, 80); persist(); },
+    setPlan(id) { st().planId = typeof id === 'string' ? id.slice(0, 40) : ''; persist(); },
     duration,
   };
   return api;

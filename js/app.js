@@ -375,7 +375,7 @@
     if (completedHour !== continuousHour) {continuousHour = completedHour;if (completedHour > 0) checkBadges();}
     const subj = Store.subject(s.subjectId).name;
     $('#timer-sub').textContent = s.running
-      ? (isBreak ? BREAK_TIPS[s.cycle % BREAK_TIPS.length] : 'Odaklanıyorsun…')
+      ? (isBreak ? BREAK_TIPS[s.cycle % BREAK_TIPS.length] : s.intent ? '📖 ' + s.intent : 'Odaklanıyorsun…')
       : s.fresh ? (isBreak ? 'Mola hazır' : 'Hazır olduğunda başla ✨') : 'Duraklatıldı';
     const fg = $('#ring-fg');
     fg.style.strokeDashoffset = 553 * (1 - s.progress);
@@ -416,6 +416,12 @@
       t.classList.toggle('active', t.dataset.id === live);
       t.querySelector('.st-play').textContent = t.dataset.id === live ? '●' : '▶';
     });
+    markLivePlan(s);
+  }
+  // Bugün kartındaki programda şu an çalışılan madde
+  function markLivePlan(s = Timer.state()) {
+    const live = s.running && s.phase === 'focus' ? s.planId : '';
+    $$('#today-program [data-tp-id]').forEach((r) => r.classList.toggle('live', !!live && r.dataset.tpId === live));
   }
   const timerHandlers = {
     onTick: renderTimer,
@@ -616,7 +622,7 @@
         const [hh, mm] = ($('#m-time').value || '00:00').split(':').map(Number);
         if (y) start = new Date(y, mo - 1, d, hh, mm).getTime();
       }
-      const hardBefore = s.hard;
+      const hardBefore = s.hard, subjectBefore = s.subjectId;
       const target = manual ? { id: U.uid(), kind: 'manual' } : D().sessions.find((x) => x.id === s.id) || s;
       Object.assign(target, {
         subjectId: $('#m-subject').value,
@@ -630,6 +636,7 @@
         questions: U.clamp(parseInt($('#m-q').value, 10) || 0, 0, 999),
         updated: Date.now(),
       });
+      if (target.planId && target.subjectId !== subjectBefore) delete target.planId; // ders değiştiyse süre o plan maddesine yazılmasın
       if (manual) D().sessions.push(target);
       D().sessions.sort((a, b) => a.start - b.start);
       if (target.hard && target.hard !== hardBefore) {
@@ -656,8 +663,9 @@
       setTimeout(() => { if ($('#modal').classList.contains('hidden')) openSessionModal(s, { justDone: true }); else pendingDone = s; }, 300);
     }
   }
-  // Plan'daki "Başla ▶": dersi ve hedefi seçip sayacı başlatır
-  function startStudy({ subjectId, intent, kind } = {}) {
+  // Plan'daki "Başla ▶": dersi ve hedefi seçip sayacı başlatır.
+  // planId: Bugün kartındaki maddeden başlatıldı; süre o maddeye yazılır, sayaç kronometredir (kendiliğinden durmaz).
+  function startStudy({ subjectId, intent, kind, planId } = {}) {
     const s = Timer.state();
     if (s.running && s.phase === 'focus') { toast('⏱️', 'Zaten bir oturum sürüyor', 'Önce onu bitir ya da duraklat'); return false; }
     if (!s.fresh || s.phase !== 'focus') {
@@ -667,6 +675,7 @@
     if (kind && kind !== Timer.state().kind) Timer.setKind(kind);
     if (subjectId != null && (subjectId === '' || D().subjects.some((x) => x.id === subjectId))) Timer.setSubject(subjectId);
     Timer.setIntent(intent || '');
+    Timer.setPlan(planId || '');
     showTab('home');
     Timer.toggle();
     return true;
@@ -1001,19 +1010,34 @@
     const goal = D().settings.dailyGoal;
     const mins = Stats.minutesOn(new Date());
     const pct = Math.min(100, Math.floor((mins / goal) * 100)); // %100 ancak hedef gerçekten dolunca
-    $('#goal-ring').style.setProperty('--p', pct);
-    $('#goal-ring').classList.toggle('done', pct >= 100);
-    $('#goal-pct').textContent = pct >= 100 ? '★' : pct + '%';
-    $('#today-min').textContent = U.fmtMin(mins);
-    $('#goal-text').textContent = pct >= 100 ? `Hedef (${U.fmtMin(goal)}) tamam! 🎉` : `Hedefe ${U.fmtMin(goal - mins)} kaldı`;
     const todayKey = U.dateKey(new Date());
+    // YKS modunda Bugün kartı günün programıdır (Plan'da o güne yazılan dersler ve konular); halka da planın yüzdesini
+    // gösterir. Bugün için plan yoksa ya da dönem modundaysa halka eskisi gibi günlük süre hedefidir.
+    const program = !programMode() && !!window.PlanlarUI;
+    const plan = program ? Planlar.stats(Planlar.list('day', todayKey)) : null;
+    const byPlan = !!(plan && plan.total);
+    const ring = byPlan ? plan.pct : pct;
+    $('#goal-ring').style.setProperty('--p', ring);
+    $('#goal-ring').classList.toggle('done', ring >= 100);
+    $('#goal-pct').textContent = ring >= 100 ? '★' : ring + '%';
+    $('#today-min').textContent = U.fmtMin(mins);
+    $('#goal-text').textContent = byPlan ? (plan.done === plan.total ? 'Bugünün planı tamam! 🎉' : `Planın: ${plan.done}/${plan.total} madde tamam`)
+      : pct >= 100 ? `Hedef (${U.fmtMin(goal)}) tamam! 🎉` : `Hedefe ${U.fmtMin(goal - mins)} kaldı`;
     const today = D().sessions.filter((s) => U.dateKey(s.start) === todayKey).sort((a, b) => b.start - a.start);
     const qToday = today.reduce((n, s) => n + (+s.questions || 0), 0) + Planlar.questionEntries('day', U.dateKey(new Date())).reduce((n, x) => n + x.questions, 0);
     $('#today-sessions-count').textContent = today.length || qToday ? `${today.length} oturum${qToday ? ` · ${qToday} soru ✍️` : ''}` : '';
-    $('#today-sessions-label').textContent = today.length ? `Bugünün oturumları (${today.length})` : 'Bugünün oturumları';
-    $('#today-list').innerHTML = today.length ? today.map((s) => sessionItem(s)).join('') : '<li class="empty" style="display:block">Bugün henüz oturum yok. Luna seni bekliyor 🐾</li>';
     $('#day-timeline').innerHTML = timelineHtml(new Date(), true);
-    renderSubjectTiles(today);
+    $('#today-legacy').classList.toggle('hidden', program);
+    $('#today-program').classList.toggle('hidden', !program);
+    if (program) {
+      const el = $('#today-program');
+      try { PlanlarUI.renderProgram(el); } catch (e) { ErrLog.add('Bugünün programı: ' + ((e && e.message) || e), 'planlar-ui.js'); el.innerHTML = '<p class="muted small">Program şu an gösterilemedi; kayıtların güvende.</p>'; el.__mpHtml = ''; }
+      markLivePlan();
+    } else {
+      $('#today-sessions-label').textContent = today.length ? `Bugünün oturumları (${today.length})` : 'Bugünün oturumları';
+      $('#today-list').innerHTML = today.length ? today.map((s) => sessionItem(s)).join('') : '<li class="empty" style="display:block">Bugün henüz oturum yok. Luna seni bekliyor 🐾</li>';
+      renderSubjectTiles(today);
+    }
     // Gizli not
     const note = loveNoteOfDay();
     const partner = D().settings.partner;
@@ -1036,8 +1060,8 @@
     const tp = $('#today-plan');
     // plan kartındaki bir hata ana sayfayı (ve açılışı) bozmasın: kart sade bir notla kalır, kayıtlar yerinde
     const safePlan = (f) => { try { f(); } catch (e) { ErrLog.add('Bugünün planı: ' + ((e && e.message) || e), 'planlar-ui.js'); tp.innerHTML = '<h2>🗓️ Bugünün planı</h2><p class="muted small">Plan şu an gösterilemedi; kayıtların güvende.</p>'; } };
+    // YKS modunda günün planı artık Bugün kartında (yukarıda); bu kart yalnızca dönem modunda kullanılır
     if (programMode()) { tp.classList.remove('hidden'); UniUI.renderToday(tp); if (window.PlanlarUI) safePlan(() => PlanlarUI.appendToday(tp)); }
-    else if (window.PlanlarUI) { tp.classList.remove('hidden'); safePlan(() => PlanlarUI.renderToday(tp)); }
     else tp.classList.add('hidden');
   }
   // 24 saatlik zaman çizelgesi (YPT tarzı): oturumlar gerçek saatlerinde renkli bloklar

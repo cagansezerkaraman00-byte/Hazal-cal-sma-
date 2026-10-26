@@ -256,6 +256,28 @@ const Planlar = (() => {
     questions += questionEntries(scope, key).filter(x => x.subjectId === subjectId).reduce((n, x) => n + x.questions, 0);
     return { minutes: Math.round(minutes), questions };
   }
+  // Bir günün oturumları o günün maddelerine dağıtılır (yalnızca gösterim; hiçbir kayıt değişmez).
+  // Maddeden başlatılan oturum (planId) o maddeye yazılır; öbürleri dersine bakar: o gün o dersten tek madde varsa
+  // ona, yoksa "plan dışı"na. Taşınan maddeler sayılmaz; böylece maddeler ve plan dışı birlikte günün toplamını verir.
+  function dayWork(day) {
+    const items = {}, extra = {}, out = { items, extra, total: 0 };
+    if (!isKey('day', day)) return out;
+    const act = list('day', day).filter((x) => !x.moved), bySubj = {};
+    for (const it of act) if (it.subjectId) (bySubj[it.subjectId] = bySubj[it.subjectId] || []).push(it);
+    const { from, to } = range('day', day);
+    for (const s of Store.data.sessions) {
+      if (!s || !(s.start >= from && s.start < to)) continue;
+      const m = Math.max(0, Number(s.minutes) || 0);
+      let it = s.planId ? act.find((x) => x.id === s.planId) : null;
+      if (!it && s.subjectId && bySubj[s.subjectId] && bySubj[s.subjectId].length === 1) it = bySubj[s.subjectId][0];
+      if (it) items[it.id] = (items[it.id] || 0) + m;
+      else extra[s.subjectId || ''] = (extra[s.subjectId || ''] || 0) + m;
+      out.total += m;
+    }
+    for (const o of [items, extra]) for (const k of Object.keys(o)) o[k] = Math.round(o[k]);
+    out.total = Math.round(out.total);
+    return out;
+  }
   // Yalnızca gösterim: hedefe ulaşıldığı söylenir, madde hiçbir zaman kendiliğinden işaretlenmez.
   // Aynı derste bitmemiş ikinci bir hedefli madde varsa süre hangisine ait bilinemez: ipucu çıkmaz.
   function targetReached(item, scope, key) {
@@ -329,8 +351,10 @@ const Planlar = (() => {
 
   // ---------- Oturum bitince (eski kural) ----------
   // ▶ ile hedefsiz bir maddeden başlatılan oturum bitince o madde yapıldı sayılır. Hedefli maddeler hiç kendiliğinden işaretlenmez.
+  // 2.9'dan beri maddeden başlatılan oturum maddeye bağlıdır (planId): süresi maddenin yanına yazılır, işareti Hazal koyar
+  // (bir konu birkaç oturum sürebilir).
   function onSession(session) {
-    if (!session || !session.intent) return null;
+    if (!session || !session.intent || session.planId) return null;
     const t = session.start || Date.now();
     for (const scope of SCOPES) {
       const it = list(scope, keyOf(scope, t)).find((x) => !x.done && !x.moved && !x.min && x.title.slice(0, 80) === session.intent); // sayaçtaki hedef 80 karakterde kesilir
@@ -438,7 +462,7 @@ const Planlar = (() => {
   return {
     questionEntries, saveQuestions, removeQuestions, hoursToMinutes,
     SCOPES, MAX_ITEMS, keyOf, isKey, shift, range, label, daysOf, weeksOfMonth, list, find, add, update, remove,
-    reorder, moveToDay, setDone, stats, roll, subjectWork, targetReached, carryTarget, carry, uncarry,
+    reorder, moveToDay, setDone, stats, roll, subjectWork, dayWork, targetReached, carryTarget, carry, uncarry,
     copyPrev, prevCount, copyCount, bandOf, smallest, usedRecently, eodDue, eodView, markEod, dismissEod, onSession,
   };
 })();

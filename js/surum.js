@@ -6,6 +6,19 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.9",
+  "tarih": "2026-10-26",
+  "baslik": "Günün programı hep gözünün önünde",
+  "notlar": [
+    "📋 Çalış ekranındaki Bugün kartı artık günün programın: Plan'da o güne yazdığın dersler ve konular sayacın hemen altında duruyor, aşağı kaydırmana gerek yok.",
+    "▶️ Bir konuya dokununca sayaç o konuyla kronometre olarak başlar ve sen bitirene kadar sayar. 2 saat diye düşünüp 2 saat 10 dakika çalışırsan o 10 dakika da sayılır; çalıştığın süre konunun yanına yazılır.",
+    "⭕ Halka artık planının yüzde kaçını bitirdiğini gösteriyor; bir konuyu bitirince kutusunu işaretlemen yeter.",
+    "🕊️ Plan yazarken süre sorulmuyor, çalışman bir saate bağlı değil. Planda olmayan bir derse çalıştıysan o da \"Plan dışı\" diye görünür.",
+    "🎧 Müzik ve odak sesleri Bugün kartının hemen altına geldi.",
+    "🗂️ Ders kutucukları ve oturum listesi Bugün kartından kalktı. Oturumların İlerleme sekmesinde duruyor; uygulama dışında çalıştığını Takvim'den o güne ekleyebilirsin."
+  ]
+},
+{
   "surum": "2.8.1",
   "tarih": "2026-10-25",
   "baslik": "Ders seçince yalnızca onun konuları",
