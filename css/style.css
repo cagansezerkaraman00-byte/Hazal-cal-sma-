@@ -2672,7 +2672,7 @@ body.focusing .today-card .timeline, body.focusing .today-card .tp-add { display
 @property --p { syntax: '<number>'; inherits: true; initial-value: 0; }
 .goal-ring { transition: --p 1.2s cubic-bezier(.45, .05, .3, 1); }
 .gr-yol { position: absolute; inset: 0; z-index: 1; pointer-events: none; transform: rotate(calc(var(--p) * 3.6deg)); }
-.gr-kedi { position: absolute; left: 50%; top: 4.5px; width: 27px; height: 13.5px; image-rendering: pixelated; image-rendering: crisp-edges;
+.gr-kedi { position: absolute; left: 50%; top: 4.5px; width: 40.5px; height: 21px; image-rendering: pixelated; image-rendering: crisp-edges;
   transform: translate(-50%, -62%) rotate(calc(var(--p) * -3.6deg)); filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .35)); }
 @media (prefers-reduced-motion: reduce) { .goal-ring { transition: none; } }
 
@@ -2697,3 +2697,4 @@ body.focusing .today-card .timeline, body.focusing .today-card .tp-add { display
 .wp-item.done .wp-edit b { text-decoration: line-through; color: var(--muted); }
 .wp-item.moved { opacity: .7; }
 @media (pointer: coarse) { .wp-add { width: 44px; height: 44px; } }
+.today-card .goal { gap: 26px; padding-left: 4px; } /* halkanın yanında yürürken Güçlü yazıya değmesin */

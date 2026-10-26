@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.9.2",
+  "tarih": "2026-10-26",
+  "baslik": "Güçlü hiç durmadan yürüyor",
+  "notlar": [
+    "🐈 Halkanın ucundaki minik Güçlü artık hiç uyumuyor: durmadan adım atıyor. Planından bir şey bitirdikçe halka boyunca yeni yerine yürüyor, orada da yürümeye devam ediyor."
+  ]
+},
+{
   "surum": "2.9.1",
   "tarih": "2026-10-26",
   "baslik": "Daha sade Bugün, daha kolay haftalık plan",
