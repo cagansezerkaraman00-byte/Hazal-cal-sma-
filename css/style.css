@@ -2644,33 +2644,56 @@ body.dn-acik { overflow: hidden; }
 }
 
 /* ---------- Bugün kartı: günün programı (2.9) ---------- */
-.today-program .sub-h { margin-top: 14px; }
+.today-program { margin-top: 14px; }
 .tp-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 8px; }
 .tp-row { position: relative; display: flex; align-items: center; gap: 10px; padding-right: 12px; border-radius: 14px; border: 1px solid var(--line);
   background: var(--surface-2); overflow: hidden; transition: border-color .2s, background-color .2s, box-shadow .2s; }
 .tp-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--c); }
-.tp-go { flex: 1; min-width: 0; min-height: 58px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px;
-  padding: 10px 0 10px 16px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform .12s; }
-.tp-go:active:not(:disabled) { transform: scale(.98); }
+.tp-go { flex: 1; min-width: 0; min-height: 56px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 10px 0 10px 16px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .tp-go:disabled { cursor: default; color: inherit; opacity: 1; }
 .tp-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .tp-text b { font-weight: 800; font-size: .9rem; line-height: 1.3; overflow-wrap: anywhere; }
 .tp-text small { color: var(--muted); font-size: .76rem; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
 .tp-min { font-size: .8rem; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tp-play { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: .7rem; background: var(--c); color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, .25); }
-.tp-play::before { content: '▶'; }
 .tp-row .check { flex: none; margin: 0; }
-.tp-row.live { border-color: var(--c); background: var(--surface-3); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 35%, transparent); }
-.tp-row.live .tp-play { animation: pulse 1.6s ease-in-out infinite; }
-.tp-row.live .tp-play::before { content: '●'; }
+.tp-row.sel { border-color: var(--c); background: var(--surface-3); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 35%, transparent); }
+.tp-row.live .tp-min::before { content: '●'; color: var(--c); margin-right: 6px; display: inline-block; animation: pulse 1.6s ease-in-out infinite; }
 .tp-row.done { background: var(--mint-soft); border-style: dashed; }
 .tp-row.done .tp-text b { text-decoration: line-through; text-decoration-color: var(--faint); color: var(--muted); }
-.tp-row.done .tp-play { visibility: hidden; }
-.tp-extra { margin: 0 0 10px; font-size: .8rem; font-weight: 700; color: var(--muted); }
-.tp-foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.tp-foot .small-btn { margin-top: 0; }
-.today-program .mp-links { margin: 8px 0 0; }
-.today-program .plan-empty { padding: 8px 8px 4px; }
-#timer-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-@media (max-width: 420px) { .tp-go { gap: 8px; padding-left: 14px; } .tp-play { width: 26px; height: 26px; } }
-@media (prefers-reduced-motion: reduce) { .tp-row.live .tp-play { animation: none; } }
+.tp-add { width: 100%; }
+@media (max-width: 420px) { .tp-go { gap: 8px; padding-left: 14px; } }
+@media (prefers-reduced-motion: reduce) { .tp-row.live .tp-min::before { animation: none; } }
+/* sayaç çalışırken de plan görünsün (sade odak ekranında sayaçtan sonra Bugün, sonra müzik) */
+body.focusing #tab-home .grid > .card.today-card.today-card { display: block; } /* gizleme kuralından güçlü */
+body.focusing .today-card .timeline, body.focusing .today-card .tp-add { display: none; }
+
+/* halkanın ucunda yürüyen minik Güçlü */
+@property --p { syntax: '<number>'; inherits: true; initial-value: 0; }
+.goal-ring { transition: --p 1.2s cubic-bezier(.45, .05, .3, 1); }
+.gr-yol { position: absolute; inset: 0; z-index: 1; pointer-events: none; transform: rotate(calc(var(--p) * 3.6deg)); }
+.gr-kedi { position: absolute; left: 50%; top: 4.5px; width: 27px; height: 13.5px; image-rendering: pixelated; image-rendering: crisp-edges;
+  transform: translate(-50%, -62%) rotate(calc(var(--p) * -3.6deg)); filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .35)); }
+@media (prefers-reduced-motion: reduce) { .goal-ring { transition: none; } }
+
+/* Plan sekmesi: tek "ekle" düğmesi ve haftanın yedi günü tek ekranda */
+.mp-add-btn { width: 100%; margin: 6px 0 4px; }
+.wp-days { display: grid; gap: 10px; margin: 14px 0 6px; }
+.wp-day { border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); padding: 10px 12px; }
+.wp-day.today { border-color: var(--accent-line, var(--line-strong)); box-shadow: 0 0 0 2px var(--accent-soft); }
+.wp-head { display: flex; align-items: center; gap: 8px; }
+.wp-head b { font-size: .95rem; }
+.wp-head small { color: var(--muted); font-weight: 700; flex: 1; }
+.wp-add { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--surface-3); color: inherit;
+  font: inherit; font-size: 1.15rem; font-weight: 800; line-height: 1; cursor: pointer; display: grid; place-items: center; }
+.wp-add:active { transform: scale(.94); }
+.wp-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.wp-item { position: relative; display: flex; align-items: center; gap: 8px; padding: 2px 4px 2px 12px; }
+.wp-item::before { content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 4px; border-radius: 2px; background: var(--c); }
+.wp-edit { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 4px 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.wp-edit b { font-size: .88rem; font-weight: 800; line-height: 1.3; overflow-wrap: anywhere; }
+.wp-edit small { color: var(--muted); font-size: .74rem; font-weight: 700; }
+.wp-item .check { flex: none; margin: 0; }
+.wp-item.done .wp-edit b { text-decoration: line-through; color: var(--muted); }
+.wp-item.moved { opacity: .7; }
+@media (pointer: coarse) { .wp-add { width: 44px; height: 44px; } }

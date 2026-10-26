@@ -17,6 +17,7 @@ Uygulamada görünmez; ileride yapılacak işleri unutmamak için.
 
 ## Geri dönüş noktası
 
+- **2.9.1 öncesi:** 2.9, commit `227276e`. Oturumlardaki `endReason: 'part'` (konu değiştirince kaydedilen parça) ve sayaçtaki `segs` alanlarını eski sürüm tanımadan saklar; veri kaybı olmaz.
 - **2.9 (Bugün kartı = günün programı) öncesi:** canlıdaki son sürüm **2.8.1**, commit `3f5456c`. Geri istenirse 2.8.1'in `index.html`, `css/style.css`, `js/app.js`, `js/planlar.js`, `js/planlar-ui.js`, `js/timer.js` dosyaları daha yüksek bir sürüm numarasıyla yeniden yayınlanır. Veri kaybı olmaz: oturumlardaki yeni `planId` alanını eski sürüm tanımadan saklar; eski maddelerin süre hedefleri (`min`) hiç silinmedi.
 - **2.8 (Hazal'ın Küçük Dünyası) öncesi:** canlıdaki son sürüm **2.7.2**, commit `047fa18`. Yerelde `eski-2.7.2` dalı bu commit'i gösterir; commit uzak daldaki geçmişte de durur.
 - "Her şeyi geri al" denirse: 2.7.2'nin kodu daha yüksek bir sürüm numarasıyla (ör. 2.8.1) yeniden yayınlanır; telefonlar onu güncelleme olarak alır. Veriler silinmez: eski sürüm tanımadığı `dunya` alanını olduğu gibi saklar, rozetler ve planlar yerinde kalır.

@@ -22,7 +22,10 @@ const Timer = (() => {
       cycle: keep.cycle || 0,
       subjectId: keep.subjectId != null ? keep.subjectId : '', // '' = Genel, bilerek seçilebilir
       intent: keep.intent || '',  // "bu oturumda ne yapacağım?"
-      planId: keep.planId || '',  // Bugün kartındaki plan maddesinden başlatıldıysa o madde (süresi ona yazılır)
+      planId: keep.planId || '',  // Bugün kartında seçilen plan maddesi: süre ona yazılır (seçim oturumlar arasında kalır)
+      segs: [],             // oturum sürerken başka maddeye geçildiyse biten parçalar {planId, subjectId, start, end, sec}
+      segAt: 0,             // şimdiki parçanın başladığı an (çalışılan saniye cinsinden)
+      segStart: null,       // şimdiki parçanın başladığı saat (duraklatılmışken geçildiyse devam edince yazılır)
     };
   }
 
@@ -59,26 +62,33 @@ const Timer = (() => {
     x.resumedAt = at;
     x.pausedAt = null;
     if (!x.firstStart) x.firstStart = at;
+    if (x.phase === 'focus' && x.segAt > 0 && x.segStart == null) x.segStart = at;
     persist();
   }
 
   function finishFocus(sec, endTime, endReason = 'manual') {
     const x = st();
     rememberContinuous(endTime);
-    const session = {
-      start: x.firstStart || endTime - sec * 1000,
-      end: endTime,
-      minutes: sec < 60 ? sec / 60 : Math.round(sec / 60),
-      seconds: sec,
-      subjectId: x.subjectId,
+    const make = (p, s, start, end, reason) => ({
+      start,
+      end,
+      minutes: s < 60 ? s / 60 : Math.round(s / 60),
+      seconds: s,
+      subjectId: p.subjectId,
       intent: x.intent || '',
-      ...(x.planId ? { planId: x.planId } : {}),
+      ...(p.planId ? { planId: p.planId } : {}),
       kind: x.kind,
       exam: x.exam || null,
-      endReason,
-      continuousSeconds: Math.min(sec, continuous(endTime)),
-    };
-    const keep = { cycle: x.cycle + 1, subjectId: x.subjectId, exam: x.exam };
+      endReason: reason,
+      continuousSeconds: Math.min(s, continuous(endTime)),
+    });
+    // oturum sürerken başka maddeye geçildiyse her madde kendi oturumu olarak kaydedilir (sayaç hiç sıfırlanmadan)
+    const parts = (Array.isArray(x.segs) ? x.segs : []).filter((p) => p && p.sec >= 1)
+      .map((p) => make(p, p.sec, p.start, p.end, 'part'));
+    const lastSec = sec - (parts.length ? x.segAt || 0 : 0);
+    let session = make(x, lastSec, parts.length ? x.segStart || endTime - lastSec * 1000 : x.firstStart || endTime - sec * 1000, endTime, endReason);
+    if (parts.length && lastSec < 60) { session = { ...parts.pop(), endReason }; } // son maddeye bir dakika bile kalmadıysa önceki parça son oturumdur
+    const keep = { cycle: x.cycle + 1, subjectId: x.subjectId, exam: x.exam, planId: x.planId };
     const kind = x.kind;
     Store.data.timer = fresh(kind, keep);
     if (kind === 'pomodoro') {
@@ -87,6 +97,7 @@ const Timer = (() => {
       if (S().autoBreak) startPhase(endTime);
     }
     persist();
+    for (const p of parts) h.onFocusPart && h.onFocusPart(p);
     h.onFocusDone && h.onFocusDone(session);
     if (kind === 'pomodoro' && st().phase !== 'focus') h.onBreakStart && h.onBreakStart(st().running);
   }
@@ -96,11 +107,10 @@ const Timer = (() => {
   // devamı bugün aynı ders ve hedefle, kalan süreyle yeni oturum olarak başlar (bugünün dakikaları bugüne yazılır).
   function splitAtPause() {
     const x = st(), left = countdown() ? Math.max(1, Math.round(duration() - x.accum / 1000)) : null;
-    const carry = { intent: x.intent, planId: x.planId, exam: x.exam };
+    const carry = { intent: x.intent, exam: x.exam };
     finishFocus(x.accum / 1000, x.pausedAt, 'split');
     const nx = st();
     nx.intent = carry.intent;
-    nx.planId = carry.planId || '';
     if (left) { nx.targetSeconds = Math.min(86399, left); nx.exam = carry.exam; }
   }
 
@@ -225,7 +235,7 @@ const Timer = (() => {
     reset() {
       rememberContinuous();
       const x = st();
-      Store.data.timer = fresh(x.kind, { cycle: x.cycle, subjectId: x.subjectId, exam: x.exam }); // hedef taşınmaz: yoksa sonraki alakasız oturum eski plan maddesini işaretler
+      Store.data.timer = fresh(x.kind, { cycle: x.cycle, subjectId: x.subjectId, exam: x.exam, planId: x.planId }); // hedef taşınmaz: yoksa sonraki alakasız oturum eski plan maddesini işaretler; seçili madde kalır
       persist();
       h.onReset && h.onReset();
       tick();
@@ -235,7 +245,7 @@ const Timer = (() => {
       if (exam != null && (kind !== 'countdown' || !Object.hasOwn(EXAM_MINUTES, exam))) return;
       rememberContinuous();
       const x = st();
-      Store.data.timer = fresh(kind, { subjectId: x.subjectId, exam });
+      Store.data.timer = fresh(kind, { subjectId: x.subjectId, exam, planId: x.planId });
       persist();
       tick();
     },
@@ -254,7 +264,25 @@ const Timer = (() => {
     },
     setSubject(id) { st().subjectId = id; persist(); },
     setIntent(text) { st().intent = String(text || '').slice(0, 80); persist(); },
-    setPlan(id) { st().planId = typeof id === 'string' ? id.slice(0, 40) : ''; persist(); },
+    // Bugün kartında maddeye dokununca: sayaç o maddeye (ve dersine) sayar. Oturum sürerken başka maddeye geçilirse
+    // o ana kadarki süre önceki maddeye yazılır, sayaç sıfırlanmadan devam eder (bir dakikadan kısa parça ayrılmaz).
+    setPlan(id, subjectId) {
+      const x = st();
+      id = typeof id === 'string' ? id.slice(0, 40) : '';
+      const sid = typeof subjectId === 'string' ? subjectId : x.subjectId;
+      if (id === (x.planId || '') && sid === x.subjectId) return;
+      if (x.phase === 'focus' && (x.running || x.accum > 0)) {
+        const now = Date.now(), e = elapsed(), from = x.segAt || 0;
+        if (e - from >= 60) {
+          if (!Array.isArray(x.segs)) x.segs = [];
+          x.segs.push({ planId: x.planId || '', subjectId: x.subjectId, start: x.segStart || x.firstStart || now, end: x.running ? now : x.pausedAt || now, sec: e - from });
+          x.segAt = e;
+          x.segStart = x.running ? now : null;
+        }
+      }
+      x.planId = id; x.subjectId = sid;
+      persist();
+    },
     duration,
   };
   return api;

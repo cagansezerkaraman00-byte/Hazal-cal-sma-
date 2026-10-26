@@ -81,44 +81,68 @@ eq(run(`Planlar.onSession({ intent: "Problemler", planId: "p2", start: ${T(18)} 
 eq(get('Planlar.find("p2").item.done'), false, 'madde açık kaldı (işareti Hazal koyar)');
 eq(get(`Planlar.onSession({ intent: "Problemler", start: ${T(18)} })`).id, 'p2', 'eski yol (planId yok) olduğu gibi çalışıyor');
 
-// ---------- C. Sayaç maddeyi taşır; oturum maddeye bağlı kaydedilir ----------
+// ---------- C. Seçilen madde: sayaç ona sayar, seçim oturumlar arasında kalır ----------
 ({ run, get } = makeCtx(SEED));
-run('Timer.setKind("free"); Timer.setSubject("y_kim"); Timer.setIntent("Mol kavramı"); Timer.setPlan("p4");');
-eq(get('Timer.state().planId'), 'p4', 'setPlan');
+run('var parts = [], got = null; Timer.init({ onFocusPart: (s) => parts.push(s), onFocusDone: (s) => { got = s; } }); Timer.setKind("free");');
+run('Timer.setPlan("p4", "y_kim")');
+eq(get('[Timer.state().planId, Timer.state().subjectId]'), ['p4', 'y_kim'], 'dokunulan madde ve dersi seçildi');
 eq(get('Timer.state().countdown'), false, 'kronometre: kendiliğinden bitmez');
 NOW = T(18); run('Timer.toggle()');
 NOW = T(20, 10); // 2 sa 10 dk
 eq(get('Timer.state().running'), true, '2 sa 10 dk sonra hâlâ sayıyor');
 run('Timer.finish()');
-// oturumu listeye App yazar (onFocusDone); Timer'ın kurduğu oturum nesnesi aşağıda handler ile denetlenir
-eq(get('Store.data.sessions[Store.data.sessions.length - 1].id'), 's9', 'Timer oturumu kendisi listeye yazmaz');
-run('var got = null; Timer.init({ onFocusDone: (s) => { got = s; } });');
-run('Timer.setKind("free"); Timer.setSubject("y_kim"); Timer.setPlan("p4");');
-NOW = T(20, 30); run('Timer.toggle()'); NOW = T(22, 40); run('Timer.finish()');
-const s = get('got');
-eq([s.planId, s.minutes, s.subjectId, s.kind], ['p4', 130, 'y_kim', 'free'], 'oturum maddeye bağlı, 130 dakika, hepsi sayıldı');
-eq(get('Timer.state().planId'), '', 'bitince sonraki oturum maddeye bağlı başlamaz');
-run('Timer.setPlan("p4"); Timer.reset()');
-eq(get('Timer.state().planId'), '', 'sıfırlama bağı kaldırır');
-run('Timer.setPlan("p4"); Timer.setKind("countdown")');
-eq(get('Timer.state().planId'), '', 'sayaç türü değişince bağ kalkar');
-run('Timer.setPlan(42)');
-eq(get('Timer.state().planId'), '', 'geçersiz değer yazılmaz');
-// planId olmayan oturuma alan eklenmez
-run('Timer.setKind("free"); Timer.setSubject("y_tr");'); NOW = T(23); run('Timer.toggle()'); NOW = T(23, 5); run('Timer.finish()');
+eq(get('[got.planId, got.minutes, got.subjectId, got.kind, parts.length]'), ['p4', 130, 'y_kim', 'free', 0], 'oturum maddeye bağlı, 130 dakikanın hepsi sayıldı');
+eq(get('Store.data.sessions[Store.data.sessions.length - 1].id'), 's9', 'Timer oturumu listeye kendisi yazmaz (App yazar)');
+eq(get('Timer.state().planId'), 'p4', 'bitince seçim kalır: Başla yine bu maddeye sayar');
+run('Timer.reset()'); eq(get('Timer.state().planId'), 'p4', 'sıfırlayınca da seçim kalır');
+run('Timer.setKind("countdown"); Timer.setKind("free")'); eq(get('Timer.state().planId'), 'p4', 'sayaç türü değişince de');
+run('Timer.setPlan(42)'); eq(get('Timer.state().planId'), '', 'geçersiz değer seçimi kaldırır');
+run('Timer.setSubject("y_tr");'); NOW = T(23); run('Timer.toggle()'); NOW = T(23, 5); run('Timer.finish()');
 ok(!('planId' in get('got')), 'maddesiz oturumda planId alanı yok');
 
-// ---------- D. Gece yarısını geçen duraklatılmış oturum: bağ devam eden parçaya taşınır ----------
+// ---------- D. Sayaç çalışırken başka maddeye geçmek: sayaç sıfırlanmaz, süre maddelere bölünür ----------
 ({ run, get } = makeCtx(SEED));
-run('var parts = []; Timer.init({ onFocusDone: (s) => { parts.push(s); } }); Timer.setKind("free"); Timer.setSubject("y_tr"); Timer.setPlan("p1");');
-NOW = T(22); run('Timer.toggle()'); NOW = T(23); run('Timer.toggle()'); // duraklat
-NOW = new FDate(2026, 9, 27, 9, 0).getTime(); run('Timer.toggle()'); // ertesi gün devam
-eq(get('parts.map((p) => [p.planId, p.minutes, p.endReason])'), [['p1', 60, 'split']], 'dünkü parça maddeye bağlı kaydedildi');
+run('var parts = [], got = null; Timer.init({ onFocusPart: (s) => parts.push(s), onFocusDone: (s) => { got = s; } }); Timer.setKind("free"); Timer.setPlan("p1", "y_tr");');
+NOW = T(9); run('Timer.toggle()');
+NOW = T(9, 40); run('Timer.setPlan("p2", "y_mat")');
+eq(get('[Timer.state().running, Math.round(Timer.state().elapsed)]'), [true, 2400], 'geçişte sayaç durmadı, sıfırlanmadı (40:00)');
+NOW = T(9, 40) + 30000; run('Timer.setPlan("p3", "y_mat")'); // 30 sn sonra fikir değişti: ayrı parça olmaz
+eq(get('Timer.state().segs.length'), 1, 'bir dakikadan kısa parça ayrılmaz');
+NOW = T(10, 10); run('Timer.toggle()'); // duraklat
+NOW = T(10, 20); run('Timer.setPlan("p4", "y_kim")'); // duraklatılmışken geçiş
+NOW = T(10, 30); run('Timer.toggle()'); // devam
+NOW = T(11); run('Timer.finish()');
+eq(get('parts.map((p) => [p.planId, p.subjectId, p.minutes, p.endReason])'), [['p1', 'y_tr', 40, 'part'], ['p3', 'y_mat', 30, 'part']], 'önceki maddeler sessizce kaydedildi');
+eq(get('[got.planId, got.subjectId, got.minutes, got.endReason]'), ['p4', 'y_kim', 30, 'manual'], 'son madde normal oturum olarak bitti');
+eq(get('[parts[0].start, parts[0].end, parts[1].start, parts[1].end, got.start, got.end]'), [T(9), T(9, 40), T(9, 40), T(10, 10), T(10, 30), T(11)], 'parçaların saatleri doğru (duraklama arası sayılmaz)');
+eq(get('parts.reduce((n, p) => n + p.minutes, 0) + got.minutes'), 100, 'toplam süre değişmedi');
+eq(get('[Timer.state().segs.length, Timer.state().segAt, Timer.state().planId]'), [0, 0, 'p4'], 'yeni oturum temiz başlar, seçim kalır');
+// son maddeye bir dakika kalmadan bitirildi: önceki parça son oturumdur
+({ run, get } = makeCtx(SEED));
+run('var parts = [], got = null; Timer.init({ onFocusPart: (s) => parts.push(s), onFocusDone: (s) => { got = s; } }); Timer.setKind("free"); Timer.setPlan("p1", "y_tr");');
+NOW = T(9); run('Timer.toggle()'); NOW = T(9, 30); run('Timer.setPlan("p4", "y_kim")'); NOW = T(9, 30) + 20000; run('Timer.finish()');
+eq(get('[parts.length, got.planId, got.minutes]'), [0, 'p1', 30], 'yarım dakikalık son parça ayrı oturum olmaz');
+// gece yarısını geçen duraklatılmış oturum: bağ devam eden parçada kalır
+({ run, get } = makeCtx(SEED));
+run('var done = []; Timer.init({ onFocusDone: (s) => done.push(s) }); Timer.setKind("free"); Timer.setPlan("p1", "y_tr");');
+NOW = T(22); run('Timer.toggle()'); NOW = T(23); run('Timer.toggle()');
+NOW = new FDate(2026, 9, 27, 9, 0).getTime(); run('Timer.toggle()');
+eq(get('done.map((p) => [p.planId, p.minutes, p.endReason])'), [['p1', 60, 'split']], 'dünkü parça maddeye bağlı kaydedildi');
 eq(get('Timer.state().planId'), 'p1', 'bugünkü parça aynı maddeyle sürüyor');
+// eski sürümden kalan sayaç durumu (segs alanı yok) bozulmaz
+({ run, get } = makeCtx({ ...SEED, timer: { kind: 'free', phase: 'focus', running: false, accum: 0, cycle: 0, subjectId: 'y_tr', intent: '' } }));
+run('var got = null; Timer.init({ onFocusDone: (s) => { got = s; } });');
+NOW = T(9); run('Timer.toggle()'); NOW = T(9, 30); run('Timer.setPlan("p4", "y_kim")'); NOW = T(10); run('Timer.finish()');
+eq(get('[got.planId, got.minutes]'), ['p4', 30], 'eski sayaç durumuyla da parçalar çalışıyor');
 
 // ---------- E. Arayüz: süre hedefi sorulmaz, eski hedef silinmez ----------
 const ui = read('js/planlar-ui.js');
 ok(!/data-f="hours"/.test(ui) && !/Hedef süre/.test(ui), 'formda ve çizelgede "Hedef süre" yok');
+ok(!/data-mp="go"/.test(ui) && !/plan-go/.test(ui), 'planda "Başla ▶" yok: maddeye dokunmak oturum başlatmaz');
+ok(/data-mp="pick"/.test(ui) && /App\.pickPlanItem/.test(ui), 'Bugün kartında maddeye dokununca sayaç ona sayar');
+ok(/function weekPlanHtml/.test(ui) && /data-mp="add" data-scope="day" data-key="\$\{k\}"/.test(ui), 'haftalık görünümde her günün kendi ＋ düğmesi');
+ok(!/'📖 ' \+ s\.intent/.test(read('js/app.js')), 'sayaçta konu adı yazmıyor');
+ok(!/function quickForm/.test(ui), 'planda serbest yazı kutusu yok: ders ve konu yeter');
 ok(/<th scope="col">Çalıştığın<\/th>/.test(ui), 'çizelgede "Çalıştığın" sütunu');
 ok(!/\bmin:\s*minutes\b/.test(ui), 'kaydederken min gönderilmez (eski hedef yerinde kalır)');
 ({ run, get } = makeCtx(SEED));

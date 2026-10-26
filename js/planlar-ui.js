@@ -97,13 +97,12 @@ const PlanlarUI = (() => {
     const worked = workedOn(it, scope, key, now, work);
     if (worked > 0 && !chart) parts.push(`${n.when[key === cur ? 0 : 1]} ${U.fmtMin(worked)}`);
     if (it.from) parts.push(it.from === Planlar.shift(scope, key, -1) ? n.from : '↪ ertelenen');
-    const startable = key === cur && !it.done && !it.moved;
     let acts;
     if (it.moved) {
       const tag = it.moved === cur && key !== cur ? n.tag[0] : it.moved === Planlar.shift(scope, cur, 1) ? n.tag[1] : '→ taşındı';
       acts = `<span class="mp-tag">${tag}</span>`;
     } else {
-      acts = `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı"${it.done ? ' checked' : ''}>${startable ? '<button type="button" class="plan-go" data-mp="go" aria-label="Başla"><span class="pg-t">Başla </span>▶</button>' : ''}`;
+      acts = `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı: ${esc(it.title)}"${it.done ? ' checked' : ''}>`;
     }
     if (chart) return `<tr class="${it.done ? 'done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}">
       <td><button type="button" class="mp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><span class="plan-text">${esc(it.title)}</span><span class="plan-sub">${s ? esc(s.name) : 'Genel plan'}</span></button></td>
@@ -122,10 +121,6 @@ const PlanlarUI = (() => {
       <tbody>${ordered(items).map(it => itemHtml(it, 'day', key, now, true, work)).join('')}</tbody></table></div>`;
   }
   const ordered = (items) => items.filter((x) => !x.moved).concat(items.filter((x) => x.moved));
-  function quickForm(scope, key) {
-    return `<form class="inline-form mp-add" data-mp-form data-scope="${esc(scope)}" data-key="${esc(key)}" autocomplete="off">
-      <input data-mp-quick maxlength="120" enterkeyhint="done" aria-label="Yeni plan maddesi" placeholder="${esc(placeholder(scope))}"><button class="btn primary">Ekle</button></form>`;
-  }
   function progHtml(st) {
     if (!st.total) return `<p class="mp-prog mp-pct muted">${st.moved ? `${st.moved} madde taşındı` : 'Henüz madde yok'}</p>`;
     return `<div class="mp-prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${st.pct}" aria-label="Plan ilerlemesi"><div class="track"><i style="width:${st.pct}%"></i></div>
@@ -150,13 +145,14 @@ const PlanlarUI = (() => {
     const segBtn = (s) => `<button type="button" data-mp="scope" data-scope="${s}" class="${s === scope ? 'active' : ''}" aria-pressed="${s === scope}">${N[s].seg}</button>`;
     let rollLine = '';
     if (scope !== 'day') {
+      // haftada günler zaten alt alta görünüyor: haftalık hedef yoksa yalnızca çalışılan süre yazılır
       const parts = scope === 'week'
-        ? [`Haftalık hedefler ${own.done}/${own.total}`, `Günlük maddeler ${r.days.done}/${r.days.total}`]
+        ? (own.total ? [`Haftalık hedefler ${own.done}/${own.total}`, `Günlük maddeler ${r.days.done}/${r.days.total}`] : [])
         : [`Aylık hedefler ${own.done}/${own.total}`, `Haftalık ${r.weeks.done}/${r.weeks.total}`, `Günlük ${r.days.done}/${r.days.total}`];
-      if (r.all.total) parts.push(`Toplam %${r.all.pct}`);
+      if (r.all.total && parts.length) parts.push(`Toplam %${r.all.pct}`);
       if (own.moved) parts.push(`${own.moved} madde taşındı`);
       const w0 = key <= cur ? sessionsIn(scope, key) : null, w = w0 && w0.minutes > 0 ? w0 : null; // "0 dk çalıştın" yazılmaz
-      rollLine = `<p class="mp-roll">${parts.join(' · ')}${w ? `<br>⏱️ ${key === cur ? n.cur : scope === 'week' ? 'O hafta' : 'O ay'} ${U.fmtMin(w.minutes)} çalıştın${w.questions ? ` · ${w.questions} soru` : ''}` : ''}</p>`;
+      rollLine = parts.length || w ? `<p class="mp-roll">${parts.join(' · ')}${w ? `${parts.length ? '<br>' : ''}⏱️ ${key === cur ? n.cur : scope === 'week' ? 'O hafta' : 'O ay'} ${U.fmtMin(w.minutes)} çalıştın${w.questions ? ` · ${w.questions} soru` : ''}` : ''}</p>` : '';
     }
     const remaining = own.remaining.length;
     const tools = [];
@@ -179,13 +175,12 @@ const PlanlarUI = (() => {
         <button type="button" class="icon-btn" data-mp="next" aria-label="${n.next}">›</button></div>
       ${progHtml(scope === 'day' ? own : { ...r.all, moved: r.all.total ? 0 : own.moved })}
       ${rollLine}
-      ${items.length ? (scope === 'day' ? dailyChart(items, key, now) : `<ul class="plan-list mp-list">${ordered(items).map((it) => itemHtml(it, scope, key, now)).join('')}</ul>`)
-        : `<div class="empty-state"><span>📝</span><b>${n.empty}</b><p>Ne yapmak istediğini sen yaz, ben takip edeyim 🐾</p></div>`}
-      ${quickForm(scope, key)}
-      <button type="button" class="link-btn" data-mp="add">＋ Ders ve konuyla ekle</button>
+      ${scope === 'week' ? weekPlanHtml(key, now) + (items.length ? `<h3 class="sub-h">Haftanın hedefleri</h3><ul class="plan-list mp-list">${ordered(items).map((it) => itemHtml(it, scope, key, now)).join('')}</ul>` : '')
+        : (items.length ? (scope === 'day' ? dailyChart(items, key, now) : `<ul class="plan-list mp-list">${ordered(items).map((it) => itemHtml(it, scope, key, now)).join('')}</ul>`)
+          : `<p class="plan-empty">${n.empty}</p>`)
+          + `<button type="button" class="btn primary mp-add-btn" data-mp="add" data-scope="${scope}" data-key="${esc(key)}">＋ ${scope === 'day' ? 'Plan ekle' : 'Hedef ekle'}</button>`}
       ${tools.length ? `<div class="mp-tools">${tools.join('')}</div>` : ''}
       ${scope === 'day' ? questionHtml(key) + upHtml(key, now) + eodHtml(key, now) : ''}
-      ${scope === 'week' ? daysHtml(key, now) : ''}
       ${scope === 'month' ? calHtml(key, now) : ''}
     </div>`;
   }
@@ -267,13 +262,22 @@ const PlanlarUI = (() => {
         <button type="button" class="btn soft small-btn" data-mp="day" data-key="${esc(next)}" data-focus="1">✍️ ${writeLabel} planını yaz</button></div></div>`;
   }
 
-  // ---------- Haftalık görünüm: 7 gün ----------
-  function daysHtml(wk, now) {
+  // ---------- Haftalık görünüm: haftanın 7 günü tek ekranda ----------
+  // Her gün kendi maddeleriyle ve bir "＋" ile durur: hafta, Hazal nasıl yazdıysa öyle görünür. Maddeye dokununca düzenlenir.
+  function weekPlanHtml(wk, now) {
     const today = U.dateKey(now);
-    return `<div class="mp-days">${Planlar.daysOf('week', wk).map((k) => {
-      const st = Planlar.stats(Planlar.list('day', k)), d = noon(k);
-      const aria = `${d.getDate()} ${U.MONTHS[d.getMonth()]}: ${st.total ? `${st.total} maddeden ${st.done} tanesi tamam` : 'madde yok'}`;
-      return `<button type="button" class="mp-day${k === today ? ' today' : ''}${st.total && st.pct === 100 ? ' full' : ''}" data-mp="day" data-key="${k}" style="--p:${st.pct || 0}" aria-label="${aria}">${U.DAYS_SHORT[d.getDay()]}<b>${d.getDate()}</b><small>${st.total ? `${st.done}/${st.total}` : '—'}</small><i></i></button>`;
+    return `<div class="wp-days">${Planlar.daysOf('week', wk).map((k) => {
+      const d = noon(k), items = ordered(Planlar.list('day', k)), work = k <= today ? Planlar.dayWork(k) : null;
+      const rows = items.map((it) => {
+        const sb = subj(it.subjectId), m = work && !it.moved ? work.items[it.id] || 0 : 0;
+        return `<li class="wp-item${it.done ? ' done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}" style="--c:${esc(sb ? sb.color : 'var(--violet)')}">
+          <button type="button" class="wp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><b>${esc(it.title)}</b><small>${esc(sb ? sb.name : 'Genel')}${m > 0 ? ` · ${U.fmtMin(m)}` : ''}</small></button>
+          ${it.moved ? '<span class="mp-tag">→ taşındı</span>' : `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı: ${esc(it.title)}"${it.done ? ' checked' : ''}>`}</li>`;
+      }).join('');
+      return `<section class="wp-day${k === today ? ' today' : ''}" aria-label="${U.DAYS[d.getDay()]} ${d.getDate()} ${U.MONTHS[d.getMonth()]}">
+        <div class="wp-head"><b>${U.DAYS[d.getDay()]}</b><small>${d.getDate()} ${U.MONTHS[d.getMonth()]}${k === today ? ' · bugün' : ''}</small>
+          <button type="button" class="wp-add" data-mp="add" data-scope="day" data-key="${k}" aria-label="${U.DAYS[d.getDay()]} gününe ekle">＋</button></div>
+        ${rows ? `<ul class="wp-list">${rows}</ul>` : ''}</section>`;
     }).join('')}</div>`;
   }
 
@@ -311,47 +315,23 @@ const PlanlarUI = (() => {
   }
 
   // ---------- Ana sayfa: Bugün kartındaki program (YKS modu) ----------
-  // Plan'da bugüne yazılan dersler ve konular; her birinin yanında bugün o maddede çalışılan süre ve işaret kutusu.
-  // Maddeye dokununca sayaç o maddeyle başlar (kronometre: kendiliğinden durmaz), süre o maddeye yazılır.
-  function topicName(it) {
-    const t = it.topicId && window.YKS && typeof YKS.topic === 'function' ? YKS.topic(it.topicId) : null;
-    return t && t.name !== it.title ? t.name : '';
-  }
+  // Plan'da bugüne yazılan dersler ve konular; yanında bugün o maddede çalışılan süre ve işaret kutusu. Başka bir şey yok.
+  // Maddeye dokununca sayaç ona sayar (App.pickPlanItem): oturum başlamaz, sayaçta bir şey yazmaz.
   function programRow(it, work) {
-    const s = subj(it.subjectId), m = work.items[it.id] || 0, tn = topicName(it);
-    const sub = [s ? s.name : 'Genel plan', tn].filter(Boolean).map(esc).join(' · ');
+    const s = subj(it.subjectId), m = work.items[it.id] || 0;
     return `<li class="tp-row${it.done ? ' done' : ''}" data-tp-id="${esc(it.id)}" data-mp-id="${esc(it.id)}" style="--c:${esc(s ? s.color : 'var(--violet)')}">
-      <button type="button" class="tp-go" data-mp="go"${it.done ? ' disabled' : ''} aria-label="${esc(it.title)}: ${it.done ? 'tamamlandı' : 'sayacı bu konuyla başlat'}">
-        <span class="tp-text"><b>${esc(it.title)}</b><small>${sub}</small></span>
-        <span class="tp-min">${m > 0 ? U.fmtMin(m) : '—'}</span><span class="tp-play" aria-hidden="true"></span></button>
-      <input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı: ${esc(it.title)}"${it.done ? ' checked' : ''}></li>`;
+      <button type="button" class="tp-go" data-mp="pick"${it.done ? ' disabled' : ''} aria-pressed="false" aria-label="${esc(it.title)}${it.done ? ': tamamlandı' : ': sayaç buna saysın'}">
+        <span class="tp-text"><b>${esc(it.title)}</b><small>${esc(s ? s.name : 'Genel')}</small></span>
+        <span class="tp-min">${m > 0 ? U.fmtMin(m) : ''}</span></button>
+      <input type="checkbox" class="check" data-mp="done" aria-label="Bitti: ${esc(it.title)}"${it.done ? ' checked' : ''}></li>`;
   }
   function renderProgram(el) {
     if (!el || !window.Planlar) return;
     const now = new Date(), today = U.dateKey(now);
     paintedPhase = phaseOf(now);
-    const items = Planlar.list('day', today), act = items.filter((x) => !x.moved), work = Planlar.dayWork(today);
-    const strip = stripHtml(now);
-    const pc = !act.length && !(strip && !isEvening(now)) ? Planlar.copyCount('day', today) : 0;
-    const links = [];
-    const wk = Planlar.keyOf('week', now), mk = Planlar.keyOf('month', now);
-    const ws = Planlar.stats(Planlar.list('week', wk)), ms = Planlar.stats(Planlar.list('month', mk));
-    if (ws.total || ws.moved) links.push(`<button type="button" class="link-btn" data-mp="open" data-scope="week">📅 Bu hafta ${ws.done}/${ws.total}</button>`);
-    if (ms.total || ms.moved) links.push(`<button type="button" class="link-btn" data-mp="open" data-scope="month">🗓️ ${U.MONTHS[now.getMonth()]} ${ms.done}/${ms.total}</button>`);
-    // planda olmayan derslere ayrılan süre de görünsün (kutucuklarda görünen "hangi dersten ne kadar" bilgisi kaybolmasın)
-    const extra = Object.keys(work.extra).filter((k) => work.extra[k] > 0)
-      .map((k) => `${esc(Store.subject(k).name)} ${U.fmtMin(work.extra[k])}`);
-    const yks = window.YKS && typeof YKS.field === 'function' && !YKS.field()
-      ? '<p class="hint"><button type="button" class="link-btn" data-mp="to-yks">📚 Alanını seçersen YKS konularından da madde ekleyebilirsin</button></p>' : '';
-    paint(el, `<h3 class="sub-h">Bugünün programı ${act.length ? '<span class="muted small">dokun, başlasın</span>' : ''}</h3>
-      ${act.length ? `<ul class="tp-list">${act.map((it) => programRow(it, work)).join('')}</ul>`
-        : `<p class="plan-empty">${items.length ? 'Bugünün maddelerini taşıdın. Yeni bir şey yazmak istersen buradayım 🐾' : 'Bugün için plan yok. Plan sekmesinde bugüne ne çalışacağını yaz, burada görünsün 🐾'}</p>`}
-      ${extra.length ? `<p class="tp-extra">Plan dışı: ${extra.join(' · ')}</p>` : ''}
-      ${pc ? `<button type="button" class="btn soft small-btn" data-mp="copy" data-scope="day" data-key="${today}">⧉ Dünün planını kopyala (${pc})</button>` : ''}
-      ${strip}${yks}
-      ${links.length ? `<p class="mp-roll mp-links">${links.join(' · ')}</p>` : ''}
-      <div class="tp-foot"><button type="button" class="btn soft small-btn" data-mp="add" data-scope="day" data-key="${today}">＋ ${act.length ? 'Madde ekle' : 'Bugünün planını yaz'}</button>
-        <button type="button" class="btn soft small-btn" data-mp="open" data-scope="day">Tüm planlarım →</button></div>`);
+    const act = Planlar.list('day', today).filter((x) => !x.moved), work = Planlar.dayWork(today);
+    paint(el, `${act.length ? `<ul class="tp-list" aria-label="Bugünün programı">${act.map((it) => programRow(it, work)).join('')}</ul>` : ''}
+      <button type="button" class="btn soft tp-add" data-mp="add" data-scope="day" data-key="${today}">＋ Plan ekle</button>`);
   }
 
   // ---------- Dönem / KPSS modu: UniUI kartının altına küçük blok (yalnızca elle yazılmış madde varsa) ----------
@@ -393,11 +373,24 @@ const PlanlarUI = (() => {
     const all = uniCourses(), mine = subjectId ? all.filter((c) => c.subjectId === subjectId) : [];
     return (mine.length ? mine : all).map((c) => `<optgroup label="${esc(c.name)}">${c.topics.map((t, i) => (t && t.title ? `<option value="u:${esc(c.id)}:${i}"${selected === `u:${c.id}:${i}` ? ' selected' : ''}>${esc(t.title)}</option>` : '')).join('')}</optgroup>`).join('');
   }
-  function topicPicker(it, prog) {
-    const sid = it ? it.subjectId : '', label = (opts) => `<label class="field">Konudan seç (isteğe bağlı) <select data-f="topic"><option value="">—</option>${opts}</select></label>`;
-    if (!prog && window.YKS && typeof YKS.field === 'function' && YKS.field()) return { kind: 'yks', html: label(yksOptions(sid, it && it.topicId)) };
-    if (prog && uniCourses().length) return { kind: 'uni', html: label(uniOptions(sid, '')) };
-    return { kind: '', html: '' };
+  const OWN = '__own'; // konu listesindeki "Kendim yazayım"
+  function topicKind() {
+    const prog = isProgram();
+    if (!prog && window.YKS && typeof YKS.field === 'function' && YKS.field()) return 'yks';
+    if (prog && uniCourses().length) return 'uni';
+    return '';
+  }
+  const topicOpts = (kind, sid, sel) => (kind === 'yks' ? yksOptions(sid, sel) : kind === 'uni' ? uniOptions(sid, sel) : '');
+  // seçilen konu: adı, dersi ve (YKS konusuysa) kimliği
+  function topicOf(v) {
+    if (!v || v === OWN) return null;
+    if (v.startsWith('u:')) {
+      const [, cid, i] = v.split(':');
+      const c = (D().uni.courses || []).find((x) => x && x.id === cid), t = c && c.topics[+i];
+      return t ? { name: t.title, sid: c.subjectId, id: '' } : null;
+    }
+    const t = window.YKS ? YKS.topic(v) : null;
+    return t ? { name: t.name, sid: App.subjectFor(t.subjectKey), id: v } : null;
   }
   // düzenleme penceresindeki "Bu madde … taşındı"
   function movedPhrase(scope, to, now) {
@@ -407,64 +400,47 @@ const PlanlarUI = (() => {
     const t = Planlar.label(scope, to, now).title;
     return scope === 'day' ? `${t} gününe` : scope === 'week' ? `${t} haftasına` : `${t} ayına`;
   }
-  function position(id) {
-    const f = Planlar.find(id);
-    if (!f) return '';
-    const act = Planlar.list(f.scope, f.key).filter((x) => !x.moved);
-    const i = act.findIndex((x) => x.id === id);
-    return i >= 0 ? `${act.length} maddeden ${i + 1}. sırada` : '';
-  }
+  // Ekle / düzenle: yalnızca ders ve konu. Listede olmayan bir şey "Kendim yazayım" ile yazılır;
+  // konu seçilmezse dersin adı yeter. Ders seçilince konu listesi o dersin konularına daralır.
   function openForm(o) {
     const f = o.id ? Planlar.find(o.id) : null;
     if (o.id && !f) { invalidate(); App.refresh(); return; }
     const scope = f ? f.scope : o.scope, key = f ? f.key : o.key;
     if (!Planlar.isKey(scope, key)) return;
-    const it = f ? f.item : null, now = new Date(), prog = isProgram();
+    const it = f ? f.item : null, now = new Date(), kind = topicKind();
     const lab = Planlar.label(scope, key, now);
     const subs = D().subjects.slice();
     if (it && it.subjectId && !subs.some((s) => s.id === it.subjectId)) { const s = subj(it.subjectId); if (s) subs.unshift(s); } // arşivdeki ders seçili kalsın
     const subjOpts = subs.map((s) => `<option value="${esc(s.id)}"${it && it.subjectId === s.id ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
-    const topic = topicPicker(it, prog);
-    const card = App.openModal(`<h3>${it ? '✏️ Maddeyi düzenle' : '＋ Yeni plan maddesi'}</h3><p class="muted small">${N[scope].seg} · ${esc(lab.title)}</p>
-      <p class="hint">Her madde bir çalışma adımıdır. Ders seçersen o ders için, boş bırakırsan genel planın için kaydedilir. Günlük listene birden fazla madde ekleyebilirsin.</p>
-      <label class="field">Bu maddede ne çalışacaksın? <input data-f="title" maxlength="120" placeholder="${esc(placeholder(scope))}" value="${it ? esc(it.title) : ''}"></label>
-      <label class="field">Ders (isteğe bağlı) <select data-f="subject"><option value="">— Ders seçme —</option>${subjOpts}</select></label>
-      ${topic.html}
-      <p class="hint">Süre yazmana gerek yok: maddeye dokunup çalışınca ne kadar çalıştığın kendiliğinden yanına yazılır. Çözdüğün soruları da gün sonunda Soru günlüğü'ne ekleyebilirsin.</p>
+    const listed = kind === 'yks' && it && it.topicId && YKS.topic(it.topicId) && YKS.topic(it.topicId).name === it.title ? it.topicId : '';
+    const own = !!it && !listed; // elle yazılmış eski madde: yazısı açık gelir
+    const topicSelect = (sid, sel) => `<option value="">— Konu seç —</option>${topicOpts(kind, sid, sel)}<option value="${OWN}"${!sel && own ? ' selected' : ''}>✍️ Kendim yazayım</option>`;
+    const card = App.openModal(`<h3>${it ? '✏️ Düzenle' : `＋ ${scope === 'day' ? 'Plan ekle' : 'Hedef ekle'}`}</h3><p class="muted small">${esc(lab.title)}</p>
+      <label class="field">Ders <select data-f="subject"><option value="">— Ders seç —</option>${subjOpts}</select></label>
+      ${kind ? `<label class="field">Konu <select data-f="topic">${topicSelect(it ? it.subjectId : '', listed)}</select></label>` : ''}
+      <label class="field${kind && !own ? ' hidden' : ''}" data-own>${kind ? 'Ne çalışacaksın?' : 'Konu'} <input data-f="title" maxlength="120" placeholder="Örn: Paragraf" value="${it ? esc(it.title) : ''}"></label>
       ${it && scope === 'day' && !it.moved ? `<label class="field">Gün <input type="date" data-f="date" value="${esc(key)}"></label>` : ''}
-      ${it && !it.moved ? `<div class="row mp-order"><button class="btn soft small-btn" data-act="up" type="button">⬆ Yukarı</button><button class="btn soft small-btn" data-act="down" type="button">⬇ Aşağı</button><span class="muted small" data-pos>${position(it.id)}</span></div>` : ''}
       ${it && it.moved ? `<p class="hint">Bu madde ${esc(movedPhrase(scope, it.moved, now))} taşındı.</p><button class="btn soft small-btn" data-act="uncarry" type="button">↩ Taşımayı geri al</button>` : ''}
       <div class="modal-actions">${it ? '<button class="btn danger" data-act="del" type="button">Sil</button><span style="flex:1"></span>' : ''}<button class="btn soft" data-act="cancel" type="button">Vazgeç</button><button class="btn primary" data-act="save" type="button">Kaydet</button></div>`);
     const q = (k) => card.querySelector(`[data-f="${k}"]`);
-    let auto = ''; // konudan otomatik yazılan son başlık (Hazal değiştirdiyse dokunulmaz)
-    const topicSel = q('topic'), subjSel = q('subject');
-    // ders değişince konu listesi o dersin konularına daralır; seçili konu o derste değilse ve başlığı konudan geldiyse ikisi de temizlenir
+    const topicSel = q('topic'), subjSel = q('subject'), ownBox = card.querySelector('[data-own]');
+    const showOwn = (on) => { ownBox.classList.toggle('hidden', !on); if (on) q('title').focus(); };
+    // ders değişince konu listesi o dersin konularına daralır; seçili konu o derste yoksa temizlenir
     const fillTopics = () => {
-      if (!topicSel) return;
       const cur = topicSel.value;
-      topicSel.innerHTML = `<option value="">—</option>${topic.kind === 'yks' ? yksOptions(subjSel.value, '') : uniOptions(subjSel.value, '')}`;
-      if (cur && [...topicSel.options].some((o) => o.value === cur)) topicSel.value = cur;
-      else { topicSel.value = ''; const ti = q('title'); if (auto && ti.value === auto) { ti.value = ''; auto = ''; } }
+      topicSel.innerHTML = topicSelect(subjSel.value, '');
+      topicSel.value = [...topicSel.options].some((x) => x.value === cur) ? cur : '';
+      showOwn(topicSel.value === OWN);
     };
-    if (topicSel) subjSel.addEventListener('change', fillTopics);
-    if (topicSel) topicSel.addEventListener('change', () => {
-      const v = topicSel.value;
-      if (!v) return;
-      let name = '', sid = '';
-      if (v.startsWith('u:')) {
-        const [, cid, i] = v.split(':');
-        const c = (D().uni.courses || []).find((x) => x && x.id === cid), t = c && c.topics[+i];
-        if (!t) return;
-        name = t.title; sid = c.subjectId;
-      } else {
-        const t = YKS.topic(v);
-        if (!t) return;
-        name = t.name; sid = App.subjectFor(t.subjectKey);
-      }
-      const ti = q('title');
-      if (!ti.value.trim() || ti.value === auto) { ti.value = String(name).slice(0, 120); auto = ti.value; }
-      if (sid && D().subjects.some((x) => x.id === sid) && subjSel.value !== sid) { subjSel.value = sid; fillTopics(); } // konu önce seçildiyse ders de seçilir, liste o derse daralır
-    });
+    if (topicSel) {
+      subjSel.addEventListener('change', fillTopics);
+      topicSel.addEventListener('change', () => {
+        const v = topicSel.value, t = topicOf(v);
+        showOwn(v === OWN);
+        // konu önce seçildiyse ders de seçilir, liste o derse daralır
+        if (t && t.sid && D().subjects.some((x) => x.id === t.sid) && subjSel.value !== t.sid) { subjSel.value = t.sid; fillTopics(); }
+      });
+    }
     const done = () => { App.closeModal(); invalidate(); App.refresh(); };
     card.addEventListener('click', (e) => {
       const b = e.target.closest('[data-act]');
@@ -472,21 +448,18 @@ const PlanlarUI = (() => {
       const act = b.dataset.act;
       if (act === 'cancel') { App.closeModal(); return; }
       if (act === 'del') { if (!confirm(`"${it.title}" silinsin mi?`)) return; Planlar.remove(it.id); done(); return; }
-      if (act === 'up' || act === 'down') {
-        if (Planlar.reorder(it.id, act === 'up' ? -1 : 1)) { const p = card.querySelector('[data-pos]'); if (p) p.textContent = position(it.id); invalidate(); App.refresh(); }
-        return;
-      }
       if (act === 'uncarry') {
         if (!Planlar.uncarry(it.id)) { App.toast('↩️', 'Taşınan madde yapılmış, geri alınamaz'); return; }
         done(); return;
       }
       if (act !== 'save') return;
-      const title = q('title').value.trim();
-      if (!title) { App.toast('🗓️', 'Önce ne yapacağını yaz 🐾'); q('title').focus(); return; }
-      const tv = topicSel ? topicSel.value : '';
-      // süre hedefi artık sorulmaz; eski maddelerde yazılı olan hedef silinmez, yalnızca gösterilmez
-      const data = { title, subjectId: q('subject').value,
-        topicId: topic.kind === 'yks' ? tv : it ? it.topicId : '' }; // konu kimliği yalnızca YKS konuları için saklanır
+      const t = topicSel ? topicOf(topicSel.value) : null;
+      const typed = !topicSel || topicSel.value === OWN || (it && !topicSel.value) ? q('title').value.trim() : '';
+      const sname = subjSel.value ? (subj(subjSel.value) || { name: '' }).name : '';
+      const title = (t ? t.name : typed || sname).slice(0, 120);
+      if (!title) { App.toast('🗓️', kind ? 'Bir ders ya da konu seç 🐾' : 'Konuyu yaz 🐾'); (topicSel && topicSel.value !== OWN ? subjSel : q('title')).focus(); return; }
+      // süre hedefi sorulmaz; eski maddelerde yazılı olan hedef silinmez, yalnızca gösterilmez
+      const data = { title, subjectId: subjSel.value, topicId: t && t.id ? t.id : '' }; // konu kimliği yalnızca YKS konuları için saklanır
       if (it) {
         Planlar.update(it.id, data);
         const dEl = q('date');
@@ -538,16 +511,16 @@ const PlanlarUI = (() => {
         render();
       } else if (a === 'today') { view.follow = true; render(); }
       else if (a === 'done') {
-        const on = b.checked, r = Planlar.setDone(id, on);
+        const on = b.checked;
+        if (on && App.finishPlanItem) App.finishPlanItem(id); // sayaç bu maddeye sayıyorsa oturum biter, süre maddeye yazılır
+        const r = Planlar.setDone(id, on);
         if (r && on) {
           if (r.fullDay) { App.sayText(U.pick(FULL), { emotion: 'proud' }); App.celebrate(); }
           else App.sayText(U.pick(TICK));
         }
         App.refresh();
-      } else if (a === 'go') {
-        const f = Planlar.find(id);
-        if (f) App.startStudy({ subjectId: f.item.subjectId || '', intent: f.item.title, planId: f.item.id, kind: 'free' });
-      } else if (a === 'question-add') openQuestionForm(b.dataset.key);
+      } else if (a === 'pick') { if (App.pickPlanItem) App.pickPlanItem(id); }
+      else if (a === 'question-add') openQuestionForm(b.dataset.key);
       else if (a === 'question-edit') openQuestionForm(b.dataset.key, b.dataset.id);
       else if (a === 'edit') openForm({ id });
       else if (a === 'add') openForm({ scope: b.dataset.scope || view.scope, key: b.dataset.key || view.key });

@@ -6,6 +6,19 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.9.1",
+  "tarih": "2026-10-26",
+  "baslik": "Daha sade Bugün, daha kolay haftalık plan",
+  "notlar": [
+    "🧡 Bugün kartı sadeleşti: yalnızca bugünün dersleri ve konuları, yanlarında çalıştığın süre ve bitirince işaretleyeceğin kutu. Altında tek düğme: ＋ Plan ekle.",
+    "👆 Bir konuya dokununca sayaç o konuya sayar; oturum kendiliğinden başlamaz, sayaçta konu yazmaz. Sayaç çalışırken başka konuya dokunursan süre ikisine doğru bölünür, sayaç sıfırlanmaz.",
+    "✅ Çalıştığın konuyu işaretleyince oturum biter, süre o günün çalışmasına yazılır.",
+    "🐈 Halkanın ucunda minik Güçlü yürüyor: planından bir şey bitirdikçe halka boyunca yeni yerine gider, varınca kıvrılıp uyur.",
+    "⏱️ Sayaç çalışırken de bugünün planı sayacın hemen altında görünüyor; müzik de onun altında.",
+    "🗓️ Haftalık plan tek ekranda: haftanın yedi günü alt alta, her günün yanında ＋. Eklerken yalnızca ders ve konu seçersin; listede olmayanı \"Kendim yazayım\" ile yazarsın."
+  ]
+},
+{
   "surum": "2.9",
   "tarih": "2026-10-26",
   "baslik": "Günün programı hep gözünün önünde",

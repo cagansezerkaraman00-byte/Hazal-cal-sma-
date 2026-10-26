@@ -375,7 +375,7 @@
     if (completedHour !== continuousHour) {continuousHour = completedHour;if (completedHour > 0) checkBadges();}
     const subj = Store.subject(s.subjectId).name;
     $('#timer-sub').textContent = s.running
-      ? (isBreak ? BREAK_TIPS[s.cycle % BREAK_TIPS.length] : s.intent ? '📖 ' + s.intent : 'Odaklanıyorsun…')
+      ? (isBreak ? BREAK_TIPS[s.cycle % BREAK_TIPS.length] : 'Odaklanıyorsun…')
       : s.fresh ? (isBreak ? 'Mola hazır' : 'Hazır olduğunda başla ✨') : 'Duraklatıldı';
     const fg = $('#ring-fg');
     fg.style.strokeDashoffset = 553 * (1 - s.progress);
@@ -418,10 +418,32 @@
     });
     markLivePlan(s);
   }
-  // Bugün kartındaki programda şu an çalışılan madde
+  // Bugün kartındaki programda seçili madde (sayaç ona sayar); sayaç çalışırken "şimdi" diye nabız atar
   function markLivePlan(s = Timer.state()) {
-    const live = s.running && s.phase === 'focus' ? s.planId : '';
-    $$('#today-program [data-tp-id]').forEach((r) => r.classList.toggle('live', !!live && r.dataset.tpId === live));
+    const run = s.running && s.phase === 'focus';
+    $$('#today-program [data-tp-id]').forEach((r) => {
+      const on = !!s.planId && r.dataset.tpId === s.planId;
+      r.classList.toggle('sel', on); r.classList.toggle('live', on && run);
+      r.querySelector('.tp-go').setAttribute('aria-pressed', String(on));
+    });
+  }
+  // Bugün kartında maddeye dokunma: sayaç bu maddeye saysın (sayaç sıfırlanmaz, ekranda bir şey yazmaz). Aynı maddeye
+  // yeniden dokununca seçim kalkar. Sayaç durmuşsa Başla'ya basınca bu maddeye sayar.
+  function pickPlanItem(id) {
+    const f = Planlar.find(id);
+    if (!f || f.item.done || f.item.moved) return;
+    const s = Timer.state(), same = s.planId === id;
+    Timer.setPlan(same ? '' : id, same ? s.subjectId : f.item.subjectId || '');
+    markLivePlan();
+  }
+  // Seçili madde işaretlenince: sayaç ona sayıyorsa oturum biter ve kaydedilir, seçim kalkar
+  function finishPlanItem(id) {
+    const s = Timer.state();
+    if (!id || s.planId !== id) return false;
+    if (s.phase === 'focus' && !s.fresh) Timer.finish();
+    Timer.setPlan('');
+    markLivePlan();
+    return true;
   }
   const timerHandlers = {
     onTick: renderTimer,
@@ -439,6 +461,14 @@
     onReset() { syncSceneMode(); lockScreen(false); },
     onTooShort() { toast('⏱️', '1 dakikadan kısa oturumlar kaydedilmez'); },
     beforeFinish: () => checkAway(),
+    // oturum sürerken başka maddeye geçildi: önceki maddenin süresi sessizce kaydedilir (pencere açılmaz)
+    onFocusPart(session) {
+      session.id = U.uid();
+      session.note = ''; session.hard = ''; session.rating = null; session.mood = '';
+      D().sessions.push(session);
+      if (session.minutes >= 10) D().fish++;
+      save();
+    },
     onFocusDone(session) {
       if (session.endReason !== 'split') lockScreen(false); // bölünen oturumun devamı hemen başlar; ekran kilidi bırakılmaz
       session.id = U.uid();
@@ -1006,6 +1036,32 @@
     lsSet(SIIR_SURPRIZ, '1');
     openSiir();
   }
+  // Bugün halkasının ucunda minik Güçlü: yüzde değişince halka boyunca yeni yerine yürür, varınca kıvrılıp uyur.
+  // Kedinin çizimi sahnedekinin aynısıdır (Scene.catSprite yalnızca okunur).
+  const RingCat = (() => {
+    let last = null, walk = 0;
+    const calm = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function draw(pose, dir) {
+      const cv = $('#gr-kedi'), s = cv && typeof Scene !== 'undefined' && Scene.catSprite ? Scene.catSprite('kitten', pose, dir) : null;
+      if (!s) return;
+      if (cv.width !== s.w || cv.height !== s.h) { cv.width = s.w; cv.height = s.h; cv.style.width = s.w * 1.5 + 'px'; cv.style.height = s.h * 1.5 + 'px'; } // 1,5 kat: telefonda seçilir, piksel net kalır
+      const g = cv.getContext('2d');
+      g.clearRect(0, 0, s.w, s.h); g.drawImage(s.c, 0, 0);
+    }
+    function set(p) {
+      if (p === last) return;
+      const from = last == null ? 0 : last, mid = (from + p) / 2;
+      last = p;
+      // saat yönünde yürürken halkanın üst yarısında sağa, alt yarısında sola bakar (geri giderken tersi)
+      const dir = (mid < 25 || mid > 75) === p >= from ? 0 : 1;
+      clearInterval(walk);
+      if (calm() || from === p) { draw('sleep', dir); return; }
+      let n = 0;
+      draw('walkA', dir);
+      walk = setInterval(() => { if (++n > 9) { clearInterval(walk); draw('sleep', dir); } else draw(n % 2 ? 'walkB' : 'walkA', dir); }, 130);
+    }
+    return { set };
+  })();
   function renderHome() {
     const goal = D().settings.dailyGoal;
     const mins = Stats.minutesOn(new Date());
@@ -1018,6 +1074,7 @@
     const byPlan = !!(plan && plan.total);
     const ring = byPlan ? plan.pct : pct;
     $('#goal-ring').style.setProperty('--p', ring);
+    RingCat.set(ring);
     $('#goal-ring').classList.toggle('done', ring >= 100);
     $('#goal-pct').textContent = ring >= 100 ? '★' : ring + '%';
     $('#today-min').textContent = U.fmtMin(mins);
@@ -1025,11 +1082,14 @@
       : pct >= 100 ? `Hedef (${U.fmtMin(goal)}) tamam! 🎉` : `Hedefe ${U.fmtMin(goal - mins)} kaldı`;
     const today = D().sessions.filter((s) => U.dateKey(s.start) === todayKey).sort((a, b) => b.start - a.start);
     const qToday = today.reduce((n, s) => n + (+s.questions || 0), 0) + Planlar.questionEntries('day', U.dateKey(new Date())).reduce((n, x) => n + x.questions, 0);
-    $('#today-sessions-count').textContent = today.length || qToday ? `${today.length} oturum${qToday ? ` · ${qToday} soru ✍️` : ''}` : '';
+    $('#today-sessions-count').textContent = !program && (today.length || qToday) ? `${today.length} oturum${qToday ? ` · ${qToday} soru ✍️` : ''}` : '';
     $('#day-timeline').innerHTML = timelineHtml(new Date(), true);
     $('#today-legacy').classList.toggle('hidden', program);
     $('#today-program').classList.toggle('hidden', !program);
     if (program) {
+      // durmuş sayaçtaki seçim bitmiş, silinmiş ya da başka güne ait bir maddeyi gösteriyorsa sessizce kalkar
+      const ts = Timer.state();
+      if (ts.planId && ts.fresh && !Planlar.list('day', todayKey).some((x) => x.id === ts.planId && !x.done && !x.moved)) Timer.setPlan('');
       const el = $('#today-program');
       try { PlanlarUI.renderProgram(el); } catch (e) { ErrLog.add('Bugünün programı: ' + ((e && e.message) || e), 'planlar-ui.js'); el.innerHTML = '<p class="muted small">Program şu an gösterilemedi; kayıtların güvende.</p>'; el.__mpHtml = ''; }
       markLivePlan();
@@ -1885,6 +1945,8 @@
     openModal,
     closeModal,
     startStudy,
+    pickPlanItem,
+    finishPlanItem,
     subjectFor,
     applyFieldSubjects,
     bestHours,

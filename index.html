@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr" data-theme="light" data-surum="2.9">
+<html lang="tr" data-theme="light" data-surum="2.9.1">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -133,8 +133,8 @@
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="css/style.css?v=2.9">
-  <script src="js/kurulum.js?v=2.9"></script>
+  <link rel="stylesheet" href="css/style.css?v=2.9.1">
+  <script src="js/kurulum.js?v=2.9.1"></script>
 </head>
 <body>
   <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
@@ -219,7 +219,7 @@
           <div class="card today-card">
             <h2>Bugün</h2>
             <div class="goal">
-              <div class="goal-ring" id="goal-ring"><span id="goal-pct">0%</span></div>
+              <div class="goal-ring" id="goal-ring"><span id="goal-pct">0%</span><i class="gr-yol" aria-hidden="true"><canvas class="gr-kedi" id="gr-kedi" width="18" height="9"></canvas></i></div>
               <div>
                 <div class="big-num" id="today-min">0 dk</div>
                 <div class="muted" id="goal-text">Hedef: 3 sa</div>
@@ -379,7 +379,7 @@
               <li><b>Başla</b>'ya basınca sade odak ekranı açılır: sadece ben ve sayaç. Sayaç sayfa kapansa da doğru sayar.</li>
               <li><b>💭 Aklına başka bir şey mi geldi?</b> Yaz, Plan sekmesine kaydedeyim; sen derse dön.</li>
               <li><b>✓</b> oturumu bitirip kaydeder, <b>↺</b> sıfırlar. Bitince neler çalıştığını, nerede zorlandığını ve verimini (1–5 ⭐) yazarsın; zorlandığın yer tekrar listesine düşer.</li>
-              <li><b>Bugün</b> kartında Plan'da bugüne yazdığın dersler ve konular durur. Birine dokununca sayaç o konuyla kronometre olarak başlar ve sen bitirene kadar sayar; çalıştığın süre o konunun yanına yazılır. Bitirdiğin konuyu kutusundan işaretlersin; halka planının yüzde kaçını bitirdiğini gösterir.</li>
+              <li><b>Bugün</b> kartında Plan'da bugüne yazdığın dersler ve konular durur. Hangisine çalışıyorsan ona dokun: sayaç o konuya sayar, çalıştığın süre yanına yazılır. Sayaç çalışırken başka konuya dokunursan süre ikisine doğru bölünür. Konuyu bitirince kutusunu işaretle; sayaç o konuya sayıyorsa oturum da biter. Halka planının yüzde kaçını bitirdiğini gösterir; ucunda minik Güçlü yürür.</li>
               <li><b>🎧 Müzik ve odak sesleri</b> Bugün kartının hemen altında; programına bakarken müziğe de elin yetişir.</li>
               <li><b>Zaman çizelgesi</b> gün boyu hangi saatte hangi dersi çalıştığını renkli şeritlerle gösterir; pembe çizgi şu anki saattir.</li>
             </ul>
@@ -391,8 +391,8 @@
               <li><b>Konu takibi:</b> konuya dokundukça durumu değişir: ○ başlamadım → 📖 çalışıyorum → 🔁 tekrar → ✅ tamam.</li>
               <li><b>≈ sayılar</b> o konudan YKS'de yılda ortalama kaç soru geldiğini gösterir (2018–2025 sınavlarından derlendi; kaynaklar sayfanın altında). Yüzdeler de bu ağırlığa göre: soru getiren konuyu bitirmek daha çok sayılır.</li>
               <li><b>Planlarım:</b> Günlük, Haftalık ve Aylık planlarını sen yazarsın; uygulama kendiliğinden ya da rastgele plan oluşturmaz. ‹ › ile önceki ve sonraki güne, haftaya, aya geçersin.</li>
-              <li>Bir maddeye istersen <b>ders</b> ekleyip YKS konularından seçebilirsin; ders seçince yalnızca o dersin konuları çıkar. Süre yazmazsın: o maddeyle çalıştığın süre kendiliğinden yanına yazılır. Maddeye dokunarak düzenler, silersin.</li>
-              <li><b>Bugünün planı</b> Çalış ekranındaki Bugün kartında durur. Maddeye dokununca sayaç o maddeyle başlar; işareti sen koyarsın, çünkü bir konu birkaç oturum sürebilir.</li>
+              <li><b>Haftalık</b> görünümde haftanın yedi günü alt alta durur; her günün yanındaki <b>＋</b> ile o güne ders ve konu eklersin. Ders seçince yalnızca o dersin konuları çıkar; listede olmayanı "Kendim yazayım" ile yazarsın. Süre sorulmaz.</li>
+              <li><b>Bugünün planı</b> Çalış ekranındaki Bugün kartında durur. Maddeye dokunarak düzenlemek ya da silmek için Plan sekmesine gelirsin.</li>
               <li><b>↪ Taşı:</b> biten maddeler kalır, kalanları tek dokunuşla ertesi güne (haftaya, aya) taşırsın. <b>⧉ Kopyala</b> önceki listeyi başlangıç olarak ekler; sen dokunmadan hiçbir şey eklenmez.</li>
               <li><b>Gün sonu:</b> akşam 20:00'den sonra Luna günün planına bakar, yüzde kaçını bitirdiğini ve sıradaki küçük adımı söyler. Akşam uygulamayı açmadıysan ertesi gün ilk açılışta dünü özetler.</li>
               <li>Sınav tarihi şimdilik tahmini; ÖSYM açıklayınca kendiliğinden güncellenir, geri sayım da ona uyar. İstersen Plan sekmesinden kendi tarihini seçebilirsin.</li>
@@ -737,43 +737,43 @@
   </div>
   <div class="toasts" id="toasts"></div>
   <div id="timer-end-alert" class="timer-end-alert" role="status" hidden><span id="timer-end-message"></span><button type="button" class="btn soft" id="dismiss-timer-alarm">Tamam</button></div>
-  <script src="js/storage.js?v=2.9"></script>
-  <script src="js/surum.js?v=2.9"></script>
-  <script src="js/messages.js?v=2.9"></script>
-  <script src="js/audio.js?v=2.9"></script>
-  <script src="js/takvim.js?v=2.9"></script>
-  <script src="js/scene.js?v=2.9"></script>
-  <script src="js/timer.js?v=2.9"></script>
-  <script src="js/stats.js?v=2.9"></script>
-  <script src="js/weather.js?v=2.9"></script>
-  <script src="js/yks.js?v=2.9"></script>
-  <script src="js/plan.js?v=2.9"></script>
-  <script src="js/planlar.js?v=2.9"></script>
-  <script src="js/planlar-ui.js?v=2.9"></script>
-  <script src="js/stickers.js?v=2.9"></script>
-  <script src="js/takvim-ui.js?v=2.9"></script>
-  <script src="js/deneme.js?v=2.9"></script>
-  <script src="js/notes.js?v=2.9"></script>
-  <script src="js/giris.js?v=2.9"></script>
-  <script src="js/depo.js?v=2.9"></script>
-  <script src="js/depo-ui.js?v=2.9"></script>
-  <script src="js/hata.js?v=2.9"></script>
-  <script src="js/kaynak.js?v=2.9"></script>
-  <script src="js/kaynak-ui.js?v=2.9"></script>
-  <script src="js/badges.js?v=2.9"></script>
-  <script src="js/mektuplar.js?v=2.9"></script>
-  <script src="js/dunya.js?v=2.9"></script>
-  <script src="js/dunya-ui.js?v=2.9"></script>
-  <script src="js/spotify-config.js?v=2.9"></script>
-  <script src="js/spotify-playback.js?v=2.9"></script>
-  <script src="js/spotify.js?v=2.9"></script>
-  <script src="js/uni.js?v=2.9"></script>
-  <script src="js/uni-ui.js?v=2.9"></script>
-  <script src="js/diag.js?v=2.9"></script>
-  <script src="js/guncelleme.js?v=2.9"></script>
-  <script src="js/notifications.js?v=2.9"></script>
-  <script src="js/mini-timer.js?v=2.9"></script>
-  <script src="js/app.js?v=2.9"></script>
+  <script src="js/storage.js?v=2.9.1"></script>
+  <script src="js/surum.js?v=2.9.1"></script>
+  <script src="js/messages.js?v=2.9.1"></script>
+  <script src="js/audio.js?v=2.9.1"></script>
+  <script src="js/takvim.js?v=2.9.1"></script>
+  <script src="js/scene.js?v=2.9.1"></script>
+  <script src="js/timer.js?v=2.9.1"></script>
+  <script src="js/stats.js?v=2.9.1"></script>
+  <script src="js/weather.js?v=2.9.1"></script>
+  <script src="js/yks.js?v=2.9.1"></script>
+  <script src="js/plan.js?v=2.9.1"></script>
+  <script src="js/planlar.js?v=2.9.1"></script>
+  <script src="js/planlar-ui.js?v=2.9.1"></script>
+  <script src="js/stickers.js?v=2.9.1"></script>
+  <script src="js/takvim-ui.js?v=2.9.1"></script>
+  <script src="js/deneme.js?v=2.9.1"></script>
+  <script src="js/notes.js?v=2.9.1"></script>
+  <script src="js/giris.js?v=2.9.1"></script>
+  <script src="js/depo.js?v=2.9.1"></script>
+  <script src="js/depo-ui.js?v=2.9.1"></script>
+  <script src="js/hata.js?v=2.9.1"></script>
+  <script src="js/kaynak.js?v=2.9.1"></script>
+  <script src="js/kaynak-ui.js?v=2.9.1"></script>
+  <script src="js/badges.js?v=2.9.1"></script>
+  <script src="js/mektuplar.js?v=2.9.1"></script>
+  <script src="js/dunya.js?v=2.9.1"></script>
+  <script src="js/dunya-ui.js?v=2.9.1"></script>
+  <script src="js/spotify-config.js?v=2.9.1"></script>
+  <script src="js/spotify-playback.js?v=2.9.1"></script>
+  <script src="js/spotify.js?v=2.9.1"></script>
+  <script src="js/uni.js?v=2.9.1"></script>
+  <script src="js/uni-ui.js?v=2.9.1"></script>
+  <script src="js/diag.js?v=2.9.1"></script>
+  <script src="js/guncelleme.js?v=2.9.1"></script>
+  <script src="js/notifications.js?v=2.9.1"></script>
+  <script src="js/mini-timer.js?v=2.9.1"></script>
+  <script src="js/app.js?v=2.9.1"></script>
 </body>
 </html>
 
