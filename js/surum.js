@@ -6,6 +6,18 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.10",
+  "tarih": "2026-10-27",
+  "baslik": "Bitmeyenler kaybolmuyor",
+  "notlar": [
+    "↪️ Bir günün işaretlenmemiş konuları ertesi sabah kendiliğinden bugünün planına geçiyor; yanında \"↪ dünden\" yazıyor, Luna da sana söylüyor. Gece 05:00'e kadar o gün hâlâ seninsin, gece çalışırken hiçbir şey kaymaz.",
+    "📅 Haftalık görünümde kalan konular kendi gününün altında \"eksik kaldı\" diye duruyor; haftanın başında kaç konunun ertesi güne geçtiği yazıyor. Böylece neyin kaldığını hep görürsün.",
+    "▶️ Başla'ya bastığında bir konu seçmediysen bugünün ilk bitmemiş konusu seçiliyor; başka bir şeye çalışıyorsan Bugün kartında ona dokunman yeter.",
+    "🧹 Tekrar listesi kalktı; oturum sonundaki \"zorlandığın yer\" kutusu da. Eski yazdıkların silinmedi.",
+    "🌙 Sticker defterinde artık yalnızca Ay Işığı var: siyah kapaklı, beyaz zambaklı. Bütün stickerlar onda; öbür defterler şimdilik kilitli ve saklı."
+  ]
+},
+{
   "surum": "2.9.3",
   "tarih": "2026-10-26",
   "baslik": "Halka sade hâline döndü",

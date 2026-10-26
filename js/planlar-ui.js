@@ -151,6 +151,7 @@ const PlanlarUI = (() => {
         : [`Aylık hedefler ${own.done}/${own.total}`, `Haftalık ${r.weeks.done}/${r.weeks.total}`, `Günlük ${r.days.done}/${r.days.total}`];
       if (r.all.total && parts.length) parts.push(`Toplam %${r.all.pct}`);
       if (own.moved) parts.push(`${own.moved} madde taşındı`);
+      if (scope === 'week') { const ek = r.days.moved; if (ek) parts.push(`${ek} konu eksik kalıp ertesi güne geçti`); }
       const w0 = key <= cur ? sessionsIn(scope, key) : null, w = w0 && w0.minutes > 0 ? w0 : null; // "0 dk çalıştın" yazılmaz
       rollLine = parts.length || w ? `<p class="mp-roll">${parts.join(' · ')}${w ? `${parts.length ? '<br>' : ''}⏱️ ${key === cur ? n.cur : scope === 'week' ? 'O hafta' : 'O ay'} ${U.fmtMin(w.minutes)} çalıştın${w.questions ? ` · ${w.questions} soru` : ''}` : ''}</p>` : '';
     }
@@ -262,6 +263,14 @@ const PlanlarUI = (() => {
         <button type="button" class="btn soft small-btn" data-mp="day" data-key="${esc(next)}" data-focus="1">✍️ ${writeLabel} planını yaz</button></div></div>`;
   }
 
+  // gün adları ekleriyle: "Salı'dan", "Salı'ya"
+  const DAN = ["Pazar'dan", "Pazartesi'den", "Salı'dan", "Çarşamba'dan", "Perşembe'den", "Cuma'dan", "Cumartesi'den"];
+  const DAY_TO = ["Pazar'a", "Pazartesi'ye", "Salı'ya", "Çarşamba'ya", "Perşembe'ye", "Cuma'ya", "Cumartesi'ye"];
+  // bugüne taşınmış maddenin geldiği gün: "↪ dünden" ya da "↪ Salı'dan"
+  function fromWord(k) {
+    const y = U.dateKey(U.addDays(U.dayStart(new Date()), -1));
+    return k === y ? '↪ dünden' : Planlar.isKey('day', k) ? `↪ ${DAN[noon(k).getDay()]}` : '↪ ertelenen';
+  }
   // ---------- Haftalık görünüm: haftanın 7 günü tek ekranda ----------
   // Her gün kendi maddeleriyle ve bir "＋" ile durur: hafta, Hazal nasıl yazdıysa öyle görünür. Maddeye dokununca düzenlenir.
   function weekPlanHtml(wk, now) {
@@ -271,8 +280,8 @@ const PlanlarUI = (() => {
       const rows = items.map((it) => {
         const sb = subj(it.subjectId), m = work && !it.moved ? work.items[it.id] || 0 : 0;
         return `<li class="wp-item${it.done ? ' done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}" style="--c:${esc(sb ? sb.color : 'var(--violet)')}">
-          <button type="button" class="wp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><b>${esc(it.title)}</b><small>${esc(sb ? sb.name : 'Genel')}${m > 0 ? ` · ${U.fmtMin(m)}` : ''}</small></button>
-          ${it.moved ? '<span class="mp-tag">→ taşındı</span>' : `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı: ${esc(it.title)}"${it.done ? ' checked' : ''}>`}</li>`;
+          <button type="button" class="wp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><b>${esc(it.title)}</b><small>${esc(sb ? sb.name : 'Genel')}${m > 0 ? ` · ${U.fmtMin(m)}` : ''}${it.moved ? ` · <span class="wp-eksik">eksik kaldı → ${Planlar.isKey('day', it.moved) ? DAY_TO[noon(it.moved).getDay()] : 'sonraya'} geçti</span>` : ''}</small></button>
+          ${it.moved ? '<span class="wp-ok" aria-hidden="true">↪</span>' : `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı: ${esc(it.title)}"${it.done ? ' checked' : ''}>`}</li>`;
       }).join('');
       return `<section class="wp-day${k === today ? ' today' : ''}" aria-label="${U.DAYS[d.getDay()]} ${d.getDate()} ${U.MONTHS[d.getMonth()]}">
         <div class="wp-head"><b>${U.DAYS[d.getDay()]}</b><small>${d.getDate()} ${U.MONTHS[d.getMonth()]}${k === today ? ' · bugün' : ''}</small>
@@ -318,10 +327,10 @@ const PlanlarUI = (() => {
   // Plan'da bugüne yazılan dersler ve konular; yanında bugün o maddede çalışılan süre ve işaret kutusu. Başka bir şey yok.
   // Maddeye dokununca sayaç ona sayar (App.pickPlanItem): oturum başlamaz, sayaçta bir şey yazmaz.
   function programRow(it, work) {
-    const s = subj(it.subjectId), m = work.items[it.id] || 0;
+    const s = subj(it.subjectId), m = work.items[it.id] || 0, from = it.from ? fromWord(it.from) : '';
     return `<li class="tp-row${it.done ? ' done' : ''}" data-tp-id="${esc(it.id)}" data-mp-id="${esc(it.id)}" style="--c:${esc(s ? s.color : 'var(--violet)')}">
       <button type="button" class="tp-go" data-mp="pick"${it.done ? ' disabled' : ''} aria-pressed="false" aria-label="${esc(it.title)}${it.done ? ': tamamlandı' : ': sayaç buna saysın'}">
-        <span class="tp-text"><b>${esc(it.title)}</b><small>${esc(s ? s.name : 'Genel')}</small></span>
+        <span class="tp-text"><b>${esc(it.title)}</b><small>${esc(s ? s.name : 'Genel')}${from ? ` · <span class="tp-from">${from}</span>` : ''}</small></span>
         <span class="tp-min">${m > 0 ? U.fmtMin(m) : ''}</span></button>
       <input type="checkbox" class="check" data-mp="done" aria-label="Bitti: ${esc(it.title)}"${it.done ? ' checked' : ''}></li>`;
   }
@@ -583,9 +592,21 @@ const PlanlarUI = (() => {
     }, true);
   }
 
+  // ---------- Bitmeyen maddeler ertesi güne (kendiliğinden) ----------
+  let carried = 0; // taşınıp henüz söylenmemiş madde sayısı
+  function carryOver(now = new Date()) {
+    if (!window.Planlar || isProgram()) return 0;
+    const r = Planlar.autoCarry(now);
+    if (r.moved) { carried += r.count || r.moved; invalidate(); }
+    return r.moved;
+  }
+  const carriedLine = (n) => (n === 1 ? 'Dünden kalan bir konuyu bugünün planına ekledim, kaldığın yerden devam 🐾' : `Dünden kalan ${n} konuyu bugünün planına ekledim, kaldığın yerden devam 🐾`);
+
   // ---------- Gün sonu: Luna'nın yorumu (günde bir kez) ----------
   function maybeComment(now = new Date()) {
     if (!App || document.hidden) return false;
+    if (carryOver(now)) { App.refreshHome(); if (document.querySelector('#tab-plan.active')) render(); }
+    if (carried && !App.isBusy() && App.sayText(carriedLine(carried), { emotion: 'happy', ms: 9000 })) { carried = 0; return true; }
     if (paintedPhase && phaseOf(now) !== paintedPhase) { App.refreshHome(); if (document.querySelector('#tab-plan.active')) render(); } // 20:00 / 05:00 geçişi
     if (App.isBusy() || App.quietFor(20000) || !Store.data.settings.msgInterval) return false;
     const due = Planlar.eodDue(now);
@@ -602,7 +623,7 @@ const PlanlarUI = (() => {
   }
 
   return {
-    init(app) { App = app; loadScope(); bind(); },
+    init(app) { App = app; loadScope(); bind(); carryOver(); }, // ilk çizimden önce: dünden kalanlar bugünde görünsün
     render,
     renderProgram,
     appendToday,

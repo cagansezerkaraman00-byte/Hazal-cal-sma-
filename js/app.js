@@ -436,6 +436,15 @@
     Timer.setPlan(same ? '' : id, same ? s.subjectId : f.item.subjectId || '');
     markLivePlan();
   }
+  // Başla'ya basıldığında bir madde seçili değilse bugünün ilk bitmemiş maddesi seçilir; başka bir şeye çalışıyorsa
+  // dokunup değiştirir (ilk dakikada değiştirirse süre bölünmez, hepsi doğru maddeye yazılır)
+  function autoPickPlan() {
+    if (programMode() || !window.PlanlarUI) return;
+    const s = Timer.state(), open = Planlar.list('day', U.dateKey(new Date())).filter((x) => !x.done && !x.moved);
+    if (!open.length || open.some((x) => x.id === s.planId)) return;
+    Timer.setPlan(open[0].id, open[0].subjectId || '');
+    markLivePlan();
+  }
   // Seçili madde işaretlenince: sayaç ona sayıyorsa oturum biter ve kaydedilir, seçim kalkar
   function finishPlanItem(id) {
     const s = Timer.state();
@@ -526,7 +535,12 @@
       input.addEventListener('change', () => saveDuration(true));
     });
     $('#dismiss-timer-alarm').addEventListener('click', dismissTimerAlarm);
-    $('#btn-toggle').addEventListener('click', () => { const s = Timer.state(); if (s.fresh && s.kind === 'countdown' && !s.exam && !saveDuration(true)) return; Timer.toggle(); });
+    $('#btn-toggle').addEventListener('click', () => {
+      const s = Timer.state();
+      if (s.fresh && s.kind === 'countdown' && !s.exam && !saveDuration(true)) return;
+      if (s.fresh && s.phase === 'focus') autoPickPlan();
+      Timer.toggle();
+    });
     $('#btn-finish').addEventListener('click', () => Timer.finish());
     $('#btn-reset').addEventListener('click', () => {
       const s = Timer.state();
@@ -613,8 +627,6 @@
       <textarea id="m-note" rows="3" placeholder="Örn: Türev kuralları, zincir kuralı, 30 soru çözdüm">${U.esc(s.note)}</textarea>
       <label for="m-q">Kaç soru çözdün? <span class="muted small">(isteğe bağlı)</span></label>
       <div class="q-step"><button type="button" class="btn soft" data-q="-5" aria-label="5 azalt">−5</button><input type="number" id="m-q" min="0" max="999" inputmode="numeric" placeholder="0" value="${s.questions || ''}"><button type="button" class="btn soft" data-q="5" aria-label="5 artır">+5</button><button type="button" class="btn soft" data-q="10" aria-label="10 artır">+10</button></div>
-      <label>Zorlandığın / tekrar etmen gereken yer <span class="muted small">(tekrar listesine eklenir)</span></label>
-      <input id="m-hard" placeholder="Örn: Trigonometrik türevler" value="${U.esc(s.hard)}">
       <label>Verimin nasıldı?</label>
       <div class="stars" id="m-stars">${[1, 2, 3, 4, 5].map((i) => `<button type="button" data-v="${i}">⭐</button>`).join('')}</div>
       <label>Nasıl hissediyorsun?</label>
@@ -660,7 +672,7 @@
         end: opts.justDone ? s.end : start + minutes * 60000,
         minutes,
         note: $('#m-note').value.trim(),
-        hard: $('#m-hard').value.trim(),
+        hard: s.hard || '', // "zorlandığın yer" kutusu 2.10'da kalktı; eski oturumlardaki yazı korunur
         rating: rating || null,
         mood,
         questions: U.clamp(parseInt($('#m-q').value, 10) || 0, 0, 999),
@@ -1266,7 +1278,9 @@
     $('#rep-improve').innerHTML = li(r.improve);
     $('#rep-tips').innerHTML = li(r.tips);
   }
+  // Tekrar listesi 2.10'da Plan sekmesinden kalktı (kayıtlar D().review'da silinmeden durur)
   function renderReview() {
+    if (!$('#review-list')) return;
     const list = D().review.slice().sort((a, b) => a.done - b.done || b.created - a.created);
     $('#review-list').innerHTML = list.length ? list.map((r) => {
       const sub = Store.subject(r.subjectId);
@@ -1336,15 +1350,15 @@
       D().tasks = D().tasks.filter((t) => !t.done);
       save(); renderTasks(); renderHome();
     });
-    // tekrar listesi
-    $('#review-form').addEventListener('submit', (e) => {
+    // tekrar listesi (yalnızca eski işaretleme varsa)
+    if ($('#review-form')) $('#review-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const text = $('#review-input').value.trim();
       if (!text) return;
       D().review.unshift({ id: U.uid(), text, subjectId: '', created: Date.now(), done: false });
       save(); $('#review-input').value = ''; renderReview();
     });
-    $('#review-list').addEventListener('click', (e) => {
+    if ($('#review-list')) $('#review-list').addEventListener('click', (e) => {
       const li = e.target.closest('li[data-id]');
       if (!li) return;
       const r = D().review.find((x) => x.id === li.dataset.id);

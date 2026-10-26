@@ -8,6 +8,8 @@ Uygulamada görünmez; ileride yapılacak işleri unutmamak için.
 
 ## Sticker defteri
 
+- 2.10'dan beri yalnızca **Ay Işığı** (`siyah-yildizli`) açık; İnci Düşü, Gül Kurusu, Saklı Bahçe ve Mavi Rüya `js/takvim-ui.js` içindeki `DEFTERLER`'de `kilitli: true`. Kapakları `assets/defter/` içinde duruyor. Her deftere kendi stickerları gelince `kilitli` kaldırılır; iki ya da daha çok defter açık olunca seçici kendiliğinden geri gelir.
+
 - Stickerlar `assets/stickers/<paket>/` içinde (ilk paket: `p1`, 9 sayfadan kesilmiş 216 sticker). Bölümler ve sırası `js/stickers.js` içinde.
 - Yeni sticker sayfası gelince:
   1. `python3 scripts/sticker-kes.py <png klasörü> <çıkış klasörü>` ile kes (gerekenler dosyanın başında yazıyor).
@@ -21,6 +23,7 @@ Uygulamada görünmez; ileride yapılacak işleri unutmamak için.
 
 ## Geri dönüş noktası
 
+- **2.10 öncesi:** 2.9.3, commit `dc55c9f`. 2.10 bitmeyen maddeleri kendiliğinden taşır (`moved` / `from` alanları, eski sürüm de tanır); geri alınırsa taşınmış maddeler yerinde kalır, kaybolmaz. Tekrar listesinin verisi (`review`) silinmedi.
 - **2.9.1 öncesi:** 2.9, commit `227276e`. Oturumlardaki `endReason: 'part'` (konu değiştirince kaydedilen parça) ve sayaçtaki `segs` alanlarını eski sürüm tanımadan saklar; veri kaybı olmaz.
 - **2.9 (Bugün kartı = günün programı) öncesi:** canlıdaki son sürüm **2.8.1**, commit `3f5456c`. Geri istenirse 2.8.1'in `index.html`, `css/style.css`, `js/app.js`, `js/planlar.js`, `js/planlar-ui.js`, `js/timer.js` dosyaları daha yüksek bir sürüm numarasıyla yeniden yayınlanır. Veri kaybı olmaz: oturumlardaki yeni `planId` alanını eski sürüm tanımadan saklar; eski maddelerin süre hedefleri (`min`) hiç silinmedi.
 - **2.8 (Hazal'ın Küçük Dünyası) öncesi:** canlıdaki son sürüm **2.7.2**, commit `047fa18`. Yerelde `eski-2.7.2` dalı bu commit'i gösterir; commit uzak daldaki geçmişte de durur.

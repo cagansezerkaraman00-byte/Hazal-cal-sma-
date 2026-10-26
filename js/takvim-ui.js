@@ -506,19 +506,24 @@ const TakvimUI = (() => {
   const FLIP_SRC = 'vendor/page-flip-2.0.7/page-flip.browser.js', FLIP_MS = 900, DAR = 230;
   // alan: stickerların süslere binmediği bölge (yüzde: üst, sağ, alt, sol); yazi: başlık rengi; sahne, isik, vurgu: Lilium renkleri;
   // kurdele: ayracın saten rengi
+  // Şimdilik yalnızca Ay Işığı (siyah, beyaz zambaklı) açık; öbür dört defter kilitli ve görünmez. Kapakları, kâğıtları ve
+  // ayarları yerinde durur: her birine kendi stickerları gelince "kilitli" kalkar. O zamana kadar bütün stickerlar Ay Işığı'nda.
   const DEFTERLER = {
-    'leylak-inci': { ad: 'İnci Düşü', kagit: 'Noktalı', yazi: '#7a67a3', alan: [11, 8, 20, 8], sahne: '#ddd9e5', isik: '#f6efff', vurgu: '#9d8daf', kurdele: '#8b74c4' },
     'siyah-yildizli': { ad: 'Ay Işığı', kagit: 'Noktalı', yazi: '#4a4658', alan: [10, 8, 25, 8], sahne: '#d6d8d2', isik: '#edf0df', vurgu: '#a9ad9b', kurdele: '#c2a25a' },
-    'pembe-kurdele': { ad: 'Gül Kurusu', kagit: 'Noktalı', yazi: '#8e2e3e', alan: [10, 9, 26, 9], sahne: '#e5d6d1', isik: '#ffede4', vurgu: '#9d5e66', kurdele: '#9b2f45' },
-    'krem-botanik': { ad: 'Saklı Bahçe', kagit: 'Noktalı', yazi: '#6c7a4c', alan: [15, 10, 14, 10], sahne: '#dde0d2', isik: '#f7f0d8', vurgu: '#8b997b', kurdele: '#7a9160' },
-    'mavi-kelebek': { ad: 'Mavi Rüya', kagit: 'Noktalı', yazi: '#46699a', alan: [11, 9, 13, 9], sahne: '#d7e2e8', isik: '#effaff', vurgu: '#769aac', kurdele: '#5a82b8' },
+    'leylak-inci': { ad: 'İnci Düşü', kagit: 'Noktalı', yazi: '#7a67a3', alan: [11, 8, 20, 8], sahne: '#ddd9e5', isik: '#f6efff', vurgu: '#9d8daf', kurdele: '#8b74c4', kilitli: true },
+    'pembe-kurdele': { ad: 'Gül Kurusu', kagit: 'Noktalı', yazi: '#8e2e3e', alan: [10, 9, 26, 9], sahne: '#e5d6d1', isik: '#ffede4', vurgu: '#9d5e66', kurdele: '#9b2f45', kilitli: true },
+    'krem-botanik': { ad: 'Saklı Bahçe', kagit: 'Noktalı', yazi: '#6c7a4c', alan: [15, 10, 14, 10], sahne: '#dde0d2', isik: '#f7f0d8', vurgu: '#8b997b', kurdele: '#7a9160', kilitli: true },
+    'mavi-kelebek': { ad: 'Mavi Rüya', kagit: 'Noktalı', yazi: '#46699a', alan: [11, 9, 13, 9], sahne: '#d7e2e8', isik: '#effaff', vurgu: '#769aac', kurdele: '#5a82b8', kilitli: true },
   };
-  // seçilmediyse sitenin temasına uyan defter: Lavanta → İnci Düşü, Gece ve Zambak → Ay Işığı
+  const ACIK = Object.keys(DEFTERLER).filter((id) => !DEFTERLER[id].kilitli);
+  const acik = (id) => !!DEFTERLER[id] && !DEFTERLER[id].kilitli;
+  // seçilen defter kilitliyse ya da seçilmediyse: sitenin temasına uyan açık defter, o da yoksa ilk açık defter (Ay Işığı).
+  // Eski seçim ayarlarda silinmeden durur; defter açılınca yine o gelir.
   function defterId() {
     const s = D().settings.defter;
-    if (DEFTERLER[s]) return s;
-    const r = document.documentElement;
-    return r.dataset.tema === 'zambak' || r.dataset.theme === 'dark' ? 'siyah-yildizli' : 'leylak-inci';
+    if (acik(s)) return s;
+    const r = document.documentElement, tema = r.dataset.tema === 'zambak' || r.dataset.theme === 'dark' ? 'siyah-yildizli' : 'leylak-inci';
+    return acik(tema) ? tema : ACIK[0];
   }
   let flipLib = null, flip = null, scene = null, pageW = 0, shown = [], leaves = [];
   function loadFlip() {
@@ -835,7 +840,7 @@ const TakvimUI = (() => {
   // Lilium rafındaki gibi küçük defterler; seçilen öne çıkar
   function chooser() {
     const cur = defterId();
-    return Object.entries(DEFTERLER).map(([id, d]) => `<button type="button" class="df-sec" data-defter="${id}" aria-label="${esc(d.ad)}, ${esc(d.kagit.toLocaleLowerCase('tr'))} defter" aria-pressed="${id === cur}"><span class="df-mini"><img src="assets/defter/${id}/kapak.webp" alt="" loading="lazy"></span><small>${esc(d.ad)}</small></button>`).join('');
+    return Object.entries(DEFTERLER).filter(([id]) => acik(id)).map(([id, d]) => `<button type="button" class="df-sec" data-defter="${id}" aria-label="${esc(d.ad)}, ${esc(d.kagit.toLocaleLowerCase('tr'))} defter" aria-pressed="${id === cur}"><span class="df-mini"><img src="assets/defter/${id}/kapak.webp" alt="" loading="lazy"></span><small>${esc(d.ad)}</small></button>`).join('');
   }
   const ARROW = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
   async function openBook() {
@@ -850,12 +855,12 @@ const TakvimUI = (() => {
     scene.innerHTML = `<div class="df-etiket"><i></i><b></b><span class="df-sayac" aria-live="polite"></span></div>
       <button type="button" class="df-x" data-df="close" aria-label="Defteri kapat">${ARROW('m6 6 12 12M6 18 18 6')}</button>
       <div class="df-alan"><div class="df-kitap"><i class="df-blok sol" aria-hidden="true"></i><i class="df-blok sag" aria-hidden="true"></i><i class="df-kurdele" aria-hidden="true"></i></div></div>
-      <div class="df-secici" hidden>${chooser()}</div>
+      ${ACIK.length > 1 ? `<div class="df-secici" hidden>${chooser()}</div>` : ''}
       <div class="df-alt">
         <button type="button" class="df-ok" data-df="prev" aria-label="Önceki sayfa">${ARROW('m14 6-6 6 6 6')}</button>
         <div class="df-gun"><span>${longDate(sel)}</span><div class="df-slots"></div></div>
         <button type="button" class="df-ok" data-df="next" aria-label="Sonraki sayfa">${ARROW('m10 6 6 6-6 6')}</button>
-        <button type="button" class="df-renk" data-df="kapak" aria-label="Defterin kapağını değiştir" aria-expanded="false"></button>
+        ${ACIK.length > 1 ? '<button type="button" class="df-renk" data-df="kapak" aria-label="Defterin kapağını değiştir" aria-expanded="false"></button>' : ''}
       </div>`;
     document.body.appendChild(scene);
     sceneSync();
@@ -878,7 +883,7 @@ const TakvimUI = (() => {
         return;
       }
       const df = t.closest('.df-sec');
-      if (df && DEFTERLER[df.dataset.defter]) {
+      if (df && acik(df.dataset.defter)) {
         if (df.dataset.defter === defterId() || busy()) return;
         D().settings.defter = df.dataset.defter; app.save();
         scene.querySelectorAll('.df-sec').forEach((x) => x.setAttribute('aria-pressed', String(x === df)));

@@ -2689,3 +2689,7 @@ body.focusing .today-card .timeline, body.focusing .today-card .tp-add { display
 .wp-item.done .wp-edit b { text-decoration: line-through; color: var(--muted); }
 .wp-item.moved { opacity: .7; }
 @media (pointer: coarse) { .wp-add { width: 44px; height: 44px; } }
+/* bitmeyen maddeler ertesi güne (2.10) */
+.tp-from { color: var(--accent-ink); }
+.wp-eksik { color: var(--coral-ink); font-weight: 800; }
+.wp-ok { flex: none; width: 26px; text-align: center; color: var(--muted); font-weight: 800; }

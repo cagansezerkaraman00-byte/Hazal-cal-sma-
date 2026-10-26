@@ -257,9 +257,7 @@ const Stats = (() => {
       else if (moods.filter((s) => s.mood === '🤩' || s.mood === '🙂').length / moods.length > 0.6) out.strengths.push('Oturumlarını çoğunlukla iyi hissederek bitiriyorsun, bu harika!');
     }
 
-    // Tekrar listesi ve görevler
-    const pend = D().review.filter((r) => !r.done);
-    if (pend.length) out.improve.push(`Tekrar listende ${pend.length} konu var: ${pend.slice(0, 3).map((r) => r.text).join(', ')}${pend.length > 3 ? '…' : ''}. Her birini kapatmak bir adım daha 📌`);
+    // Görevler (tekrar listesi 2.10'da kalktı)
     const overdue = D().tasks.filter((t) => !t.done && t.due && new Date(t.due + 'T23:59:59') < new Date());
     if (overdue.length) out.improve.push(`${overdue.length} görev seni bekliyor. Bugün en kolayından biriyle başlamaya ne dersin?`);
 

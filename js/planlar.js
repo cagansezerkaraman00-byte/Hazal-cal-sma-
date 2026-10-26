@@ -309,6 +309,22 @@ const Planlar = (() => {
     if (moved) Store.save();
     return { count, moved, to };
   }
+  // Bitmeyen maddeler kendiliğinden bugüne (2.10). Luna'nın günü sabah 05:00'te biter: gece yarısından sonra dün
+  // henüz kapanmamıştır. Son 7 güne bakılır (uzun bir aradan sonra bugün bir anda dolmasın); maddenin eski gününde
+  // "eksik kaldı" izi kalır, bugünkü kopyası nereden geldiğini (from) bilir. Aynı madde bugünde zaten varsa ikinci kez eklenmez.
+  const CARRY_DAYS = 7;
+  function autoCarry(now = new Date()) {
+    now = new Date(now);
+    const today = U.dateKey(now), open = Messages.nightKey(now);
+    let count = 0, moved = 0;
+    for (let i = CARRY_DAYS; i >= 1; i--) {
+      const k = U.dateKey(U.addDays(U.dayStart(now), -i));
+      if (k >= open || !list('day', k).some((x) => !x.done && !x.moved)) continue;
+      const r = carry('day', k, { to: today, now: now.getTime() });
+      count += r.count; moved += r.moved;
+    }
+    return { count, moved };
+  }
   // taşımayı geri al: kopya henüz yapılmadıysa silinir, madde eski yerinde yeniden etkin olur
   function uncarry(id, now = Date.now()) {
     const f = loc(id);
@@ -462,7 +478,7 @@ const Planlar = (() => {
   return {
     questionEntries, saveQuestions, removeQuestions, hoursToMinutes,
     SCOPES, MAX_ITEMS, keyOf, isKey, shift, range, label, daysOf, weeksOfMonth, list, find, add, update, remove,
-    reorder, moveToDay, setDone, stats, roll, subjectWork, dayWork, targetReached, carryTarget, carry, uncarry,
+    reorder, moveToDay, setDone, stats, roll, subjectWork, dayWork, targetReached, carryTarget, carry, autoCarry, uncarry,
     copyPrev, prevCount, copyCount, bandOf, smallest, usedRecently, eodDue, eodView, markEod, dismissEod, onSession,
   };
 })();
