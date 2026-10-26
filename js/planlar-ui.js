@@ -34,6 +34,20 @@ const PlanlarUI = (() => {
   const placeholder = (scope) => N[scope].ph[isProgram() ? 1 : 0];
   // ders: etkin listede yoksa arşivdeki / diğer moddaki adı ve rengi (Store.subject); hiç yoksa ders gösterilmez
   function subj(id) { if (!id) return null; const s = Store.subject(id); return s && s.id ? s : null; }
+  // maddenin alt yazısı: YKS konusuysa hangi sınavın hangi dersi olduğu ("Problemler" → "TYT Matematik",
+  // "Türev ve Uygulamaları" → "AYT Matematik"); değilse dersin adı. Konu kimliği olmayan eski maddelerde ad, dersin
+  // YKS konularında tek bir yerde geçiyorsa oradan bulunur.
+  function subLabel(it) {
+    const s = subj(it.subjectId), Y = window.YKS && YKS.SUBJECTS ? YKS : null;
+    let t = Y && it.topicId && typeof Y.topic === 'function' ? Y.topic(it.topicId) : null;
+    if (!t && Y && s && typeof Y.field === 'function' && Y.field() && !isProgram()) {
+      const hits = [];
+      for (const k of yksKeysFor(s.id)) for (const x of Y.SUBJECTS[k].topics) if (x.name === it.title) hits.push(x);
+      if (hits.length === 1) t = hits[0];
+    }
+    const yk = t && Y.SUBJECTS[t.subjectKey];
+    return yk ? yk.name : s ? s.name : 'Genel';
+  }
   // "bugüne / yarına / ertesi güne" (takvimdeki şimdiye göre)
   function hedefWord(scope, to, now) {
     const cur = Planlar.keyOf(scope, now);
@@ -93,7 +107,7 @@ const PlanlarUI = (() => {
     const s = subj(it.subjectId);
     const color = s ? s.color : 'var(--violet)';
     const parts = [];
-    if (s) parts.push(esc(s.name));
+    if (s || it.topicId) parts.push(esc(subLabel(it)));
     const worked = workedOn(it, scope, key, now, work);
     if (worked > 0 && !chart) parts.push(`${n.when[key === cur ? 0 : 1]} ${U.fmtMin(worked)}`);
     if (it.from) parts.push(it.from === Planlar.shift(scope, key, -1) ? n.from : '↪ ertelenen');
@@ -105,7 +119,7 @@ const PlanlarUI = (() => {
       acts = `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı: ${esc(it.title)}"${it.done ? ' checked' : ''}>`;
     }
     if (chart) return `<tr class="${it.done ? 'done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}">
-      <td><button type="button" class="mp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><span class="plan-text">${esc(it.title)}</span><span class="plan-sub">${s ? esc(s.name) : 'Genel plan'}</span></button></td>
+      <td><button type="button" class="mp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><span class="plan-text">${esc(it.title)}</span><span class="plan-sub">${s || it.topicId ? esc(subLabel(it)) : 'Genel plan'}</span></button></td>
       <td class="mp-time-cell">${worked > 0 ? U.fmtMin(worked) : '—'}</td>
       <td><span class="plan-acts">${acts}</span></td></tr>`;
     return `<li class="plan-item mp-item${it.done ? ' done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}">
@@ -280,7 +294,7 @@ const PlanlarUI = (() => {
       const rows = items.map((it) => {
         const sb = subj(it.subjectId), m = work && !it.moved ? work.items[it.id] || 0 : 0;
         return `<li class="wp-item${it.done ? ' done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}" style="--c:${esc(sb ? sb.color : 'var(--violet)')}">
-          <button type="button" class="wp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><b>${esc(it.title)}</b><small>${esc(sb ? sb.name : 'Genel')}${m > 0 ? ` · ${U.fmtMin(m)}` : ''}${it.moved ? ` · <span class="wp-eksik">eksik kaldı → ${Planlar.isKey('day', it.moved) ? DAY_TO[noon(it.moved).getDay()] : 'sonraya'} geçti</span>` : ''}</small></button>
+          <button type="button" class="wp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><b>${esc(it.title)}</b><small>${esc(subLabel(it))}${m > 0 ? ` · ${U.fmtMin(m)}` : ''}${it.moved ? ` · <span class="wp-eksik">eksik kaldı → ${Planlar.isKey('day', it.moved) ? DAY_TO[noon(it.moved).getDay()] : 'sonraya'} geçti</span>` : ''}</small></button>
           ${it.moved ? '<span class="wp-ok" aria-hidden="true">↪</span>' : `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı: ${esc(it.title)}"${it.done ? ' checked' : ''}>`}</li>`;
       }).join('');
       return `<section class="wp-day${k === today ? ' today' : ''}" aria-label="${U.DAYS[d.getDay()]} ${d.getDate()} ${U.MONTHS[d.getMonth()]}">
@@ -330,7 +344,7 @@ const PlanlarUI = (() => {
     const s = subj(it.subjectId), m = work.items[it.id] || 0, from = it.from ? fromWord(it.from) : '';
     return `<li class="tp-row${it.done ? ' done' : ''}" data-tp-id="${esc(it.id)}" data-mp-id="${esc(it.id)}" style="--c:${esc(s ? s.color : 'var(--violet)')}">
       <button type="button" class="tp-go" data-mp="pick"${it.done ? ' disabled' : ''} aria-pressed="false" aria-label="${esc(it.title)}${it.done ? ': tamamlandı' : ': sayaç buna saysın'}">
-        <span class="tp-text"><b>${esc(it.title)}</b><small>${esc(s ? s.name : 'Genel')}${from ? ` · <span class="tp-from">${from}</span>` : ''}</small></span>
+        <span class="tp-text"><b>${esc(it.title)}</b><small>${esc(subLabel(it))}${from ? ` · <span class="tp-from">${from}</span>` : ''}</small></span>
         <span class="tp-min">${m > 0 ? U.fmtMin(m) : ''}</span></button>
       <input type="checkbox" class="check" data-mp="done" aria-label="Bitti: ${esc(it.title)}"${it.done ? ' checked' : ''}></li>`;
   }

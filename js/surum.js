@@ -6,6 +6,15 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.10.1",
+  "tarih": "2026-10-27",
+  "baslik": "Her konunun yanında sınavı ve dersi",
+  "notlar": [
+    "🎯 Planındaki her konunun altında artık hangi sınavın hangi dersi olduğu yazıyor: Problemler · TYT Matematik, Türev ve Uygulamaları · AYT Matematik, Optik · TYT Fizik, Paragraf · TYT Türkçe.",
+    "✅ Konu listeleri tek tek gözden geçirildi: her konu doğru derste ve doğru sınavda (2027 YKS'de konu kapsamı değişmedi; yeni müfredat 2028'den itibaren). Soru sayıları da ÖSYM'nin yapısıyla aynı."
+  ]
+},
+{
   "surum": "2.10",
   "tarih": "2026-10-27",
   "baslik": "Bitmeyenler kaybolmuyor",
