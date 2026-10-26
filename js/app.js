@@ -1036,40 +1036,6 @@
     lsSet(SIIR_SURPRIZ, '1');
     openSiir();
   }
-  // Bugün halkasının ucunda minik Güçlü: hiç durmadan adım atar. Yüzde değişince halka boyunca yeni yerine yürür,
-  // orada saat yönüne bakıp yürümeye devam eder. Kart görünmüyorken çizmez. Kedinin çizimi sahnedekinin aynısıdır
-  // (Scene.catSprite yalnızca okunur).
-  const RingCat = (() => {
-    let last = null, dir = 0, step = 0, loop = 0, arrive = 0, seen = true, watched = false;
-    const calm = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const facing = (p) => (p < 25 || p > 75 ? 0 : 1); // saat yönünde: üst yarıda sağa, alt yarıda sola gider
-    function draw(pose, d) {
-      const cv = $('#gr-kedi'), s = cv && typeof Scene !== 'undefined' && Scene.catSprite ? Scene.catSprite('kitten', pose, d) : null;
-      if (!s) return;
-      if (cv.width !== s.w || cv.height !== s.h) { cv.width = s.w; cv.height = s.h; cv.style.width = s.w * 1.5 + 'px'; cv.style.height = s.h * 1.5 + 'px'; } // 1,5 kat: telefonda seçilir, piksel net kalır
-      const g = cv.getContext('2d');
-      g.clearRect(0, 0, s.w, s.h); g.drawImage(s.c, 0, 0);
-    }
-    function watch() {
-      watched = true;
-      const el = $('#goal-ring');
-      if (el && 'IntersectionObserver' in window) new IntersectionObserver((e) => { seen = e[0].isIntersecting; }).observe(el);
-    }
-    function set(p) {
-      if (!watched) watch();
-      if (p === last) return;
-      const from = last == null ? 0 : last, mid = (from + p) / 2;
-      last = p;
-      clearTimeout(arrive);
-      if (calm()) { clearInterval(loop); loop = 0; draw('walkA', facing(p)); return; }
-      // yürürken gittiği yöne bakar (geri giderken tersine); varınca saat yönüne döner
-      dir = (mid < 25 || mid > 75) === p >= from ? 0 : 1;
-      arrive = setTimeout(() => { dir = facing(p); }, 1200);
-      draw(step % 2 ? 'walkB' : 'walkA', dir);
-      if (!loop) loop = setInterval(() => { if (!document.hidden && seen) draw(++step % 2 ? 'walkB' : 'walkA', dir); }, 170);
-    }
-    return { set };
-  })();
   function renderHome() {
     const goal = D().settings.dailyGoal;
     const mins = Stats.minutesOn(new Date());
@@ -1082,7 +1048,6 @@
     const byPlan = !!(plan && plan.total);
     const ring = byPlan ? plan.pct : pct;
     $('#goal-ring').style.setProperty('--p', ring);
-    RingCat.set(ring);
     $('#goal-ring').classList.toggle('done', ring >= 100);
     $('#goal-pct').textContent = ring >= 100 ? '★' : ring + '%';
     $('#today-min').textContent = U.fmtMin(mins);

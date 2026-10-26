@@ -15,6 +15,10 @@ Uygulamada görünmez; ileride yapılacak işleri unutmamak için.
   3. `js/stickers.js` içinde benzerleri aynı bölüme ekle ya da yeni bölüm aç (bir bölüm 20'den uzunsa kendiliğinden birkaç sayfaya bölünür).
 - Görseller servis çalışanında `luna-stickers-1` önbelleğine ilk görüldüğünde girer; dosya adı değişmedikçe güncellenmez (bir sticker değişirse yeni adla ekle).
 
+## Sonra yapılacak: halkada kedi
+
+- 2.9.1–2.9.2'de Bugün halkasının ucunda yürüyen minik Güçlü (sahnedeki yavru çizimi, 1,5 kat) denendi; Çağan "çok çirkin, sonra yapacağız" dedi, 2.9.3'te kaldırıldı. Kod commit `e7ed294`'te (`RingCat`, `.gr-yol`, `.gr-kedi`). Yeniden yapılırken önce önizleme gösterilecek.
+
 ## Geri dönüş noktası
 
 - **2.9.1 öncesi:** 2.9, commit `227276e`. Oturumlardaki `endReason: 'part'` (konu değiştirince kaydedilen parça) ve sayaçtaki `segs` alanlarını eski sürüm tanımadan saklar; veri kaybı olmaz.
