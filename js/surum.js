@@ -6,6 +6,18 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.13",
+  "tarih": "2026-10-27",
+  "baslik": "Konu Takibi yenilendi",
+  "notlar": [
+    "📚 Plan sekmesinde yepyeni Konu Takibi: TYT ve Sayısal AYT'nin bütün konuları ders ders, sırasıyla burada (247 konu).",
+    "✓ Her konunun yanında bir kutu: bir dokunuş ✓ bitti (üstü çizilir), bir daha − yarım, bir daha boş. ✎ ile konuya kendi notunu yazabilirsin.",
+    "🗓️ Günlük, haftalık ya da aylık plan eklerken bitirdiğin konular listede artık çıkmıyor; yarım olanların yanında (yarım) yazıyor. Konu yerine 📝 Deneme, ✏️ Test çözümü ya da 🔀 Karma test de seçebilirsin.",
+    "🌙 Kapakta gece zambak bahçesinde uyuyan beyaz bir kedi, ortasında toplam ilerlemen. Her dersin kartında kendi piksel çizimi var: kütüphanede kitap okuyan baykuş, tahtanın başında kedi, AYT Fizik'te kara delik...",
+    "💾 Eski işaretlerin yerinde: daha önce tamam dediğin konular bitti, çalışıyorum dediklerin yarım olarak duruyor; iki cihaz eşitlenince en son yaptığın değişiklik geçerli."
+  ]
+},
+{
   "surum": "2.12.4",
   "tarih": "2026-10-27",
   "baslik": "Sayaç Zambak pembesinde",

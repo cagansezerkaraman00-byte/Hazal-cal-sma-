@@ -15,7 +15,9 @@ const PlanlarUI = (() => {
   const TICK = ['Plandan bir madde daha tamam! ✅', 'Tik! Harika gidiyorsun 🐾', 'Bir adım daha 🌟'];
   const FULL = ['Bugünün planı tamam! Harikasın 🌟', 'Listenin hepsi tik! Kuyruğum havada 😻', 'Plan bitti, şimdi kendine güzel bir mola ver 💜'];
   const INTRO = 'Planını sen yazdın, ben de takipteyim 🐾 Akşam nasıl geçtiğine birlikte bakarız.';
-  const STATUS_ICON = ['○', '📖', '🔁', '✅'];
+  // bitti konular listede hiç çıkmaz; yarım olanların yanında "(yarım)" yazar
+  // her derste konu yerine seçilebilen soru çözümleri
+  const COZUM = [{ v: 'x:deneme', name: 'Deneme', icon: '📝' }, { v: 'x:test', name: 'Test çözümü', icon: '✏️' }, { v: 'x:karma', name: 'Karma test', icon: '🔀' }];
 
   const N = {
     day: { seg: 'Günlük', prev: 'Önceki gün', next: 'Sonraki gün', cur: 'Bugün', empty: 'Bu gün için henüz plan yok.', unit: 'maddeyi',
@@ -361,12 +363,16 @@ const PlanlarUI = (() => {
     }
     return keys.length ? keys : YKS.subjectKeys();
   }
+  // Konu takibinde tam bitti işaretlenen konular çıkmaz (düzenlenen maddenin kendi konusu hariç); en üstte
+  // deneme, test çözümü ve karma test durur.
   function yksOptions(subjectId, selected) {
     const keys = yksKeysFor(subjectId).slice(), t = selected && YKS.topic(selected);
     if (t && !keys.includes(t.subjectKey)) keys.push(t.subjectKey); // seçili konu başka dersteyse kaybolmasın
-    return keys.map((k) => {
-      const s = YKS.SUBJECTS[k];
-      return `<optgroup label="${esc(s.name)}">${s.topics.map((x) => `<option value="${esc(x.id)}"${selected === x.id ? ' selected' : ''}>${STATUS_ICON[YKS.status(x.id)] || '○'} ${esc(x.name)}</option>`).join('')}</optgroup>`;
+    const durum = (id) => (typeof YKS.durum === 'function' ? YKS.durum(id) : '');
+    const extras = `<optgroup label="Soru çözümü">${COZUM.map((x) => `<option value="${x.v}"${selected === x.v ? ' selected' : ''}>${x.icon} ${x.name}</option>`).join('')}</optgroup>`;
+    return extras + keys.map((k) => {
+      const s = YKS.SUBJECTS[k], list = s.topics.filter((x) => x.id === selected || durum(x.id) !== 'tam');
+      return list.length ? `<optgroup label="${esc(s.name)}">${list.map((x) => `<option value="${esc(x.id)}"${selected === x.id ? ' selected' : ''}>${esc(x.name)}${durum(x.id) === 'yarim' ? ' (yarım)' : ''}</option>`).join('')}</optgroup>` : '';
     }).join('');
   }
   const uniCourses = () => (D().uni && Array.isArray(D().uni.courses) ? D().uni.courses.filter((c) => c && Array.isArray(c.topics) && c.topics.some((t) => t && t.title)) : []);
@@ -385,6 +391,8 @@ const PlanlarUI = (() => {
   // seçilen konu: adı, dersi ve (YKS konusuysa) kimliği
   function topicOf(v) {
     if (!v || v === OWN) return null;
+    const cz = COZUM.find((x) => x.v === v);
+    if (cz) return { name: cz.name, sid: '', id: '' };
     if (v.startsWith('u:')) {
       const [, cid, i] = v.split(':');
       const c = (D().uni.courses || []).find((x) => x && x.id === cid), t = c && c.topics[+i];
@@ -413,7 +421,8 @@ const PlanlarUI = (() => {
     const subs = D().subjects.slice();
     if (it && it.subjectId && !subs.some((s) => s.id === it.subjectId)) { const s = subj(it.subjectId); if (s) subs.unshift(s); } // arşivdeki ders seçili kalsın
     const subjOpts = subs.map((s) => `<option value="${esc(s.id)}"${it && it.subjectId === s.id ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
-    const listed = kind === 'yks' && it && it.topicId && YKS.topic(it.topicId) && YKS.topic(it.topicId).name === it.title ? it.topicId : '';
+    const cozum = kind === 'yks' && it && !it.topicId ? COZUM.find((x) => x.name === it.title) : null;
+    const listed = kind === 'yks' && it && it.topicId && YKS.topic(it.topicId) && YKS.topic(it.topicId).name === it.title ? it.topicId : cozum ? cozum.v : '';
     const own = !!it && !listed; // elle yazılmış eski madde: yazısı açık gelir
     const topicSelect = (sid, sel) => `<option value="">— Konu seç —</option>${topicOpts(kind, sid, sel)}<option value="${OWN}"${!sel && own ? ' selected' : ''}>✍️ Kendim yazayım</option>`;
     const card = App.openModal(`<h3>${it ? '✏️ Düzenle' : `＋ ${scope === 'day' ? 'Plan ekle' : 'Hedef ekle'}`}</h3><p class="muted small">${esc(lab.title)}</p>

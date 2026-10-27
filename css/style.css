@@ -2788,3 +2788,84 @@ body.focusing .today-card .timeline, body.focusing .today-card .tp-add { display
 .go-tamam { color: var(--mint-ink); }
 .go-eksik { color: var(--coral-ink); }
 
+
+/* Konu takibi (Plan): her dersin konuları yanında birer kutuyla. ✓ bitti: üstü çizilir, satır koyulaşır; − yarım.
+   Renkler temanın kendi yeşil ve vurgu tonları. Geniş ekranda konular iki sütun. */
+.kt-stack { display: grid; gap: 10px; margin-bottom: 18px; }
+.kt-card { padding: 0; overflow: hidden; }
+.kt-top { list-style: none; cursor: pointer; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; padding: 14px 16px; border-left: 4px solid var(--c); }
+.kt-top::-webkit-details-marker { display: none; }
+.kt-chev { color: var(--muted); font-size: .8rem; transition: transform .2s ease; }
+.kt-list[open] .kt-chev { transform: rotate(90deg); }
+.kt-title { font-size: 1rem; min-width: 0; }
+.kt-pct { font-weight: 800; font-variant-numeric: tabular-nums; }
+.kt-meta { grid-column: 2 / -1; color: var(--muted); font-size: .76rem; font-weight: 700; }
+.kt-bar { grid-column: 1 / -1; display: flex; height: 6px; margin-top: 4px; border-radius: 99px; background: var(--track); overflow: hidden; }
+.kt-bar i { display: block; height: 100%; transition: width .3s ease; }
+.kt-bar i.tam { background: var(--mint); }
+.kt-bar i.yarim { background: var(--accent); }
+.kt-k.tam { color: var(--mint-ink); white-space: nowrap; }
+.kt-k.yarim { color: var(--accent-ink); white-space: nowrap; }
+.kt-ul { list-style: none; margin: 0; padding: 4px 16px 12px; border-top: 1px solid var(--line); }
+@media (min-width: 820px) { .kt-ul { columns: 2; column-gap: 32px; } }
+.kt-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; padding: 7px 0; border-bottom: 1px solid var(--line); break-inside: avoid; }
+.kt-box { width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border-radius: 8px; border: 2px solid var(--line-strong, var(--muted)); background: transparent; color: var(--bg, #000); font: inherit; font-size: 1rem; font-weight: 900; line-height: 1; cursor: pointer; transition: background-color .15s, border-color .15s; }
+.kt-row.tam .kt-box { background: var(--mint); border-color: var(--mint); color: #10291e; }
+.kt-row.yarim .kt-box { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #1b1036); }
+.kt-name { font-weight: 700; font-size: .9rem; line-height: 1.35; overflow-wrap: break-word; transition: opacity .2s; }
+.kt-name small { display: block; color: var(--muted); font-weight: 600; font-size: .74rem; }
+.kt-row.tam .kt-name { text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: var(--mint); opacity: .45; }
+.kt-note { display: block; margin-top: 2px; color: var(--accent-ink); font-weight: 600; font-size: .76rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.kt-row.tam .kt-note { text-decoration: none; }
+.kt-pen { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--faint, var(--muted)); font: inherit; font-size: .85rem; cursor: pointer; opacity: .7; }
+.kt-pen.var { color: var(--accent-ink); opacity: 1; }
+.kt-ta { grid-column: 2 / -1; display: block; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--input-line, var(--line)); background: var(--input-bg, var(--surface)); color: var(--text); font: inherit; font-size: .85rem; resize: vertical; }
+@media (max-width: 560px) { .kt-top { padding: 12px; } .kt-ul { padding: 2px 12px 10px; } }
+
+/* Konu takibinin kapağı: gece zambak bahçesinde uyuyan beyaz kedi (her temada aynı); yazılar ortadaki boş gökte */
+.kt-kapak { position: relative; overflow: hidden; display: grid; justify-items: center; align-content: start; margin: 18px 0 16px; padding: clamp(16px, 3.2vw, 34px) 20px 20px; aspect-ratio: 3 / 1; min-height: 230px;
+  border-radius: 22px; border: 1px solid rgba(255, 213, 107, .35); background: #24224e url('../assets/konu/kapak.webp') center bottom / cover no-repeat;
+  box-shadow: 0 10px 30px -14px rgba(255, 127, 208, .55), inset 0 0 0 1px rgba(255, 255, 255, .04); color: #fdf6e4; }
+.kk-ic { position: relative; display: grid; justify-items: center; gap: 8px; width: 100%; max-width: min(46%, 440px); text-align: center; }
+.kk-ic .kk-bar { width: 100%; }
+.kk-title { margin: 0; font-family: var(--pixel); font-size: .82rem; letter-spacing: 1px; line-height: 1.6; color: #ffd56b; text-shadow: 0 0 10px rgba(255, 213, 107, .55), 0 2px 4px rgba(0, 0, 0, .6); }
+.kk-stat { display: grid; gap: 6px; width: 100%; justify-items: center; }
+.kk-num { font-family: var(--pixel); font-size: 1.7rem; color: #ffa3e0; text-shadow: 0 0 14px rgba(255, 127, 208, .6), 0 2px 4px rgba(0, 0, 0, .6); }
+.kk-bar { height: 10px; border-radius: 99px; background: rgba(255, 255, 255, .16); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 2px 8px rgba(0, 0, 0, .35); }
+.kk-bar i { display: block; height: 100%; border-radius: 99px; background: var(--zambak-grad, linear-gradient(90deg, #ff5f57, #ffa047, #ffd85c, #ff6fd0, #a768ff, #4fb0ff)); transition: width .4s ease; }
+.kk-sub { margin: 0; font-size: .82rem; font-weight: 800; color: #f1e8ff; text-shadow: 0 1px 3px rgba(0, 0, 0, .85); }
+.kk-hint { margin: 2px 0 0; font-size: .78rem; font-weight: 700; color: #ddd8f6; text-shadow: 0 1px 3px rgba(0, 0, 0, .85); }
+.kk-hint .tam { color: #6ee7b7; } .kk-hint .yarim { color: #ffd56b; }
+/* dik telefonda görsel kartın altına tam genişlikte oturur (kedi ve zambaklar kesilmez), üstündeki gök aynı renkle devam eder, yazılar orada */
+@media (max-width: 699px) {
+  .kt-kapak { aspect-ratio: auto; min-height: 0; padding: 16px 14px 29%; background-size: 100% auto; }
+  .kk-ic { max-width: 100%; gap: 6px; }
+  .kk-ic .kk-bar { width: 72%; }
+  .kk-num { font-size: 1.4rem; } .kk-title { font-size: .7rem; } .kk-hint { font-size: .72rem; }
+}
+.kt-sinav { font-family: var(--pixel); font-size: .78rem; letter-spacing: 1px; color: var(--accent-ink); margin: 18px 0 10px; }
+.kt-bitti { margin-left: 6px; padding: 2px 8px; border-radius: 99px; font-size: .7rem; font-weight: 800; background: var(--mint-soft); color: var(--mint-ink); white-space: nowrap; }
+.kt-card.bitti { box-shadow: 0 0 0 1px var(--mint), 0 8px 24px -14px var(--mint); }
+.kt-box.pop { animation: kt-pop .35s ease; }
+@keyframes kt-pop { 0% { transform: scale(.7); } 60% { transform: scale(1.18); box-shadow: 0 0 0 6px rgba(255, 213, 107, .25); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .kt-box.pop { animation: none; } }
+/* ders kartı (her temada aynı koyu kart): solda ad, bilgi ve çubuk; sağda dersin piksel çizimi; en sağda ortada dersin renginde yüzde */
+.kt-top { --rw: min(360px, 44%); position: relative; isolation: isolate; grid-template-columns: auto minmax(0, 1fr); min-height: 74px; padding-right: calc(var(--rw) + 78px); background: var(--zemin, #14153a); color: #f6f1ff; }
+.kt-top > * { position: relative; z-index: 1; }
+.kt-top > .kt-resim { position: absolute; top: 0; bottom: 0; right: 66px; z-index: 0; width: var(--rw); background-repeat: no-repeat; background-position: right center; background-size: contain; pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 7%); mask-image: linear-gradient(90deg, transparent 0, #000 7%); }
+.kt-top .kt-chev { color: #bdb3ec; }
+.kt-top .kt-meta { grid-column: 2; color: #cbc3ef; }
+.kt-top .kt-pct { position: absolute; right: 18px; top: 50%; z-index: 2; transform: translateY(-50%); font-size: 1.3rem; font-weight: 900; color: var(--yuzde, #ffa3e0); text-shadow: 0 0 12px rgba(0, 0, 0, .6); }
+.kt-top .kt-bar { background: rgba(255, 255, 255, .14); }
+/* dar ekranda (dik telefon) çizim sağa sığmaz: yazının altında kartın içinde tam genişlikte, bütünüyle görünür; yüzde başlığın yanında */
+@media (max-width: 699px) {
+  .kt-top { padding-right: 12px; grid-template-columns: auto minmax(0, 1fr) auto; }
+  .kt-top .kt-pct { position: static; transform: none; grid-column: 3; grid-row: 1; font-size: 1.15rem; }
+  .kt-top .kt-meta { grid-column: 2 / -1; }
+  .kt-top > .kt-resim { position: static; grid-column: 1 / -1; grid-row: 4; width: auto; min-height: 56px; aspect-ratio: 331 / 69; margin-top: 6px; border-radius: 10px; background-size: cover; background-position: center; -webkit-mask-image: none; mask-image: none; }
+}
+.kt-ul { position: relative; isolation: isolate; }
+.kt-ul::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .3;
+  background-image: radial-gradient(circle, var(--accent) 1px, transparent 1.7px), radial-gradient(circle, var(--mint) 1px, transparent 1.7px);
+  background-size: 96px 74px, 142px 118px; background-position: 14px 22px, 70px 50px; }

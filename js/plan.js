@@ -7,12 +7,11 @@ const PlanUI = (() => {
   const D = () => Store.data;
   const Y = () => D().yks;
 
-  const STATUS = [
-    { icon: '○', label: 'Başlamadım' },
-    { icon: '📖', label: 'Çalışıyorum' },
-    { icon: '🔁', label: 'Tekrar' },
-    { icon: '✅', label: 'Tamam' },
-  ];
+  // Konu takibi: konunun yanındaki kutu. Dokun: ✓ bitti (üstü çizilir) → − yarım → boş. İstenirse konuya not.
+  // Bitti konular plan eklerken konu listesinde çıkmaz (planlar-ui).
+  const DURUM = { tam: { icon: '✓', label: 'bitti' }, yarim: { icon: '−', label: 'yarım' } };
+  const SIRA = { '': 'tam', tam: 'yarim', yarim: '' };
+  const openNotes = new Set(); // not kutusu açık konular
 
   // ---------- Dönem (sınava kalan güne göre) ----------
   function phase(days) {
@@ -28,15 +27,6 @@ const PlanUI = (() => {
   const fmtDay = (iso) => { const d = new Date(iso + 'T12:00:00'); return isNaN(d) ? iso : `${d.getDate()} ${U.MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
 
   // ---------- Plan sekmesi ----------
-  // kaynak bağlantısının okunur adı: "site.com · tyt fizik konulari"
-  function srcLabel(u) {
-    try {
-      const x = new URL(u);
-      const tail = decodeURIComponent(x.pathname).split('/').filter(Boolean).pop() || '';
-      return x.hostname.replace(/^www\./, '') + (tail ? ' · ' + tail.replace(/\.(html?|php)$/, '').replace(/[-_]+/g, ' ').slice(0, 60) : '');
-    } catch (e) { return u; }
-  }
-
   function render() {
     const root = $('#plan-root');
     if (!root) return;
@@ -78,38 +68,84 @@ const PlanUI = (() => {
         </div>
       </div>
 
-      <h2 class="section-title">📚 Konu takibi</h2>
-      <p class="hint">Konuya dokunarak durumunu değiştir: ○ başlamadım → 📖 çalışıyorum → 🔁 tekrar → ✅ tamam. Sayılar, o konudan YKS'de ortalama kaç soru geldiğini gösterir.</p>
-      ${subjectsHtml(field)}
-      ${YKS.SOURCES.length ? `<details class="sources"><summary class="hint">Soru dağılımı kaynakları (${YKS.SOURCES.length})</summary><ul class="small">${YKS.SOURCES.filter((u) => /^https:\/\//.test(u)).map((u) => `<li><a href="${U.esc(u)}" target="_blank" rel="noopener noreferrer">${U.esc(srcLabel(u))}</a></li>`).join('')}</ul></details>` : ''}`;
+      ${kapakHtml(field)}
+      ${subjectsHtml(field)}`;
   }
 
+  // ---------- Konu takibinin kapağı: gece zambak bahçesinde uyuyan beyaz kedi (assets/konu/kapak.webp); ortadaki boş gökte toplam ilerleme ----------
+  function toplam(field) {
+    let done = 0, half = 0, count = 0;
+    for (const k of YKS.subjectKeys(field)) { const p = YKS.subjectProgress(k); done += p.done; half += p.half; count += p.count; }
+    return { done, half, count, pct: count ? Math.round(((done + half / 2) / count) * 100) : 0 };
+  }
+  const kapakSayi = (t) => `<div class="kk-num">%${t.pct}</div>
+      <div class="kk-bar" aria-hidden="true"><i style="width:${t.count ? ((t.done + t.half / 2) / t.count) * 100 : 0}%"></i></div>
+      <p class="kk-sub">${t.done}/${t.count} konu bitti${t.half ? ` · ${t.half} yarım` : ''}</p>`;
+  function kapakHtml(field) {
+    return `<section class="kt-kapak" aria-label="Konu takibi">
+      <div class="kk-ic">
+        <h2 class="kk-title">✦ Konu Takibi ✦</h2>
+        <div class="kk-stat">${kapakSayi(toplam(field))}</div>
+        <p class="kk-hint">Kutuya dokun: <b class="tam">✓ bitti</b> · bir daha <b class="yarim">− yarım</b> · bir daha boş</p>
+      </div>
+    </section>`;
+  }
+
+  // ---------- Ders kartlarının görselleri ----------
+  // Her dersin başlığının sağında kendi piksel çizimi (assets/konu): Türkçe kütüphanede baykuş, Matematik tahta ve kedi,
+  // AYT Fizik kara delik... Kartın zemin rengi ve yüzdenin rengi de o çizime göre. Görseli olmayan dersler en yakınını kullanır.
+  const KONU_GORSEL = {
+    tyt_tr: ['#170b2d', '#f26fb5'],
+    tyt_mat: ['#02172e', '#f7c158'],
+    tyt_geo: ['#060f34', '#f8d15a'],
+    tyt_fiz: ['#090f31', '#61dbf6'],
+    tyt_kim: ['#0b0f31', '#d196f3'],
+    tyt_bio: ['#02192c', '#90f2c3'],
+    tyt_tar: ['#1e0e23', '#f58262'],
+    tyt_cog: ['#031337', '#71e3f7'],
+    tyt_fel: ['#100f33', '#db8af0'],
+    tyt_din: ['#0a1134', '#f8d65c'],
+    ayt_mat: ['#100e2e', '#f8bf5b'],
+    ayt_geo: ['#041239', '#f9e25d'],
+    ayt_fiz: ['#020d31', '#61dff7'],
+    ayt_kim: ['#100f33', '#df8eee'],
+    ayt_bio: ['#01192b', '#8df1c4'],
+  };
+  const BENZER = { ayt_edb: 'tyt_tr', ayt_tar1: 'tyt_tar', ayt_tar2: 'tyt_tar', ayt_cog1: 'tyt_cog', ayt_cog2: 'tyt_cog', ayt_fel: 'tyt_fel', ayt_din: 'tyt_din', ydt: 'tyt_tr' };
+  const gorselOf = (k) => (KONU_GORSEL[k] ? k : BENZER[k] || null);
+
   function subjectsHtml(field) {
-    const eks = window.Deneme ? Deneme.eksikCounts(6) : {};
     const group = (exam) => YKS.subjectKeys(field).filter((k) => YKS.SUBJECTS[k].exam === exam);
     const exams = ['TYT', 'AYT', 'YDT'].filter((e) => group(e).length);
-    return exams.map((ex) => `<h3 class="sub-h">${ex}</h3><div class="grid">${group(ex).map((k) => subjCard(k, eks)).join('')}</div>`).join('');
+    return exams.map((ex) => `<h3 class="sub-h kt-sinav">✦ ${ex} ✦</h3><div class="kt-stack">${group(ex).map((k) => subjCard(k)).join('')}</div>`).join('');
   }
-  function subjCard(k, eks) {
+  // Ders başlığı (dokununca konular açılır): ad, yüzde, kaç konu bitti, çubuk
+  function cardTop(k) {
+    const s = YKS.SUBJECTS[k], p = YKS.subjectProgress(k), n = p.count || 1;
+    const bitti = p.count && p.done === p.count;
+    const gk = gorselOf(k);
+    return `${gk ? `<span class="kt-resim" aria-hidden="true" style="background-image:url('assets/konu/${gk}.webp')"></span>` : ''}<span class="kt-chev" aria-hidden="true">▸</span><b class="kt-title">${U.esc(s.name)}${bitti ? ' <span class="kt-bitti">🌸 tamamlandı</span>' : ''}</b><span class="kt-pct">%${Math.round(p.pct * 100)}</span>
+      <span class="kt-meta">${p.done}/${p.count} konu bitti${p.half ? ` · ${p.half} yarım` : ''} · ${s.total} soru</span>
+      <span class="kt-bar" aria-hidden="true"><i class="tam" style="width:${(p.done / n) * 100}%"></i><i class="yarim" style="width:${(p.half / n) * 100}%"></i></span>`;
+  }
+  function subjCard(k) {
     const s = YKS.SUBJECTS[k];
-    const p = YKS.subjectProgress(k);
     const sid = App.subjectFor(k);
     const color = (sid && Store.subject(sid).color) || 'var(--violet)';
-    const pct = Math.round(p.pct * 100);
-    return `<div class="card subj-card" data-k="${k}">
-      <div class="subj-head"><b>${U.esc(s.name)}</b><span class="muted small">${s.total} soru</span><span class="pct">%${pct}</span></div>
-      <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
-      <details class="topics" ${openSubjects.has(k) ? 'open' : ''}><summary>${p.done}/${p.count} konu tamam · ≈${p.questionsCovered} soru hazır</summary>
-        <ul class="topic-list">${s.topics.map((t) => topicRow(t, eks[t.id] || 0)).join('')}</ul>
+    const p = YKS.subjectProgress(k), gr = KONU_GORSEL[gorselOf(k)];
+    return `<section class="card kt-card${p.count && p.done === p.count ? ' bitti' : ''}" data-k="${k}" style="--c:${U.esc(color)}${gr ? `;--zemin:${gr[0]};--yuzde:${gr[1]}` : ''}">
+      <details class="kt-list" ${openSubjects.has(k) ? 'open' : ''}><summary class="kt-top">${cardTop(k)}</summary>
+        <ul class="kt-ul">${s.topics.map(topicRow).join('')}</ul>
       </details>
-    </div>`;
+    </section>`;
   }
-  function topicRow(t, e) {
-    const st = YKS.status(t.id);
-    return `<li class="topic-row" data-id="${t.id}">
-      <button class="topic-status" data-s="${st}" title="${STATUS[st].label}" aria-label="${U.esc(t.name)}: ${STATUS[st].label}">${STATUS[st].icon}</button>
-      <span class="topic-name">${U.esc(t.name)}${t.d ? `<small class="muted"> · ${U.esc(t.d)}</small>` : ''}</span>
-      <span class="topic-badges"><span class="q-badge" title="YKS'de ortalama soru">≈${U.num(t.avg)}</span>${e ? `<span class="eksik-badge">${e}× eksik</span>` : ''}</span>
+  function topicRow(t) {
+    const d = DURUM[YKS.durum(t.id)] ? YKS.durum(t.id) : '', n = YKS.not(t.id), open = openNotes.has(t.id);
+    return `<li class="kt-row${d ? ' ' + d : ''}" data-id="${t.id}">
+      <button type="button" class="kt-box" data-kt="kutu" aria-label="${U.esc(t.name)}${d ? ': ' + DURUM[d].label : ''}">${d ? DURUM[d].icon : ''}</button>
+      <span class="kt-name">${U.esc(t.name)}${t.d ? `<small>${U.esc(t.d)}</small>` : ''}${n && !open ? `<span class="kt-note">${U.esc(n)}</span>` : ''}</span>
+      <button type="button" class="kt-pen${n ? ' var' : ''}" data-kt="not" aria-expanded="${open}" aria-label="${U.esc(t.name)}: not">✎</button>
+      ${open ? `<textarea class="kt-ta" maxlength="300" rows="2" placeholder="Örn: türev kuralları tamam, zincir kuralı tekrar" aria-label="${U.esc(t.name)} notu">${U.esc(n)}</textarea>` : ''}
     </li>`;
   }
 
@@ -137,35 +173,54 @@ const PlanUI = (() => {
         if (first) App.sayText(`Harika! ${YKS.FIELDS[b.dataset.field].name} konuların hazır 🌟 Planını sen yaz, ben her akşam nasıl gittiğine birlikte bakarım 🐾`);
         return;
       }
-      if (b.classList.contains('topic-status')) {
-        const row = b.closest('.topic-row');
-        const id = row.dataset.id;
-        const next = (YKS.status(id) + 1) % 4;
-        YKS.setStatus(id, next);
-        b.dataset.s = next;
-        b.textContent = STATUS[next].icon;
-        b.title = STATUS[next].label;
-        // sadece ilgili ders kartını güncelle (tüm sayfayı yeniden çizme)
-        const card = b.closest('.subj-card');
-        const k = card.dataset.k;
-        const p = YKS.subjectProgress(k);
-        const pct = Math.round(p.pct * 100);
-        card.querySelector('.pct').textContent = `%${pct}`;
-        card.querySelector('.track i').style.width = pct + '%';
-        card.querySelector('summary').textContent = `${p.done}/${p.count} konu tamam · ≈${p.questionsCovered} soru hazır`;
+      if (b.dataset.kt) {
+        const row = b.closest('.kt-row'), id = row.dataset.id, card = b.closest('.kt-card');
+        if (b.dataset.kt === 'not') {
+          openNotes.has(id) ? openNotes.delete(id) : openNotes.add(id);
+          row.outerHTML = topicRow(YKS.topic(id));
+          const ta = root.querySelector(`.kt-row[data-id="${CSS.escape(id)}"] .kt-ta`);
+          if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+          return;
+        }
+        const cur = YKS.durum(id), next = SIRA[DURUM[cur] ? cur : ''];
+        YKS.setDurum(id, next);
+        row.outerHTML = topicRow(YKS.topic(id));
+        card.querySelector('summary.kt-top').innerHTML = cardTop(card.dataset.k);
+        const p = YKS.subjectProgress(card.dataset.k);
+        card.classList.toggle('bitti', !!p.count && p.done === p.count);
+        const ks = root.querySelector('.kk-stat');
+        if (ks) ks.innerHTML = kapakSayi(toplam(Y().field));
+        if (next) { const box = root.querySelector(`.kt-row[data-id="${CSS.escape(id)}"] .kt-box`); if (box) box.classList.add('pop'); }
         const pr = YKS.progress();
         const ov = root.querySelector('.overall');
         if (ov) {
           ov.querySelector('.track i').style.width = Math.round(pr.pct * 100) + '%';
           ov.querySelector('span').innerHTML = `Konular <b>%${Math.round(pr.pct * 100)}</b> hazır · YKS'de ≈ <b>${pr.questionsCovered}</b>/${pr.questions} soruya denk`;
         }
-        if (next === 3) App.sayText(U.pick([`${YKS.topic(id).name} tamam! ✅`, 'Bir konu daha bitti, harikasın 🌟', 'Konu listesi kısalıyor, sen büyüyorsun 💪']));
+        if (next === 'tam') App.sayText(U.pick([`${YKS.topic(id).name} bitti! ✅`, 'Bir konu daha bitti, harikasın 🌟', 'Konu listesi kısalıyor, sen büyüyorsun 💪']));
         App.refreshHome();
       }
     });
+    // not yazdıkça kaydedilir; kutudan çıkınca not satırı olarak görünür
+    root.addEventListener('input', (ev) => {
+      const ta = ev.target.closest && ev.target.closest('.kt-ta');
+      if (!ta) return;
+      YKS.setNot(ta.closest('.kt-row').dataset.id, ta.value);
+    });
+    root.addEventListener('focusout', (ev) => {
+      const ta = ev.target.closest && ev.target.closest('.kt-ta');
+      if (!ta) return;
+      const row = ta.closest('.kt-row'), id = row.dataset.id;
+      YKS.setNot(id, ta.value);
+      setTimeout(() => { // not düğmesine basılarak kapatılıyorsa onu bekle
+        if (!openNotes.has(id) || !row.isConnected || row.contains(document.activeElement)) return;
+        openNotes.delete(id);
+        row.outerHTML = topicRow(YKS.topic(id));
+      }, 150);
+    });
     root.addEventListener('toggle', (ev) => {
-      const card = ev.target.closest && ev.target.closest('.subj-card');
-      if (!card || !ev.target.matches('details.topics')) return;
+      const card = ev.target.closest && ev.target.closest('.kt-card');
+      if (!card || !ev.target.matches('details.kt-list')) return;
       ev.target.open ? openSubjects.add(card.dataset.k) : openSubjects.delete(card.dataset.k);
     }, true);
     root.addEventListener('change', (ev) => {

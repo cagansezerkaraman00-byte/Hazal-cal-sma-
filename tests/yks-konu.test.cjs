@@ -18,14 +18,24 @@ const where = (name) => Object.keys(S).filter((k) => S[k].topics.some((t) => t =
 
 // ---------- konular doğru derste ----------
 const yer = {
-  'Paragraf': ['tyt_tr', 'ydt'], 'Cümlenin Ögeleri': ['tyt_tr'], 'Sözcükte Anlam': ['tyt_tr'],
-  'Problemler': ['tyt_mat'], 'Temel Kavramlar': ['tyt_mat', 'ayt_mat'], 'Türev': ['ayt_mat'], 'İntegral': ['ayt_mat'], 'Limit ve Süreklilik': ['ayt_mat'], 'Trigonometri': ['ayt_mat'],
-  'Açılar ve Üçgenler': ['tyt_geo'], 'Çemberin Analitik İncelenmesi': ['ayt_geo'],
+  'Paragrafta Anlam': ['tyt_tr'], 'Cümlenin Öğeleri': ['tyt_tr'], 'Sözcükte Anlam': ['tyt_tr'],
+  'Problemler': ['tyt_mat', 'ayt_mat'], 'Sayılar': ['tyt_mat'], 'Temel Kavramlar': ['ayt_mat'], 'Türev': ['ayt_mat'], 'İntegral': ['ayt_mat'], 'Limit': ['ayt_mat'], 'Trigonometri': ['ayt_mat', 'ayt_geo'],
+  'Doğruda ve Üçgende Açılar': ['tyt_geo', 'ayt_geo'], 'Çemberin Analitik İncelenmesi': ['tyt_geo'], 'Çemberin Analitiği': ['ayt_geo'],
   'Optik': ['tyt_fiz'], 'Hareket ve Kuvvet': ['tyt_fiz'], 'Basit Harmonik Hareket': ['ayt_fiz'], 'Modern Fizik': ['ayt_fiz'], 'Atışlar': ['ayt_fiz'],
   'Kimyasal Türler Arası Etkileşimler': ['tyt_kim'], 'Organik Kimya': ['ayt_kim'], 'Gazlar': ['ayt_kim'],
-  'Canlıların Sınıflandırılması': ['tyt_bio'], 'Genden Proteine': ['ayt_bio'], 'Sinir Sistemi': ['ayt_bio'],
-  'Divan Edebiyatı': ['ayt_edb'], 'Milli Mücadele': ['tyt_tar', 'ayt_tar1', 'ayt_tar2'],
+  'Canlıların Sınıflandırılması': ['tyt_bio'], 'Genetik Şifre ve Protein Sentezi': ['ayt_bio'], 'Sinir Sistemi': ['ayt_bio'],
+  'Divan Edebiyatı': ['ayt_edb'], 'Kurtuluş Savaşında Cepheler': ['tyt_tar'], 'Felsefenin Alanı': ['tyt_fel'],
 };
+// Rehberlik Servisim TYT ve Sayısal AYT konu listesi (2.13): her derste PDF'teki kadar konu, PDF'teki sırayla
+eq(Object.fromEntries(['tyt_tr', 'tyt_mat', 'tyt_geo', 'tyt_fiz', 'tyt_kim', 'tyt_bio', 'tyt_tar', 'tyt_cog', 'tyt_fel', 'tyt_din', 'ayt_mat', 'ayt_geo', 'ayt_fiz', 'ayt_kim', 'ayt_bio'].map((k) => [k, S[k].topics.length])),
+  { tyt_tr: 17, tyt_mat: 23, tyt_geo: 21, tyt_fiz: 11, tyt_kim: 12, tyt_bio: 10, tyt_tar: 21, tyt_cog: 12, tyt_fel: 8, tyt_din: 7, ayt_mat: 31, ayt_geo: 27, ayt_fiz: 21, ayt_kim: 9, ayt_bio: 17 }, 'her derste PDF\'teki kadar konu');
+eq([S.tyt_tr.topics[0], S.tyt_tr.topics[16], S.tyt_mat.topics[0], S.tyt_mat.topics[22], S.ayt_mat.topics[30], S.ayt_geo.topics[26], S.ayt_fiz.topics[0], S.ayt_bio.topics[16]],
+  ['Sözcükte Anlam', 'Anlatım Bozuklukları', 'Sayılar', 'Polinomlar', 'İntegral', 'Çemberin Analitiği', 'Vektörler', 'Canlılar ve Çevre'], 'PDF\'teki sıra');
+// eski konu kimlikleri yeni konuya yönlenir (eski plan maddeleri, deneme eksikleri ve işaretler kaybolmaz)
+eq(get('["tyt_tr:paragraf", "tyt_mat:temel-kavramlar", "ayt_mat:turev-ve-uygulamalari", "ayt_bio:genden-proteine", "tyt_mat:mantik", "yok:yok"].map((id) => (YKS.topic(id) || {}).id || null)'),
+  ['tyt_tr:paragrafta-anlam', 'tyt_mat:sayilar', 'ayt_mat:turev', 'ayt_bio:genetik-sifre-ve-protein-sentezi', 'ayt_mat:mantik', null], 'eski kimlikler yeni konulara yönlendi');
+vm.runInContext('Store.data.yks.topics["tyt_tr:paragraf"] = 3; Store.data.yks.topics["ayt_mat:limit-ve-sureklilik"] = 1;', ctx);
+eq(get('[YKS.durum("tyt_tr:paragrafta-anlam"), YKS.durum("ayt_mat:limit"), YKS.durum("tyt_tr:ses-bilgisi")]'), ['tam', 'yarim', ''], 'eski adıyla işaretlenmiş konu yeni adında da işaretli');
 for (const [t, keys] of Object.entries(yer)) eq(where(t), keys, `"${t}" → ${keys.map((k) => S[k].name).join(', ')}`);
 for (const k of ['tyt_fiz', 'ayt_fiz', 'tyt_kim', 'ayt_kim', 'tyt_bio', 'ayt_bio']) {
   ok(!S[k].topics.some((t) => /^(Türev|Problemler|Paragraf|İntegral|Limit|Cümlenin)/.test(t)), `${S[k].name} içinde matematik ya da Türkçe konusu yok`);

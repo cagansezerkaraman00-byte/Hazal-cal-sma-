@@ -66,7 +66,7 @@ const Deneme = (() => {
     return Object.keys(c)
       .map((id) => ({ topic: YKS.topic(id), count: c[id] }))
       .filter((x) => x.topic)
-      .map((x) => ({ ...x, score: x.count * Math.max(x.topic.avg, 0.5) }))
+      .map((x) => ({ ...x, score: x.count * Math.max(x.topic.avg || 0, 0.5) }))
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
   }
@@ -184,7 +184,7 @@ const DenemeUI = (() => {
             const maxS = weak[0].score || 1;
             return `<li class="weak-item" data-topic="${w.topic.id}">
               <span class="rank">${i + 1}</span>
-              <div class="weak-topic">${U.esc(w.topic.name)}<small>${U.esc(YKS.SUBJECTS[w.topic.subjectKey].name)} · ≈${U.num(w.topic.avg)} soru · ${w.count}× eksik</small></div>
+              <div class="weak-topic">${U.esc(w.topic.name)}<small>${U.esc(YKS.SUBJECTS[w.topic.subjectKey].name)}${w.topic.avg ? ` · ≈${U.num(w.topic.avg)} soru` : ''} · ${w.count}× eksik</small></div>
               <div class="wbar" title="Öncelik"><i style="width:${Math.round((w.score / maxS) * 100)}%"></i></div>
               <span class="weak-acts"><button class="btn soft small-btn" data-act="study">Çalış ▶</button></span>
             </li>`;

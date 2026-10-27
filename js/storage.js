@@ -134,7 +134,7 @@ const Store = (() => {
       'Biraz daha dayan, gece seni arayıp tebrik edeceğim 🌙',
     ],
     // YKS: alan, sınav tarihi, konu durumları (0 başlamadım, 1 çalışıyorum, 2 tekrar, 3 tamam)
-    yks: { field: null, examDate: null, topics: {}, planDone: {} },
+    yks: { field: null, examDate: null, topics: {}, takip: {}, planDone: {} },
     denemeler: [],  // {id, date, type: TYT|AYT|BRANS, name, scores: {subjectKey: {d, y}}, eksik: [topicId], note, created}
     notes: [],      // {id, subjectId, title, body, created, updated, pinned}
     mistakes: [],   // hata defteri: {id, fileId, subjectId, topic, reason, note, box, due, rights}
@@ -178,6 +178,7 @@ const Store = (() => {
     if (!isObj(out.subjectSets)) out.subjectSets = {};
     out.yks = { ...def.yks, ...(isObj(obj.yks) ? obj.yks : {}) };
     if (!isObj(out.yks.topics)) out.yks.topics = {};
+    if (!isObj(out.yks.takip)) out.yks.takip = {};
     if (!isObj(out.yks.planDone)) out.yks.planDone = {};
     out.stats = { ...def.stats, ...(isObj(obj.stats) ? obj.stats : {}) };
     if (!Array.isArray(out.stats.planFullDates)) out.stats.planFullDates = [];
@@ -358,6 +359,7 @@ const Store = (() => {
           else if (parent === 'plans' && (key === 'day' || key === 'week' || key === 'month') && Array.isArray(y)) added += y.filter((it) => isObj(it) && !it.del).length; // yedekte olup burada olmayan bir günün maddeleri
         }
         else if (Array.isArray(x) && Array.isArray(y)) a[k] = list(x, y);
+        else if (key === 'takip' && isObj(x) && isObj(y)) { if (+y.at > +(x.at || 0)) a[k] = y; } // konu işareti ve notu: en son değiştirilen kalır
         else if (isObj(x) && isObj(y)) obj2(x, y, k, key);
         else if (typeof x === 'number' && typeof y === 'number') {
           if (key === 'badges' || key === 'seen') a[k] = Math.min(x, y);       // ilk kazanılan / ilk görülen an
