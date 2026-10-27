@@ -23,6 +23,7 @@ Uygulamada görünmez; ileride yapılacak işleri unutmamak için.
 
 ## Geri dönüş noktası
 
+- **2.12.1 öncesi:** 2.12, commit `dd260c4` (hafta grafiği yığılmış sütun + hafta pastası). 2.12.1 yalnızca görünüş: her günde ders ders ayrı sütun, y ekseni, güne dokununca o günün pastası.
 - **2.12 öncesi:** 2.11.1, commit `d6080bc`. 2.12 yalnızca İlerleme'nin görünüşünü değiştirir (haftanın grafiği, saat dk sn); kayıtlara dokunmaz, geri alınırsa veri kaybı olmaz.
 - **2.10 öncesi:** 2.9.3, commit `dc55c9f`. 2.10 bitmeyen maddeleri kendiliğinden taşır (`moved` / `from` alanları, eski sürüm de tanır); geri alınırsa taşınmış maddeler yerinde kalır, kaybolmaz. Tekrar listesinin verisi (`review`) silinmedi.
 - **2.9.1 öncesi:** 2.9, commit `227276e`. Oturumlardaki `endReason: 'part'` (konu değiştirince kaydedilen parça) ve sayaçtaki `segs` alanlarını eski sürüm tanımadan saklar; veri kaybı olmaz.

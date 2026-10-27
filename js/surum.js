@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.12.1",
+  "tarih": "2026-10-27",
+  "baslik": "Her ders kendi sütununda",
+  "notlar": [
+    "📊 Haftanın grafiği yenilendi: altta günler, solda saat. Her günün üstünde o gün çalıştığın her ders için ayrı bir sütun var, üstünde dersin harfi (M Matematik, F Fizik, T Türkçe). Sayaç çalışırken sütun canlı canlı uzuyor.",
+    "👆 Bir güne dokun: altında o günün pastası açılıyor. Hangi dersten, hangi konudan saat, dakika, saniye ne kadar çalıştığın, yüzdesi, bitirdiğin ve eksik kalan konular orada.",
+    "📋 Gün gün listesi artık sade: her gün tarihi, toplamı ve çalıştığın derslerle; ayrıntısı dokununca açılıyor."
+  ]
+},
+{
   "surum": "2.12",
   "tarih": "2026-10-27",
   "baslik": "Haftan grafikte",

@@ -152,7 +152,9 @@ ok(/function runSummaryText/.test(appJs) && /Toplam \$\{U\.fmtMin/.test(appJs), 
 ok(/<span class="tp-min" aria-hidden="true"><\/span>/.test(ui) && !/fmtMin/.test(ui), 'Bugün kartında ve Plan sekmesinde süre yazmıyor (yalnızca sayaçta)');
 ok(/\$\('#today-min'\)\.classList\.toggle\('hidden', program\)/.test(appJs) && /\$\('#day-timeline'\)\.classList\.toggle\('hidden', program\)/.test(appJs), 'YKS modunda Bugün kartında toplam ve saat şeridi yok');
 ok(/function dayBlock\(k, today\)/.test(appJs) && /Gün gün çalışmaların/.test(appJs) && /data-go="more"/.test(appJs), 'İlerleme: gün gün ders ders süreler');
-ok(/function weekBody\(\)/.test(appJs) && /class="hg-donut"/.test(appJs) && /U\.fmtSec\(x\.sec\)/.test(appJs), 'İlerleme: haftanın sütun ve pasta grafiği, ders ders saat dk sn');
+ok(/function weekAxis\(maxSec\)/.test(appJs) && /class="hg-y"/.test(appJs) && /class="hg-b"/.test(appJs) && /U\.fmtSec\(x\.sec\)/.test(appJs), 'İlerleme: y ekseni saat, x ekseni günler, her günde ders ders sütun');
+ok(/function openDayDetail\(k, scroll\)/.test(appJs) && /class="hg-donut"/.test(appJs) && /data-go-day=/.test(appJs) && /data-hg-day=/.test(appJs), 'güne basınca altında o günün pastası ve ayrıntısı');
+ok(/\.hg-col > \* \{ pointer-events: none; \}/.test(read('css/style.css')) && /\.go-dhead > \* \{ pointer-events: none; \}/.test(read('css/style.css')), 'saniye saniye güncellenirken dokunuşlar kaybolmaz');
 ok(/else if \(currentTab === 'progress' && liveMin >= 0\) refreshProgressLive\(\);/.test(appJs), 'İlerleme açıkken süreler saniye saniye');
 ok(/id="hafta-ozet"[\s\S]*id="gun-ozet"/.test(read('index.html')), 'İlerleme sırası: hafta grafiği, sonra gün gün');
 ok(!/data-f="hours"/.test(ui) && !/Hedef süre/.test(ui), 'formda ve çizelgede "Hedef süre" yok');
