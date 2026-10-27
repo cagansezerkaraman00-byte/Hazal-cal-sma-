@@ -170,6 +170,8 @@ ok(!/\bmin:\s*minutes\b/.test(ui), 'kaydederken min gönderilmez (eski hedef yer
 ({ run, get } = makeCtx(SEED));
 run('Planlar.update("p1", { title: "Cümlenin Ögeleri (tekrar)", subjectId: "y_tr", topicId: "" })');
 eq(get('Planlar.find("p1").item.min'), 90, 'min gönderilmeyen güncelleme eski hedefi silmez');
+const css = read('css/style.css');
+ok(/:root\[data-tema="zambak"\] \.timer-card \{[^}]*--ring: #ff7fd0/.test(css) && /\.timer-card \.phase:not\(\.break\) \{ color: #ff9ddc/.test(css) && /\.timer-card \.ring-fg:not\(\.break\) \{ stroke: #ff7fd0/.test(css), 'Zambak temasında sayaç pembe (molada yeşil kalır)');
 const html = read('index.html');
 const order = ['class="card timer-card"', 'class="card today-card"', 'id="music-card"', 'id="love-card"'].map((k) => html.indexOf(k));
 ok(order.every((x, i) => x > 0 && (i === 0 || x > order[i - 1])), 'sıra: sayaç → Bugün → müzik → gizli not');

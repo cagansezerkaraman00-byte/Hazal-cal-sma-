@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.12.3",
+  "tarih": "2026-10-27",
+  "baslik": "Pembe sayaç",
+  "notlar": [
+    "🌸 Zambak temasında sayaç artık zambağın pembesinde: halka, saat, \"TYT GERİ SAYIM\" / \"SERBEST ODAK\" yazısı, Serbest · Geri sayım · TYT · AYT seçimi ve geri sayım kutuları pembe tonlarda. Kartın dışındaki altın yazılar yerinde; molada halka yine yeşil."
+  ]
+},
+{
   "surum": "2.12.2",
   "tarih": "2026-10-27",
   "baslik": "Güne dokun, pastası hemen altında",

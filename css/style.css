@@ -2162,6 +2162,22 @@ body.siir-acik { overflow: hidden; }
 :root[data-tema="zambak"] .card > h2, :root[data-tema="zambak"] .card > summary { color: #f8db8f; }
 :root[data-tema="zambak"] .goal-ring:not(.done) { background: conic-gradient(from 0deg, #ff5f57, #ffa047, #ffd85c, #ff6fd0, #a768ff, #4fb0ff calc(var(--p) * 1%), var(--track) 0); }
 :root[data-tema="zambak"] .seg button.active { background: var(--surface-3h); box-shadow: inset 0 0 0 1px var(--accent-line); }
+/* Zambak teması: sayaç kartı zambağın pembe tonlarında (kartın dışındaki altın yazılar yerinde kalır; mola yeşili de) */
+:root[data-tema="zambak"] .timer-card {
+  --ring: #ff7fd0; --accent: #ff8fd8; --accent-ink: #ffa8e2; --accent-line: rgba(255, 143, 216, .55); --accent-soft: rgba(255, 127, 208, .14); --focus: #ff8fd8;
+  --track: #2b1d53; --line: #3d2868; --surface-3: #251a4d; --surface-3h: #34215e; --muted: #eab3d8;
+  background: linear-gradient(170deg, #24174b 0%, #161a46 55%, #101a40 100%);
+  border-color: rgba(255, 127, 208, .32);
+}
+:root[data-tema="zambak"] .timer-card .seg button { color: #e7b0d5; }
+:root[data-tema="zambak"] .timer-card .seg button.active { background: #3a1f5e; color: #ffd6f1; box-shadow: inset 0 0 0 1.5px rgba(255, 143, 216, .75), 0 0 14px -6px rgba(255, 127, 208, .8); }
+:root[data-tema="zambak"] .timer-card .phase:not(.break) { color: #ff9ddc; text-shadow: 0 0 10px rgba(255, 127, 208, .45); }
+:root[data-tema="zambak"] .timer-card .ring-fg:not(.break) { stroke: #ff7fd0; }
+:root[data-tema="zambak"] .timer-card .timer-time { color: #ffd3ef; text-shadow: 0 0 16px rgba(255, 127, 208, .45); }
+:root[data-tema="zambak"] .timer-card #timer-duration-label { color: #f1b9dd; }
+:root[data-tema="zambak"] .timer-card .timer-sub { color: #e9b4d8; }
+:root[data-tema="zambak"] .timer-card .countdown-setup input { border-color: rgba(255, 143, 216, .45); background: #1b1544; }
+:root[data-tema="zambak"] .timer-card .countdown-setup label { color: #eab3d8; }
 
 /* Müzik: akıcı ve hızlı his. Dokununca hafif basılma, çalan şarkıda ses çubukları, yeni kapak ve şarkı adı yumuşakça gelir,
    şarkılar yüklenirken iskelet satırlar; kaydırma kutunun içinde kalır, uzun listeler yalnızca görünen kısmı çizer. */
