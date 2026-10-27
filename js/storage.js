@@ -37,6 +37,12 @@ const U = {
     const h = Math.floor(m / 60), r = m % 60;
     return r ? `${h} sa ${r} dk` : `${h} sa`;
   },
+  // İlerleme'deki süreler: 1 sa 05 dk 03 sn · 40 dk 00 sn · 12 sn
+  fmtSec(sec) {
+    sec = Math.max(0, Math.round(sec || 0));
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    return h ? `${h} sa ${U.pad(m)} dk ${U.pad(s)} sn` : m ? `${m} dk ${U.pad(s)} sn` : `${s} sn`;
+  },
   fmtClock(sec) {
     sec = Math.max(0, Math.round(sec));
     const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;

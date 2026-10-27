@@ -23,6 +23,7 @@ Uygulamada görünmez; ileride yapılacak işleri unutmamak için.
 
 ## Geri dönüş noktası
 
+- **2.12 öncesi:** 2.11.1, commit `d6080bc`. 2.12 yalnızca İlerleme'nin görünüşünü değiştirir (haftanın grafiği, saat dk sn); kayıtlara dokunmaz, geri alınırsa veri kaybı olmaz.
 - **2.10 öncesi:** 2.9.3, commit `dc55c9f`. 2.10 bitmeyen maddeleri kendiliğinden taşır (`moved` / `from` alanları, eski sürüm de tanır); geri alınırsa taşınmış maddeler yerinde kalır, kaybolmaz. Tekrar listesinin verisi (`review`) silinmedi.
 - **2.9.1 öncesi:** 2.9, commit `227276e`. Oturumlardaki `endReason: 'part'` (konu değiştirince kaydedilen parça) ve sayaçtaki `segs` alanlarını eski sürüm tanımadan saklar; veri kaybı olmaz.
 - **2.9 (Bugün kartı = günün programı) öncesi:** canlıdaki son sürüm **2.8.1**, commit `3f5456c`. Geri istenirse 2.8.1'in `index.html`, `css/style.css`, `js/app.js`, `js/planlar.js`, `js/planlar-ui.js`, `js/timer.js` dosyaları daha yüksek bir sürüm numarasıyla yeniden yayınlanır. Veri kaybı olmaz: oturumlardaki yeni `planId` alanını eski sürüm tanımadan saklar; eski maddelerin süre hedefleri (`min`) hiç silinmedi.

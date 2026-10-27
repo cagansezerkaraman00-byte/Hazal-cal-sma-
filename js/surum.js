@@ -6,6 +6,17 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.12",
+  "tarih": "2026-10-27",
+  "baslik": "Haftan grafikte",
+  "notlar": [
+    "📊 İlerleme'nin en üstünde haftanın grafiği: pazartesiden pazara her gün bir sütun, her sütun o gün çalıştığın derslerin renklerine bölünüyor. Bugünün sütunu parlıyor.",
+    "🥧 Altında pasta: bu hafta hangi dersten saat, dakika, saniye ne kadar çalıştığın ve yüzdesi. Üstte haftanın toplamı; ‹ ile geçen haftalara da bakabilirsin.",
+    "⏱️ Gün gün çalışmaların artık saniyesine kadar yazıyor: günün toplamı, ders ders ve konu konu süreler. Sayaç çalışırken İlerleme'deysen bugünün süreleri saniye saniye ilerliyor.",
+    "🎨 Aşağıdaki Günlük çalışma grafiğinin sütunları da derslerin renklerine bölündü."
+  ]
+},
+{
   "surum": "2.11.1",
   "tarih": "2026-10-27",
   "baslik": "Süre sayaçta, kayıt İlerleme'de",

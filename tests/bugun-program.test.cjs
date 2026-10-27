@@ -79,6 +79,12 @@ eq(get('Store.data'), before, 'dayWork hiçbir kaydı değiştirmez, plan oluşt
 const live = get(`Planlar.dayWork("${DAY}", [{ start: ${T(18)}, minutes: 40, subjectId: 'y_mat', planId: 'p2' }, { start: ${T(18, 40)}, minutes: 12.4, subjectId: 'y_kim' }])`);
 eq([live.items.p2, live.items.p4, live.total], [40, 38, 303], 'canlı parçalar ilgili maddelere eklenir');
 eq(get('Store.data'), before, 'canlı süre kayda yazılmaz');
+// İlerleme saat, dakika, saniye gösterir: saniyesi saklanan oturumda saniye, eskilerde dakikadan
+eq(get('[Planlar.secOf({ minutes: 40, seconds: 2402 }), Planlar.secOf({ minutes: 40 }), Planlar.secOf({ minutes: 0.5, seconds: 30 }), Planlar.secOf({ minutes: 50, seconds: 2402 }), Planlar.secOf({ minutes: -3 }), Planlar.secOf(null)]'),
+  [2402, 2400, 30, 3000, 0, 0], 'oturum saniyesi (dakikası sonradan değişmişse dakikası geçerli)');
+const ws = get(`Planlar.dayWork("${DAY}", [], true)`);
+eq([ws.items.p1, ws.items.p3, ws.items.p4, ws.total], [110 * 60, 50 * 60, 25.5 * 60, 250.5 * 60], 'saniyeyle dağıtım dakikayla aynı (yarım dakika yuvarlanmaz)');
+eq(get('[U.fmtSec(3723), U.fmtSec(2402), U.fmtSec(59.6), U.fmtSec(0), U.fmtSec(36000)]'), ['1 sa 02 dk 03 sn', '40 dk 02 sn', '1 dk 00 sn', '0 sn', '10 sa 00 dk 00 sn'], 'saat dk sn biçimi');
 
 // ---------- B. Maddeden başlatılan oturum kendiliğinden işaretlenmez ----------
 eq(run(`Planlar.onSession({ intent: "Problemler", planId: "p2", start: ${T(18)} })`), null, 'planId olan oturum maddeyi işaretlemez');
@@ -146,6 +152,9 @@ ok(/function runSummaryText/.test(appJs) && /Toplam \$\{U\.fmtMin/.test(appJs), 
 ok(/<span class="tp-min" aria-hidden="true"><\/span>/.test(ui) && !/fmtMin/.test(ui), 'Bugün kartında ve Plan sekmesinde süre yazmıyor (yalnızca sayaçta)');
 ok(/\$\('#today-min'\)\.classList\.toggle\('hidden', program\)/.test(appJs) && /\$\('#day-timeline'\)\.classList\.toggle\('hidden', program\)/.test(appJs), 'YKS modunda Bugün kartında toplam ve saat şeridi yok');
 ok(/function dayBlock\(k, today\)/.test(appJs) && /Gün gün çalışmaların/.test(appJs) && /data-go="more"/.test(appJs), 'İlerleme: gün gün ders ders süreler');
+ok(/function weekBody\(\)/.test(appJs) && /class="hg-donut"/.test(appJs) && /U\.fmtSec\(x\.sec\)/.test(appJs), 'İlerleme: haftanın sütun ve pasta grafiği, ders ders saat dk sn');
+ok(/else if \(currentTab === 'progress' && liveMin >= 0\) refreshProgressLive\(\);/.test(appJs), 'İlerleme açıkken süreler saniye saniye');
+ok(/id="hafta-ozet"[\s\S]*id="gun-ozet"/.test(read('index.html')), 'İlerleme sırası: hafta grafiği, sonra gün gün');
 ok(!/data-f="hours"/.test(ui) && !/Hedef süre/.test(ui), 'formda ve çizelgede "Hedef süre" yok');
 ok(!/data-mp="go"/.test(ui) && !/plan-go/.test(ui), 'planda "Başla ▶" yok: maddeye dokunmak oturum başlatmaz');
 ok(/data-mp="pick"/.test(ui) && /App\.pickPlanItem/.test(ui), 'Bugün kartında maddeye dokununca sayaç ona sayar');

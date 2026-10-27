@@ -216,7 +216,7 @@
     currentTab = name;
     $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + name));
-    if (name === 'progress') { logCount = 14; renderProgress(); }
+    if (name === 'progress') { logCount = 14; weekOff = 0; renderProgress(); }
     if (name === 'plan') renderPlanTab();
     if (name === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (name === 'notes' && window.NotesUI) NotesUI.render();
@@ -372,7 +372,7 @@
       if (!$('#countdown-setup').contains(document.activeElement)) input.value = U.pad(timeParts[i]);
     });
     const liveMin = s.phase === 'focus' && !s.fresh ? Math.floor(s.elapsed / 60) : -1;
-    if (liveMin !== lastLiveMin) { lastLiveMin = liveMin; refreshLive(); }
+    if (liveMin !== lastLiveMin) { lastLiveMin = liveMin; refreshLive(); } else if (currentTab === 'progress' && liveMin >= 0) refreshProgressLive();
     const completedHour = Math.floor((s.continuousSeconds || 0) / 3600);
     if (completedHour !== continuousHour) {continuousHour = completedHour;if (completedHour > 0) checkBadges();}
     const subj = Store.subject(s.subjectId).name;
@@ -450,8 +450,9 @@
     const s = Timer.state();
     if (s.phase !== 'focus' || s.fresh) return [];
     const out = (Array.isArray(s.segs) ? s.segs : []).filter((p) => p && p.sec >= 1)
-      .map((p) => ({ start: p.start, minutes: p.sec / 60, subjectId: p.subjectId, planId: p.planId }));
-    out.push({ start: s.segStart || s.firstStart || Date.now(), minutes: Math.max(0, s.elapsed - (s.segAt || 0)) / 60, subjectId: s.subjectId, planId: s.planId });
+      .map((p) => ({ start: p.start, minutes: p.sec / 60, seconds: p.sec, subjectId: p.subjectId, planId: p.planId }));
+    const sec = Math.max(0, Math.floor(s.elapsed) - (s.segAt || 0));
+    out.push({ start: s.segStart || s.firstStart || Date.now(), minutes: sec / 60, seconds: sec, subjectId: s.subjectId, planId: s.planId });
     return out;
   }
   // bugün çalışılan toplam (kaydedilenler + sürmekte olan oturum)
@@ -464,7 +465,15 @@
     const el = $('#today-program');
     if (el && !el.classList.contains('hidden') && window.PlanlarUI) { try { PlanlarUI.renderProgram(el); markLivePlan(); } catch (e) { /* bir sonraki çizimde */ } }
     $('#today-min').textContent = U.fmtMin(todayMinutes());
-    if (currentTab === 'progress') renderDaySummary();
+    if (currentTab === 'progress') { renderWeek(); renderDaySummary(); }
+  }
+  // İlerleme açıkken sayaç çalışıyorsa bu haftanın grafiği ve bugünün satırı saniye saniye ilerler
+  // (yalnızca düğmesiz kısımlar yeniden çizilir: dokunuşlar kaybolmaz)
+  function refreshProgressLive() {
+    const b = $('#hafta-ozet .hg-body');
+    if (b && weekOff === 0) b.innerHTML = weekBody();
+    const today = U.dateKey(new Date()), t = $('#gun-ozet .go-day.today');
+    if (t && t.dataset.day === today) t.outerHTML = dayBlock(today, today);
   }
   // Başla'ya basıldığında bir madde seçili değilse bugünün ilk bitmemiş maddesi seçilir; başka bir şeye çalışıyorsa
   // dokunup değiştirir (ilk dakikada değiştirirse süre bölünmez, hepsi doğru maddeye yazılır)
@@ -1247,6 +1256,57 @@
   // İlerleme: Luna'nın raporu + grafikler
   // ======================================================================
   // ---------- İlerleme: gün gün çalışmaların ----------
+  // ---------- İlerleme: haftanın grafiği ----------
+  // Pazartesiden pazara her gün bir sütun; sütun o gün çalışılan derslerin renkleriyle bölünür. Altında haftanın
+  // ders dağılımı (pasta) ve her dersin saat, dakika, saniyesi. ‹ › ile önceki haftalar.
+  let weekOff = 0;
+  const weekKey = () => Planlar.shift('week', Planlar.keyOf('week', new Date()), weekOff);
+  function weekBody() {
+    const wk = weekKey(), { from, to } = Planlar.range('week', wk), today = U.dateKey(new Date());
+    const days = Planlar.daysOf('week', wk).map((k) => ({ k, d: new Date(k + 'T12:00:00'), per: new Map(), sec: 0 }));
+    const bySub = new Map();
+    let total = 0;
+    for (const x of D().sessions.concat(liveRun())) {
+      if (!x || !(x.start >= from && x.start < to)) continue;
+      const day = days.find((y) => y.k === U.dateKey(x.start));
+      if (!day) continue;
+      const sec = Planlar.secOf(x), id = Store.subject(x.subjectId).id; // silinmiş dersler tek "Genel"de toplanır
+      day.per.set(id, (day.per.get(id) || 0) + sec); day.sec += sec;
+      bySub.set(id, (bySub.get(id) || 0) + sec); total += sec;
+    }
+    const subs = [...bySub.entries()].filter(([, v]) => v >= 1).sort((a, b) => b[1] - a[1]).map(([id, sec]) => ({ id, sec, sub: Store.subject(id) }));
+    const name = (x) => (x.id ? x.sub.name : 'Genel');
+    const max = Math.max(60, ...days.map((d) => d.sec)), active = days.filter((d) => d.sec >= 1).length;
+    const cols = days.map((d) => {
+      const segs = subs.filter((x) => d.per.get(x.id) >= 1)
+        .map((x) => `<i style="height:${((d.per.get(x.id) / max) * 100).toFixed(2)}%;background:${U.esc(x.sub.color)}"></i>`).join('');
+      const mm = Math.round(d.sec / 60), lbl = d.sec < 1 ? '' : d.sec < 60 ? `${Math.round(d.sec)} sn` : mm < 60 ? `${mm} dk`
+        : `${Math.floor(mm / 60)} sa${mm % 60 ? `<br>${mm % 60} dk` : ''}`;
+      return `<div class="hg-col${d.k === today ? ' today' : ''}" title="${U.DAYS[d.d.getDay()]} · ${d.sec >= 1 ? U.fmtSec(d.sec) : 'çalışma yok'}">
+        <em>${lbl}</em><div class="hg-stack">${segs}</div><span>${d.k === today ? 'Bugün' : U.DAYS_SHORT[d.d.getDay()]}</span><small>${d.d.getDate()}</small></div>`;
+    }).join('');
+    let acc = 0;
+    const arcs = subs.map((x) => {
+      const p = (x.sec / total) * 100, c = `<circle cx="21" cy="21" r="15.9155" stroke="${U.esc(x.sub.color)}" stroke-dasharray="${p.toFixed(3)} ${(100 - p).toFixed(3)}" stroke-dashoffset="${(25 - acc).toFixed(3)}"></circle>`;
+      acc += p;
+      return c;
+    }).join('');
+    return `<p class="hg-total"><b>${total >= 1 ? U.fmtSec(total) : '—'}</b><span>${weekOff === 0 ? 'bu hafta toplam' : 'o hafta toplam'}${active ? ` · ${active} gün çalıştın` : ''}</span></p>
+      <div class="hg-cols">${cols}</div>
+      ${subs.length ? `<div class="hg-pie"><svg class="hg-donut" viewBox="0 0 42 42" role="img" aria-label="Ders dağılımı"><circle class="hg-ring" cx="21" cy="21" r="15.9155"></circle>${arcs}</svg>
+        <ul class="hg-legend">${subs.map((x) => `<li style="--c:${U.esc(x.sub.color)}"><i></i><span>${U.esc(name(x))}</span><b>${U.fmtSec(x.sec)}</b><small>%${Math.round((x.sec / total) * 100)}</small></li>`).join('')}</ul></div>`
+        : `<p class="muted small">${weekOff === 0 ? 'Bu hafta henüz çalışma yok. Sayacı başlattığında burada belirir 🐾' : 'O hafta çalışma kaydı yok.'}</p>`}`;
+  }
+  function renderWeek(full = false) {
+    const el = $('#hafta-ozet');
+    if (!el || !window.Planlar) return;
+    if (!full && el.querySelector('.hg-body')) { el.querySelector('.hg-body').innerHTML = weekBody(); return; }
+    const lab = Planlar.label('week', weekKey());
+    el.innerHTML = `<div class="hg-head"><div><h2>📊 ${lab.rel || 'Hafta'}</h2><small>${U.esc(lab.title)}</small></div>
+      <div class="hg-nav"><button type="button" class="icon-btn" data-hg="-1" aria-label="Önceki hafta">‹</button><button type="button" class="icon-btn" data-hg="1" aria-label="Sonraki hafta"${weekOff >= 0 ? ' disabled' : ''}>›</button></div></div>
+      <div class="hg-body">${weekBody()}</div>`;
+  }
+
   // Saat ve dakikaların göründüğü tek yer burası (Çalış ekranında yalnızca sayacın saati var). Her gün kendi başlığıyla:
   // toplam, hangi dersten ne kadar ve o dersin hangi konuları (bitti / eksik kaldı). Bugünse sürmekte olan oturum da
   // sayılır. En yeni gün en üstte; 14 gün gösterilir, "Daha eski günler" ile devamı açılır.
@@ -1255,31 +1315,31 @@
     const d = new Date(k + 'T12:00:00'), { from, to } = Planlar.range('day', k);
     const inDay = (x) => x && x.start >= from && x.start < to;
     const saved = D().sessions.filter(inDay), live = (k === today ? liveRun() : []).filter(inDay);
-    const per = new Map();
-    for (const x of saved.concat(live)) per.set(x.subjectId || '', (per.get(x.subjectId || '') || 0) + Math.max(0, +x.minutes || 0));
+    const per = new Map(); // saniye
+    for (const x of saved.concat(live)) { const id = Store.subject(x.subjectId).id; per.set(id, (per.get(id) || 0) + Planlar.secOf(x)); }
     const total = [...per.values()].reduce((a, b) => a + b, 0);
-    const items = Planlar.list('day', k), work = Planlar.dayWork(k, live), pst = Planlar.stats(items);
+    const items = Planlar.list('day', k), work = Planlar.dayWork(k, live, true), pst = Planlar.stats(items);
     const q = saved.reduce((n, x) => n + (+x.questions || 0), 0) + Planlar.questionEntries('day', k).reduce((n, x) => n + x.questions, 0);
     const ids = new Set([...per.keys(), ...items.map((x) => x.subjectId || '')]);
     const rows = [...ids].map((id) => ({ id, m: per.get(id) || 0, items: items.filter((x) => (x.subjectId || '') === id) }))
-      .filter((r) => r.m >= 0.5 || r.items.length).sort((a, b) => b.m - a.m);
+      .filter((r) => r.m >= 1 || r.items.length).sort((a, b) => b.m - a.m);
     const max = Math.max(1, ...rows.map((r) => r.m));
     const yday = U.dateKey(U.addDays(U.dayStart(new Date()), -1));
     const topic = (it) => {
       const m = work.items[it.id] || 0;
       const tag = it.moved ? '<em class="go-eksik">eksik kaldı → ertesi güne</em>' : it.done ? '<em class="go-tamam">✓ bitti</em>' : '';
-      return `<li><span>${U.esc(it.title)}</span><b>${m >= 0.5 ? U.fmtMin(Math.round(m)) : '—'}</b>${tag}</li>`;
+      return `<li><span>${U.esc(it.title)}</span><b>${m >= 1 ? U.fmtSec(m) : '—'}</b>${tag}</li>`;
     };
     const facts = [];
     if (saved.length || live.length) facts.push(`${saved.length + (live.length ? 1 : 0)} oturum`);
     if (q) facts.push(`${q} soru`);
     if (pst.total || pst.moved) facts.push(`plan ${pst.done}/${pst.total} tamam${pst.moved ? ` · ${pst.moved} eksik kaldı` : ''}`);
-    return `<section class="go-day${k === today ? ' today' : ''}">
-      <div class="go-dhead"><b>${d.getDate()} ${U.MONTHS[d.getMonth()]} ${U.DAYS[d.getDay()]}</b>${k === today ? '<small>bugün</small>' : k === yday ? '<small>dün</small>' : ''}<span class="go-dtotal">${total >= 0.5 ? U.fmtMin(Math.round(total)) : '—'}</span></div>
+    return `<section class="go-day${k === today ? ' today' : ''}" data-day="${k}">
+      <div class="go-dhead"><b>${d.getDate()} ${U.MONTHS[d.getMonth()]} ${U.DAYS[d.getDay()]}</b>${k === today ? '<small>bugün</small>' : k === yday ? '<small>dün</small>' : ''}<span class="go-dtotal">${total >= 1 ? U.fmtSec(total) : '—'}</span></div>
       ${facts.length ? `<p class="go-facts">${facts.join(' · ')}</p>` : ''}
       ${rows.length ? `<ul class="go-list">${rows.map((r) => {
         const sub = Store.subject(r.id);
-        return `<li class="go-row" style="--c:${U.esc(sub.color)}"><div class="go-line"><span class="go-name">${U.esc(r.id ? sub.name : 'Genel')}</span><b>${r.m >= 0.5 ? U.fmtMin(Math.round(r.m)) : '—'}</b></div>
+        return `<li class="go-row" style="--c:${U.esc(sub.color)}"><div class="go-line"><span class="go-name">${U.esc(r.id ? sub.name : 'Genel')}</span><b>${r.m >= 1 ? U.fmtSec(r.m) : '—'}</b></div>
           <div class="go-bar"><i style="width:${Math.round((r.m / max) * 100)}%"></i></div>
           ${r.items.length ? `<ul class="go-topics">${r.items.map(topic).join('')}</ul>` : ''}</li>`;
       }).join('')}</ul>` : `<p class="muted small">${k === today ? 'Bugün henüz çalışma yok. Sayacı başlattığında buraya yazılır 🐾' : 'Çalışma kaydı yok.'}</p>`}
@@ -1301,6 +1361,7 @@
       ${days.length > shown.length ? `<button type="button" class="btn soft wide" data-go="more">Daha eski günler (${days.length - shown.length})</button>` : ''}`;
   }
   function renderProgress() {
+    renderWeek(true);
     renderDaySummary();
     renderReport();
     renderCharts();
@@ -1313,11 +1374,20 @@
     const days = Stats.byDay(n);
     const goal = D().settings.dailyGoal;
     const max = Math.max(goal, ...days.map((d) => d.minutes), 1);
+    // her günün sütunu o gün çalışılan derslerin renkleriyle bölünür (en çok çalışılan ders altta)
+    const perDay = {};
+    for (const x of D().sessions) {
+      if (!x || !x.start) continue;
+      const k = U.dateKey(x.start), id = Store.subject(x.subjectId).id;
+      (perDay[k] = perDay[k] || {})[id] = (perDay[k][id] || 0) + Math.max(0, +x.minutes || 0);
+    }
     $('#day-bars').innerHTML = days.map((d, i) => {
       const lbl = n === 7 ? U.DAYS_SHORT[d.date.getDay()] : (i % 5 === 0 || i === n - 1 ? d.date.getDate() : '');
+      const parts = Object.entries(perDay[d.key] || {}).filter(([, m]) => m > 0).sort((a, b) => b[1] - a[1]);
+      const segs = parts.map(([id, m]) => `<u style="flex:${m.toFixed(3)} 1 0;background:${U.esc(Store.subject(id).color)}"></u>`).join('');
       return `<div class="b" title="${d.date.toLocaleDateString('tr-TR')} · ${U.fmtMin(d.minutes)}">
         ${d.minutes && n === 7 ? `<em>${U.fmtMin(d.minutes)}</em>` : ''}
-        <i class="${d.minutes >= goal ? 'goal-hit' : ''}" style="height:${(d.minutes / max) * 100}%"></i><span>${lbl}</span></div>`;
+        <i class="${parts.length ? 'stk' : ''}${d.minutes >= goal ? ' goal-hit' : ''}" style="height:${(d.minutes / max) * 100}%">${segs}</i><span>${lbl}</span></div>`;
     }).join('');
     // saatler
     const hours = Stats.byHour(sm.list);
@@ -2187,6 +2257,12 @@
     });
     $('#today-list').addEventListener('click', openSession);
     $('#history').addEventListener('click', openSession);
+    $('#hafta-ozet').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-hg]');
+      if (!b || b.disabled) return;
+      weekOff = Math.min(0, weekOff + Number(b.dataset.hg));
+      renderWeek(true);
+    });
     $('#gun-ozet').addEventListener('click', (e) => {
       if (!e.target.closest('[data-go="more"]')) return;
       logCount += 14;

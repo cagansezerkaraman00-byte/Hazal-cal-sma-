@@ -259,7 +259,12 @@ const Planlar = (() => {
   // Bir günün oturumları o günün maddelerine dağıtılır (yalnızca gösterim; hiçbir kayıt değişmez).
   // Maddeden başlatılan oturum (planId) o maddeye yazılır; öbürleri dersine bakar: o gün o dersten tek madde varsa
   // ona, yoksa "plan dışı"na. Taşınan maddeler sayılmaz; böylece maddeler ve plan dışı birlikte günün toplamını verir.
-  function dayWork(day, live = []) { // live: sürmekte olan oturumun henüz kaydedilmemiş parçaları (ekranda canlı görünsün)
+  // Oturumun saniyesi: yeni oturumlarda saklanan saniye; eskilerde (ya da dakikası sonradan değiştiyse) dakikadan
+  function secOf(s) {
+    const m = Math.max(0, Number(s && s.minutes) || 0), sec = Number(s && s.seconds);
+    return Number.isFinite(sec) && sec >= 0 && Math.abs(sec / 60 - m) < 1 ? sec : m * 60;
+  }
+  function dayWork(day, live = [], inSec = false) { // live: sürmekte olan oturumun henüz kaydedilmemiş parçaları (ekranda canlı görünsün)
     const items = {}, extra = {}, out = { items, extra, total: 0 };
     if (!isKey('day', day)) return out;
     const act = list('day', day).filter((x) => !x.moved), bySubj = {};
@@ -267,7 +272,7 @@ const Planlar = (() => {
     const { from, to } = range('day', day);
     for (const s of Store.data.sessions.concat(Array.isArray(live) ? live : [])) {
       if (!s || !(s.start >= from && s.start < to)) continue;
-      const m = Math.max(0, Number(s.minutes) || 0);
+      const m = inSec ? secOf(s) : Math.max(0, Number(s.minutes) || 0);
       let it = s.planId ? act.find((x) => x.id === s.planId) : null;
       if (!it && s.subjectId && bySubj[s.subjectId] && bySubj[s.subjectId].length === 1) it = bySubj[s.subjectId][0];
       if (it) items[it.id] = (items[it.id] || 0) + m;
@@ -478,7 +483,7 @@ const Planlar = (() => {
   return {
     questionEntries, saveQuestions, removeQuestions, hoursToMinutes,
     SCOPES, MAX_ITEMS, keyOf, isKey, shift, range, label, daysOf, weeksOfMonth, list, find, add, update, remove,
-    reorder, moveToDay, setDone, stats, roll, subjectWork, dayWork, targetReached, carryTarget, carry, autoCarry, uncarry,
+    reorder, moveToDay, setDone, stats, roll, subjectWork, dayWork, secOf, targetReached, carryTarget, carry, autoCarry, uncarry,
     copyPrev, prevCount, copyCount, bandOf, smallest, usedRecently, eodDue, eodView, markEod, dismissEod, onSession,
   };
 })();
