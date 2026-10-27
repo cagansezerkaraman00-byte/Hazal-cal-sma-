@@ -23,6 +23,7 @@ Uygulamada görünmez; ileride yapılacak işleri unutmamak için.
 
 ## Geri dönüş noktası
 
+- **2.12.4:** 2.12.3'teki fazlalıklar (kart zemini, parlama, üstteki seçimin rengi) geri alındı; yalnızca halka, piksel rakamlar, SERBEST ODAK yazısı ve altındaki küçük yazılar Zambak pembesi. Önceki sürüm 2.12.3, commit `302064e`.
 - **2.12.3 öncesi:** 2.12.2, commit `6d0bcd5`. 2.12.3 yalnızca Zambak temasında sayaç kartının renkleri (css/style.css'te `:root[data-tema="zambak"] .timer-card` kuralları); silmek eski altın sayacı geri getirir.
 - **2.12.2 öncesi:** 2.12.1, commit `52de693` (güne dokununca pasta listede açılıyordu). 2.12.2 yalnızca görünüş.
 - **2.12.1 öncesi:** 2.12, commit `dd260c4` (hafta grafiği yığılmış sütun + hafta pastası). 2.12.1 yalnızca görünüş: her günde ders ders ayrı sütun, y ekseni, güne dokununca o günün pastası.
