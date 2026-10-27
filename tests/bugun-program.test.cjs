@@ -143,14 +143,16 @@ eq(get('[got.planId, got.minutes]'), ['p4', 30], 'eski sayaç durumuyla da parç
 const ui = read('js/planlar-ui.js'), appJs = read('js/app.js');
 ok(/if \(s\.phase === 'focus' && !s\.running\) \$\('#btn-toggle'\)\.click\(\);/.test(appJs), 'maddeye dokununca sayaç durmuşsa o konu için başlar');
 ok(/function runSummaryText/.test(appJs) && /Toplam \$\{U\.fmtMin/.test(appJs), 'oturum sonunda toplam ve ders ders süre');
-ok(/Planlar\.dayWork\(today, liveFor\(today\)\)/.test(ui), 'Bugün kartında süreler canlı');
+ok(/<span class="tp-min" aria-hidden="true"><\/span>/.test(ui) && !/fmtMin/.test(ui), 'Bugün kartında ve Plan sekmesinde süre yazmıyor (yalnızca sayaçta)');
+ok(/\$\('#today-min'\)\.classList\.toggle\('hidden', program\)/.test(appJs) && /\$\('#day-timeline'\)\.classList\.toggle\('hidden', program\)/.test(appJs), 'YKS modunda Bugün kartında toplam ve saat şeridi yok');
+ok(/function dayBlock\(k, today\)/.test(appJs) && /Gün gün çalışmaların/.test(appJs) && /data-go="more"/.test(appJs), 'İlerleme: gün gün ders ders süreler');
 ok(!/data-f="hours"/.test(ui) && !/Hedef süre/.test(ui), 'formda ve çizelgede "Hedef süre" yok');
 ok(!/data-mp="go"/.test(ui) && !/plan-go/.test(ui), 'planda "Başla ▶" yok: maddeye dokunmak oturum başlatmaz');
 ok(/data-mp="pick"/.test(ui) && /App\.pickPlanItem/.test(ui), 'Bugün kartında maddeye dokununca sayaç ona sayar');
 ok(/function weekPlanHtml/.test(ui) && /data-mp="add" data-scope="day" data-key="\$\{k\}"/.test(ui), 'haftalık görünümde her günün kendi ＋ düğmesi');
 ok(!/'📖 ' \+ s\.intent/.test(read('js/app.js')), 'sayaçta konu adı yazmıyor');
 ok(!/function quickForm/.test(ui), 'planda serbest yazı kutusu yok: ders ve konu yeter');
-ok(/<th scope="col">Çalıştığın<\/th>/.test(ui), 'çizelgede "Çalıştığın" sütunu');
+ok(!/Çalıştığın/.test(ui) && /<th scope="col">Durum<\/th>/.test(ui), 'çizelgede süre sütunu yok');
 ok(!/\bmin:\s*minutes\b/.test(ui), 'kaydederken min gönderilmez (eski hedef yerinde kalır)');
 ({ run, get } = makeCtx(SEED));
 run('Planlar.update("p1", { title: "Cümlenin Ögeleri (tekrar)", subjectId: "y_tr", topicId: "" })');

@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.11.1",
+  "tarih": "2026-10-27",
+  "baslik": "Süre sayaçta, kayıt İlerleme'de",
+  "notlar": [
+    "⏱️ Çalış ekranında artık tek bir süre var: sayacın kendisi. Bugün kartındaki konuların yanındaki dakikalar, toplam saat ve saat şeridi kalktı; Plan sekmesinde de süre yazmıyor. Çalıştığın konunun yanında küçük bir nokta yanıyor, o kadar.",
+    "📋 İlerleme sekmesinin en üstünde Gün gün çalışmaların: her gün tarihiyle alt alta, o gün toplam ne kadar çalıştığın, hangi dersten kaç saat kaç dakika, hangi konuları bitirdiğin ve hangilerinin eksik kaldığı. Oturum bitince kendiliğinden yazılır; en yeni gün en üstte, \"Daha eski günler\" ile geriye gidersin.",
+    "💾 Hiçbir kayıt silinmedi; eski günlerin hepsi listede."
+  ]
+},
+{
   "surum": "2.11",
   "tarih": "2026-10-27",
   "baslik": "Günün özeti İlerleme'de",

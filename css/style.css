@@ -1952,7 +1952,7 @@ body.focusing #countdown-error { display: none; }
 .mp-chart-wrap { margin: 16px 0; }
 .mp-day-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
 .mp-day-table caption { caption-side: top; text-align: left; font-size: .78rem; color: var(--muted); margin-bottom: 10px; }
-.mp-col-plan { width: 54%; } .mp-col-time { width: 23%; } .mp-col-done { width: 23%; }
+.mp-col-plan { width: 54%; } .mp-col-time { width: 23%; } .mp-col-done { width: 23%; } .mp-col-plan.mp-col-wide { width: 77%; }
 .mp-day-table th { background: var(--surface-3); padding: 12px 8px; color: var(--muted); text-align: left; font-size: .78rem; }
 .mp-day-table th:last-child { text-align: center; }
 .mp-day-table td { padding: 12px 8px; border-top: 1px solid var(--line); background: var(--surface-2); overflow-wrap: anywhere; vertical-align: middle; }
@@ -2695,14 +2695,16 @@ body.focusing .today-card .timeline, body.focusing .today-card .tp-add { display
 .wp-ok { flex: none; width: 26px; text-align: center; color: var(--muted); font-weight: 800; }
 /* İlerleme: günün özeti (2.11) */
 .gun-ozet { margin-bottom: 14px; }
-.go-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.go-head h2 { margin: 0; }
-.go-nav { display: flex; align-items: center; gap: 8px; }
-.go-nav b { text-align: center; font-size: .92rem; }
-.go-nav .icon-btn:disabled { opacity: .35; }
-.go-total { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 14px 0 12px; }
-.go-total b { font-size: 1.7rem; font-weight: 800; }
-.go-total span { color: var(--muted); font-size: .84rem; font-weight: 700; }
+.gun-ozet h2 { margin: 0 0 12px; }
+.go-days { display: grid; gap: 12px; margin-bottom: 12px; }
+.go-day { padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; }
+.go-day.today { border-color: var(--ring, var(--line)); }
+.go-dhead { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; }
+.go-dhead b { font-size: .98rem; }
+.go-dhead small { color: var(--muted); font-weight: 700; font-size: .78rem; }
+.go-dtotal { margin-left: auto; font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.go-facts { margin: 2px 0 10px; color: var(--muted); font-size: .8rem; font-weight: 700; }
+.go-day > .muted { margin: 6px 0 0; }
 .go-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .go-row { padding-left: 12px; border-left: 4px solid var(--c); }
 .go-line { display: flex; justify-content: space-between; gap: 10px; font-weight: 800; }

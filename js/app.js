@@ -216,7 +216,7 @@
     currentTab = name;
     $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + name));
-    if (name === 'progress') { ozetGun = ''; renderProgress(); }
+    if (name === 'progress') { logCount = 14; renderProgress(); }
     if (name === 'plan') renderPlanTab();
     if (name === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (name === 'notes' && window.NotesUI) NotesUI.render();
@@ -464,7 +464,7 @@
     const el = $('#today-program');
     if (el && !el.classList.contains('hidden') && window.PlanlarUI) { try { PlanlarUI.renderProgram(el); markLivePlan(); } catch (e) { /* bir sonraki çizimde */ } }
     $('#today-min').textContent = U.fmtMin(todayMinutes());
-    if (currentTab === 'progress' && (!ozetGun || ozetGun === U.dateKey(new Date()))) renderDaySummary();
+    if (currentTab === 'progress') renderDaySummary();
   }
   // Başla'ya basıldığında bir madde seçili değilse bugünün ilk bitmemiş maddesi seçilir; başka bir şeye çalışıyorsa
   // dokunup değiştirir (ilk dakikada değiştirirse süre bölünmez, hepsi doğru maddeye yazılır)
@@ -1112,6 +1112,9 @@
     const qToday = today.reduce((n, s) => n + (+s.questions || 0), 0) + Planlar.questionEntries('day', U.dateKey(new Date())).reduce((n, x) => n + x.questions, 0);
     $('#today-sessions-count').textContent = !program && (today.length || qToday) ? `${today.length} oturum${qToday ? ` · ${qToday} soru ✍️` : ''}` : '';
     $('#day-timeline').innerHTML = timelineHtml(new Date(), true);
+    // YKS modunda Çalış ekranında süre yalnızca sayaçta: toplam ve saat şeridi İlerleme'deki gün gün kayıtta
+    $('#today-min').classList.toggle('hidden', program);
+    $('#day-timeline').classList.toggle('hidden', program);
     $('#today-legacy').classList.toggle('hidden', program);
     $('#today-program').classList.toggle('hidden', !program);
     if (program) {
@@ -1243,16 +1246,13 @@
   // ======================================================================
   // İlerleme: Luna'nın raporu + grafikler
   // ======================================================================
-  // ---------- İlerleme: günün özeti ----------
-  // Seçilen günün hepsi bir arada: toplam süre, hangi dersten ne kadar, o dersin hangi konuları (bitti / eksik kaldı),
-  // oturum ve soru sayısı. Bugünse sürmekte olan oturum da sayılır. ‹ › ile önceki günlere bakılır.
-  let ozetGun = '';
-  function renderDaySummary() {
-    const el = $('#gun-ozet');
-    if (!el || !window.Planlar) return;
-    const today = U.dateKey(new Date());
-    if (!ozetGun || ozetGun > today || !Planlar.isKey('day', ozetGun)) ozetGun = today;
-    const k = ozetGun, d = new Date(k + 'T12:00:00'), { from, to } = Planlar.range('day', k);
+  // ---------- İlerleme: gün gün çalışmaların ----------
+  // Saat ve dakikaların göründüğü tek yer burası (Çalış ekranında yalnızca sayacın saati var). Her gün kendi başlığıyla:
+  // toplam, hangi dersten ne kadar ve o dersin hangi konuları (bitti / eksik kaldı). Bugünse sürmekte olan oturum da
+  // sayılır. En yeni gün en üstte; 14 gün gösterilir, "Daha eski günler" ile devamı açılır.
+  let logCount = 14;
+  function dayBlock(k, today) {
+    const d = new Date(k + 'T12:00:00'), { from, to } = Planlar.range('day', k);
     const inDay = (x) => x && x.start >= from && x.start < to;
     const saved = D().sessions.filter(inDay), live = (k === today ? liveRun() : []).filter(inDay);
     const per = new Map();
@@ -1265,26 +1265,40 @@
       .filter((r) => r.m >= 0.5 || r.items.length).sort((a, b) => b.m - a.m);
     const max = Math.max(1, ...rows.map((r) => r.m));
     const yday = U.dateKey(U.addDays(U.dayStart(new Date()), -1));
-    const title = `${d.getDate()} ${U.MONTHS[d.getMonth()]} ${U.DAYS[d.getDay()]}${k === today ? ' · bugün' : k === yday ? ' · dün' : ''}`;
     const topic = (it) => {
       const m = work.items[it.id] || 0;
       const tag = it.moved ? '<em class="go-eksik">eksik kaldı → ertesi güne</em>' : it.done ? '<em class="go-tamam">✓ bitti</em>' : '';
       return `<li><span>${U.esc(it.title)}</span><b>${m >= 0.5 ? U.fmtMin(Math.round(m)) : '—'}</b>${tag}</li>`;
     };
-    const facts = [`${saved.length + (live.length ? 1 : 0)} oturum`];
+    const facts = [];
+    if (saved.length || live.length) facts.push(`${saved.length + (live.length ? 1 : 0)} oturum`);
     if (q) facts.push(`${q} soru`);
     if (pst.total || pst.moved) facts.push(`plan ${pst.done}/${pst.total} tamam${pst.moved ? ` · ${pst.moved} eksik kaldı` : ''}`);
-    el.innerHTML = `<div class="go-head"><h2>📋 Günün özeti</h2>
-        <div class="go-nav"><button type="button" class="icon-btn" data-go="-1" aria-label="Önceki gün">‹</button><b>${U.esc(title)}</b>
-        <button type="button" class="icon-btn" data-go="1" aria-label="Sonraki gün"${k >= today ? ' disabled' : ''}>›</button></div></div>
-      ${total >= 0.5 || items.length ? `<p class="go-total"><b>${U.fmtMin(Math.round(total))}</b><span>toplam çalışma · ${facts.join(' · ')}</span></p>
-      <div class="timeline go-tl" aria-label="O gün hangi saatlerde çalıştığın">${timelineHtml(d, k === today)}</div>
-      <ul class="go-list">${rows.map((r) => {
+    return `<section class="go-day${k === today ? ' today' : ''}">
+      <div class="go-dhead"><b>${d.getDate()} ${U.MONTHS[d.getMonth()]} ${U.DAYS[d.getDay()]}</b>${k === today ? '<small>bugün</small>' : k === yday ? '<small>dün</small>' : ''}<span class="go-dtotal">${total >= 0.5 ? U.fmtMin(Math.round(total)) : '—'}</span></div>
+      ${facts.length ? `<p class="go-facts">${facts.join(' · ')}</p>` : ''}
+      ${rows.length ? `<ul class="go-list">${rows.map((r) => {
         const sub = Store.subject(r.id);
         return `<li class="go-row" style="--c:${U.esc(sub.color)}"><div class="go-line"><span class="go-name">${U.esc(r.id ? sub.name : 'Genel')}</span><b>${r.m >= 0.5 ? U.fmtMin(Math.round(r.m)) : '—'}</b></div>
           <div class="go-bar"><i style="width:${Math.round((r.m / max) * 100)}%"></i></div>
           ${r.items.length ? `<ul class="go-topics">${r.items.map(topic).join('')}</ul>` : ''}</li>`;
-      }).join('')}</ul>` : `<p class="muted">${k === today ? 'Bugün henüz çalışma kaydı yok. Sayacı başlattığında burası dolmaya başlar 🐾' : 'Bu gün çalışma kaydı yok.'}</p>`}`;
+      }).join('')}</ul>` : `<p class="muted small">${k === today ? 'Bugün henüz çalışma yok. Sayacı başlattığında buraya yazılır 🐾' : 'Çalışma kaydı yok.'}</p>`}
+    </section>`;
+  }
+  function renderDaySummary() {
+    const el = $('#gun-ozet');
+    if (!el || !window.Planlar) return;
+    const today = U.dateKey(new Date());
+    // çalışma ya da plan maddesi olan günler (bugün her zaman en üstte)
+    const keys = new Set([today]);
+    for (const x of D().sessions) if (x && x.start) keys.add(U.dateKey(x.start));
+    const pd = (D().plans && D().plans.day) || {};
+    for (const k of Object.keys(pd)) if (Planlar.list('day', k).length) keys.add(k);
+    const days = [...keys].filter((k) => Planlar.isKey('day', k) && k <= today).sort().reverse();
+    const shown = days.slice(0, logCount);
+    el.innerHTML = `<h2>📋 Gün gün çalışmaların</h2>
+      <div class="go-days">${shown.map((k) => dayBlock(k, today)).join('')}</div>
+      ${days.length > shown.length ? `<button type="button" class="btn soft wide" data-go="more">Daha eski günler (${days.length - shown.length})</button>` : ''}`;
   }
   function renderProgress() {
     renderDaySummary();
@@ -2174,9 +2188,8 @@
     $('#today-list').addEventListener('click', openSession);
     $('#history').addEventListener('click', openSession);
     $('#gun-ozet').addEventListener('click', (e) => {
-      const b = e.target.closest('[data-go]');
-      if (!b || b.disabled) return;
-      ozetGun = U.dateKey(U.addDays(new Date((ozetGun || U.dateKey(new Date())) + 'T12:00:00'), +b.dataset.go));
+      if (!e.target.closest('[data-go="more"]')) return;
+      logCount += 14;
       renderDaySummary();
     });
     $('#btn-manual').addEventListener('click', () => openSessionModal(null));

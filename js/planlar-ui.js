@@ -34,8 +34,6 @@ const PlanlarUI = (() => {
   const placeholder = (scope) => N[scope].ph[isProgram() ? 1 : 0];
   // ders: etkin listede yoksa arşivdeki / diğer moddaki adı ve rengi (Store.subject); hiç yoksa ders gösterilmez
   function subj(id) { if (!id) return null; const s = Store.subject(id); return s && s.id ? s : null; }
-  // bugünse sürmekte olan oturum da sayılır: süreler sayaç çalışırken de dakika dakika görünür
-  const liveFor = (k) => (k === U.dateKey(new Date()) && App && typeof App.liveRun === 'function' ? App.liveRun() : []);
   // maddenin alt yazısı: YKS konusuysa hangi sınavın hangi dersi olduğu ("Problemler" → "TYT Matematik",
   // "Türev ve Uygulamaları" → "AYT Matematik"); değilse dersin adı. Konu kimliği olmayan eski maddelerde ad, dersin
   // YKS konularında tek bir yerde geçiyorsa oradan bulunur.
@@ -54,13 +52,6 @@ const PlanlarUI = (() => {
   function hedefWord(scope, to, now) {
     const cur = Planlar.keyOf(scope, now);
     return N[scope].hedef[to === cur ? 0 : to === Planlar.shift(scope, cur, 1) ? 1 : 2];
-  }
-  function sessionsIn(scope, key) {
-    const { from, to } = Planlar.range(scope, key);
-    let minutes = 0, questions = 0;
-    for (const s of D().sessions) if (s && s.start >= from && s.start < to) { minutes += Math.max(0, Number(s.minutes) || 0); questions += +s.questions || 0; }
-    questions += Planlar.questionEntries(scope, key).reduce((n, x) => n + x.questions, 0);
-    return { minutes: Math.round(minutes), questions };
   }
   function loadScope() { try { const s = localStorage.getItem(SCOPE_KEY); if (Planlar.SCOPES.includes(s)) view.scope = s; } catch (e) { /* gizli mod */ } }
   function saveScope() { try { localStorage.setItem(SCOPE_KEY, view.scope); } catch (e) { /* gizli mod */ } }
@@ -96,22 +87,13 @@ const PlanlarUI = (() => {
   const phaseOf = (now) => (isEvening(now) ? 'eve' : 'day');
 
   // ---------- Madde satırı (Plan sekmesi ve Dönem modundaki küçük blok) ----------
-  // Maddede çalışılan süre (dakika). Önceden süre hedefi yazılmaz (2.9): gün maddesine o günün oturumları dağıtılır
-  // (maddeden başlatılan oturum o maddeye, öbürleri dersine göre); hafta ve ay hedefinde o dönem o derste çalışılan süre.
-  function workedOn(it, scope, key, now, work) {
-    if (it.moved || key > Planlar.keyOf(scope, now)) return 0;
-    if (scope === 'day') return (work || Planlar.dayWork(key)).items[it.id] || 0;
-    const w = Planlar.subjectWork(it.subjectId, scope, key);
-    return w ? w.minutes : 0;
-  }
-  function itemHtml(it, scope, key, now, chart = false, work = null) {
+  // Çalışılan süreler burada yazmaz: saat ve dakikalar yalnızca İlerleme'deki "Gün gün çalışmaların"da (2.12).
+  function itemHtml(it, scope, key, now, chart = false) {
     const n = N[scope], cur = Planlar.keyOf(scope, now);
     const s = subj(it.subjectId);
     const color = s ? s.color : 'var(--violet)';
     const parts = [];
     if (s || it.topicId) parts.push(esc(subLabel(it)));
-    const worked = workedOn(it, scope, key, now, work);
-    if (worked > 0 && !chart) parts.push(`${n.when[key === cur ? 0 : 1]} ${U.fmtMin(worked)}`);
     if (it.from) parts.push(it.from === Planlar.shift(scope, key, -1) ? n.from : '↪ ertelenen');
     let acts;
     if (it.moved) {
@@ -122,7 +104,6 @@ const PlanlarUI = (() => {
     }
     if (chart) return `<tr class="${it.done ? 'done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}">
       <td><button type="button" class="mp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><span class="plan-text">${esc(it.title)}</span><span class="plan-sub">${s || it.topicId ? esc(subLabel(it)) : 'Genel plan'}</span></button></td>
-      <td class="mp-time-cell">${worked > 0 ? U.fmtMin(worked) : '—'}</td>
       <td><span class="plan-acts">${acts}</span></td></tr>`;
     return `<li class="plan-item mp-item${it.done ? ' done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}">
       <span class="plan-dot" style="background:${esc(color)}"></span>
@@ -130,11 +111,10 @@ const PlanlarUI = (() => {
       <span class="plan-acts">${acts}</span></li>`;
   }
   function dailyChart(items, key, now) {
-    const work = Planlar.dayWork(key, liveFor(key));
     return `<div class="mp-chart-wrap"><table class="mp-day-table"><caption>Günlük çalışma çizelgesi · Tamamladığın maddeyi işaretle</caption>
-      <colgroup><col class="mp-col-plan"><col class="mp-col-time"><col class="mp-col-done"></colgroup>
-      <thead><tr><th scope="col">Çalışacağım</th><th scope="col">Çalıştığın</th><th scope="col">Durum</th></tr></thead>
-      <tbody>${ordered(items).map(it => itemHtml(it, 'day', key, now, true, work)).join('')}</tbody></table></div>`;
+      <colgroup><col class="mp-col-plan mp-col-wide"><col class="mp-col-done"></colgroup>
+      <thead><tr><th scope="col">Çalışacağım</th><th scope="col">Durum</th></tr></thead>
+      <tbody>${ordered(items).map(it => itemHtml(it, 'day', key, now, true)).join('')}</tbody></table></div>`;
   }
   const ordered = (items) => items.filter((x) => !x.moved).concat(items.filter((x) => x.moved));
   function progHtml(st) {
@@ -161,15 +141,14 @@ const PlanlarUI = (() => {
     const segBtn = (s) => `<button type="button" data-mp="scope" data-scope="${s}" class="${s === scope ? 'active' : ''}" aria-pressed="${s === scope}">${N[s].seg}</button>`;
     let rollLine = '';
     if (scope !== 'day') {
-      // haftada günler zaten alt alta görünüyor: haftalık hedef yoksa yalnızca çalışılan süre yazılır
+      // haftada günler zaten alt alta görünüyor; çalışılan süre burada yazmaz (İlerleme'de gün gün)
       const parts = scope === 'week'
         ? (own.total ? [`Haftalık hedefler ${own.done}/${own.total}`, `Günlük maddeler ${r.days.done}/${r.days.total}`] : [])
         : [`Aylık hedefler ${own.done}/${own.total}`, `Haftalık ${r.weeks.done}/${r.weeks.total}`, `Günlük ${r.days.done}/${r.days.total}`];
       if (r.all.total && parts.length) parts.push(`Toplam %${r.all.pct}`);
       if (own.moved) parts.push(`${own.moved} madde taşındı`);
       if (scope === 'week') { const ek = r.days.moved; if (ek) parts.push(`${ek} konu eksik kalıp ertesi güne geçti`); }
-      const w0 = key <= cur ? sessionsIn(scope, key) : null, w = w0 && w0.minutes > 0 ? w0 : null; // "0 dk çalıştın" yazılmaz
-      rollLine = parts.length || w ? `<p class="mp-roll">${parts.join(' · ')}${w ? `${parts.length ? '<br>' : ''}⏱️ ${key === cur ? n.cur : scope === 'week' ? 'O hafta' : 'O ay'} ${U.fmtMin(w.minutes)} çalıştın${w.questions ? ` · ${w.questions} soru` : ''}` : ''}</p>` : '';
+      rollLine = parts.length ? `<p class="mp-roll">${parts.join(' · ')}</p>` : '';
     }
     const remaining = own.remaining.length;
     const tools = [];
@@ -263,17 +242,14 @@ const PlanlarUI = (() => {
     if (!(day < today || eve)) return '';
     const v = Planlar.eodView(day, now), st = v.stats;
     if (!st.total && !st.moved) return '';
-    const yesterday = U.dateKey(U.addDays(U.dayStart(now), -1));
-    const w = sessionsIn('day', day);
     const next = Planlar.shift('day', day, 1);
     const to = eve ? next : Planlar.carryTarget('day', day, now);
     const hw = eve ? 'yarına' : hedefWord('day', to, now);
     const ring = st.total ? `<span class="mp-ring${st.pct === 100 ? ' full' : ''}" style="--p:${st.pct}"><b>%${st.pct}</b></span>` : '';
     const nums = st.total ? `${st.done}/${st.total} madde tamam${st.moved ? ` · ${st.moved} madde taşındı` : ''}` : `${st.moved} madde taşındı`;
-    const when = eve ? 'Bugün' : day === yesterday ? 'Dün' : 'O gün';
     const writeLabel = eve ? 'Yarının' : next === today ? 'Bugünün' : 'Ertesi günün';
     return `<div class="mp-eod"><div class="mp-eod-head">${ring}
-      <div><b>🌙 Gün sonu</b><small>${nums}</small>${w.minutes > 0 ? `<small>⏱️ ${when} ${U.fmtMin(w.minutes)} çalıştın${w.questions ? ` · ${w.questions} soru` : ''}</small>` : ''}</div></div>
+      <div><b>🌙 Gün sonu</b><small>${nums}</small></div></div>
       ${v.showText ? `<p class="mp-eod-text"><b>🐾 Luna:</b> ${esc(v.showText)}</p>` : ''}
       <div class="mp-tools">${st.remaining.length ? `<button type="button" class="btn primary small-btn" data-mp="carry" data-scope="day" data-key="${esc(day)}" data-to="${esc(to)}" data-hedef="${hw}">↪ Kalan ${st.remaining.length} maddeyi ${hw} taşı</button>` : ''}
         <button type="button" class="btn soft small-btn" data-mp="day" data-key="${esc(next)}" data-focus="1">✍️ ${writeLabel} planını yaz</button></div></div>`;
@@ -292,11 +268,11 @@ const PlanlarUI = (() => {
   function weekPlanHtml(wk, now) {
     const today = U.dateKey(now);
     return `<div class="wp-days">${Planlar.daysOf('week', wk).map((k) => {
-      const d = noon(k), items = ordered(Planlar.list('day', k)), work = k <= today ? Planlar.dayWork(k, liveFor(k)) : null;
+      const d = noon(k), items = ordered(Planlar.list('day', k));
       const rows = items.map((it) => {
-        const sb = subj(it.subjectId), m = work && !it.moved ? work.items[it.id] || 0 : 0;
+        const sb = subj(it.subjectId);
         return `<li class="wp-item${it.done ? ' done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}" style="--c:${esc(sb ? sb.color : 'var(--violet)')}">
-          <button type="button" class="wp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><b>${esc(it.title)}</b><small>${esc(subLabel(it))}${m > 0 ? ` · ${U.fmtMin(m)}` : ''}${it.moved ? ` · <span class="wp-eksik">eksik kaldı → ${Planlar.isKey('day', it.moved) ? DAY_TO[noon(it.moved).getDay()] : 'sonraya'} geçti</span>` : ''}</small></button>
+          <button type="button" class="wp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><b>${esc(it.title)}</b><small>${esc(subLabel(it))}${it.moved ? ` · <span class="wp-eksik">eksik kaldı → ${Planlar.isKey('day', it.moved) ? DAY_TO[noon(it.moved).getDay()] : 'sonraya'} geçti</span>` : ''}</small></button>
           ${it.moved ? '<span class="wp-ok" aria-hidden="true">↪</span>' : `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı: ${esc(it.title)}"${it.done ? ' checked' : ''}>`}</li>`;
       }).join('');
       return `<section class="wp-day${k === today ? ' today' : ''}" aria-label="${U.DAYS[d.getDay()]} ${d.getDate()} ${U.MONTHS[d.getMonth()]}">
@@ -340,22 +316,22 @@ const PlanlarUI = (() => {
   }
 
   // ---------- Ana sayfa: Bugün kartındaki program (YKS modu) ----------
-  // Plan'da bugüne yazılan dersler ve konular; yanında bugün o maddede çalışılan süre ve işaret kutusu. Başka bir şey yok.
-  // Maddeye dokununca sayaç ona sayar (App.pickPlanItem): oturum başlamaz, sayaçta bir şey yazmaz.
-  function programRow(it, work) {
-    const s = subj(it.subjectId), m = work.items[it.id] || 0, from = it.from ? fromWord(it.from) : '';
+  // Plan'da bugüne yazılan dersler ve konular ve işaret kutusu; süre yazmaz (saatler yalnızca İlerleme'de).
+  // Maddeye dokununca sayaç o konu için sayar (App.pickPlanItem); çalışılan konuda küçük bir nokta yanar.
+  function programRow(it) {
+    const s = subj(it.subjectId), from = it.from ? fromWord(it.from) : '';
     return `<li class="tp-row${it.done ? ' done' : ''}" data-tp-id="${esc(it.id)}" data-mp-id="${esc(it.id)}" style="--c:${esc(s ? s.color : 'var(--violet)')}">
       <button type="button" class="tp-go" data-mp="pick"${it.done ? ' disabled' : ''} aria-pressed="false" aria-label="${esc(it.title)}${it.done ? ': tamamlandı' : ': sayaç bu konu için saysın'}">
         <span class="tp-text"><b>${esc(it.title)}</b><small>${esc(subLabel(it))}${from ? ` · <span class="tp-from">${from}</span>` : ''}</small></span>
-        <span class="tp-min">${m > 0 ? U.fmtMin(m) : ''}</span></button>
+        <span class="tp-min" aria-hidden="true"></span></button>
       <input type="checkbox" class="check" data-mp="done" aria-label="Bitti: ${esc(it.title)}"${it.done ? ' checked' : ''}></li>`;
   }
   function renderProgram(el) {
     if (!el || !window.Planlar) return;
     const now = new Date(), today = U.dateKey(now);
     paintedPhase = phaseOf(now);
-    const act = Planlar.list('day', today).filter((x) => !x.moved), work = Planlar.dayWork(today, liveFor(today));
-    paint(el, `${act.length ? `<ul class="tp-list" aria-label="Bugünün programı">${act.map((it) => programRow(it, work)).join('')}</ul>` : ''}
+    const act = Planlar.list('day', today).filter((x) => !x.moved);
+    paint(el, `${act.length ? `<ul class="tp-list" aria-label="Bugünün programı">${act.map((it) => programRow(it)).join('')}</ul>` : ''}
       <button type="button" class="btn soft tp-add" data-mp="add" data-scope="day" data-key="${today}">＋ Plan ekle</button>`);
   }
 
