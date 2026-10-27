@@ -153,7 +153,9 @@ ok(/<span class="tp-min" aria-hidden="true"><\/span>/.test(ui) && !/fmtMin/.test
 ok(/\$\('#today-min'\)\.classList\.toggle\('hidden', program\)/.test(appJs) && /\$\('#day-timeline'\)\.classList\.toggle\('hidden', program\)/.test(appJs), 'YKS modunda Bugün kartında toplam ve saat şeridi yok');
 ok(/function dayBlock\(k, today\)/.test(appJs) && /Gün gün çalışmaların/.test(appJs) && /data-go="more"/.test(appJs), 'İlerleme: gün gün ders ders süreler');
 ok(/function weekAxis\(maxSec\)/.test(appJs) && /class="hg-y"/.test(appJs) && /class="hg-b"/.test(appJs) && /U\.fmtSec\(x\.sec\)/.test(appJs), 'İlerleme: y ekseni saat, x ekseni günler, her günde ders ders sütun');
-ok(/function openDayDetail\(k, scroll\)/.test(appJs) && /class="hg-donut"/.test(appJs) && /data-go-day=/.test(appJs) && /data-hg-day=/.test(appJs), 'güne basınca altında o günün pastası ve ayrıntısı');
+ok(/function toggleChartDay\(k\)/.test(appJs) && /class="hg-detail"/.test(appJs) && /class="hg-donut"/.test(appJs) && /data-hg-day=/.test(appJs), 'grafikte güne basınca hemen altında o günün pastası ve ayrıntısı');
+ok(/function openDayDetail\(k\)/.test(appJs) && /data-go-day=/.test(appJs), 'listede güne basınca o gün yerinde açılır');
+ok(/function fitBars\(el, w\)/.test(appJs) && /--bw/.test(read('css/style.css')), 'günde kaç ders varsa o kadar sütun; hafta ekrana sığsın diye incelir');
 ok(/\.hg-col > \* \{ pointer-events: none; \}/.test(read('css/style.css')) && /\.go-dhead > \* \{ pointer-events: none; \}/.test(read('css/style.css')), 'saniye saniye güncellenirken dokunuşlar kaybolmaz');
 ok(/else if \(currentTab === 'progress' && liveMin >= 0\) refreshProgressLive\(\);/.test(appJs), 'İlerleme açıkken süreler saniye saniye');
 ok(/id="hafta-ozet"[\s\S]*id="gun-ozet"/.test(read('index.html')), 'İlerleme sırası: hafta grafiği, sonra gün gün');

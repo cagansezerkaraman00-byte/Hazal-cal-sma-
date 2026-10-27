@@ -216,7 +216,7 @@
     currentTab = name;
     $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + name));
-    if (name === 'progress') { logCount = 14; weekOff = 0; openDay = ''; renderProgress(); }
+    if (name === 'progress') { logCount = 14; weekOff = 0; openDay = ''; chartDay = ''; renderProgress(); }
     if (name === 'plan') renderPlanTab();
     if (name === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (name === 'notes' && window.NotesUI) NotesUI.render();
@@ -1260,7 +1260,7 @@
   // Altında gün gün dersler. Bir güne (sütuna ya da satırına) dokununca altında o günün pastası ve ayrıntısı açılır:
   // ders ders, konu konu saat, dakika, saniye. Sayaç çalışırken bugünün süreleri saniye saniye ilerler; bunun için
   // düğmeler hiç yeniden yaratılmaz, yalnızca içleri güncellenir (dokunuşlar kaybolmaz).
-  let weekOff = 0, openDay = '', logCount = 14;
+  let weekOff = 0, openDay = '', chartDay = '', logCount = 14; // chartDay: grafikte dokunulan gün (pastası grafiğin altında)
   const weekKey = () => Planlar.shift('week', Planlar.keyOf('week', new Date()), weekOff);
   const subjKey = (x) => Store.subject(x.subjectId).id; // silinmiş dersler tek "Genel"de toplanır
   const subjName = (id) => (id ? Store.subject(id).name : 'Genel');
@@ -1303,6 +1303,12 @@
     const total = days.reduce((n, d) => n + d.sec, 0), maxBar = Math.max(60, ...days.flatMap((d) => [...d.per.values()]));
     return { wk, days, today, total, subs, short: shortNames(subs.map((x) => x.id)), active: days.filter((d) => d.sec >= 1).length, ax: weekAxis(maxBar) };
   }
+  const barsOf = (d, w) => w.subs.filter((x) => (d.per.get(x.id) || 0) >= 1).length;
+  // sütun kalınlığı: haftanın bütün sütunları ekrana sığsın diye ders sayısına göre (5–14 px); yine de sığmazsa yana kayar
+  function fitBars(el, w) {
+    const sc = el.querySelector('.hg-scroll'), avail = sc && sc.clientWidth ? sc.clientWidth : Math.max(220, (el.clientWidth || 360) - 64);
+    for (w.bw = 14; w.bw > 5; w.bw--) if (w.days.reduce((n, d) => n + colWidth(d, w), 0) <= avail) break;
+  }
   function colInner(d, w) {
     const bars = w.subs.filter((x) => (d.per.get(x.id) || 0) >= 1).map((x) => {
       const v = d.per.get(x.id), h = Math.max(4, Math.round((v / w.ax.top) * BAR_H));
@@ -1312,7 +1318,7 @@
       <span class="hg-day">${d.k === w.today ? 'Bugün' : U.DAYS_SHORT[d.d.getDay()]}</span><small>${d.d.getDate()}</small>`;
   }
   const colLabel = (d) => `${d.d.getDate()} ${U.MONTHS[d.d.getMonth()]} ${U.DAYS[d.d.getDay()]}: ${d.sec >= 1 ? U.fmtSec(d.sec) : 'çalışma yok'}`;
-  const colWidth = (d, w) => Math.max(36, w.subs.filter((x) => (d.per.get(x.id) || 0) >= 1).length * 15 + 10);
+  const colWidth = (d, w) => Math.max(32, barsOf(d, w) * (w.bw + 3) + 5);
   const weekTotal = (w) => (w.total >= 1
     ? `<b>${U.fmtSec(w.total)}</b><span>${weekOff === 0 ? 'bu hafta toplam' : 'o hafta toplam'} · ${w.active} gün çalıştın</span>`
     : `<b>—</b><span>${weekOff === 0 ? 'Bu hafta henüz çalışma yok. Sayacı başlattığında burada belirir 🐾' : 'O hafta çalışma kaydı yok.'}</span>`);
@@ -1321,12 +1327,16 @@
     const el = $('#hafta-ozet');
     if (!el || !window.Planlar) return;
     const w = weekData(), cols = el.querySelectorAll('.hg-col');
+    fitBars(el, w);
     if (!full && el.dataset.wk === w.wk && cols.length === w.days.length) {
+      const box = el.querySelector('.hg-cols');
+      box.style.setProperty('--bw', w.bw + 'px'); box.classList.toggle('narrow', w.bw < 9);
       // yerinde güncelle: düğmeler kalır, kaydırma yeri bozulmaz (sayaç çalışırken her saniye)
       w.days.forEach((d, i) => {
         cols[i].innerHTML = colInner(d, w); cols[i].style.minWidth = colWidth(d, w) + 'px';
-        cols[i].setAttribute('aria-label', colLabel(d)); cols[i].classList.toggle('sel', d.k === openDay);
+        cols[i].setAttribute('aria-label', colLabel(d)); cols[i].classList.toggle('sel', d.k === chartDay);
       });
+      patchChartDay();
       el.querySelector('.hg-total').innerHTML = weekTotal(w);
       el.querySelector('.hg-y').innerHTML = axisY(w.ax);
       el.querySelector('.hg-grid').innerHTML = axisGrid(w.ax);
@@ -1339,10 +1349,13 @@
       <div class="hg-nav"><button type="button" class="icon-btn" data-hg="-1" aria-label="Önceki hafta">‹</button><button type="button" class="icon-btn" data-hg="1" aria-label="Sonraki hafta"${weekOff >= 0 ? ' disabled' : ''}>›</button></div></div>
       <p class="hg-total">${weekTotal(w)}</p>
       <div class="hg-chart"><div class="hg-y" style="height:${PLOT_H}px" aria-hidden="true">${axisY(w.ax)}</div>
-      <div class="hg-scroll"><div class="hg-cols"><div class="hg-grid" style="height:${PLOT_H}px" aria-hidden="true">${axisGrid(w.ax)}</div>${w.days.map((d) => `<button type="button" class="hg-col${d.k === w.today ? ' today' : ''}${d.k === openDay ? ' sel' : ''}" data-hg-day="${d.k}" style="min-width:${colWidth(d, w)}px" aria-label="${colLabel(d)}"${d.k > w.today ? ' disabled' : ''}>${colInner(d, w)}</button>`).join('')}</div></div></div>
+      <div class="hg-scroll"><div class="hg-cols${w.bw < 9 ? ' narrow' : ''}" style="--bw:${w.bw}px"><div class="hg-grid" style="height:${PLOT_H}px" aria-hidden="true">${axisGrid(w.ax)}</div>${w.days.map((d) => `<button type="button" class="hg-col${d.k === w.today ? ' today' : ''}${d.k === chartDay ? ' sel' : ''}" data-hg-day="${d.k}" style="min-width:${colWidth(d, w)}px" aria-label="${colLabel(d)}"${d.k > w.today ? ' disabled' : ''}>${colInner(d, w)}</button>`).join('')}</div></div></div>
+      <div class="hg-detail"${chartDay ? '' : ' hidden'}>${chartDayHtml()}</div>
       <ul class="hg-legend">${weekLegend(w)}</ul>`;
-    // grafik ekrana sığmazsa bugünün olduğu yere kaydır
+    // ilk çizimde genişlik tahmindi: sığmadıysa gerçek genişliğe göre sütunları incelt
     const sc = el.querySelector('.hg-scroll'), t = el.querySelector('.hg-col.today');
+    if (sc && sc.scrollWidth > sc.clientWidth + 1 && w.bw > 5) renderWeek();
+    // yine de sığmazsa (çok ders) bugünün olduğu yere kaydır
     if (sc && t && sc.scrollWidth > sc.clientWidth) sc.scrollLeft = Math.max(0, t.offsetLeft - sc.clientWidth + t.offsetWidth + 8);
   }
 
@@ -1388,7 +1401,7 @@
     if (!f.rows.length) return `<p class="muted small">${k === today ? 'Bugün henüz çalışma yok. Sayacı başlattığında buraya yazılır 🐾' : 'O gün çalışma kaydı yok.'}</p>`;
     return `<div class="go-pie">${studied.length ? `<svg class="hg-donut" viewBox="0 0 42 42" role="img" aria-label="O günün ders dağılımı"><circle class="hg-ring" cx="21" cy="21" r="15.9155"></circle>${arcs}
         <text class="go-pie-t" x="21" y="${center[1] ? 20 : 22.6}">${center[0]}</text>${center[1] ? `<text class="go-pie-t" x="21" y="26">${center[1]}</text>` : ''}</svg>` : ''}
-      <ul class="go-legend">${f.rows.map((r) => `<li style="--c:${U.esc(Store.subject(r.id).color)}"><div class="go-lrow"><i></i><span>${U.esc(subjName(r.id))}</span><b>${r.sec >= 1 ? U.fmtSec(r.sec) : '—'}</b><small>${r.sec >= 1 && f.total >= 1 ? `%${Math.round((r.sec / f.total) * 100)}` : ''}</small></div>
+      <ul class="go-legend">${f.rows.map((r) => `<li style="--c:${U.esc(Store.subject(r.id).color)}"><div class="go-lrow"><i></i><span>${U.esc(subjName(r.id))}</span><em class="go-tv"><b>${r.sec >= 1 ? U.fmtSec(r.sec) : '—'}</b><small>${r.sec >= 1 && f.total >= 1 ? `%${Math.round((r.sec / f.total) * 100)}` : ''}</small></em></div>
         ${r.items.length ? `<ul class="go-topics">${r.items.map(topic).join('')}</ul>` : ''}</li>`).join('')}</ul></div>
       ${facts.length ? `<p class="go-facts">${facts.join(' · ')}</p>` : ''}`;
   }
@@ -1417,7 +1430,6 @@
     for (const x of D().sessions) if (x && x.start) keys.add(U.dateKey(x.start));
     const pd = (D().plans && D().plans.day) || {};
     for (const k of Object.keys(pd)) if (Planlar.list('day', k).length) keys.add(k);
-    if (openDay && Planlar.isKey('day', openDay)) keys.add(openDay);
     const days = [...keys].filter((k) => Planlar.isKey('day', k) && k <= today).sort().reverse();
     if (openDay) logCount = Math.max(logCount, Math.ceil((days.indexOf(openDay) + 1) / 14) * 14);
     const shown = days.slice(0, logCount);
@@ -1425,12 +1437,43 @@
       <div class="go-days">${shown.map((k) => dayBlock(k, today)).join('')}</div>
       ${days.length > shown.length ? `<button type="button" class="btn soft wide" data-go="more">Daha eski günler (${days.length - shown.length})</button>` : ''}`;
   }
-  function openDayDetail(k, scroll) {
-    openDay = openDay === k && !scroll ? '' : k;
+  // listede bir güne dokununca o gün yerinde açılır (bir anda tek gün)
+  function openDayDetail(k) {
+    openDay = openDay === k ? '' : k;
     renderDaySummary();
-    renderWeek();
     const sec = openDay && $(`#gun-ozet .go-day[data-day="${openDay}"]`);
-    if (sec) sec.scrollIntoView({ behavior: scroll ? 'smooth' : 'auto', block: scroll ? 'start' : 'nearest' });
+    if (sec) sec.scrollIntoView({ block: 'nearest' });
+  }
+  // grafikte bir güne dokununca hemen altında o günün pastası ve ayrıntısı açılır; aynı güne ya da ×'e dokununca kapanır
+  function chartDayTitle(k) {
+    const d = new Date(k + 'T12:00:00'), today = U.dateKey(new Date());
+    return `${d.getDate()} ${U.MONTHS[d.getMonth()]} ${U.DAYS[d.getDay()]}${k === today ? ' · bugün' : ''}`;
+  }
+  function chartDayHtml() {
+    if (!chartDay) return '';
+    const today = U.dateKey(new Date()), f = dayInfo(chartDay, today);
+    return `<div class="hg-dhead"><div><b>${chartDayTitle(chartDay)}</b><span class="hg-dtotal">${f.total >= 1 ? U.fmtSec(f.total) : '—'}</span></div>
+      <button type="button" class="icon-btn" data-hg-close aria-label="Kapat">×</button></div>
+      <div class="hg-dbody">${dayDetail(chartDay, today, f)}</div>`;
+  }
+  // saniye saniye: başlık ve kapatma düğmesi kalır, yalnızca süre ve ayrıntı yenilenir
+  function patchChartDay() {
+    const box = $('#hafta-ozet .hg-detail');
+    if (!box || !chartDay) return;
+    const t = box.querySelector('.hg-dtotal'), b = box.querySelector('.hg-dbody');
+    if (!t || !b) { box.innerHTML = chartDayHtml(); return; }
+    const today = U.dateKey(new Date()), f = dayInfo(chartDay, today);
+    t.textContent = f.total >= 1 ? U.fmtSec(f.total) : '—';
+    b.innerHTML = dayDetail(chartDay, today, f);
+  }
+  function toggleChartDay(k) {
+    chartDay = chartDay === k ? '' : k;
+    const box = $('#hafta-ozet .hg-detail');
+    $$('#hafta-ozet .hg-col').forEach((c) => c.classList.toggle('sel', c.dataset.hgDay === chartDay));
+    if (!box) return;
+    box.hidden = !chartDay;
+    box.innerHTML = chartDayHtml();
+    if (chartDay) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
   function renderProgress() {
     renderWeek(true);
@@ -2331,15 +2374,17 @@
     $('#history').addEventListener('click', openSession);
     $('#hafta-ozet').addEventListener('click', (e) => {
       const day = e.target.closest('[data-hg-day]');
-      if (day && !day.disabled) { openDayDetail(day.dataset.hgDay, true); return; }
+      if (day && !day.disabled) { toggleChartDay(day.dataset.hgDay); return; }
+      if (e.target.closest('[data-hg-close]')) { toggleChartDay(chartDay); return; }
       const b = e.target.closest('[data-hg]');
       if (!b || b.disabled) return;
       weekOff = Math.min(0, weekOff + Number(b.dataset.hg));
+      chartDay = '';
       renderWeek(true);
     });
     $('#gun-ozet').addEventListener('click', (e) => {
       const day = e.target.closest('[data-go-day]');
-      if (day) { openDayDetail(day.dataset.goDay, false); return; }
+      if (day) { openDayDetail(day.dataset.goDay); return; }
       if (!e.target.closest('[data-go="more"]')) return;
       logCount += 14;
       renderDaySummary();

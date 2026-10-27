@@ -2721,22 +2721,30 @@ body.focusing .today-card .timeline, body.focusing .today-card .tp-add { display
 .hg-col > * { pointer-events: none; }
 .hg-col:disabled { cursor: default; opacity: .55; }
 .hg-plot { display: flex; align-items: flex-end; justify-content: center; gap: 3px; width: 100%; }
-.hg-b { position: relative; flex: 0 0 auto; width: 12px; border-radius: 4px 4px 0 0; background: var(--c); transition: height .35s ease; }
+.hg-b { position: relative; flex: 0 0 auto; width: var(--bw, 12px); border-radius: 4px 4px 0 0; background: var(--c); transition: height .35s ease; }
 .hg-b em { position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); font-style: normal; font-size: .62rem; line-height: 1; font-weight: 800; white-space: nowrap; color: var(--text); }
+.hg-cols.narrow .hg-b em { font-size: .5rem; }
 .hg-day { margin-top: 7px; padding: 1px 5px; border-radius: 99px; font-size: .72rem; font-weight: 800; color: var(--muted); white-space: nowrap; }
 .hg-col small { font-size: .62rem; color: var(--muted); }
 .hg-col.today .hg-day { color: var(--text); }
 .hg-col.sel .hg-day { background: var(--ring); color: #1d1a2e; }
 .hg-col.sel .hg-b { box-shadow: 0 0 0 1.5px var(--ring); }
+/* grafikte dokunulan günün pastası, grafiğin hemen altında */
+.hg-detail { margin-top: 12px; padding: 12px 14px; border: 1px solid var(--ring, var(--line)); border-radius: 16px; background: var(--card); }
+.hg-dhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.hg-dhead > div { display: grid; gap: 2px; min-width: 0; }
+.hg-dhead b { font-size: .98rem; }
+.hg-dtotal { font-size: 1.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.hg-dhead .icon-btn { width: 32px; height: 32px; min-width: 32px; font-size: 1.1rem; }
 .hg-legend { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
-.hg-legend li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: .84rem; font-weight: 700; }
-.hg-legend i { display: grid; place-items: center; height: 20px; border-radius: 6px; background: var(--c); color: #1d1a2e; font-style: normal; font-size: .64rem; font-weight: 800; }
-.hg-legend span { min-width: 0; overflow-wrap: break-word; }
-.hg-legend b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hg-legend li { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: .84rem; font-weight: 700; }
+.hg-legend i { flex: none; width: 22px; display: grid; place-items: center; height: 20px; border-radius: 6px; background: var(--c); color: #1d1a2e; font-style: normal; font-size: .64rem; font-weight: 800; }
+.hg-legend span { flex: 1 1 auto; }
+.hg-legend b { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .hg-donut { width: 140px; height: 140px; flex: 0 0 auto; }
 .hg-donut circle { fill: none; stroke-width: 6; }
 .hg-donut .hg-ring { stroke: var(--track); }
-@media (max-width: 380px) { .hg-b { width: 10px; } .hg-y span { font-size: .54rem; } .hg-day { padding: 1px 3px; font-size: .66rem; } }
+@media (max-width: 380px) { .hg-y span { font-size: .54rem; } .hg-day { padding: 1px 3px; font-size: .66rem; } }
 /* gün gün: satıra dokununca altında o günün pastası ve ayrıntısı açılır */
 .go-hint { margin: -6px 0 10px; }
 .go-days { display: grid; gap: 10px; margin-bottom: 12px; }
@@ -2758,11 +2766,12 @@ body.focusing .today-card .timeline, body.focusing .today-card .tp-add { display
 .go-pie .hg-donut { margin-inline: auto; }
 .go-pie-t { font-size: 5.4px; font-weight: 800; fill: var(--text); text-anchor: middle; }
 .go-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; flex: 1 1 260px; min-width: 0; }
-.go-lrow { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; align-items: center; gap: 8px; font-size: .9rem; font-weight: 800; }
-.go-lrow i { width: 12px; height: 12px; border-radius: 4px; background: var(--c); }
-.go-lrow span { overflow-wrap: break-word; min-width: 0; }
-.go-lrow b { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.go-lrow small { color: var(--muted); font-size: .76rem; min-width: 34px; text-align: right; }
+.go-lrow { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; font-size: .9rem; font-weight: 800; }
+.go-lrow i { flex: none; width: 12px; height: 12px; border-radius: 4px; background: var(--c); }
+.go-lrow span { flex: 1 1 auto; }
+.go-tv { margin-left: auto; display: inline-flex; align-items: baseline; gap: 8px; font-style: normal; white-space: nowrap; }
+.go-tv b { font-variant-numeric: tabular-nums; }
+.go-tv small { color: var(--muted); font-size: .76rem; min-width: 34px; text-align: right; }
 .go-legend .go-topics { margin: 6px 0 0 20px; }
 .go-facts { margin: 12px 0 0; color: var(--muted); font-size: .8rem; font-weight: 700; }
 .go-topics { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
