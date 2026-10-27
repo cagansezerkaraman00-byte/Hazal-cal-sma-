@@ -75,6 +75,10 @@ eq(Object.values(w.items).reduce((a, b) => a + b, 0) + Object.values(w.extra).re
 eq(get(`Planlar.dayWork("2026-10-27")`), { items: {}, extra: {}, total: 0 }, 'boş gün');
 eq(get(`Planlar.dayWork("26-10-2026")`), { items: {}, extra: {}, total: 0 }, 'bozuk anahtar');
 eq(get('Store.data'), before, 'dayWork hiçbir kaydı değiştirmez, plan oluşturmaz');
+// sürmekte olan oturum (henüz kaydedilmemiş): Bugün kartında canlı görünür, kayda geçmez
+const live = get(`Planlar.dayWork("${DAY}", [{ start: ${T(18)}, minutes: 40, subjectId: 'y_mat', planId: 'p2' }, { start: ${T(18, 40)}, minutes: 12.4, subjectId: 'y_kim' }])`);
+eq([live.items.p2, live.items.p4, live.total], [40, 38, 303], 'canlı parçalar ilgili maddelere eklenir');
+eq(get('Store.data'), before, 'canlı süre kayda yazılmaz');
 
 // ---------- B. Maddeden başlatılan oturum kendiliğinden işaretlenmez ----------
 eq(run(`Planlar.onSession({ intent: "Problemler", planId: "p2", start: ${T(18)} })`), null, 'planId olan oturum maddeyi işaretlemez');
@@ -136,7 +140,10 @@ NOW = T(9); run('Timer.toggle()'); NOW = T(9, 30); run('Timer.setPlan("p4", "y_k
 eq(get('[got.planId, got.minutes]'), ['p4', 30], 'eski sayaç durumuyla da parçalar çalışıyor');
 
 // ---------- E. Arayüz: süre hedefi sorulmaz, eski hedef silinmez ----------
-const ui = read('js/planlar-ui.js');
+const ui = read('js/planlar-ui.js'), appJs = read('js/app.js');
+ok(/if \(s\.phase === 'focus' && !s\.running\) \$\('#btn-toggle'\)\.click\(\);/.test(appJs), 'maddeye dokununca sayaç durmuşsa o konu için başlar');
+ok(/function runSummaryText/.test(appJs) && /Toplam \$\{U\.fmtMin/.test(appJs), 'oturum sonunda toplam ve ders ders süre');
+ok(/Planlar\.dayWork\(today, liveFor\(today\)\)/.test(ui), 'Bugün kartında süreler canlı');
 ok(!/data-f="hours"/.test(ui) && !/Hedef süre/.test(ui), 'formda ve çizelgede "Hedef süre" yok');
 ok(!/data-mp="go"/.test(ui) && !/plan-go/.test(ui), 'planda "Başla ▶" yok: maddeye dokunmak oturum başlatmaz');
 ok(/data-mp="pick"/.test(ui) && /App\.pickPlanItem/.test(ui), 'Bugün kartında maddeye dokununca sayaç ona sayar');

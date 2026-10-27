@@ -259,13 +259,13 @@ const Planlar = (() => {
   // Bir günün oturumları o günün maddelerine dağıtılır (yalnızca gösterim; hiçbir kayıt değişmez).
   // Maddeden başlatılan oturum (planId) o maddeye yazılır; öbürleri dersine bakar: o gün o dersten tek madde varsa
   // ona, yoksa "plan dışı"na. Taşınan maddeler sayılmaz; böylece maddeler ve plan dışı birlikte günün toplamını verir.
-  function dayWork(day) {
+  function dayWork(day, live = []) { // live: sürmekte olan oturumun henüz kaydedilmemiş parçaları (ekranda canlı görünsün)
     const items = {}, extra = {}, out = { items, extra, total: 0 };
     if (!isKey('day', day)) return out;
     const act = list('day', day).filter((x) => !x.moved), bySubj = {};
     for (const it of act) if (it.subjectId) (bySubj[it.subjectId] = bySubj[it.subjectId] || []).push(it);
     const { from, to } = range('day', day);
-    for (const s of Store.data.sessions) {
+    for (const s of Store.data.sessions.concat(Array.isArray(live) ? live : [])) {
       if (!s || !(s.start >= from && s.start < to)) continue;
       const m = Math.max(0, Number(s.minutes) || 0);
       let it = s.planId ? act.find((x) => x.id === s.planId) : null;

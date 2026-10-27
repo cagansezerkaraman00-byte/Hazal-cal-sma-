@@ -34,6 +34,8 @@ const PlanlarUI = (() => {
   const placeholder = (scope) => N[scope].ph[isProgram() ? 1 : 0];
   // ders: etkin listede yoksa arşivdeki / diğer moddaki adı ve rengi (Store.subject); hiç yoksa ders gösterilmez
   function subj(id) { if (!id) return null; const s = Store.subject(id); return s && s.id ? s : null; }
+  // bugünse sürmekte olan oturum da sayılır: süreler sayaç çalışırken de dakika dakika görünür
+  const liveFor = (k) => (k === U.dateKey(new Date()) && App && typeof App.liveRun === 'function' ? App.liveRun() : []);
   // maddenin alt yazısı: YKS konusuysa hangi sınavın hangi dersi olduğu ("Problemler" → "TYT Matematik",
   // "Türev ve Uygulamaları" → "AYT Matematik"); değilse dersin adı. Konu kimliği olmayan eski maddelerde ad, dersin
   // YKS konularında tek bir yerde geçiyorsa oradan bulunur.
@@ -128,7 +130,7 @@ const PlanlarUI = (() => {
       <span class="plan-acts">${acts}</span></li>`;
   }
   function dailyChart(items, key, now) {
-    const work = Planlar.dayWork(key);
+    const work = Planlar.dayWork(key, liveFor(key));
     return `<div class="mp-chart-wrap"><table class="mp-day-table"><caption>Günlük çalışma çizelgesi · Tamamladığın maddeyi işaretle</caption>
       <colgroup><col class="mp-col-plan"><col class="mp-col-time"><col class="mp-col-done"></colgroup>
       <thead><tr><th scope="col">Çalışacağım</th><th scope="col">Çalıştığın</th><th scope="col">Durum</th></tr></thead>
@@ -290,7 +292,7 @@ const PlanlarUI = (() => {
   function weekPlanHtml(wk, now) {
     const today = U.dateKey(now);
     return `<div class="wp-days">${Planlar.daysOf('week', wk).map((k) => {
-      const d = noon(k), items = ordered(Planlar.list('day', k)), work = k <= today ? Planlar.dayWork(k) : null;
+      const d = noon(k), items = ordered(Planlar.list('day', k)), work = k <= today ? Planlar.dayWork(k, liveFor(k)) : null;
       const rows = items.map((it) => {
         const sb = subj(it.subjectId), m = work && !it.moved ? work.items[it.id] || 0 : 0;
         return `<li class="wp-item${it.done ? ' done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}" style="--c:${esc(sb ? sb.color : 'var(--violet)')}">
@@ -343,7 +345,7 @@ const PlanlarUI = (() => {
   function programRow(it, work) {
     const s = subj(it.subjectId), m = work.items[it.id] || 0, from = it.from ? fromWord(it.from) : '';
     return `<li class="tp-row${it.done ? ' done' : ''}" data-tp-id="${esc(it.id)}" data-mp-id="${esc(it.id)}" style="--c:${esc(s ? s.color : 'var(--violet)')}">
-      <button type="button" class="tp-go" data-mp="pick"${it.done ? ' disabled' : ''} aria-pressed="false" aria-label="${esc(it.title)}${it.done ? ': tamamlandı' : ': sayaç buna saysın'}">
+      <button type="button" class="tp-go" data-mp="pick"${it.done ? ' disabled' : ''} aria-pressed="false" aria-label="${esc(it.title)}${it.done ? ': tamamlandı' : ': sayaç bu konu için saysın'}">
         <span class="tp-text"><b>${esc(it.title)}</b><small>${esc(subLabel(it))}${from ? ` · <span class="tp-from">${from}</span>` : ''}</small></span>
         <span class="tp-min">${m > 0 ? U.fmtMin(m) : ''}</span></button>
       <input type="checkbox" class="check" data-mp="done" aria-label="Bitti: ${esc(it.title)}"${it.done ? ' checked' : ''}></li>`;
@@ -352,7 +354,7 @@ const PlanlarUI = (() => {
     if (!el || !window.Planlar) return;
     const now = new Date(), today = U.dateKey(now);
     paintedPhase = phaseOf(now);
-    const act = Planlar.list('day', today).filter((x) => !x.moved), work = Planlar.dayWork(today);
+    const act = Planlar.list('day', today).filter((x) => !x.moved), work = Planlar.dayWork(today, liveFor(today));
     paint(el, `${act.length ? `<ul class="tp-list" aria-label="Bugünün programı">${act.map((it) => programRow(it, work)).join('')}</ul>` : ''}
       <button type="button" class="btn soft tp-add" data-mp="add" data-scope="day" data-key="${today}">＋ Plan ekle</button>`);
   }

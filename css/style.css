@@ -2693,3 +2693,27 @@ body.focusing .today-card .timeline, body.focusing .today-card .tp-add { display
 .tp-from { color: var(--accent-ink); }
 .wp-eksik { color: var(--coral-ink); font-weight: 800; }
 .wp-ok { flex: none; width: 26px; text-align: center; color: var(--muted); font-weight: 800; }
+/* İlerleme: günün özeti (2.11) */
+.gun-ozet { margin-bottom: 14px; }
+.go-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.go-head h2 { margin: 0; }
+.go-nav { display: flex; align-items: center; gap: 8px; }
+.go-nav b { text-align: center; font-size: .92rem; }
+.go-nav .icon-btn:disabled { opacity: .35; }
+.go-total { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; margin: 14px 0 12px; }
+.go-total b { font-size: 1.7rem; font-weight: 800; }
+.go-total span { color: var(--muted); font-size: .84rem; font-weight: 700; }
+.go-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.go-row { padding-left: 12px; border-left: 4px solid var(--c); }
+.go-line { display: flex; justify-content: space-between; gap: 10px; font-weight: 800; }
+.go-line b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.go-bar { height: 7px; border-radius: 99px; background: var(--track); overflow: hidden; margin: 6px 0 4px; }
+.go-bar i { display: block; height: 100%; border-radius: 99px; background: var(--c); }
+.go-topics { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.go-topics li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: .84rem; color: var(--muted); font-weight: 700; }
+.go-topics li span { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; color: var(--text); }
+.go-topics li b { font-variant-numeric: tabular-nums; }
+.go-topics em { font-style: normal; font-size: .76rem; flex-basis: 100%; }
+.go-tamam { color: var(--mint-ink); }
+.go-eksik { color: var(--coral-ink); }
+

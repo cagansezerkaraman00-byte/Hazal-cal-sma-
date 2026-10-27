@@ -216,7 +216,7 @@
     currentTab = name;
     $$('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
     $$('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + name));
-    if (name === 'progress') renderProgress();
+    if (name === 'progress') { ozetGun = ''; renderProgress(); }
     if (name === 'plan') renderPlanTab();
     if (name === 'deneme' && window.DenemeUI) DenemeUI.render();
     if (name === 'notes' && window.NotesUI) NotesUI.render();
@@ -344,7 +344,7 @@
     if ($('#modal').classList.contains('hidden')) ask();
     else pendingWhere = ask; // başka bir pencere açıksa o kapanınca sorulur
   }
-  let timerKey = '', continuousHour = -1;
+  let timerKey = '', continuousHour = -1, lastLiveMin = -1;
   function renderTimer(s) {
     // sayaç saniyede 4 kez sorar; ekran yalnızca görünen bir şey değişince güncellenir
     const shown = Math.max(0, s.countdown ? Math.ceil(s.remaining) : Math.floor(s.elapsed));
@@ -371,6 +371,8 @@
       // Bir kutuda yazarken diğer kutulara dokunma: henüz tamamlanmamış giriş korunur.
       if (!$('#countdown-setup').contains(document.activeElement)) input.value = U.pad(timeParts[i]);
     });
+    const liveMin = s.phase === 'focus' && !s.fresh ? Math.floor(s.elapsed / 60) : -1;
+    if (liveMin !== lastLiveMin) { lastLiveMin = liveMin; refreshLive(); }
     const completedHour = Math.floor((s.continuousSeconds || 0) / 3600);
     if (completedHour !== continuousHour) {continuousHour = completedHour;if (completedHour > 0) checkBadges();}
     const subj = Store.subject(s.subjectId).name;
@@ -432,9 +434,37 @@
   function pickPlanItem(id) {
     const f = Planlar.find(id);
     if (!f || f.item.done || f.item.moved) return;
-    const s = Timer.state(), same = s.planId === id;
-    Timer.setPlan(same ? '' : id, same ? s.subjectId : f.item.subjectId || '');
+    // durmuş sayaç konuya dokununca kronometre olarak başlar: kendiliğinden durmaz, Hazal bitirene kadar sayar
+    const s0 = Timer.state();
+    if (s0.phase === 'focus' && s0.fresh && s0.kind !== 'free') Timer.setKind('free');
+    const s = Timer.state();
+    if (s.planId !== id) Timer.setPlan(id, f.item.subjectId || ''); // sayaç çalışıyorsa o ana kadarki süre önceki konuda kalır
+    // durmuşsa bu konu için hemen başlar (sayaçta konu yazmaz); çalışıyorsa sayaç hiç durmadan bu konuya saymaya devam eder
+    if (s.phase === 'focus' && !s.running) $('#btn-toggle').click();
     markLivePlan();
+    refreshLive();
+  }
+  // Sürmekte olan odak oturumu: önceki konuların parçaları ve şimdiki konu. Henüz kaydedilmedikleri için Bugün kartında
+  // canlı görünsünler diye oturum gibi verilir (kayda geçmez).
+  function liveRun() {
+    const s = Timer.state();
+    if (s.phase !== 'focus' || s.fresh) return [];
+    const out = (Array.isArray(s.segs) ? s.segs : []).filter((p) => p && p.sec >= 1)
+      .map((p) => ({ start: p.start, minutes: p.sec / 60, subjectId: p.subjectId, planId: p.planId }));
+    out.push({ start: s.segStart || s.firstStart || Date.now(), minutes: Math.max(0, s.elapsed - (s.segAt || 0)) / 60, subjectId: s.subjectId, planId: s.planId });
+    return out;
+  }
+  // bugün çalışılan toplam (kaydedilenler + sürmekte olan oturum)
+  function todayMinutes() {
+    const k = U.dateKey(new Date());
+    return Stats.minutesOn(new Date()) + liveRun().filter((x) => U.dateKey(x.start) === k).reduce((n, x) => n + x.minutes, 0);
+  }
+  // dakika değiştikçe Bugün kartındaki süreler ve toplam canlı güncellenir (kartın geri kalanı yeniden çizilmez)
+  function refreshLive() {
+    const el = $('#today-program');
+    if (el && !el.classList.contains('hidden') && window.PlanlarUI) { try { PlanlarUI.renderProgram(el); markLivePlan(); } catch (e) { /* bir sonraki çizimde */ } }
+    $('#today-min').textContent = U.fmtMin(todayMinutes());
+    if (currentTab === 'progress' && (!ozetGun || ozetGun === U.dateKey(new Date()))) renderDaySummary();
   }
   // Başla'ya basıldığında bir madde seçili değilse bugünün ilk bitmemiş maddesi seçilir; başka bir şeye çalışıyorsa
   // dokunup değiştirir (ilk dakikada değiştirirse süre bölünmez, hepsi doğru maddeye yazılır)
@@ -472,6 +502,7 @@
     beforeFinish: () => checkAway(),
     // oturum sürerken başka maddeye geçildi: önceki maddenin süresi sessizce kaydedilir (pencere açılmaz)
     onFocusPart(session) {
+      runParts.push(session);
       session.id = U.uid();
       session.note = ''; session.hard = ''; session.rating = null; session.mood = '';
       D().sessions.push(session);
@@ -485,6 +516,9 @@
       D().sessions.push(session);
       if (session.minutes >= 10) D().fish++;
       save();
+      // bu oturumda konu değiştiyse: toplam ve ders ders süreler ("Toplam 1 sa: Matematik 40 dk · Fizik 20 dk")
+      const run = runParts.splice(0).concat([session]), total = run.reduce((n, x) => n + x.minutes, 0);
+      if (run.length > 1) runSummary[session.id] = runSummaryText(run);
       if (session.endReason === 'split') {
         const day = new Date(session.start).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
         toast('📅', `${day} günkü çalışman o güne yazıldı`, `${U.fmtMin(session.minutes)} · bugünkü kısım yeni oturum olarak sürüyor`, 6000);
@@ -498,11 +532,11 @@
       } else Sound.chime();
       if (window.PlanlarUI) { try { PlanlarUI.onSession(session); } catch (e) { ErrLog.add('Planlar: ' + ((e && e.message) || e), 'planlar-ui.js'); } }
       if (window.UniUI) UniUI.onSession(session);
-      notify(session.exam && session.endReason === 'elapsed' ? `${session.exam.toUpperCase()} süresi doldu! 🐈` : 'Oturum tamamlandı! 🎉', `${U.fmtMin(session.minutes)} ${Store.subject(session.subjectId).name} çalıştın. Mola zamanı!`);
+      notify(session.exam && session.endReason === 'elapsed' ? `${session.exam.toUpperCase()} süresi doldu! 🐈` : 'Oturum tamamlandı! 🎉', `${runSummary[session.id] || `${U.fmtMin(session.minutes)} ${Store.subject(session.subjectId).name}`} çalıştın. Mola zamanı!`);
       say('done');
       // başka bir pencere açıksa (yarım not, kart, deneme…) üstüne yazma: kapanınca göster
       if ($('#modal').classList.contains('hidden')) openSessionModal(session, { justDone: true });
-      else { pendingDone = session; toast('🎉', 'Oturum kaydedildi', U.fmtMin(session.minutes)); }
+      else { pendingDone = session; toast('🎉', 'Oturum kaydedildi', runSummary[session.id] || U.fmtMin(total)); }
       afterDataChange();
       syncSceneMode();
     },
@@ -605,8 +639,9 @@
     const preciseShort = !manual && s.minutes > 0 && s.minutes < 1;
     const startD = new Date(s.start);
     const title = opts.justDone ? '🎉 Oturum tamamlandı!' : manual ? '✍️ Çalışmamı ekle' : '✏️ Oturumu düzenle';
+    const ozet = opts.justDone ? runSummary[s.id] : '';
     const sub = opts.justDone
-      ? `${U.fmtMin(s.minutes)} çalıştın, harikasın ${U.esc(D().settings.name)}! ${s.minutes >= 10 ? 'Luna sana bir balık verdi 🐟' : ''}`
+      ? `${ozet ? U.esc(ozet) + ' çalıştın' : `${U.fmtMin(s.minutes)} çalıştın`}, harikasın ${U.esc(D().settings.name)}! ${s.minutes >= 10 ? 'Luna sana bir balık verdi 🐟' : ''}`
       : manual ? 'Uygulama dışında çalıştıysan buraya ekleyebilirsin.' : `${startD.toLocaleDateString('tr-TR')} ${U.hm(startD)}`;
     let rating = s.rating || 0, mood = s.mood || '';
     // temiz kutu: önceki pencerelerin dinleyicileri bu pencereye taşınmasın
@@ -695,6 +730,14 @@
     $('#modal').classList.remove('hidden');
   }
   let pendingDone = null; // açık bir pencere yüzünden bekleyen "oturum tamamlandı" penceresi
+  const runParts = [], runSummary = {}; // bir oturumda konu değiştikçe kaydedilen parçalar; biten oturumun özeti (yalnızca bellekte)
+  // "Toplam 1 sa: Matematik 40 dk · Fizik 20 dk" (çok çalışılan ders önce)
+  function runSummaryText(run) {
+    const per = new Map();
+    for (const x of run) { const n = Store.subject(x.subjectId).name; per.set(n, (per.get(n) || 0) + x.minutes); }
+    const total = run.reduce((n, x) => n + x.minutes, 0);
+    return `Toplam ${U.fmtMin(Math.round(total))}: ` + [...per].sort((a, b) => b[1] - a[1]).map(([n, m]) => `${n} ${U.fmtMin(Math.round(m))}`).join(' · ');
+  }
   let pendingWhere = null; // bekleyen "Neredeydin?" sorusu
   function closeModal() {
     $('#modal').classList.add('hidden'); $('#modal-card').innerHTML = '';
@@ -1062,7 +1105,7 @@
     $('#goal-ring').style.setProperty('--p', ring);
     $('#goal-ring').classList.toggle('done', ring >= 100);
     $('#goal-pct').textContent = ring >= 100 ? '★' : ring + '%';
-    $('#today-min').textContent = U.fmtMin(mins);
+    $('#today-min').textContent = U.fmtMin(todayMinutes());
     $('#goal-text').textContent = byPlan ? (plan.done === plan.total ? 'Bugünün planı tamam! 🎉' : `Planın: ${plan.done}/${plan.total} madde tamam`)
       : pct >= 100 ? `Hedef (${U.fmtMin(goal)}) tamam! 🎉` : `Hedefe ${U.fmtMin(goal - mins)} kaldı`;
     const today = D().sessions.filter((s) => U.dateKey(s.start) === todayKey).sort((a, b) => b.start - a.start);
@@ -1200,7 +1243,51 @@
   // ======================================================================
   // İlerleme: Luna'nın raporu + grafikler
   // ======================================================================
+  // ---------- İlerleme: günün özeti ----------
+  // Seçilen günün hepsi bir arada: toplam süre, hangi dersten ne kadar, o dersin hangi konuları (bitti / eksik kaldı),
+  // oturum ve soru sayısı. Bugünse sürmekte olan oturum da sayılır. ‹ › ile önceki günlere bakılır.
+  let ozetGun = '';
+  function renderDaySummary() {
+    const el = $('#gun-ozet');
+    if (!el || !window.Planlar) return;
+    const today = U.dateKey(new Date());
+    if (!ozetGun || ozetGun > today || !Planlar.isKey('day', ozetGun)) ozetGun = today;
+    const k = ozetGun, d = new Date(k + 'T12:00:00'), { from, to } = Planlar.range('day', k);
+    const inDay = (x) => x && x.start >= from && x.start < to;
+    const saved = D().sessions.filter(inDay), live = (k === today ? liveRun() : []).filter(inDay);
+    const per = new Map();
+    for (const x of saved.concat(live)) per.set(x.subjectId || '', (per.get(x.subjectId || '') || 0) + Math.max(0, +x.minutes || 0));
+    const total = [...per.values()].reduce((a, b) => a + b, 0);
+    const items = Planlar.list('day', k), work = Planlar.dayWork(k, live), pst = Planlar.stats(items);
+    const q = saved.reduce((n, x) => n + (+x.questions || 0), 0) + Planlar.questionEntries('day', k).reduce((n, x) => n + x.questions, 0);
+    const ids = new Set([...per.keys(), ...items.map((x) => x.subjectId || '')]);
+    const rows = [...ids].map((id) => ({ id, m: per.get(id) || 0, items: items.filter((x) => (x.subjectId || '') === id) }))
+      .filter((r) => r.m >= 0.5 || r.items.length).sort((a, b) => b.m - a.m);
+    const max = Math.max(1, ...rows.map((r) => r.m));
+    const yday = U.dateKey(U.addDays(U.dayStart(new Date()), -1));
+    const title = `${d.getDate()} ${U.MONTHS[d.getMonth()]} ${U.DAYS[d.getDay()]}${k === today ? ' · bugün' : k === yday ? ' · dün' : ''}`;
+    const topic = (it) => {
+      const m = work.items[it.id] || 0;
+      const tag = it.moved ? '<em class="go-eksik">eksik kaldı → ertesi güne</em>' : it.done ? '<em class="go-tamam">✓ bitti</em>' : '';
+      return `<li><span>${U.esc(it.title)}</span><b>${m >= 0.5 ? U.fmtMin(Math.round(m)) : '—'}</b>${tag}</li>`;
+    };
+    const facts = [`${saved.length + (live.length ? 1 : 0)} oturum`];
+    if (q) facts.push(`${q} soru`);
+    if (pst.total || pst.moved) facts.push(`plan ${pst.done}/${pst.total} tamam${pst.moved ? ` · ${pst.moved} eksik kaldı` : ''}`);
+    el.innerHTML = `<div class="go-head"><h2>📋 Günün özeti</h2>
+        <div class="go-nav"><button type="button" class="icon-btn" data-go="-1" aria-label="Önceki gün">‹</button><b>${U.esc(title)}</b>
+        <button type="button" class="icon-btn" data-go="1" aria-label="Sonraki gün"${k >= today ? ' disabled' : ''}>›</button></div></div>
+      ${total >= 0.5 || items.length ? `<p class="go-total"><b>${U.fmtMin(Math.round(total))}</b><span>toplam çalışma · ${facts.join(' · ')}</span></p>
+      <div class="timeline go-tl" aria-label="O gün hangi saatlerde çalıştığın">${timelineHtml(d, k === today)}</div>
+      <ul class="go-list">${rows.map((r) => {
+        const sub = Store.subject(r.id);
+        return `<li class="go-row" style="--c:${U.esc(sub.color)}"><div class="go-line"><span class="go-name">${U.esc(r.id ? sub.name : 'Genel')}</span><b>${r.m >= 0.5 ? U.fmtMin(Math.round(r.m)) : '—'}</b></div>
+          <div class="go-bar"><i style="width:${Math.round((r.m / max) * 100)}%"></i></div>
+          ${r.items.length ? `<ul class="go-topics">${r.items.map(topic).join('')}</ul>` : ''}</li>`;
+      }).join('')}</ul>` : `<p class="muted">${k === today ? 'Bugün henüz çalışma kaydı yok. Sayacı başlattığında burası dolmaya başlar 🐾' : 'Bu gün çalışma kaydı yok.'}</p>`}`;
+  }
   function renderProgress() {
+    renderDaySummary();
     renderReport();
     renderCharts();
     renderBadges();
@@ -1934,6 +2021,7 @@
     startStudy,
     pickPlanItem,
     finishPlanItem,
+    liveRun,
     subjectFor,
     applyFieldSubjects,
     bestHours,
@@ -2085,6 +2173,12 @@
     });
     $('#today-list').addEventListener('click', openSession);
     $('#history').addEventListener('click', openSession);
+    $('#gun-ozet').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-go]');
+      if (!b || b.disabled) return;
+      ozetGun = U.dateKey(U.addDays(new Date((ozetGun || U.dateKey(new Date())) + 'T12:00:00'), +b.dataset.go));
+      renderDaySummary();
+    });
     $('#btn-manual').addEventListener('click', () => openSessionModal(null));
     bindTimer();
     bindTasks();

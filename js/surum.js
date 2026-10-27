@@ -6,6 +6,17 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.11",
+  "tarih": "2026-10-27",
+  "baslik": "Günün özeti İlerleme'de",
+  "notlar": [
+    "👆 Bugün kartında bir konuya dokununca sayaç o konu için hemen başlar (kronometre, kendiliğinden durmaz). Başka konuya dokununca ana sayaç hiç durmadan devam eder, süre konulara kendiliğinden ayrılır; hesap yapmana gerek yok.",
+    "⏱️ Çalışırken konuların süresi dakika dakika yanlarında artıyor; sayaçta yalnızca toplam süre görünür.",
+    "✅ Oturum bitince toplamı ve ders ders süreleri görürsün: \"Toplam 1 sa: Matematik 40 dk · Fizik 20 dk\".",
+    "📋 İlerleme sekmesinin en üstünde Günün özeti: tarih, o gün toplam ne kadar çalıştığın, hangi dersten kaç saat kaç dakika, hangi konuları bitirdiğin, hangilerinin eksik kaldığı ve hangi saatlerde çalıştığın. ‹ ile önceki günlerin özeti de orada."
+  ]
+},
+{
   "surum": "2.10.1",
   "tarih": "2026-10-27",
   "baslik": "Her konunun yanında sınavı ve dersi",
