@@ -1,10 +1,10 @@
 {
-  "version": "2.13.1",
+  "version": "2.13.2",
   "files": {
-    "index.html": "0a214fcdcf5a513624a5678f154a73cc5b816a25f794b9f3c444ce79b29032e9",
+    "index.html": "4cf371cc85c1e27ac8cbd7b8acc849c441c9aaa755e1feef93f2edfb60f6c03c",
     "manifest.webmanifest": "43dec4f4891723105d49d755658101937342b648d52113a0ea2191d4fb4b384a",
     "css/style.css": "5ed21983fbd3f885944ab2698633a787ff13e29f4159c3a2e59e3457fe433895",
-    "js/app.js": "eb6ae4a84b0193f069e4f6a9bb7d22520193a47fc141f54526859565e106929d",
+    "js/app.js": "28fa0891fb4a4bc538ac3701bf2a7f774d6c5cc703a261aec1a92d3d20dbfb5b",
     "js/audio.js": "7b4dedec4695b926cc1b2eb6aa0aac81417fdb10b6166bcce8afd849695c04ee",
     "js/badges.js": "b277b3d3a3fa8525dad1fa7fe7888080998fa48ef6d3bf59c9ffc575b590a17a",
     "js/deneme.js": "f0779c375d8a44f11ef68434b6c2b48187a0e81d563a71f0a05c19f1830b3a87",
@@ -34,7 +34,7 @@
     "js/stats.js": "35ec3ef25ab6bee7c4fec1de72277a54dcae981c42b976346f86888a92985c2c",
     "js/stickers.js": "662127fa04c8f69a58c0556af3bf172df04cf402eaee275918a19036b3857bc2",
     "js/storage.js": "ca4ac1f0f5d43b25eda61e39e93cf428ab4189eaf7c01c076f47925c9ca5db7c",
-    "js/surum.js": "13c74599f3d63c65f205044c661af6c3c9cbe7c2a3c1a00b3acc03194e663096",
+    "js/surum.js": "b29f1cf99fcd285e2c6464d916af712c3e0ae0d95f6fc149351710b0e98d3034",
     "js/takvim-ui.js": "cb962cabea5f84076f8a3d8554f7fc83a52babedc5b5276c013dbe2a8d7a7ab4",
     "js/takvim.js": "4ed7da5ef2645cc8799cde35e985cbe0604bd45a2dfa3160aec3674fe5bb61c6",
     "js/timer.js": "c298c67558ada87f20cd2dc4d49b07a63412f563dffccbe28324208126842bd2",

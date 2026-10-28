@@ -62,11 +62,6 @@
     return gone + D().subjects.map((s) => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${U.esc(s.name)}</option>`).join('')
       + `<option value="" ${!sel ? 'selected' : ''}>Genel</option>`;
   }
-  function ratingColor(r) {
-    if (!r) return 'var(--unrated)';
-    const i = U.clamp(Math.round(r), 1, 5);
-    return `var(--r${i})`;
-  }
   // ======================================================================
   // HUD (saat, tarih, güneş)
   // ======================================================================
@@ -1483,53 +1478,10 @@
     renderCharts();
     renderBadges();
   }
+  // 2.13.2'de Günlük çalışma, Saatlere göre verim, Dersler, Haftanın günleri ve haftalık zaman çizelgesi kartları kalktı
   function renderCharts() {
     const sm = Stats.summary(progressDays);
-    // günlük çubuklar
-    const n = progressDays === 7 ? 7 : 30;
-    const days = Stats.byDay(n);
-    const goal = D().settings.dailyGoal;
-    const max = Math.max(goal, ...days.map((d) => d.minutes), 1);
-    // her günün sütunu o gün çalışılan derslerin renkleriyle bölünür (en çok çalışılan ders altta)
-    const perDay = {};
-    for (const x of D().sessions) {
-      if (!x || !x.start) continue;
-      const k = U.dateKey(x.start), id = Store.subject(x.subjectId).id;
-      (perDay[k] = perDay[k] || {})[id] = (perDay[k][id] || 0) + Math.max(0, +x.minutes || 0);
-    }
-    $('#day-bars').innerHTML = days.map((d, i) => {
-      const lbl = n === 7 ? U.DAYS_SHORT[d.date.getDay()] : (i % 5 === 0 || i === n - 1 ? d.date.getDate() : '');
-      const parts = Object.entries(perDay[d.key] || {}).filter(([, m]) => m > 0).sort((a, b) => b[1] - a[1]);
-      const segs = parts.map(([id, m]) => `<u style="flex:${m.toFixed(3)} 1 0;background:${U.esc(Store.subject(id).color)}"></u>`).join('');
-      return `<div class="b" title="${d.date.toLocaleDateString('tr-TR')} · ${U.fmtMin(d.minutes)}">
-        ${d.minutes && n === 7 ? `<em>${U.fmtMin(d.minutes)}</em>` : ''}
-        <i class="${parts.length ? 'stk' : ''}${d.minutes >= goal ? ' goal-hit' : ''}" style="height:${(d.minutes / max) * 100}%">${segs}</i><span>${lbl}</span></div>`;
-    }).join('');
-    // saatler
-    const hours = Stats.byHour(sm.list);
-    const hmax = Math.max(...hours.map((h) => h.minutes), 1);
-    $('#hour-chart').innerHTML = hours.map((h) => `<div class="h" title="${U.pad(h.hour)}:00 · ${U.fmtMin(h.minutes)}${h.rating ? ' · ' + U.dec(h.rating) + '⭐' : ''}">
-      <i style="height:${(h.minutes / hmax) * 100}%;background:${h.minutes ? ratingColor(h.rating) : '#ffffff10'}"></i>
-      <span>${h.hour % 3 === 0 ? h.hour : ''}</span></div>`).join('');
-    // dersler
-    const subs = Stats.bySubject(sm.list);
-    const smax = Math.max(...subs.map((s) => s.minutes), 1);
-    $('#subject-bars').innerHTML = subs.length ? subs.map((s) => `<div class="sbar">
-      <div class="top"><span>${U.esc(s.subject.name)}</span><span>${U.fmtMin(s.minutes)}${s.rating ? ' · ' + U.dec(s.rating) + '⭐' : ''}</span></div>
-      <div class="track"><i style="width:${(s.minutes / smax) * 100}%;background:${s.subject.color}"></i></div></div>`).join('') : '<p class="empty">Henüz veri yok</p>';
-    // haftanın günleri (Pzt'den başla)
-    const wd = Stats.byWeekday(sm.list);
-    const order = [1, 2, 3, 4, 5, 6, 0];
-    const wmax = Math.max(...wd.map((w) => w.avg), 1);
-    $('#weekday-bars').innerHTML = order.map((i) => {
-      const w = wd[i];
-      return `<div class="b" title="${U.DAYS[i]} · ortalama ${U.fmtMin(w.avg)}"><i style="height:${(w.avg / wmax) * 100}%;${w.rating ? 'background:' + ratingColor(w.rating) : ''}"></i><span>${U.DAYS_SHORT[i]}</span></div>`;
-    }).join('');
     renderCalendar();
-    $('#week-timeline').innerHTML = Array.from({ length: 7 }, (_, i) => {
-      const d = U.addDays(U.dayStart(new Date()), i - 6);
-      return `<div class="wt-row"><span class="wt-day">${U.DAYS_SHORT[d.getDay()]}</span><div class="timeline">${timelineHtml(d, i === 6)}</div></div>`;
-    }).join('');
     const hist = sm.list.slice().sort((a, b) => b.start - a.start).slice(0, 200);
     $('#history').innerHTML = hist.length ? hist.map((s) => sessionItem(s, true)).join('') : '<li class="empty" style="display:block">Bu dönemde oturum yok. Oturum sonunda yazdığın notlar burada birikir.</li>';
   }
@@ -1560,10 +1512,6 @@
     const sk = Stats.streak();
     const tiles = r.highlights.concat(sk ? [{ icon: '🔥', label: 'Seri', value: `${sk} gün` }] : []);
     $('#report-highlights').innerHTML = tiles.map((h) => `<div class="tile"><div class="ic">${h.icon}</div><div class="v">${U.esc(h.value)}</div><div class="l">${U.esc(h.label)}</div></div>`).join('');
-    const li = (arr) => arr.map((x) => `<li>${U.esc(x)}</li>`).join('') || '<li class="muted">—</li>';
-    $('#rep-strengths').innerHTML = li(r.strengths);
-    $('#rep-improve').innerHTML = li(r.improve);
-    $('#rep-tips').innerHTML = li(r.tips);
   }
   // Tekrar listesi 2.10'da Plan sekmesinden kalktı (kayıtlar D().review'da silinmeden durur)
   function renderReview() {

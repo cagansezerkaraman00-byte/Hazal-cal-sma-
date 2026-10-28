@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.13.2",
+  "tarih": "2026-10-28",
+  "baslik": "İlerleme sadeleşti",
+  "notlar": [
+    "📈 İlerleme sekmesinde kullanılmayan bölümler kaldırıldı: Güçlü yönlerin, Gelişim fırsatları, Öneriler, Saatlere göre verim, Haftalık zaman çizelgesi, Günlük çalışma, Dersler ve Haftanın günleri. Hafta grafiği, gün gün çalışmaların, Yıldız haritası, Rozetler ve notların yerinde; kayıtların silinmedi."
+  ]
+},
+{
   "surum": "2.13.1",
   "tarih": "2026-10-28",
   "baslik": "Küçük düzeltmeler",
