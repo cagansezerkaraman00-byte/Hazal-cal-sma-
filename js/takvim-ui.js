@@ -935,17 +935,17 @@ const TakvimUI = (() => {
     if (!todayDue && !eveDue) return;
     const busy = app.isFocusing() || !$('#modal').classList.contains('hidden') || app.quietFor(8000) || document.hidden;
     if (busy) { if (++tries < 40) setTimeout(sayToday, 15000); return; }
-    const name = D().settings.name || 'canım', bday = (arr) => arr.find((n) => n.dogum) || arr.find((n) => /doğum ?günüm/i.test(n.text));
+    const bday = (arr) => arr.find((n) => n.dogum) || arr.find((n) => /doğum ?günüm/i.test(n.text)); // Luna adını değil "anneciğim" der
     const join = (arr) => arr.map((n) => `${n.emoji} ${n.text}`).join(', ');
     if (todayDue) {
       const b = bday(mine);
-      const text = b ? `İyi ki doğdun ${name}! 🎂 Bugün senin günün; takvimine kocaman bir yıldız kondurdum ✨${b.sub ? ` Çağan da takvimine bir not bırakmış: “${b.sub}”` : ''}`
+      const text = b ? `İyi ki doğdun anneciğim! 🎂 Bugün senin günün; takvimine kocaman bir yıldız kondurdum ✨${b.sub ? ` Çağan da takvimine bir not bırakmış: “${b.sub}”` : ''}`
         : `Takvimine baktım: bugün ${join(mine)} ✨ ${mine.some((n) => n.deneme) ? 'Bitince sonuçlarını gir, analizini birlikte yapalım.' : 'Unutmadım!'}`;
       if (app.sayText(text, { speaker: 'luna', emotion: 'happy' })) { lsSet(SAID_KEY, today); if (b) app.celebrate(); }
       if (eveDue) setTimeout(sayToday, 20000);
       return;
     }
-    const text = bday(eve) ? `Yarın senin doğum günün 🎂 Şimdiden heyecanlandım ${name}!`
+    const text = bday(eve) ? `Yarın senin doğum günün 🎂 Şimdiden heyecanlandım annem!`
       : `Yarın takviminde: ${join(eve)} 🗓️ ${eve.some((n) => n.deneme) ? 'Bu akşam erken uyu, kalemlerini hazırla.' : 'Unutmayalım diye söylüyorum.'}`;
     if (app.sayText(text, { speaker: 'luna', emotion: 'happy' })) lsSet(EVE_KEY, today);
   }

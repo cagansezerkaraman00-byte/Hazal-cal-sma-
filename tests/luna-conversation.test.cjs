@@ -11,7 +11,11 @@ const M = new Function('Store', 'U', source + '\nreturn Messages;')(Store, U);
 const at = (day, hour, minute = 0) => new Date(2026, 9, day, hour, minute);
 let count = 0;
 function eq(actual, expected, label) { if (actual !== expected) throw new Error(label + ': ' + actual + ' !== ' + expected); count++; }
-eq(M.get('welcome'), 'Merhaba Hazal! Ben Luna 🤍 Bundan sonra derslerinde hep yanındayım. Hadi ilk oturumu başlatalım!', 'original welcome');
+eq(M.get('welcome'), 'Merhaba anneciğim! Ben Luna 🤍 Bundan sonra derslerinde hep yanındayım. Hadi ilk oturumu başlatalım!', 'welcome: Luna adını değil anneciğim der');
+// kediler adını hiç söylemez: Luna ve Vesper "anneciğim / annem", Güçlü "anneciim / anne" der; karşılama başlığında ad durur
+for (const k of ['checkIn', 'proud', 'bedtime', 'companion', 'start', 'done', 'goal', 'fed', 'vesper', 'vesperFed', 'kitten', 'kittenFed', 'yks', 'comeback']) for (let i = 0; i < 40; i++) { const t = M.get(k, { days: 3, what: 'x' }); if (/Hazal|\{name\}/.test(t)) throw new Error(k + ': adı söyledi: ' + t); }
+for (let i = 0; i < 40; i++) { const t = M.get('kitten'); if (/anneciğim/i.test(t)) throw new Error('Güçlü bebek diliyle konuşur: ' + t); }
+eq(M.greeting(at(6, 10)).includes('Hazal'), true, 'greeting title keeps the name');
 eq(M.mood(at(6, 10)), 'companion', 'no morning guilt');
 eq(M.mood(at(6, 18)), 'lowStudy', 'low study evening');
 Store.data.timer = {running:true};

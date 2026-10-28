@@ -6,6 +6,15 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.13.3",
+  "tarih": "2026-10-28",
+  "baslik": "Kediler \"anne\" diyor",
+  "notlar": [
+    "🐾 Luna, Vesper ve Güçlü artık sana adınla değil \"anneciğim\", \"annem\" diye sesleniyor; Güçlü kendi bebek diliyle \"anneciim\" diyor.",
+    "💬 Üçünün de söyleyecekleri çoğaldı: 87 yeni cümle. Luna'nın karşılamaları, mola ve uyku cümleleri, Vesper'in sakin gece cümleleri ve Güçlü'nün minik sözleri."
+  ]
+},
+{
   "surum": "2.13.2",
   "tarih": "2026-10-28",
   "baslik": "İlerleme sadeleşti",

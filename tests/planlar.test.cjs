@@ -445,7 +445,7 @@ for (const b of ['tam', 'cok', 'orta', 'az', 'sifir', 'bos', 'hepsiTasindi']) {
   for (const s of ['aksam', 'gece', 'sabah']) {
     for (let i = 0; i < 4; i++) {
       const c = get(`Messages.planComment("${b}", "${s}", __vars, { [Messages.planComment("${b}", "${s}", __vars).key]: ${i} })`);
-      ok(!c.text.includes('{') && c.text.includes('Hazal') === /\{name\}/.test(PE[c.key][i % PE[c.key].length]), `${b}/${s}#${i}: every placeholder filled`);
+      ok(!c.text.includes('{') && !c.text.includes('Hazal') && (!/\{name\}/.test(PE[c.key][i % PE[c.key].length]) || /anne(ciğim|m)/i.test(c.text)), `${b}/${s}#${i}: every placeholder filled, Luna says anneciğim instead of the name`);
     }
   }
 }

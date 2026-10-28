@@ -1,4 +1,4 @@
-/* Luna'nın söyledikleri. {name} yerine kullanıcının adı gelir. */
+/* Luna'nın söyledikleri. {name} yerine kediler "anneciğim / annem" der (Güçlü "anne / anneciim"); ad yalnızca karşılama başlığında geçer. */
 
 const Messages = (() => {
   const M = {
@@ -272,6 +272,35 @@ const Messages = (() => {
   M.remindStart = ["Masada sana minik bir yer ayırdım annem. Beş dakikayla başlayalım mı? 🐾","Anneciğim, ben buradayım 🐾 Hazır olduğunda beş dakikayla başlarız."];
   M.remindGoal = ["Bugünkü hedefe {minutes} dakika kaldı. Yorulmadıysan küçük bir oturum daha yapalım mı?","Anneciğim, {minutes} dakikalık yolumuz kaldı. Hedefi küçültebilir veya beraber devam edebiliriz."];
   M.remindAway = ["Seni göremeyeli biraz oldu annem. Nasılsın? Hazırsan kısa bir çalışma yapalım.","Pati yoklaması! Ben buradayım, sen de müsaitsen yan yana çalışalım 🐾"];
+  // Kedilerin ek cümleleri (anne / anneciğim diye seslenirler)
+  M.checkIn = [...(M.checkIn || []), ...["Anneciğim, gel bakalım yanıma. Bugün nasıl geçti, bir anlat 🐾", "Kulaklarım dikildi annem; seni dinlemeye hazırım 💜", "Önce sen, sonra ders. Bugün içinden neler geçiyor anneciğim?", "Patilerimi topladım, seni bekliyordum 😽 Nasılsın annem?"]];
+  M.lowStudy = [...(M.lowStudy || []), ...["Anneciğim, beş dakikalık minicik bir başlangıç bile bugünü güzelleştirir 🐾", "Kitabı ben açtım sayılır, sen sadece ilk satırı oku annem 😸", "Zorlamadan, yavaşça… Bir soru çözsek bugün kazanmış sayılırız 💜"]];
+  M.focusNudge = [...(M.focusNudge || []), ...["Anneciğim, kuyruğumla ekranı kapattım sayılır 😼 Hadi deftere dönelim.", "Telefon biraz beklesin annem; şu soru seni özledi 🐾", "Pıt pıt pati… Dikkat buraya! Kaldığımız yerden devam edelim mi anneciğim?"]];
+  M.proud = [...(M.proud || []), ...["Anneciğim, bugün çok emek verdin. Kuyruğum gururla havada 😻", "Bugünkü sen, dünkü senden bir adım ileride annem 🌟", "Aferin anneciğim! Şimdi bir bardak su ve kocaman bir nefes 💜"]];
+  M.bedtime = [...(M.bedtime || []), ...["Annem, yıldızlar bile esnedi. Hadi biz de uyuyalım 🌙", "Defteri kapat anneciğim, ben battaniyenin ucunu sana ayırdım 💤", "Bugün yeterince çalıştın annem. Uyku da çalışmanın bir parçası 🐾"]];
+  M.companion = [...(M.companion || []), ...["Anneciğim, ben buradayım; sen sadece sıradaki küçük işe bak 🐾", "Masanın kenarında mırlıyorum annem. Acele yok 💜", "Bir soru çöz, bir nefes al. Ben saymaya devam ediyorum 😺", "Kalemin ucu benim, defter senin anneciğim. Beraber gidiyoruz 🐱", "Zor bir yere geldiysen işaretle annem, sonra birlikte döneriz ⭐"]];
+  M.start = [...(M.start || []), ...["Anneciğim başladı, ben de nöbete geçtim 🐾", "Saat bende annem, sen sadece önündeki işe bak ✨", "Hadi anneciğim! İlk dakika geçti bile 💪"]];
+  M.done = [...(M.done || []), ...["Bir oturum daha tamam annem! Patilerimle alkışlıyorum 👏🐾", "Anneciğim, şimdi gözlerini dinlendir; pencereden uzağa bak 🌤️", "Emeğin kaydedildi annem. Biraz esne, bir yudum su iç 💧"]];
+  M.poke = [...(M.poke || []), ...["Mırr… Anneciğim beni sevdi 😽", "Kulağımı kaşıdın mı annem? Bir daha, bir daha! 🐾", "Miyav! Sana bakınca hep mırlıyorum anneciğim 💜", "Patim senin elinde annem; şimdi deftere dönelim mi? 🐱", "Prrr… Bir sevgi molası yeter, sonra çalışırız 😺"]];
+  M.during = [...(M.during || []), ...["Çok güzel gidiyorsun anneciğim, ben buradayım 🐾", "Sessizce mırlıyorum annem; sen devam et ⭐", "Bir nefes al anneciğim, sonra kaldığın satırdan devam 💜"]];
+  M.breakStart = [...(M.breakStart || []), ...["Mola anneciğim! Kalk, biraz esne; ben de patilerimi uzatıyorum 🐈", "Ekrandan uzaklaş annem, bir bardak su iç 💧"]];
+  M.breakEnd = [...(M.breakEnd || []), ...["Mola bitti anneciğim, ben hazırım. Ya sen? 🐾", "Hadi annem, kaldığımız yerden devam ✨"]];
+  M.morning = [...(M.morning || []), ...["Günaydın anneciğim! Güneşle birlikte ben de uyandım ☀️", "Sabah sabah seni görmek ne güzel annem. Kahvaltını yaptın mı? 🐾", "Günaydın! Bugün küçük bir hedefle başlayalım mı anneciğim? ✨"]];
+  M.noon = [...(M.noon || []), ...["Öğlen oldu anneciğim, bir şeyler yedin mi? 🍽️", "Güneş tepede annem; biraz su, sonra bir oturum daha? 💧"]];
+  M.afternoon = [...(M.afternoon || []), ...["Öğleden sonra biraz yavaşlamak normal anneciğim; kısa bir oturum yeter 🐾", "Bir bardak su iç annem, sonra kaldığımız yerden devam 💜"]];
+  M.evening = [...(M.evening || []), ...["Akşam oldu anneciğim, bugünün son tekrarını birlikte yapalım mı? 🌇", "Zambaklar açtı annem, ben de yanına kıvrıldım 🌸"]];
+  M.night = [...(M.night || []), ...["Yıldızlar çıktı anneciğim ✨ Biraz daha mı, yoksa dinlenelim mi?", "Gece sakin annem; ben yanında usulca mırlıyorum 🌙"]];
+  M.late = [...(M.late || []), ...["Anneciğim, saat çok geç oldu. Hadi uyuyalım, yarın yine birlikteyiz 💤", "Annem, gözlerim kapanıyor… Sen de dinlen olur mu? 🌙"]];
+  M.comeback = [...(M.comeback || []), ...["Anneciğim geldi! 😻 Seni çok özledim. Minicik bir başlangıç yapalım mı?", "Bak kim gelmiş! Kaldığımız yer seni bekliyor annem 🐾"]];
+  M.fed = [...(M.fed || []), ...["Anneciğim, bu balık tam istediğim gibi! Teşekkür ederim 🐟", "Karnım doydu, kalbim de annem 💜", "Bıyıklarım titredi anneciğim! Şimdi yanına kıvrılabilirim 😻", "Bir lokma daha… Tamam, yeter; şimdi senin yanında mırlarım annem 🐾"]];
+  M.vesper = [...(M.vesper || []), ...["Gece oldu annem; ben geldim, yanına sessizce oturuyorum 🌙", "Anneciğim, mavi gözlerim seni izliyor. Sen çalış, ben nöbetteyim 💙", "Yıldızlar sakin, ben de öyle. Bu gece hangi konuya bakıyoruz annem?", "Usulca geldim anneciğim. Bir sayfa daha mı, yoksa dinlenelim mi? 🌙", "Gece mavisi bir sessizlik getirdim annem; odaklanmak için tam zamanı 💙", "Pencerenin önündeyim anneciğim. Yorulursan bana bakıp bir nefes al 🌙"]];
+  M.vesperSleepy = [...(M.vesperSleepy || []), ...["Anneciğim, gözlerim gece kadar ağırlaştı… Uyuyalım mı? 💤", "Battaniyenin ucuna kıvrıldım annem. Sen de gel 🌙", "Usulca esniyorum… İyi geceler anneciğim 💙"]];
+  M.vesperFed = [...(M.vesperFed || []), ...["Teşekkür ederim annem; sessizce ama çok mutlu yedim 💙", "Anneciğim, bu balık gece kadar güzeldi 🌙", "Karnım doydu annem. Şimdi yanında usulca otururum 🐈‍⬛"]];
+  M.kitten = [...(M.kitten || []), ...["Anneee! Ben geldiiim, bana da bi yer aç 🧡", "Anneciim, bu ne kitabı? Resmi var mı? 😸", "Anne bak, patimle sayfayı tutuyom! Yardım ediyom 🐾", "Anneciim, sen çalış, ben burda minicik otururum. Söz! 🧡", "Anne… sorular çok mu zor? Ben sana mırlıyım, kolaylaşır 😽", "Anneciim, kalemi düşürmedim! Sadece biraz ittim 😸"]];
+  M.kittenSleepy = [...(M.kittenSleepy || []), ...["Anne… gözlerim kapanıyooo… sen de uyu mu? 💤", "Anneciim, battaniyeye girdim, sıcacık. Gel 🧡", "Anne, ay bile uyudu… biz de uyuyalım mı? 🌙"]];
+  M.kittenMiss = [...(M.kittenMiss || []), ...["Anneciim! Seni bekledim bekledim… Geldin ya, şimdi çok mutluyum 🥺", "Anne, yanına sokulabilir miyim? Seni çok özedim 🧡"]];
+  M.kittenHappy = [...(M.kittenHappy || []), ...["Anne! Patilerim zıp zıp oluyo, çok mutluyum 😸", "Anneciim, sen gelince her şey güzel oluyo 🧡", "Anne bak, kuyruğum kendi kendine sallanıyo! 🐾"]];
+  M.kittenFed = [...(M.kittenFed || []), ...["Anneciim, balık çok güzeldi! Bi daha olur mu? 🧡", "Nyam nyam anne! Karnım doydu, şimdi kucak zamanı mı? 😸", "Anne, teşekkür ederiiim! Büyüyünce ben de sana balık getircem 🐟"]];
   // Gün sonu: Hazal'ın kendi yazdığı planın yorumu (kurallara dayalı; ağ ve yapay zekâ yok).
   // M'nin dışında durur: Messages.get bunları hiçbir zaman kendiliğinden seçemez.
   // Türkçe kuralı: değişkenden sonra ek ya da kesme işareti gelmez ("%60'ını" bazı sayılarda yanlış olur); sayıdan sonra
@@ -395,8 +424,15 @@ const Messages = (() => {
     return { key, text: t, emotion: PLAN_EOD_EMOTION[band] || 'neutral' };
   }
 
-  function fill(t) {
-    return t.replace(/\{name\}/g, Store.data.settings.name || 'canım').replace(/\{kitten\}/g, 'Güçlü');
+  // Kediler adını değil "anneciğim / annem" der; Güçlü bebek diliyle "anneciim / anne". Cümlede zaten biri geçiyorsa öbürü seçilir.
+  function hitap(t, kind) {
+    const yavru = delivery(kind).speaker === 'kitten';
+    const [a, b] = yavru ? ['anneciim', 'anne'] : ['anneciğim', 'annem'];
+    const kucuk = t.toLocaleLowerCase('tr-TR'), w = kucuk.includes(a) ? b : a;
+    return t.replace(/\{name\}/g, (m, i) => (i === 0 || /[.!?…]\s*$/.test(t.slice(0, i)) ? w[0].toLocaleUpperCase('tr-TR') + w.slice(1) : w));
+  }
+  function fill(t, kind = '') {
+    return hitap(t, kind).replace(/\{kitten\}/g, 'Güçlü');
   }
 
   function timeOfDay(d = new Date()) {
@@ -482,7 +518,7 @@ const Messages = (() => {
       const selected = U.pick(fresh.length ? fresh : arr);
       state.replies[kind] = [...history, selected].slice(-Math.min(['fed','vesperFed','kittenFed'].includes(kind) ? 19 : 3, arr.length - 1 || 1));
       Store.save();
-      let t = fill(selected);
+      let t = fill(selected, kind);
       if (vars) for (const k of Object.keys(vars)) t = t.split('{' + k + '}').join(vars[k]);
       return t;
     },
@@ -490,7 +526,7 @@ const Messages = (() => {
     daily(kind, vars) {
       const arr = M[kind] || M.poke;
       const day = Math.floor(U.dayStart(new Date()).getTime() / 864e5);
-      let t = fill(arr[day % arr.length]);
+      let t = fill(arr[day % arr.length], kind);
       if (vars) for (const k of Object.keys(vars)) t = t.split('{' + k + '}').join(vars[k]);
       return t;
     },

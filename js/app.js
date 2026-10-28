@@ -1506,9 +1506,8 @@
   }
   function renderReport() {
     const r = Stats.report(progressDays);
-    const name = D().settings.name || 'canım';
     const period = progressDays === 7 ? 'bu haftaki' : progressDays === 30 ? 'son 30 günlük' : 'tüm';
-    $('#report-intro').textContent = `${name}, ${period} çalışmalarını inceledim. İşte gözlemlerim 🐾`;
+    $('#report-intro').textContent = `Anneciğim, ${period} çalışmalarını inceledim. İşte gözlemlerim 🐾`;
     const sk = Stats.streak();
     const tiles = r.highlights.concat(sk ? [{ icon: '🔥', label: 'Seri', value: `${sk} gün` }] : []);
     $('#report-highlights').innerHTML = tiles.map((h) => `<div class="tile"><div class="ic">${h.icon}</div><div class="v">${U.esc(h.value)}</div><div class="l">${U.esc(h.label)}</div></div>`).join('');
