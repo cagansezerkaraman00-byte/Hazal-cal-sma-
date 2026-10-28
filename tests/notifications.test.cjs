@@ -11,7 +11,7 @@ assert.equal(n.choose(data,at(17)).kind,'remindStart');
 data.timer={running:true};assert.equal(n.choose(data,at(18)),null);
 data.timer={phase:'focus',accum:60000,pausedAt:+at(16)};assert.equal(n.choose(data,at(17)).kind,'remindPaused');
 data.timer=null;data.sessions=[{end:+at(15),minutes:45}];assert.equal(n.choose(data,at(18)).vars.minutes,135);
-data.tasks=[{done:false,due:key(at(18))}];assert.equal(n.choose(data,at(18)).kind,'remindTasks');
+data.tasks=[{done:false,due:key(at(18))}];assert.notEqual(n.choose(data,at(18)).kind,'remindTasks'); // Görevler kartı kalktı (2.13.1): görünmeyen görev için hatırlatma yok
 data.tasks[0].done=true;data.sessions[0].minutes=180;assert.equal(n.choose(data,at(18),+at(12)).kind,'remindAway');
 data.settings.studyReminders=false;assert.equal(n.choose(data,at(18)),null);
 assert.equal(n.options('test').icon,'https://example.test/Hazal-cal-sma-/icons/icon-192.png'); // renkli Luna simgesi: açık temada da görünür

@@ -257,10 +257,6 @@ const Stats = (() => {
       else if (moods.filter((s) => s.mood === '🤩' || s.mood === '🙂').length / moods.length > 0.6) out.strengths.push('Oturumlarını çoğunlukla iyi hissederek bitiriyorsun, bu harika!');
     }
 
-    // Görevler (tekrar listesi 2.10'da kalktı)
-    const overdue = D().tasks.filter((t) => !t.done && t.due && new Date(t.due + 'T23:59:59') < new Date());
-    if (overdue.length) out.improve.push(`${overdue.length} görev seni bekliyor. Bugün en kolayından biriyle başlamaya ne dersin?`);
-
     if (!out.strengths.length) out.strengths.push(`Başlamış olman bile büyük adım ${name}. Her oturum seni ileri taşıyor ⭐`);
     if (!out.improve.length) out.improve.push('Şu an her şey yolunda görünüyor, böyle devam! 🌟');
     return out;

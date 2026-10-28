@@ -324,8 +324,14 @@ a { color: var(--lav-ink); }
   content: ''; position: absolute; bottom: -9px; left: calc(var(--arrow, 30px) - 8px);
   border: 8px solid transparent; border-top-color: var(--bubble-line); border-bottom: 0;
 }
+/* alçak sahnede (yatay telefon) balon kedinin yanında durur: ok kediye bakar */
+.bubble.yan-sag::after, .bubble.yan-sol::after { bottom: 14px; border: 8px solid transparent; }
+.bubble.yan-sag::after { left: -9px; border-right-color: var(--bubble-line); border-left: 0; }
+.bubble.yan-sol::after { left: auto; right: -9px; border-left-color: var(--bubble-line); border-right: 0; }
 .bubble.love { background: #fff0f6; border-color: #c2457a; color: #6e1d44; }
 .bubble.love::after { border-top-color: #c2457a; }
+.bubble.love.yan-sag::after, .bubble.love.yan-sol::after { border-top-color: transparent; }
+.bubble.love.yan-sag::after { border-right-color: #c2457a; } .bubble.love.yan-sol::after { border-left-color: #c2457a; }
 .bubble.pop { animation: pop .35s cubic-bezier(.2, 1.6, .5, 1); }
 @keyframes pop { from { transform: scale(.6) translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
 
@@ -1395,6 +1401,14 @@ button.badge:active { transform: scale(.97); }
 .bp-sign { color: var(--pink-ink); font-weight: 800; margin: 0 0 12px; }
 .bp-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; font-size: 1.8rem; margin: 8px 0; }
 .badge-pop .btn { margin-top: 6px; min-width: 180px; }
+/* yatay telefonda rozet kutlaması tek ekrana sığsın: "Teşekkürler" kaydırmadan görünür */
+@media (max-height: 500px) {
+  .bp-emoji { font-size: 2.6rem; margin: 0; }
+  .badge-pop h3 { font-size: 1.15rem; margin: 2px 0 0; }
+  .bp-msg { font-size: .95rem; line-height: 1.4; margin: 8px 4px 4px; padding: 10px 12px; }
+  .bp-sign { margin: 0 0 6px; }
+  .badge-pop .btn { margin-top: 2px; }
+}
 @keyframes bpIn { 0% { transform: scale(.2) rotate(-25deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
 .confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; }
 .confetti i { position: absolute; top: -12px; width: 8px; height: 12px; border-radius: 2px; opacity: .9; animation: fall 2s ease-in forwards; }

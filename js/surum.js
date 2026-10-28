@@ -6,6 +6,17 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.13.1",
+  "tarih": "2026-10-28",
+  "baslik": "Küçük düzeltmeler",
+  "notlar": [
+    "🧹 Plan sekmesinin altındaki Görevler bölümü kaldırıldı; daha önce yazdığın görevler silinmedi, yalnızca görünmüyor.",
+    "💬 Telefon yan çevrilince Luna'nın konuşma balonu artık kediyi ve saati kapatmıyor; yanına geçiyor.",
+    "📅 Bugün için plan yokken Bugün kartı süre yazmıyor, \"Bugün için henüz plan yok\" diyor.",
+    "🏅 Telefon yan çevrilince rozet penceresi tek ekrana sığıyor; \"Teşekkürler\" kaydırmadan görünüyor."
+  ]
+},
+{
   "surum": "2.13",
   "tarih": "2026-10-27",
   "baslik": "Konu Takibi yenilendi",

@@ -713,8 +713,8 @@ const Scene = (() => {
   let weather = { kind: 'clear', intensity: 0 }, fx = null, wk = 0, starVis = 1, nextFlash = 12, flashT = 0;
   let feedTurn = 0;
   let fishItem = null, yarn = null, play = null, nextPlay = U.rand(90, 240);
-  let bubbleUntil = 0, bubbleOn = false, bubbleW = 0, bubbleH = 0, bubbleL = -1, bubbleB = -1, bubbleA = -1;
-  let wrapH = 0, hudR = null; // saat kutusunun sağ alt köşesi (balon onun üstüne binmesin)
+  let bubbleUntil = 0, bubbleOn = false, bubbleW = 0, bubbleH = 0, bubbleL = -1, bubbleB = -1, bubbleA = -1, bubbleYan = '';
+  let wrapH = 0, hudR = null, hudS = null; // saat kutusunun sağ alt köşesi ve sağ üstteki etiketlerin sol alt köşesi (balon onların üstüne binmesin)
 
   const L = { x: 60, y: 0, vy: 0, dir: 1, state: 'walk', ft: 0, target: 80, wait: 0, blinkIn: 3, blink: 0, eatT: 0, nap: false, awake: 0, speed: 16 };
   // mevsim / özel gün / dünya ayrıntıları
@@ -2132,6 +2132,8 @@ const Scene = (() => {
     if (!el) { hudR = null; return; }
     const r = el.getBoundingClientRect(), w = wrap.getBoundingClientRect();
     hudR = r.width ? { right: r.right - w.left, bottom: r.bottom - w.top } : null;
+    const sag = [...wrap.querySelectorAll('.hud-right > *')].map((x) => x.getBoundingClientRect()).filter((x) => x.width);
+    hudS = sag.length ? { left: Math.min(...sag.map((x) => x.left)) - w.left, bottom: Math.max(...sag.map((x) => x.bottom)) - w.top } : null;
   }
   function positionBubble() {
     if (!bubbleOn || !W) return;
@@ -2141,13 +2143,23 @@ const Scene = (() => {
     const cx = (actor ? actor.x : L.x) * scale;
     let left = Math.round(U.clamp(cx - bubbleW / 2, 8, wrapW - bubbleW - 8));
     // sahnenin üstünden taşmasın (yatay tutulan telefonda sahne alçak)
-    let bottom = Math.max(4, Math.min(Math.round((H - (g.top - 1)) * scale + 10), wrapH - bubbleH - 6));
+    const want = Math.round((H - (g.top - 1)) * scale + 10), most = wrapH - bubbleH - 6;
+    let bottom = Math.max(4, Math.min(want, most)), yan = '';
+    // başının üstüne sığmıyorsa kediyi örtmesin: yanına, başının hizasına geçer (yerin bol olduğu tarafa)
+    if (want > most) {
+      const kl = g.left * scale, kr = (g.left + g.p.w) * scale;
+      if (kr + 10 + bubbleW <= wrapW - 8) { left = Math.round(kr + 10); yan = 'sag'; }
+      else if (kl - 10 - bubbleW >= 8) { left = Math.round(kl - 10 - bubbleW); yan = 'sol'; }
+      // sağ üstteki gün doğumu ve balık etiketlerine binmesin: sığarsa onların altına iner
+      if (yan && hudS && left + bubbleW > hudS.left - 6 && wrapH - bottom - bubbleH < hudS.bottom + 6) bottom = Math.max(4, Math.min(bottom, Math.round(wrapH - hudS.bottom - 8 - bubbleH)));
+    }
     // saat ve tarih hep görünsün: balon saat kutusuna biniyorsa kutunun sağına (sığarsa) ya da altına geçer
     if (hudR && wrapH - bottom - bubbleH < hudR.bottom + 6 && left < hudR.right + 6) {
-      if (hudR.right + 8 + bubbleW <= wrapW - 6) left = Math.round(hudR.right + 8);
+      if (!yan && hudR.right + 8 + bubbleW <= wrapW - 6) left = Math.round(hudR.right + 8);
       else bottom = Math.max(4, Math.min(bottom, Math.round(wrapH - hudR.bottom - 8 - bubbleH)));
     }
     const arrow = Math.round(U.clamp(cx - left, 14, bubbleW - 14));
+    if (yan !== bubbleYan) { bubbleEl.classList.toggle('yan-sag', yan === 'sag'); bubbleEl.classList.toggle('yan-sol', yan === 'sol'); bubbleYan = yan; }
     // yalnızca değişince yaz (her karede stil/düzen hesabı olmasın)
     if (left !== bubbleL) { bubbleEl.style.left = left + 'px'; bubbleL = left; }
     if (bottom !== bubbleB) { bubbleEl.style.bottom = bottom + 'px'; bubbleB = bottom; }

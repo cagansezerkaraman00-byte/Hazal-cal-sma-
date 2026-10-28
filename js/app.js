@@ -634,7 +634,7 @@
     });
   }
   function renderSubjectSelects() {
-    $('#task-subject').innerHTML = subjectOptions('');
+    if ($('#task-subject')) $('#task-subject').innerHTML = subjectOptions('');
   }
   // ======================================================================
   // Oturum penceresi (bitince not + verim, ya da elle ekleme / düzenleme)
@@ -1105,16 +1105,17 @@
     const pct = Math.min(100, Math.floor((mins / goal) * 100)); // %100 ancak hedef gerçekten dolunca
     const todayKey = U.dateKey(new Date());
     // YKS modunda Bugün kartı günün programıdır (Plan'da o güne yazılan dersler ve konular); halka da planın yüzdesini
-    // gösterir. Bugün için plan yoksa ya da dönem modundaysa halka eskisi gibi günlük süre hedefidir.
+    // gösterir. Bugün için plan yoksa halka boş kalır ve süre yazmaz (süre yalnızca sayaçta); dönem modunda halka günlük süre hedefidir.
     const program = !programMode() && !!window.PlanlarUI;
     const plan = program ? Planlar.stats(Planlar.list('day', todayKey)) : null;
     const byPlan = !!(plan && plan.total);
-    const ring = byPlan ? plan.pct : pct;
+    const ring = byPlan ? plan.pct : program ? 0 : pct;
     $('#goal-ring').style.setProperty('--p', ring);
     $('#goal-ring').classList.toggle('done', ring >= 100);
     $('#goal-pct').textContent = ring >= 100 ? '★' : ring + '%';
     $('#today-min').textContent = U.fmtMin(todayMinutes());
     $('#goal-text').textContent = byPlan ? (plan.done === plan.total ? 'Bugünün planı tamam! 🎉' : `Planın: ${plan.done}/${plan.total} madde tamam`)
+      : program ? 'Bugün için henüz plan yok'
       : pct >= 100 ? `Hedef (${U.fmtMin(goal)}) tamam! 🎉` : `Hedefe ${U.fmtMin(goal - mins)} kaldı`;
     const today = D().sessions.filter((s) => U.dateKey(s.start) === todayKey).sort((a, b) => b.start - a.start);
     const qToday = today.reduce((n, s) => n + (+s.questions || 0), 0) + Planlar.questionEntries('day', U.dateKey(new Date())).reduce((n, x) => n + x.questions, 0);
@@ -1602,12 +1603,14 @@
       ${dueTxt ? `<span class="due ${late ? 'late' : ''}">${dueTxt}</span>` : ''}
       <button class="x" title="Sil">✕</button></li>`;
   }
+  // Görevler kartı 2.13.1'de Plan'dan kalktı; kayıtlı görevler silinmez, yalnızca gösterilmez
   function renderTasks() {
+    if (!$('#task-list')) return;
     const list = D().tasks.slice().sort(taskSort);
     $('#task-list').innerHTML = list.length ? list.map(taskItem).join('') : '<li class="empty" style="display:block">Henüz görev yok. Küçük ve net görevler yaz: "10 paragraf sorusu" gibi.</li>';
   }
   function bindTasks() {
-    $('#task-form').addEventListener('submit', (e) => {
+    if ($('#task-form')) $('#task-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const text = $('#task-input').value.trim();
       if (!text) return;
@@ -1631,8 +1634,8 @@
       } else return;
       save(); renderTasks(); renderHome(); checkBadges();
     };
-    $('#task-list').addEventListener('click', onTaskClick);
-    $('#clear-done').addEventListener('click', () => {
+    if ($('#task-list')) $('#task-list').addEventListener('click', onTaskClick);
+    if ($('#clear-done')) $('#clear-done').addEventListener('click', () => {
       D().tasks = D().tasks.filter((t) => !t.done);
       save(); renderTasks(); renderHome();
     });
