@@ -6,6 +6,15 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.14.5",
+  "tarih": "2026-10-29",
+  "baslik": "Akıcı ve keskin mini pencere",
+  "notlar": [
+    "⏱️ Mini penceredeki saniyeler tam zamanında, düzenli akar ve Luna'daki büyük sayaçla hep aynı saniyeyi gösterir.",
+    "🔍 Mini pencere iki kat çözünürlükte çizilir: yazılar ve kediler daha keskin."
+  ]
+},
+{
   "surum": "2.14.4",
   "tarih": "2026-10-29",
   "baslik": "Mini pencerede anında ▶",

@@ -185,6 +185,7 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
     ok(toggles === 1, 'Bilgisayar: çift tıklama iki kez saymaz');
     await wait(700); btn.l.click(); await wait(10);
     ok(toggles === 2 && !timer.running && btn.title === 'Devam et', 'Bilgisayar: yeniden basınca durur, ▶ Devam et olur');
+    ctx.window.MiniTimer.close();
   }
   console.log(`Mini pencere durdur/başlat: ${checks} kontrol geçti`);
 })().catch((e) => { console.error(e); process.exitCode = 1; });

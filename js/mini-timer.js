@@ -12,6 +12,14 @@ const MiniTimer = (() => {
   };
   const palette = () => themes[Store.data.settings?.miniTheme] || themes.cream;
   let family=null, lastCanvas=null;
+  // Luna'daki büyük sayaçla aynı yuvarlama: geri sayımda yukarı, ileri sayımda aşağı (iki ekran hiç bir saniye ayrışmaz)
+  const shownSec=(s)=>Math.max(0,s.countdown?Math.ceil(s.remaining):Math.floor(s.elapsed));
+  // ekrandaki saniyenin değişeceği ana kalan süre: çizim tam o anda yapılır, saniyeler düzenli akar ve hiç atlamaz
+  function msToNext(s) {
+    if(!s.running)return 1000-(Date.now()%1000)+20; // duruyorken yalnızca üstteki saat değişir
+    const v=s.countdown?s.remaining:s.elapsed,f=v-Math.floor(v);
+    return Math.max(40,Math.round((s.countdown?f:1-f)*1000)+25);
+  }
   function refreshTheme() {
     if(lastCanvas)render(lastCanvas);
   }
@@ -60,10 +68,11 @@ const MiniTimer = (() => {
     lastCanvas=canvas;
     const g=canvas.getContext('2d'),now=new Date(),s=Timer.state(),picture=art(),theme=palette();
     if(pip&&!pip.closed)pip.document.body.style.background=theme.bg;
-    const oy=Math.max(0,((canvas.height||240)-240)/2);
-    g.setTransform(1,0,0,1,0,0);
-    g.fillStyle=theme.bg;g.fillRect(0,0,canvas.width||640,canvas.height||240);
-    if(oy){g.fillStyle=theme.panel;g.fillRect(0,0,232,canvas.height);g.translate(0,oy);}
+    // düzen 640 genişliğe göre; büyük tuvalde (küçük video penceresi) aynı düzen iki kat keskin çizilir
+    const k=(canvas.width||640)/640,H=(canvas.height||240)/k,oy=Math.max(0,(H-240)/2);
+    g.setTransform(k,0,0,k,0,0);
+    g.fillStyle=theme.bg;g.fillRect(0,0,640,H);
+    if(oy){g.fillStyle=theme.panel;g.fillRect(0,0,232,H);g.translate(0,oy);}
     g.fillStyle=theme.bg;g.fillRect(0,0,640,240);
     g.fillStyle=theme.panel;g.fillRect(0,0,232,240);
     decorations(g,theme);
@@ -78,7 +87,7 @@ const MiniTimer = (() => {
     g.fillText(U.hm(now),252,36);
     g.textAlign='right';g.fillText(now.toLocaleDateString('tr-TR',{day:'numeric',month:'long'}),618,36);g.textAlign='left';
     g.fillStyle=theme.ink;g.font='600 67px system-ui';
-    g.fillText(U.fmtClock(s.countdown?s.remaining:s.elapsed),249,110);
+    g.fillText(U.fmtClock(shownSec(s)),249,110);
     const label=s.fresh?'Hazır':!s.running?'Duraklatıldı':s.phase==='focus'?'Odak zamanı':'Mola zamanı';
     g.font='500 23px system-ui';g.fillStyle=theme.muted;
     const mins=Math.floor(Math.max(0,s.elapsed)/60)+' dk',minsW=(g.measureText(mins)||{}).width||60,room=618-minsW-16-252;
@@ -128,7 +137,7 @@ const MiniTimer = (() => {
   const supported=()=>canDoc()||canVideo()||iPadWindowGuide();
   const videoInPip=()=>!!vid&&(document.pictureInPictureElement===vid||vid.webkitPresentationMode==='picture-in-picture');
   function isOpen() {return mode==='doc'?!!(pip&&!pip.closed):mode==='video'?videoInPip():false;}
-  function cleanup() {if(tickId){clearInterval(tickId);tickId=null;}pip=null;away=false;lastCanvas=null;docBtn=null;docCanvas=null;docIcon='';if(mode==='doc')mode=null;}
+  function cleanup() {if(tickId){clearTimeout(tickId);tickId=null;}pip=null;away=false;lastCanvas=null;docBtn=null;docCanvas=null;docIcon='';if(mode==='doc')mode=null;}
   // Saniyelik çizim ve kısa beklemeler ayrı bir işçide sayılır: Luna arkadayken tarayıcı sayfanın kendi sayaçlarını
   // saniyeye yuvarlayıp yavaşlatıyor, işçininkileri yavaşlatmıyor (⏸'dan sonra ▶ simgesi bu yüzden geç geliyordu).
   const later=new Map();let laterId=0;
@@ -167,7 +176,7 @@ const MiniTimer = (() => {
   // video PiP için hazırlık: dokunuşun hemen başında (pointerdown) başlar ki "click"te PiP anında istenebilsin
   function prepareVideo() {
     if(vid)return vid;
-    vcanvas=document.createElement('canvas');vcanvas.width=640;vcanvas.height=268; // 2,39:1, Android PiP sınırı
+    vcanvas=document.createElement('canvas');vcanvas.width=1280;vcanvas.height=536; // 2,39:1 (Android PiP sınırı), iki kat keskin
     render(vcanvas);
     vstream=vcanvas.captureStream(2);
     render(vcanvas); // akış açıldıktan sonra bir kez daha çiz: ilk kare hemen gitsin, video hazır olsun
@@ -202,7 +211,10 @@ const MiniTimer = (() => {
       if(videoInPip()&&!running())flip();
     });
     vid=v;
-    startTick(()=>{if(vcanvas)render(vcanvas);watch();});
+    startTick(watch);
+    // çizim saniye değişimine denk getirilir (işçide sayılır; Luna arkadayken yavaşlamaz)
+    const loop=()=>{if(vid!==v||!vcanvas)return;paint();soon(loop,msToNext(Timer.state()));};
+    soon(loop,msToNext(Timer.state()));
     v.play().catch(()=>{});
     // sayaç çalıştıkça hazır kalsın (dokununca anında açılsın); sayaç durup pencere açılmadıysa temizle
     const idle=setInterval(()=>{if(vid!==v){clearInterval(idle);return;}if(mode!=='video'&&!opening&&!Timer.state().running){clearInterval(idle);teardownVideo();}},60000);
@@ -275,7 +287,8 @@ const MiniTimer = (() => {
       ctl.addEventListener('click',flip);
       next.document.body.append(ctl);docBtn=ctl;docCanvas=canvas;
       next.addEventListener('pagehide',()=>{if(pip===next){cleanup();closedWhileAway();if(document.hidden)LunaNotify.timerSnapshot();}},{once:true});
-      render(canvas);tickId=setInterval(()=>render(canvas),1000);
+      const loop=()=>{if(pip!==next||next.closed)return;render(canvas);tickId=setTimeout(loop,msToNext(Timer.state()));};
+      loop();
     } catch(e) {close();app.toast('🐾','Mini pencere açılamadı','Bir kez daha dokunarak dene.');}
     finally {opening=false;}
   }
