@@ -6,8 +6,9 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 let checks = 0;
 const ok = (c, m) => { assert.ok(c, m); checks++; };
 
-function world(ua) {
+function world(ua, noFrames = false) {
   const timer = { running: true, fresh: false }, ticks = [];
+  const pipWin = { l: {}, addEventListener(k, f) { this.l[k] = f; } };
   let toggles = 0;
   const listeners = {};
   const doc = { hidden: true, pictureInPictureEnabled: true, pictureInPictureElement: null, body: { appendChild(el) { if (el.requestPictureInPicture) video = el; } },
@@ -22,8 +23,8 @@ function world(ua) {
       fire(k) { (ev[k] || []).forEach((f) => f()); },
       play() { if (this.paused) { this.paused = false; this.fire('play'); } return Promise.resolve(); },
       pause() { if (!this.paused) { this.paused = true; this.fire('pause'); } },
-      requestVideoFrameCallback(cb) { setTimeout(cb, 5); },
-      requestPictureInPicture() { doc.pictureInPictureElement = v; return Promise.resolve(); } };
+      requestVideoFrameCallback(cb) { if (!noFrames) setTimeout(cb, 5); }, // gizli sayfada kare bildirimi gelmez
+      requestPictureInPicture() { doc.pictureInPictureElement = v; return Promise.resolve(pipWin); } };
     return v;
   }
   let video = null;
@@ -41,7 +42,7 @@ function world(ua) {
   vm.createContext(ctx); vm.runInContext(source, ctx);
   const api = ctx.window.MiniTimer;
   api.init({ toast() {}, miniToggle() { toggles++; timer.running = !timer.running; timer.fresh = false; } });
-  return { api, doc, ms, timer, tick: () => ticks.forEach((f) => f()), get video() { return video; }, get toggles() { return toggles; }, button };
+  return { api, doc, ms, timer, pipWin, tick: () => ticks.forEach((f) => f()), get video() { return video; }, get toggles() { return toggles; }, button };
 }
 
 const CHROME = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36';
@@ -57,42 +58,72 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
     await wait(400);
     ok(w.ms.playbackState === 'playing' && !w.video.paused, 'Chrome: sayaç çalışırken pencere ⏸ gösterir, görüntü akar');
     w.ms.h.pause(); await wait(30);
-    ok(w.toggles === 1 && !w.timer.running && w.ms.playbackState === 'paused', 'Chrome: ⏸ sayacı durdurur, pencere ▶ gösterir');
-    await wait(1700); w.tick();
-    ok(!w.video.paused, 'Chrome: sayaç durunca da görüntü akmaya devam eder (pencere kararmaz)');
-    w.ms.h.pause(); await wait(30); // tarayıcı yine "pause" yollasa bile
-    ok(w.toggles === 2 && w.timer.running && w.ms.playbackState === 'playing', 'Chrome: ikinci basış sayacı devam ettirir');
-    w.ms.h.play(); w.ms.h.pause(); await wait(30);
-    ok(w.toggles === 2, 'Chrome: bir önceki basışın hemen ardından (600 ms içinde) gelen tuşlar yok sayılır');
-    await wait(700);
+    ok(w.toggles === 1 && !w.timer.running && w.ms.playbackState === 'paused', 'Chrome: ⏸ sayacı durdurur');
+    w.tick(); await wait(900);
+    ok(!w.video.paused, 'Chrome: pencere açılalı 3 sn olmadan görüntü hiç bekletilmez (tablette kararmasın)');
+    await wait(1800); w.tick(); await wait(900);
+    ok(w.video.paused, 'Chrome: pencere görüntüyü aldıktan sonra video bekletilir, tuş ▶ gösterir');
+    w.tick(); await wait(1100);
+    ok(w.video.paused, 'Chrome: beklerken saniyelik denetim görüntüyü oynatıp durdurmaz (simge titremez)');
+    w.pipWin.l.resize(); await wait(30);
+    ok(!w.video.paused, 'Chrome: pencerenin boyutu değişince (tablet döndü) yeni kare gider');
+    await wait(900);
+    ok(w.video.paused && !w.timer.running, 'Chrome: sonra yeniden bekler, sayaç değişmez');
     w.ms.h.play(); await wait(30);
-    ok(w.toggles === 3 && !w.timer.running, 'Chrome: 600 ms sonra gelen basış yeniden çevirir');
-    await wait(700); w.ms.h.play(); await wait(30);
-    ok(w.toggles === 4 && w.timer.running, 'Chrome: sayaç yine çalışıyor');
-    // pencere kapanırken Chrome videoyu durdurur: sayaç durmamalı
-    await wait(700);
+    ok(w.toggles === 2 && w.timer.running && !w.video.paused && w.ms.playbackState === 'playing', 'Chrome: ▶ sayacı devam ettirir, görüntü akar');
+    await wait(700); w.ms.h.pause(); await wait(30);
+    ok(w.toggles === 3 && !w.timer.running, 'Chrome: yeniden ⏸');
+    await wait(700); w.ms.h.pause(); await wait(30);
+    ok(w.toggles === 4 && w.timer.running && !w.video.paused, 'Chrome: tarayıcı yine "pause" yollasa da basış sayacı çevirir');
+    await wait(700); w.ms.h.play(); w.ms.h.pause(); await wait(30);
+    ok(w.toggles === 5 && !w.timer.running, 'Chrome: hemen art arda gelen iki tuş bir kez sayılır');
+    await wait(900);
+    // pencere kapanırken Chrome videoyu durdurur: sayaç değişmemeli
     w.video.pause(); w.doc.pictureInPictureElement = null; w.video.fire('leavepictureinpicture'); await wait(1000);
-    ok(w.timer.running && w.toggles === 4, 'Chrome: pencereyi kapatmak sayacı durdurmaz');
+    ok(!w.timer.running && w.toggles === 5, 'Chrome: pencereyi kapatmak sayacı değiştirmez');
     ok(w.ms.h.play === null && w.ms.h.pause === null && w.ms.playbackState === 'none', 'Chrome: kapanınca tuşlar bırakılır');
+  }
+  // ---- Chrome: çalışan sayaç pencere kapanırken durmaz ----
+  {
+    const w = world(CHROME);
+    w.button.l.pointerdown(); w.button.l.click(); await wait(3400); w.tick(); await wait(50);
+    ok(w.timer.running && !w.video.paused, 'Chrome: sayaç çalışırken görüntü hep akar');
+    w.video.pause(); w.doc.pictureInPictureElement = null; w.video.fire('leavepictureinpicture'); await wait(1000);
+    ok(w.timer.running && w.toggles === 0, 'Chrome: pencereyi kapatmak çalışan sayacı durdurmaz');
   }
   // ---- Chrome: sayaç başka yoldan durursa (süre doldu / Luna'dan basıldı) pencere de uyar ----
   {
     const w = world(CHROME);
-    w.button.l.pointerdown(); w.button.l.click(); await wait(400);
+    w.button.l.pointerdown(); w.button.l.click(); await wait(3400);
     w.timer.running = false;
-    w.tick(); await wait(30);
-    ok(w.ms.playbackState === 'paused' && !w.video.paused, 'Chrome: sayaç başka yoldan durunca pencere ▶ gösterir, görüntü akar');
+    w.tick(); await wait(900);
+    ok(w.ms.playbackState === 'paused' && w.video.paused, 'Chrome: sayaç başka yoldan durunca pencere ▶ gösterir');
     w.ms.h.play(); await wait(30);
-    ok(w.timer.running && w.toggles === 1, 'Chrome: durmuş sayaç ▶ ile başlar');
+    ok(w.timer.running && w.toggles === 1 && !w.video.paused, 'Chrome: durmuş sayaç ▶ ile başlar');
+    w.api.close();
   }
-  // ---- Hazır (başlamamış) sayaç: pencere açılır, kararmaz; ▶ ile başlar ----
+  // ---- Hazır (başlamamış) sayaç: pencere ilk saniyelerde akar, kararmaz; sonra ▶ gösterir; ▶ ile başlar ----
   {
     const w = world(CHROME);
     w.timer.running = false; w.timer.fresh = true;
-    w.button.l.pointerdown(); w.button.l.click(); await wait(1700); w.tick();
-    ok(w.ms.playbackState === 'paused' && !w.video.paused, 'Hazır: pencere ▶ gösterir ve görüntü akar (kararmaz)');
+    w.button.l.pointerdown(); w.button.l.click(); await wait(1500); w.tick(); await wait(50);
+    ok(w.ms.playbackState === 'paused' && !w.video.paused, 'Hazır: açılır açılmaz bekletilmez (tablette kararmasın)');
+    await wait(1700); w.tick(); await wait(900);
+    ok(w.video.paused, 'Hazır: pencere görüntüyü aldıktan sonra ▶ gösterir');
     w.ms.h.play(); await wait(30);
     ok(w.timer.running && w.toggles === 1 && !w.video.paused, 'Hazır: ▶ sayacı başlatır');
+    w.api.close();
+  }
+  // ---- Luna arkadayken tarayıcı kareleri saymaz: 5 sn sonra yine ▶ gösterir ----
+  {
+    const w = world(CHROME, true);
+    w.timer.running = false; w.timer.fresh = true;
+    w.button.l.pointerdown(); w.button.l.click(); await wait(10);
+    await wait(3800); w.tick(); await wait(1800);
+    ok(!w.video.paused, 'Arkada: kareler sayılamazken 5 sn dolmadan bekletilmez');
+    await wait(300); w.tick(); await wait(1800);
+    ok(w.video.paused && w.ms.playbackState === 'paused', 'Arkada: 5 sn sonra pencere ▶ gösterir');
+    w.api.close();
   }
   // ---- iPhone/iPad Safari: pencerenin tuşu videonun kendisini durdurur ----
   {

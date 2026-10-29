@@ -6,6 +6,15 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.14.2",
+  "tarih": "2026-10-29",
+  "baslik": "Mini pencerede doğru tuş, kararma yok",
+  "notlar": [
+    "⏯ Mini pencerenin ortasındaki tuş artık sayaçla aynı: sayaç çalışırken ⏸, dururken ▶ gösterir.",
+    "🛠️ Pencere hiç kararmaz: görüntü, pencere açıldıktan birkaç saniye sonra ve pencereye kesin ulaştıktan sonra bekletilir; tablet dönünce ya da pencere büyüyüp küçülünce yeniden gönderilir."
+  ]
+},
+{
   "surum": "2.14.1",
   "tarih": "2026-10-29",
   "baslik": "Mini pencere artık kararmıyor",

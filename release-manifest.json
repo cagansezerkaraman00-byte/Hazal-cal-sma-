@@ -1,7 +1,7 @@
 {
-  "version": "2.14.1",
+  "version": "2.14.2",
   "files": {
-    "index.html": "7d6799b73572a36c097c3e7ad023702ab80a1f7157f52ee2867251f7343aaa81",
+    "index.html": "1b5b5f3b0b612a176c10069b4fe14158e89d7458e57d9421caae6c4caf37a7e8",
     "manifest.webmanifest": "43dec4f4891723105d49d755658101937342b648d52113a0ea2191d4fb4b384a",
     "css/style.css": "5ed21983fbd3f885944ab2698633a787ff13e29f4159c3a2e59e3457fe433895",
     "js/app.js": "7225f73ff227a003ff877c2d09e3167cc556a42b054fc09bb94528cf40cfdd06",
@@ -21,7 +21,7 @@
     "js/kurulum.js": "54f6d689e184c2275946b83dcb3348ae7964d490308dbb9bd00f099745d2dc2b",
     "js/mektuplar.js": "f3b24dcc352d4e2f1736a6bc8c454177137e98242edfcd99992d10012aa8163e",
     "js/messages.js": "25694e0cd1d4015ecff0c2487b9f7d5bf843d1542527d95899fa12f8549042c5",
-    "js/mini-timer.js": "0ca482946af97b2dbf1c1a408696fdfb5383266f8c57ae612316f98047e3943d",
+    "js/mini-timer.js": "3ac5e64941ac36d17c341e4e4f9a602e633068c6776bfe5401a569d9f2a46737",
     "js/notes.js": "0351364338ebee68cddb1906c61517f4e7c355eed89d53a2cba5c24a4067149a",
     "js/notifications.js": "5582f8bb9e9d76f3c5aab67b531f97666cc9e89841cc3415694c910c51fdc2d9",
     "js/plan.js": "49ce4d002901ab192dc5de227f1d1c158a355d1d1650f82581b497ab90b20528",
@@ -34,7 +34,7 @@
     "js/stats.js": "35ec3ef25ab6bee7c4fec1de72277a54dcae981c42b976346f86888a92985c2c",
     "js/stickers.js": "662127fa04c8f69a58c0556af3bf172df04cf402eaee275918a19036b3857bc2",
     "js/storage.js": "ca4ac1f0f5d43b25eda61e39e93cf428ab4189eaf7c01c076f47925c9ca5db7c",
-    "js/surum.js": "643641161964aee25d33bbc3eaa25dfc3d210779d7cb0e9caf8effd0ba3f020b",
+    "js/surum.js": "cad78b54b8bc4df92981cadfc80c2fa0c4878d4ab5e823f8a4dc07d7ef0e16d5",
     "js/takvim-ui.js": "7da33dbd799d3d4b8a09bd1c02dd5c9f98e44282f79cb23b170e2e369e3c690f",
     "js/takvim.js": "4ed7da5ef2645cc8799cde35e985cbe0604bd45a2dfa3160aec3674fe5bb61c6",
     "js/timer.js": "c298c67558ada87f20cd2dc4d49b07a63412f563dffccbe28324208126842bd2",

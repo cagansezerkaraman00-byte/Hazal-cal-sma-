@@ -109,6 +109,7 @@ const MiniTimer = (() => {
      sayaca kalıcı bir işaret yazılmaz, böylece Tam odak yanlışlıkla kapanmaz. */
   let mode=null, vid=null, vcanvas=null, vstream=null, vtick=null, vworker=null;
   let docBtn=null, docCanvas=null, docIcon='', lastToggle=0, pressAt=0, lastRun=null;
+  let openedAt=0, shown=0, holding=false, selfPauseAt=0; // küçük pencere açıldığından beri ekrana gelen kare sayısı
   const canDoc=()=>typeof window!=='undefined'&&'documentPictureInPicture' in window;
   const isIOS=()=>typeof navigator!=='undefined'&&(/iP(hone|ad|od)/.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1));
   const isIPad=()=>isIOS()&&!/iPhone|iPod/.test(navigator.userAgent||'');
@@ -141,7 +142,7 @@ const MiniTimer = (() => {
     if(vstream){try{vstream.getTracks().forEach(t=>t.stop());}catch(e){}vstream=null;}
     if(vid){try{vid.pause();vid.srcObject=null;vid.remove();}catch(e){}vid=null;}
     vcanvas=null;if(mode==='video')mode=null;away=false;
-    setSession(false);lastRun=null;
+    setSession(false);lastRun=null;openedAt=0;shown=0;holding=false;
   }
   // mini pencere başka uygulamadayken kapatıldıysa o andan sonrası izinli çıkış değil: Tam odak 15 sn sonra durdurur
   function closedWhileAway() {
@@ -170,17 +171,19 @@ const MiniTimer = (() => {
     document.body.appendChild(v);
     v.addEventListener('leavepictureinpicture',onVideoLeave);
     v.addEventListener('webkitpresentationmodechanged',()=>{if(v===vid&&v.webkitPresentationMode!=='picture-in-picture'&&mode==='video')onVideoLeave();});
-    // Görüntü hep akar: video hiç bekletilmez (bekletilen video Android tablette kapkara görünüyordu).
+    // Android'de video yalnızca biz beklettiğimizde durur (sayaç durmuşken ▶ görünsün diye); başka bir sebeple durursa
+    // (pencere kapanıyor, sistem) sayaca dokunulmaz, görüntü sayacın durumuna göre yeniden ayarlanır.
     // iPhone/iPad Safari'de pencerenin ⏸ tuşu videonun kendisini durdurur; pencere kapanırken de video durur.
     // Bu yüzden kısa bir an beklenir: pencere hâlâ açıksa ⏸'a basılmıştır, sayaç çevrilir ve görüntü yeniden akar.
     v.addEventListener('pause',()=>{
       if(v!==vid||mode!=='video')return;
-      if(!webkitPip()){if(videoInPip())keepPlaying();return;} // Chrome'da tuş Media Session'a gelir; görüntü donmasın
+      if(Date.now()-selfPauseAt<500){selfPauseAt=0;return;} // kendi bekletmemiz
+      if(!webkitPip()){if(videoInPip())sync();return;} // Chrome'da tuş Media Session'a gelir
       const at=pressAt=Date.now();
       setTimeout(()=>{
         if(v!==vid||mode!=='video'||!videoInPip())return; // pencere kapandı: sayaca dokunulmaz
         if(v.paused&&lastToggle<at-300)flip(); // aynı dokunuş Media Session'dan da geldiyse bir kez sayılır
-        keepPlaying();
+        sync();
       },900);
     });
     vid=v;
@@ -198,7 +201,10 @@ const MiniTimer = (() => {
   }
   function openedVideo() {
     mode='video';away=document.hidden;
-    setSession(true);lastRun=running();setTimeout(()=>{if(mode==='video')keepPlaying();},300);
+    setSession(true);lastRun=running();openedAt=Date.now();shown=0;holding=false;
+    // pencereye gerçekten kare gidiyor mu: açılıştan sonra ekrana gelen kareler sayılır
+    if(typeof vid.requestVideoFrameCallback==='function'){const v=vid,f=()=>{if(v!==vid||mode!=='video')return;shown++;v.requestVideoFrameCallback(f);};v.requestVideoFrameCallback(f);}
+    setTimeout(sync,300);
     if(!Store.data.settings.miniUsed){Store.data.settings.miniUsed=true;Store.save();}
     app.toast('🐾','Mini pencere açıldı','Başka uygulamaya geçince köşede kalır; Luna\'ya dönünce kapanır.');
   }
@@ -216,7 +222,12 @@ const MiniTimer = (() => {
       opening=true;
       setSession(true);
       let p;try{p=enterVideoPip(v);}catch(e){p=Promise.reject(e);}
-      p.then(()=>{opening=false;if(v===vid)openedVideo();},fail);
+      p.then((win)=>{
+        opening=false;if(v!==vid)return;
+        openedVideo();
+        // pencerenin boyutu değişirse (tablet döndü, pencere büyütüldü) bekleyen görüntü yeniden gönderilir
+        if(win&&typeof win.addEventListener==='function')win.addEventListener('resize',nudge);
+      },fail);
     };
     // meta veri hazırsa PiP aynı dokunuşta istenir (iOS dokunuş gerektirir)
     if(v.readyState>=1){go();return;}
@@ -258,7 +269,10 @@ const MiniTimer = (() => {
      · bilgisayar (doc): pencerenin içindeki düğme
      · Android Chrome (video): pencerenin ⏯ tuşu Media Session'a gelir (tuvalden gelen görüntüde tuş ancak böyle görünür)
      · iPhone/iPad Safari (video): pencerenin ⏯ tuşu videoyu durdurur/oynatır; bu olaylar yakalanır
-     Her basış sayacı çevirir; tarayıcı hangi tuşu (▶ ya da ⏸) yollarsa yollasın sonuç aynıdır. Görüntü hiç bekletilmez. */
+     Her basış sayacı çevirir; tarayıcı hangi tuşu (▶ ya da ⏸) yollarsa yollasın sonuç aynıdır.
+     Android'de sayaç durunca video da bekletilir ki pencerenin tuşu ▶ göstersin; ama yalnızca pencere görüntüyü gerçekten
+     aldıktan sonra (açılıştan en az 3 sn ve iki kare, kareler sayılamıyorsa 5 sn sonra). Erken bekletilen video tablette
+     kapkara kalıyordu (2.14). */
   const running=()=>!!Timer.state().running;
   const webkitPip=()=>isIOS()||(typeof navigator!=='undefined'&&/Safari\//.test(navigator.userAgent||'')&&!/Chrome|Chromium|Edg|Android/.test(navigator.userAgent||''));
   function session() {try{const m=typeof navigator!=='undefined'&&navigator.mediaSession;return m&&typeof m.setActionHandler==='function'?m:null;}catch(e){return null;}}
@@ -270,7 +284,7 @@ const MiniTimer = (() => {
   }
   // pencerenin simgesi sayacın durumunu göstersin (tarayıcı izin verdiği ölçüde)
   function syncState() {const ms=session();if(ms&&mode==='video')try{ms.playbackState=running()?'playing':'paused';}catch(e){}}
-  function refreshAll() {if(mode==='video')keepPlaying();else if(lastCanvas)render(lastCanvas);}
+  function refreshAll() {if(mode==='video'){paint();sync();}else if(lastCanvas)render(lastCanvas);}
   // Her basış sayacı çevirir (Luna'daki Başla / Duraklat / Devam gibi). Aynı dokunuş iki yoldan gelirse bir kez sayılır.
   function flip() {
     const now=Date.now();
@@ -280,19 +294,40 @@ const MiniTimer = (() => {
     lastRun=running();
     refreshAll();
   }
-  // görüntü hep akar: yeni kare hemen çizilir, video durmuşsa yeniden oynatılır
-  function keepPlaying() {
+  // yeni kare hemen çizilip akışa verilir
+  function paint() {if(vcanvas){render(vcanvas);try{const tr=vstream&&vstream.getVideoTracks()[0];if(tr&&tr.requestFrame)tr.requestFrame();}catch(e){}}}
+  // Luna arkadayken tarayıcı kareleri saymaz: o zaman 5 sn yeter (görüntü o ana kadar hep aktığı için pencereye çoktan ulaşmıştır)
+  const holdReady=()=>{if(webkitPip()||!vid)return false;const t=Date.now()-openedAt;return t>=5000||(t>=3000&&shown>=2);};
+  // görüntüyü sayaca uydur: çalışıyorsa (ya da pencere yeni açıldıysa) akar; durmuşsa son kare pencereye ulaştıktan sonra beklenir
+  function sync() {
     const v=vid;if(!v||mode!=='video')return;
     syncState();
-    if(vcanvas){render(vcanvas);try{const tr=vstream&&vstream.getVideoTracks()[0];if(tr&&tr.requestFrame)tr.requestFrame();}catch(e){}}
-    if(v.paused)v.play().catch(()=>{});
+    if(running()||!holdReady()){holding=false;if(v.paused)v.play().catch(()=>{});return;}
+    if(v.paused||holding)return; // zaten bekliyor ya da birazdan bekleyecek
+    holding=true;paint();
+    const t0=Date.now();let done=false;
+    const hold=()=>{
+      if(done)return;done=true;holding=false;
+      if(v!==vid||mode!=='video'||running()||v.paused)return;
+      selfPauseAt=Date.now();v.pause();
+    };
+    // akış saniyede iki kare yollar: "Duraklatıldı" karesi kesin ulaşsın diye en az 0,7 sn ve bir kare daha beklenir
+    if(typeof v.requestVideoFrameCallback==='function'){const f=()=>{if(Date.now()-t0>=700)hold();else v.requestVideoFrameCallback(f);};v.requestVideoFrameCallback(f);}
+    setTimeout(hold,1600);
   }
-  // saniyede bir: sayaç başka yoldan durduysa/başladıysa (süre doldu, Luna'dan basıldı) simge uysun; görüntü hiç donmasın
+  // bekleyen pencereye yeni kare gönder (pencerenin boyutu değişti, Luna öne/arkaya geçti): kısa bir an oynatılıp yeniden beklenir
+  function nudge() {
+    const v=vid;if(!v||mode!=='video'||!v.paused||running())return;
+    paint();v.play().catch(()=>{});
+    setTimeout(sync,50);
+  }
+  // saniyede bir: sayaç başka yoldan durduysa/başladıysa (süre doldu, Luna'dan basıldı) pencere de uysun
   function watch() {
     if(mode!=='video'||!vid)return;
     const run=running();
-    if(run!==lastRun){lastRun=run;syncState();}
-    if(vid.paused&&Date.now()-pressAt>1500)keepPlaying();
+    if(run!==lastRun){lastRun=run;paint();}
+    if(Date.now()-pressAt<1500)return; // Safari'de dokunuş anlaşılırken bekle
+    sync();
   }
   // ⏯ simgesi: üçgen ve iki çubuk (her yazı tipinde aynı görünür)
   function playPause(g,x,y,size,color) {
@@ -359,6 +394,7 @@ const MiniTimer = (() => {
       button.addEventListener('click',open);
     }
     document.addEventListener('visibilitychange',()=>{
+      if(isOpen())nudge(); // Luna öne/arkaya geçince bekleyen pencere de yeni kare alsın
       if(document.hidden){if(isOpen())away=true;return;}
       if(away&&isOpen())close();
     });
