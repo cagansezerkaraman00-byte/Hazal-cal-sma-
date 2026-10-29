@@ -6,6 +6,15 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.14.6",
+  "tarih": "2026-10-29",
+  "baslik": "Tablette mini pencere kararmıyor",
+  "notlar": [
+    "🛠️ Android tablette mini pencere kapkara görünüyordu; düzeldi. Tablette görüntü hep akar; ortadaki tuş hep ⏸ görünür ama her basışta sayacı başlatır ya da durdurur, pencerede de sayacın durumu yazar.",
+    "📱 Telefonda her şey aynı: tuş sayaçla birlikte ⏸ / ▶ olur."
+  ]
+},
+{
   "surum": "2.14.5",
   "tarih": "2026-10-29",
   "baslik": "Akıcı ve keskin mini pencere",

@@ -46,6 +46,7 @@ function world(ua, noFrames = false) {
 }
 
 const CHROME = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36';
+const TABLET = 'Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36';
 const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 
 (async () => {
@@ -116,7 +117,21 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
     ok(w.timer.running && w.toggles === 1 && !w.video.paused, 'Hazır: ▶ sayacı başlatır');
     w.api.close();
   }
-  // ---- Luna arkadayken tarayıcı kareleri saymaz: 5 sn sonra yine ▶ gösterir ----
+  // ---- Android tablet: görüntü hiç bekletilmez (tablette bekletilen pencere kapkara kalıyordu), tuş yine çalışır ----
+  {
+    const w = world(TABLET);
+    w.timer.running = false; w.timer.fresh = true;
+    w.button.l.pointerdown(); w.button.l.click(); await wait(4200); w.tick(); await wait(900);
+    ok(!w.video.paused && w.ms.playbackState === 'paused', 'Tablet: sayaç dururken bile görüntü akar (kararmaz)');
+    w.ms.h.pause(); await wait(30); // tablette tuş hep ⏸ görünür, basınca sayaç başlar
+    ok(w.timer.running && w.toggles === 1 && !w.video.paused, 'Tablet: tuşa basınca sayaç başlar');
+    await wait(700); w.ms.h.pause(); await wait(30);
+    ok(!w.timer.running && w.toggles === 2, 'Tablet: yeniden basınca durur');
+    w.tick(); await wait(1200);
+    ok(!w.video.paused, 'Tablet: durunca da görüntü hiç bekletilmez');
+    w.api.close();
+  }
+  // ---- Luna arkadayken tarayıcı kareleri saymaz: 3,5 sn sonra yine ▶ gösterir ----
   {
     const w = world(CHROME, true);
     w.timer.running = false; w.timer.fresh = true;

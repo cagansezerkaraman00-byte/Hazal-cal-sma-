@@ -176,7 +176,7 @@ const MiniTimer = (() => {
   // video PiP için hazırlık: dokunuşun hemen başında (pointerdown) başlar ki "click"te PiP anında istenebilsin
   function prepareVideo() {
     if(vid)return vid;
-    vcanvas=document.createElement('canvas');vcanvas.width=1280;vcanvas.height=536; // 2,39:1 (Android PiP sınırı), iki kat keskin
+    vcanvas=document.createElement('canvas');vcanvas.width=640;vcanvas.height=268; // 2,39:1, Android PiP sınırı (yıllardır sorunsuz boyut)
     render(vcanvas);
     vstream=vcanvas.captureStream(2);
     render(vcanvas); // akış açıldıktan sonra bir kez daha çiz: ilk kare hemen gitsin, video hazır olsun
@@ -325,7 +325,10 @@ const MiniTimer = (() => {
   // yeni kare hemen çizilip akışa verilir
   function paint() {if(vcanvas){render(vcanvas);try{const tr=vstream&&vstream.getVideoTracks()[0];if(tr&&tr.requestFrame)tr.requestFrame();}catch(e){}}}
   // Luna arkadayken tarayıcı kareleri saymaz: o zaman 3,5 sn yeter (görüntü o ana kadar hep aktığı için pencereye çoktan ulaşmıştır)
-  const holdReady=()=>{if(webkitPip()||!vid)return false;const t=Date.now()-openedAt;return t>=3500||(t>=2000&&shown>=2);};
+  // Android tabletler bekletilen görüntüyü hiç göstermiyor (pencere kapkara kalıyor): orada görüntü hep akar, tuş hep ⏸ görünür
+  // ama yine her basışta sayacı çevirir. Telefonlarda (Chrome'un "Mobile" dediği cihazlar) bekletme güvenle çalışıyor.
+  const androidTablet=()=>typeof navigator!=='undefined'&&/Android/i.test(navigator.userAgent||'')&&!/Mobile/i.test(navigator.userAgent||'');
+  const holdReady=()=>{if(webkitPip()||androidTablet()||!vid)return false;const t=Date.now()-openedAt;return t>=3500||(t>=2000&&shown>=2);};
   // görüntüyü sayaca uydur: çalışıyorsa (ya da pencere yeni açıldıysa) akar; durmuşsa son kare pencereye ulaştıktan sonra beklenir
   function sync() {
     const v=vid;if(!v||mode!=='video')return;
