@@ -73,6 +73,8 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
     ok(w.toggles === 2 && w.timer.running && !w.video.paused && w.ms.playbackState === 'playing', 'Chrome: ▶ sayacı devam ettirir, görüntü akar');
     await wait(700); w.ms.h.pause(); await wait(30);
     ok(w.toggles === 3 && !w.timer.running, 'Chrome: yeniden ⏸');
+    await wait(400);
+    ok(w.video.paused, 'Chrome: ⏸ sonrası ▶ simgesi 0,4 sn içinde gelir (bekletmeden)');
     await wait(700); w.ms.h.pause(); await wait(30);
     ok(w.toggles === 4 && w.timer.running && !w.video.paused, 'Chrome: tarayıcı yine "pause" yollasa da basış sayacı çevirir');
     await wait(700); w.ms.h.play(); w.ms.h.pause(); await wait(30);

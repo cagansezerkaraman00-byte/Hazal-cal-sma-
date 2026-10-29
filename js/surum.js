@@ -6,6 +6,14 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.14.4",
+  "tarih": "2026-10-29",
+  "baslik": "Mini pencerede anında ▶",
+  "notlar": [
+    "⏯ Mini pencerede ⏸'a basınca sayaç durur ve tuş hemen ▶ olur; beklemek yok."
+  ]
+},
+{
   "surum": "2.14.3",
   "tarih": "2026-10-29",
   "baslik": "Mini pencerenin tuşu daha çabuk doğru",

@@ -129,15 +129,24 @@ const MiniTimer = (() => {
   const videoInPip=()=>!!vid&&(document.pictureInPictureElement===vid||vid.webkitPresentationMode==='picture-in-picture');
   function isOpen() {return mode==='doc'?!!(pip&&!pip.closed):mode==='video'?videoInPip():false;}
   function cleanup() {if(tickId){clearInterval(tickId);tickId=null;}pip=null;away=false;lastCanvas=null;docBtn=null;docCanvas=null;docIcon='';if(mode==='doc')mode=null;}
+  // Saniyelik çizim ve kısa beklemeler ayrı bir işçide sayılır: Luna arkadayken tarayıcı sayfanın kendi sayaçlarını
+  // saniyeye yuvarlayıp yavaşlatıyor, işçininkileri yavaşlatmıyor (⏸'dan sonra ▶ simgesi bu yüzden geç geliyordu).
+  const later=new Map();let laterId=0;
   function startTick(fn) {
     try {
-      const url=URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},1000)'],{type:'text/javascript'}));
+      const url=URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},1000);onmessage=function(e){setTimeout(function(){postMessage(e.data)},e.data.ms)}'],{type:'text/javascript'}));
       vworker=new Worker(url);URL.revokeObjectURL(url);
-      vworker.onmessage=fn;
+      vworker.onmessage=(e)=>{const id=e.data&&e.data.id;if(id){const f=later.get(id);later.delete(id);if(f)f();}else fn();};
     } catch(e) {vworker=null;vtick=setInterval(fn,1000);}
+  }
+  function soon(f,ms) {
+    if(!vworker){setTimeout(f,ms);return;}
+    const id=++laterId;later.set(id,f);
+    try{vworker.postMessage({id,ms});}catch(e){later.delete(id);setTimeout(f,ms);}
   }
   function teardownVideo() {
     if(vworker){try{vworker.terminate();}catch(e){}vworker=null;}
+    later.clear();
     if(vtick){clearInterval(vtick);vtick=null;}
     if(vstream){try{vstream.getTracks().forEach(t=>t.stop());}catch(e){}vstream=null;}
     if(vid){try{vid.pause();vid.srcObject=null;vid.remove();}catch(e){}vid=null;}
@@ -311,15 +320,13 @@ const MiniTimer = (() => {
     if(running()||!holdReady()){holding=false;if(v.paused){selfPlayAt=Date.now();v.play().catch(()=>{});}return;}
     if(v.paused||holding)return; // zaten bekliyor ya da birazdan bekleyecek
     holding=true;paint();
-    const t0=Date.now();let done=false;
     const hold=()=>{
-      if(done)return;done=true;holding=false;
+      holding=false;
       if(v!==vid||mode!=='video'||running()||v.paused)return;
       selfPauseAt=Date.now();v.pause();
     };
-    // akış saniyede iki kare yollar: "Duraklatıldı" karesi kesin ulaşsın diye en az 0,7 sn ve bir kare daha beklenir
-    if(typeof v.requestVideoFrameCallback==='function'){const f=()=>{if(Date.now()-t0>=700)hold();else v.requestVideoFrameCallback(f);};v.requestVideoFrameCallback(f);}
-    setTimeout(hold,1600);
+    // "Duraklatıldı" karesi hemen çizilip akışa verildi (paint); pencereye ulaşması için kısa bir an beklenir, sonra ▶
+    soon(hold,300);
   }
   // bekleyen pencereye yeni kare gönder (pencerenin boyutu değişti, Luna öne/arkaya geçti): kısa bir an oynatılıp yeniden beklenir
   function nudge() {
