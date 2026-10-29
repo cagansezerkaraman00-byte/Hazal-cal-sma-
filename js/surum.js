@@ -6,6 +6,15 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.14.3",
+  "tarih": "2026-10-29",
+  "baslik": "Mini pencerenin tuşu daha çabuk doğru",
+  "notlar": [
+    "⏯ Mini pencerenin ortasındaki tuş, durdurunca bir iki saniye içinde ▶'a, başlatınca ⏸'ya döner. Pencere açılınca da 2-3 saniyede doğru simgeyi gösterir.",
+    "▶ Bazı tabletlerde ▶'a basınca sayaç başlamayabiliyordu; düzeldi."
+  ]
+},
+{
   "surum": "2.14.2",
   "tarih": "2026-10-29",
   "baslik": "Mini pencerede doğru tuş, kararma yok",

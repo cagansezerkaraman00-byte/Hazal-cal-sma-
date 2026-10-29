@@ -59,9 +59,9 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
     ok(w.ms.playbackState === 'playing' && !w.video.paused, 'Chrome: sayaç çalışırken pencere ⏸ gösterir, görüntü akar');
     w.ms.h.pause(); await wait(30);
     ok(w.toggles === 1 && !w.timer.running && w.ms.playbackState === 'paused', 'Chrome: ⏸ sayacı durdurur');
-    w.tick(); await wait(900);
-    ok(!w.video.paused, 'Chrome: pencere açılalı 3 sn olmadan görüntü hiç bekletilmez (tablette kararmasın)');
-    await wait(1800); w.tick(); await wait(900);
+    w.tick(); await wait(500);
+    ok(!w.video.paused, 'Chrome: pencere açılalı 2 sn olmadan görüntü hiç bekletilmez (tablette kararmasın)');
+    await wait(1400); w.tick(); await wait(900);
     ok(w.video.paused, 'Chrome: pencere görüntüyü aldıktan sonra video bekletilir, tuş ▶ gösterir');
     w.tick(); await wait(1100);
     ok(w.video.paused, 'Chrome: beklerken saniyelik denetim görüntüyü oynatıp durdurmaz (simge titremez)');
@@ -106,9 +106,9 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
   {
     const w = world(CHROME);
     w.timer.running = false; w.timer.fresh = true;
-    w.button.l.pointerdown(); w.button.l.click(); await wait(1500); w.tick(); await wait(50);
+    w.button.l.pointerdown(); w.button.l.click(); await wait(1200); w.tick(); await wait(50);
     ok(w.ms.playbackState === 'paused' && !w.video.paused, 'Hazır: açılır açılmaz bekletilmez (tablette kararmasın)');
-    await wait(1700); w.tick(); await wait(900);
+    await wait(1000); w.tick(); await wait(900);
     ok(w.video.paused, 'Hazır: pencere görüntüyü aldıktan sonra ▶ gösterir');
     w.ms.h.play(); await wait(30);
     ok(w.timer.running && w.toggles === 1 && !w.video.paused, 'Hazır: ▶ sayacı başlatır');
@@ -119,10 +119,14 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
     const w = world(CHROME, true);
     w.timer.running = false; w.timer.fresh = true;
     w.button.l.pointerdown(); w.button.l.click(); await wait(10);
-    await wait(3800); w.tick(); await wait(1800);
-    ok(!w.video.paused, 'Arkada: kareler sayılamazken 5 sn dolmadan bekletilmez');
-    await wait(300); w.tick(); await wait(1800);
-    ok(w.video.paused && w.ms.playbackState === 'paused', 'Arkada: 5 sn sonra pencere ▶ gösterir');
+    await wait(2500); w.tick(); await wait(300);
+    ok(!w.video.paused, 'Arkada: kareler sayılamazken 3,5 sn dolmadan bekletilmez');
+    await wait(900); w.tick(); await wait(1800);
+    ok(w.video.paused && w.ms.playbackState === 'paused', 'Arkada: 3,5 sn sonra pencere ▶ gösterir');
+    w.video.play(); await wait(30); // Chrome ▶'ı Media Session'a sormadan kendisi oynattı
+    ok(w.timer.running && w.toggles === 1 && !w.video.paused, 'Arkada: Chrome ▶ ile videoyu kendisi oynatsa da sayaç başlar');
+    w.ms.h.play && w.ms.h.play(); await wait(30);
+    ok(w.timer.running && w.toggles === 1, 'Arkada: aynı ▶ Media Session\'dan da gelirse ikinci kez sayılmaz');
     w.api.close();
   }
   // ---- iPhone/iPad Safari: pencerenin tuşu videonun kendisini durdurur ----
