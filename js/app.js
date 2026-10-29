@@ -249,6 +249,7 @@
     spotify: { e: '🎧', n: 'Spotify', url: 'https://open.spotify.com/', from: "Spotify'dan", was: "Spotify'daydım" },
   };
   let allowExit = null; // {app, at}: izinli düğmeye dokunulduğu an
+  let quietStart = false; // mini pencereden, Luna arkadayken başlatıldı: ses çıkmasın (izlenen video bölünmesin)
   // uygulamanın kendi yönlendirmeleri (Google Drive, Spotify girişi) de sayacı durdurmaz
   const EXITS = { miniTimer: { e: '🐾', n: 'Mini sayaç', from: 'Mini sayaçtan' }, google: { e: '☁️', n: 'Google', from: "Google'dan" }, spotifyLogin: { e: '🎧', n: 'Spotify', from: "Spotify'dan" }, guncelleme: { e: '✨', n: 'Güncelleme', from: 'Güncellemeden' } };
   const exitInfo = (k) => APPS[k] || EXITS[k] || { e: '🐾', n: 'Uygulama', from: 'Geri' };
@@ -307,6 +308,7 @@
     if (a.paused && allowedApps().length) { askWhere(m, !!a.lunaNudge); return true; }
     let text = '';
     if (a.paused) text = `Hoş geldin! Uygulamadan çıkınca sayaç durdu ⏸ Hazır olduğunda "Devam"a bas, kaldığımız yerden sürdürelim 🐾`;
+    else if (a.mini && m >= 1) text = Timer.state().running ? 'Mini pencereden hoş geldin 🐾 Sayaç çalışıyor, kaldığımız yerden devam.' : 'Mini pencereden hoş geldin 🐾 Sayaç duraklatılmış; hazır olduğunda Devam’a bas.';
     else if (a.app && m >= 1) text = `${exitInfo(a.app).from} hoş geldin ${exitInfo(a.app).e} Sayaç hiç durmadı; ${m} dakika geçti, devam ediyoruz.`;
     else if (!a.app && m >= 1 && !D().settings.pauseOnLeave) text = `Hoş geldin! ${m} dakika uzaktaydın, şimdi kaldığımız yerden devam 🐾`;
     if (a.lunaNudge && !a.app) text = Messages.get('focusNudge') + (a.paused ? ' Sayaç durdu; hazır olduğunda Devam’a bas.' : '');
@@ -491,12 +493,12 @@
     onTick: renderTimer,
     onStart(phase, resumed) {
       dismissTimerAlarm();
-      Sound.unlock();
+      if (!quietStart) Sound.unlock();
       if (!resumed) focusDismissed = false;
       syncSceneMode();
       if (phase === 'focus') {
         lockScreen(true);
-        if (!resumed) { say('start'); Sound.soft(); }
+        if (!resumed) { say('start'); if (!quietStart) Sound.soft(); }
       } else if (!resumed) say('breakStart');
     },
     onPause() { syncSceneMode(); lockScreen(false); },
@@ -2178,6 +2180,18 @@
     refreshWeather,
     checkBadges,
     allowExit(key) { allowExit = { app: key, at: Date.now() }; },
+    // mini pencereden durdur / başlat: Luna'daki Başla / Duraklat / Devam düğmesiyle aynı iş. Luna arkadayken ses çıkmaz;
+    // sayaç dışarıdayken başlarsa mini pencere izinli çıkış sayılır (Tam odak durdurmaz), bildirimdeki bitiş saati yenilenir.
+    miniToggle() {
+      quietStart = document.hidden;
+      try { $('#btn-toggle').click(); } finally { quietStart = false; }
+      if (!document.hidden) return;
+      const s = Timer.state(), x = D().timer;
+      if (!x.away && s.running && s.phase === 'focus') x.away = { at: Date.now(), app: 'miniTimer' };
+      if (x.away) x.away.mini = true;
+      save();
+      LunaNotify.timerSnapshot();
+    },
     dismissFocus() { focusDismissed = true; renderTimer(Timer.state()); }, // odak sürerken diğer ekranı göster
     refreshHome() { renderHome(); renderHUD(); checkBadges(); },
     refreshSubjects() { renderSubjectSelects(); },

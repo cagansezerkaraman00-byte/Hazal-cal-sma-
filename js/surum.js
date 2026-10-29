@@ -6,6 +6,17 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.14",
+  "tarih": "2026-10-29",
+  "baslik": "Mini pencereden durdur, başlat",
+  "notlar": [
+    "⏯ Video izlerken Luna'ya girip çıkmana gerek yok: mini pencereye bir kez dokun, ortada çıkan ▶ ile sayacı başlat, ⏸ ile durdur. Sayaç dururken pencerede \"▶ ile devam\" yazar.",
+    "🎬 Önce mini pencereyi aç, YouTube'da videonu aç, sonra ▶'a bas: süre tam o an başlar. Video açıkken sayaç arkada saymaya devam eder; Tam odak açık olsa da mini pencere izinli sayılır.",
+    "🔇 Mini pencereden başlatınca hiç ses çıkmaz, izlediğin video bölünmez. Pencereyi kapatmak sayacı durdurmaz; yalnızca ⏸ durdurur.",
+    "💻 Bilgisayardaki mini pencerede de saatin yanında kendi düğmesi var."
+  ]
+},
+{
   "surum": "2.13.3",
   "tarih": "2026-10-28",
   "baslik": "Kediler \"anne\" diyor",
