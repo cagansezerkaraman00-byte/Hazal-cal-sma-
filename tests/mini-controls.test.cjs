@@ -48,7 +48,7 @@ const CHROME = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHT
 const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 
 (async () => {
-  // ---- Android Chrome: pencerenin ⏯ tuşu Media Session'a gelir ----
+  // ---- Android Chrome: pencerenin ⏯ tuşu Media Session'a gelir; her basış sayacı çevirir ----
   {
     const w = world(CHROME);
     w.button.l.pointerdown(); w.button.l.click(); await wait(20);
@@ -56,42 +56,45 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
     ok(typeof w.ms.h.play === 'function' && typeof w.ms.h.pause === 'function', 'Chrome: ⏯ tuşu için iki işleyici de bağlı');
     await wait(400);
     ok(w.ms.playbackState === 'playing' && !w.video.paused, 'Chrome: sayaç çalışırken pencere ⏸ gösterir, görüntü akar');
-    w.ms.h.pause(); await wait(60);
-    ok(w.toggles === 1 && !w.timer.running, 'Chrome: ⏸ sayacı durdurur');
-    ok(w.ms.playbackState === 'paused', 'Chrome: pencere ▶ gösterir');
-    ok(!w.video.paused, 'Chrome: "Duraklatıldı" karesi gidene kadar görüntü akar');
-    await wait(800);
-    ok(w.video.paused, 'Chrome: son kare gittikten sonra video bekletilir (simge sayaçla aynı)');
     w.ms.h.pause(); await wait(30);
-    ok(w.toggles === 1, 'Chrome: durmuş sayaçta ⏸ ikinci kez bir şey yapmaz');
+    ok(w.toggles === 1 && !w.timer.running && w.ms.playbackState === 'paused', 'Chrome: ⏸ sayacı durdurur, pencere ▶ gösterir');
+    await wait(1700); w.tick();
+    ok(!w.video.paused, 'Chrome: sayaç durunca da görüntü akmaya devam eder (pencere kararmaz)');
+    w.ms.h.pause(); await wait(30); // tarayıcı yine "pause" yollasa bile
+    ok(w.toggles === 2 && w.timer.running && w.ms.playbackState === 'playing', 'Chrome: ikinci basış sayacı devam ettirir');
+    w.ms.h.play(); w.ms.h.pause(); await wait(30);
+    ok(w.toggles === 2, 'Chrome: bir önceki basışın hemen ardından (600 ms içinde) gelen tuşlar yok sayılır');
+    await wait(700);
     w.ms.h.play(); await wait(30);
-    ok(w.toggles === 2 && w.timer.running && !w.video.paused && w.ms.playbackState === 'playing', 'Chrome: ▶ sayacı devam ettirir, görüntü akar');
+    ok(w.toggles === 3 && !w.timer.running, 'Chrome: 600 ms sonra gelen basış yeniden çevirir');
+    await wait(700); w.ms.h.play(); await wait(30);
+    ok(w.toggles === 4 && w.timer.running, 'Chrome: sayaç yine çalışıyor');
     // pencere kapanırken Chrome videoyu durdurur: sayaç durmamalı
-    await wait(1600);
+    await wait(700);
     w.video.pause(); w.doc.pictureInPictureElement = null; w.video.fire('leavepictureinpicture'); await wait(1000);
-    ok(w.timer.running && w.toggles === 2, 'Chrome: pencereyi kapatmak sayacı durdurmaz');
+    ok(w.timer.running && w.toggles === 4, 'Chrome: pencereyi kapatmak sayacı durdurmaz');
     ok(w.ms.h.play === null && w.ms.h.pause === null && w.ms.playbackState === 'none', 'Chrome: kapanınca tuşlar bırakılır');
   }
-  // ---- Chrome: sayaç bitmeden önce pencereden bağımsız durursa (süre doldu / Luna'dan basıldı) pencere uyar ----
+  // ---- Chrome: sayaç başka yoldan durursa (süre doldu / Luna'dan basıldı) pencere de uyar ----
   {
     const w = world(CHROME);
     w.button.l.pointerdown(); w.button.l.click(); await wait(400);
-    w.timer.running = false; // başka yoldan durdu (süre doldu ya da Luna'dan basıldı)
-    w.tick(); await wait(800);
-    ok(w.ms.playbackState === 'paused' && w.video.paused, 'Chrome: sayaç başka yoldan durunca pencere de ▶ gösterir');
+    w.timer.running = false;
+    w.tick(); await wait(30);
+    ok(w.ms.playbackState === 'paused' && !w.video.paused, 'Chrome: sayaç başka yoldan durunca pencere ▶ gösterir, görüntü akar');
     w.ms.h.play(); await wait(30);
     ok(w.timer.running && w.toggles === 1, 'Chrome: durmuş sayaç ▶ ile başlar');
   }
-  // ---- Hazır (başlamamış) sayaç: pencereden ▶ ile başlar ----
+  // ---- Hazır (başlamamış) sayaç: pencere açılır, kararmaz; ▶ ile başlar ----
   {
     const w = world(CHROME);
     w.timer.running = false; w.timer.fresh = true;
-    w.button.l.pointerdown(); w.button.l.click(); await wait(1200);
-    ok(w.ms.playbackState === 'paused' && w.video.paused, 'Hazır: pencere ▶ gösterir');
+    w.button.l.pointerdown(); w.button.l.click(); await wait(1700); w.tick();
+    ok(w.ms.playbackState === 'paused' && !w.video.paused, 'Hazır: pencere ▶ gösterir ve görüntü akar (kararmaz)');
     w.ms.h.play(); await wait(30);
     ok(w.timer.running && w.toggles === 1 && !w.video.paused, 'Hazır: ▶ sayacı başlatır');
   }
-  // ---- iPhone Safari: pencerenin tuşu videonun kendisini durdurur ----
+  // ---- iPhone/iPad Safari: pencerenin tuşu videonun kendisini durdurur ----
   {
     const w = world(SAFARI);
     w.button.l.pointerdown(); w.button.l.click(); await wait(400);
@@ -100,34 +103,23 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
     await wait(300);
     ok(w.timer.running, 'Safari: kapanma mı dokunuş mu anlaşılana kadar sayaç sürer');
     await wait(700);
-    ok(!w.timer.running && w.toggles === 1, 'Safari: ⏸ sayacı durdurur');
-    await wait(800);
-    ok(w.video.paused, 'Safari: video bekletilir, pencere ▶ gösterir');
-    await wait(1600);
-    w.video.play(); // kullanıcı ▶
-    await wait(20);
-    ok(w.timer.running && w.toggles === 2 && !w.video.paused, 'Safari: ▶ sayacı devam ettirir');
-    // Media Session tuşu da gelirse ikinci kez saymaz
-    w.ms.h.play && w.ms.h.play(); await wait(20);
-    ok(w.toggles === 2, 'Safari: aynı ▶ iki yoldan gelse de bir kez sayılır');
-    // kapanış: video durur ve pencere hemen kaybolur → sayaç durmaz
-    await wait(1600);
+    ok(!w.timer.running && w.toggles === 1 && !w.video.paused, 'Safari: ⏸ sayacı durdurur, görüntü yeniden akar');
+    await wait(700);
+    w.video.pause(); await wait(1000); // yine pencerenin tuşu
+    ok(w.timer.running && w.toggles === 2 && !w.video.paused, 'Safari: ikinci basış sayacı devam ettirir');
+    // ⏸ ve hemen ▶: vazgeçti, sayaç değişmez
+    await wait(700);
+    w.video.pause(); await wait(200); w.video.play(); await wait(900);
+    ok(w.timer.running && w.toggles === 2, 'Safari: ⏸ ardından hemen ▶ (vazgeçme) sayacı değiştirmez');
+    // Media Session tuşu da aynı anda gelirse bir kez sayılır
+    await wait(700);
+    w.ms.h.pause && w.ms.h.pause(); w.video.pause(); await wait(1000);
+    ok(w.toggles === 3 && !w.timer.running, 'Safari: aynı ⏸ iki yoldan gelse de bir kez sayılır');
+    // kapanış: video durur ve pencere hemen kaybolur → sayaç değişmez
+    await wait(700);
     w.video.pause(); setTimeout(() => { w.doc.pictureInPictureElement = null; w.video.fire('leavepictureinpicture'); }, 150);
     await wait(1100);
-    ok(w.timer.running && w.toggles === 2, 'Safari: pencereyi kapatmak sayacı durdurmaz');
-  }
-  // ---- Safari: pencere ▶'a döndükten hemen sonra basılan ▶ kaybolmaz ----
-  {
-    const w = world(SAFARI);
-    w.timer.running = false; w.timer.fresh = true;
-    w.button.l.pointerdown(); w.button.l.click();
-    for (let i = 0; i < 40 && !w.video.paused; i++) await wait(50); // pencere ▶ gösterene kadar
-    ok(w.video.paused && !w.timer.running, 'Safari: hazır sayaçta pencere ▶ gösterir');
-    await wait(100);
-    w.video.play(); await wait(20); // hemen basıldı
-    ok(w.timer.running && w.toggles === 1, 'Safari: hemen basılan ▶ de sayacı başlatır');
-    w.tick(); await wait(50);
-    ok(!w.video.paused && w.timer.running, 'Safari: görüntü akmaya devam eder');
+    ok(!w.timer.running && w.toggles === 3, 'Safari: pencereyi kapatmak sayacı değiştirmez');
   }
   // ---- Bilgisayar (Document PiP): pencerenin içinde gerçek düğme ----
   {
@@ -154,7 +146,7 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
     ok(toggles === 1 && timer.running && btn.title === 'Duraklat' && /rect/.test(btn.innerHTML), 'Bilgisayar: basınca başlar, ⏸ Duraklat olur');
     btn.l.click(); await wait(10);
     ok(toggles === 1, 'Bilgisayar: çift tıklama iki kez saymaz');
-    await wait(450); btn.l.click(); await wait(10);
+    await wait(700); btn.l.click(); await wait(10);
     ok(toggles === 2 && !timer.running && btn.title === 'Devam et', 'Bilgisayar: yeniden basınca durur, ▶ Devam et olur');
   }
   console.log(`Mini pencere durdur/başlat: ${checks} kontrol geçti`);

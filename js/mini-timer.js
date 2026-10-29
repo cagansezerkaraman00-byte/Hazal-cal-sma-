@@ -79,12 +79,19 @@ const MiniTimer = (() => {
     g.textAlign='right';g.fillText(now.toLocaleDateString('tr-TR',{day:'numeric',month:'long'}),618,36);g.textAlign='left';
     g.fillStyle=theme.ink;g.font='600 67px system-ui';
     g.fillText(U.fmtClock(s.countdown?s.remaining:s.elapsed),249,110);
-    // küçük video penceresinde ⏯ tuşu pencerenin kendi düğmesidir: durmuşken nereye basılacağı yazılır
-    const hint=mode==='video'&&!s.running?(s.fresh?' · ▶ ile başlat':' · ▶ ile devam'):'';
-    const label=(s.fresh?'Hazır':!s.running?'Duraklatıldı':s.phase==='focus'?'Odak zamanı':'Mola zamanı')+hint;
+    const label=s.fresh?'Hazır':!s.running?'Duraklatıldı':s.phase==='focus'?'Odak zamanı':'Mola zamanı';
     g.font='500 23px system-ui';g.fillStyle=theme.muted;
-    const mins=Math.floor(Math.max(0,s.elapsed)/60)+' dk',minsW=(g.measureText(mins)||{}).width||60;
-    g.fillText(label,252,145,Math.max(150,618-minsW-16-252)); // sağdaki dakikaya binmesin
+    const mins=Math.floor(Math.max(0,s.elapsed)/60)+' dk',minsW=(g.measureText(mins)||{}).width||60,room=618-minsW-16-252;
+    if(mode==='video'&&!s.running) {
+      // küçük video penceresinde ⏯ pencerenin kendi tuşudur: durmuşken nereye basılacağı küçük bir simgeyle yazılır
+      const head=label+' · ',tail=s.fresh?' ile başlat':' ile devam',wd=(t)=>(g.measureText(t)||{}).width||0;
+      let size=23;
+      while(size>15&&wd(head)+size*0.95+wd(tail)>room){size--;g.font='500 '+size+'px system-ui';}
+      let x=252;g.fillText(head,x,145);x+=wd(head);
+      playPause(g,x,145,size,theme.muted);x+=size*0.95;
+      g.fillText(tail,x,145);
+      g.font='500 23px system-ui';
+    } else g.fillText(label,252,145,Math.max(150,room)); // sağdaki dakikaya binmesin
     g.textAlign='right';g.fillText(mins,618,145);g.textAlign='left';
     g.fillStyle=theme.track;g.fillRect(252,165,366,5);
     g.fillStyle=theme.accent;g.fillRect(252,165,366*Math.max(0,Math.min(1,s.progress||0)),5);
@@ -101,7 +108,7 @@ const MiniTimer = (() => {
      İkisi de yoksa düğme ve tema seçimi hiç görünmez. Açık olup olmadığı her an canlı sorulur (isOpen);
      sayaca kalıcı bir işaret yazılmaz, böylece Tam odak yanlışlıkla kapanmaz. */
   let mode=null, vid=null, vcanvas=null, vstream=null, vtick=null, vworker=null;
-  let docBtn=null, docCanvas=null, docIcon='', lastToggle=0, selfPlayAt=0, selfPauseAt=0, pressAt=0, lastRun=null;
+  let docBtn=null, docCanvas=null, docIcon='', lastToggle=0, pressAt=0, lastRun=null;
   const canDoc=()=>typeof window!=='undefined'&&'documentPictureInPicture' in window;
   const isIOS=()=>typeof navigator!=='undefined'&&(/iP(hone|ad|od)/.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1));
   const isIPad=()=>isIOS()&&!/iPhone|iPod/.test(navigator.userAgent||'');
@@ -163,22 +170,18 @@ const MiniTimer = (() => {
     document.body.appendChild(v);
     v.addEventListener('leavepictureinpicture',onVideoLeave);
     v.addEventListener('webkitpresentationmodechanged',()=>{if(v===vid&&v.webkitPresentationMode!=='picture-in-picture'&&mode==='video')onVideoLeave();});
-    // iPhone/iPad Safari: pencerenin ⏸/▶ tuşu videonun kendisini durdurur/oynatır; bunu biz yapmadıysak dokunuştur.
-    // Pencere kapanırken de video durur: kısa bir an beklenir, pencere hâlâ açıksa ⏸'a basılmıştır (sayaç yanlışlıkla durmaz).
-    // (Luna'nın kendi oynat/durdur çağrısının olayı bir kez yok sayılır; kullanıcının hemen ardından gelen dokunuşu kaybolmaz)
+    // Görüntü hep akar: video hiç bekletilmez (bekletilen video Android tablette kapkara görünüyordu).
+    // iPhone/iPad Safari'de pencerenin ⏸ tuşu videonun kendisini durdurur; pencere kapanırken de video durur.
+    // Bu yüzden kısa bir an beklenir: pencere hâlâ açıksa ⏸'a basılmıştır, sayaç çevrilir ve görüntü yeniden akar.
     v.addEventListener('pause',()=>{
       if(v!==vid||mode!=='video')return;
-      if(Date.now()-selfPauseAt<500){selfPauseAt=0;return;}
-      if(!webkitPip()){if(videoInPip())matchVideo();return;} // Chrome'da tuş Media Session'a gelir; görüntü donmasın
-      pressAt=Date.now();
-      setTimeout(()=>{if(v===vid&&mode==='video'&&videoInPip()&&v.paused)want(false);},900);
-    });
-    v.addEventListener('play',()=>{
-      if(v!==vid||mode!=='video')return;
-      if(Date.now()-selfPlayAt<500){selfPlayAt=0;return;}
-      if(!webkitPip())return;
-      pressAt=Date.now();
-      if(videoInPip())want(true);
+      if(!webkitPip()){if(videoInPip())keepPlaying();return;} // Chrome'da tuş Media Session'a gelir; görüntü donmasın
+      const at=pressAt=Date.now();
+      setTimeout(()=>{
+        if(v!==vid||mode!=='video'||!videoInPip())return; // pencere kapandı: sayaca dokunulmaz
+        if(v.paused&&lastToggle<at-300)flip(); // aynı dokunuş Media Session'dan da geldiyse bir kez sayılır
+        keepPlaying();
+      },900);
     });
     vid=v;
     startTick(()=>{if(vcanvas)render(vcanvas);watch();});
@@ -195,7 +198,7 @@ const MiniTimer = (() => {
   }
   function openedVideo() {
     mode='video';away=document.hidden;
-    setSession(true);lastRun=null;setTimeout(()=>{if(mode==='video')matchVideo();},300);
+    setSession(true);lastRun=running();setTimeout(()=>{if(mode==='video')keepPlaying();},300);
     if(!Store.data.settings.miniUsed){Store.data.settings.miniUsed=true;Store.save();}
     app.toast('🐾','Mini pencere açıldı','Başka uygulamaya geçince köşede kalır; Luna\'ya dönünce kapanır.');
   }
@@ -243,7 +246,7 @@ const MiniTimer = (() => {
       canvas.setAttribute('aria-label','Kucak kucağa uyuyan Luna, Vesper ve Güçlü; saat ve çalışma sayacı');
       next.document.body.append(canvas);next.document.title='Luna · Mini sayaç';
       const ctl=next.document.createElement('button');ctl.type='button';ctl.className='ctl';
-      ctl.addEventListener('click',toggleTimer);
+      ctl.addEventListener('click',flip);
       next.document.body.append(ctl);docBtn=ctl;docCanvas=canvas;
       next.addEventListener('pagehide',()=>{if(pip===next){cleanup();closedWhileAway();if(document.hidden)LunaNotify.timerSnapshot();}},{once:true});
       render(canvas);tickId=setInterval(()=>render(canvas),1000);
@@ -255,51 +258,48 @@ const MiniTimer = (() => {
      · bilgisayar (doc): pencerenin içindeki düğme
      · Android Chrome (video): pencerenin ⏯ tuşu Media Session'a gelir (tuvalden gelen görüntüde tuş ancak böyle görünür)
      · iPhone/iPad Safari (video): pencerenin ⏯ tuşu videoyu durdurur/oynatır; bu olaylar yakalanır
-     Sayaç durunca video da bekletilir: pencerenin kendi ▶/⏸ simgesi hep sayaçla aynı kalır. */
+     Her basış sayacı çevirir; tarayıcı hangi tuşu (▶ ya da ⏸) yollarsa yollasın sonuç aynıdır. Görüntü hiç bekletilmez. */
   const running=()=>!!Timer.state().running;
   const webkitPip=()=>isIOS()||(typeof navigator!=='undefined'&&/Safari\//.test(navigator.userAgent||'')&&!/Chrome|Chromium|Edg|Android/.test(navigator.userAgent||''));
   function session() {try{const m=typeof navigator!=='undefined'&&navigator.mediaSession;return m&&typeof m.setActionHandler==='function'?m:null;}catch(e){return null;}}
   function setSession(on) {
     const ms=session();if(!ms)return;
-    try{ms.setActionHandler('play',on?()=>want(true):null);}catch(e){}
-    try{ms.setActionHandler('pause',on?()=>want(false):null);}catch(e){}
+    try{ms.setActionHandler('play',on?flip:null);}catch(e){}
+    try{ms.setActionHandler('pause',on?flip:null);}catch(e){}
     try{ms.playbackState=on?(running()?'playing':'paused'):'none';}catch(e){}
   }
-  function refreshAll() {if(mode==='video')matchVideo();else if(lastCanvas)render(lastCanvas);}
-  // video tuşları: istenen duruma getirir (sayaç zaten öyleyse dokunmaz; aynı dokunuş iki yoldan gelse de bir kez sayılır)
-  function want(run) {
-    if(running()!==run&&app&&app.miniToggle)app.miniToggle();
-    refreshAll();
-  }
-  // bilgisayardaki düğme: her basış çevirir (çift tıklama iki kez saymasın)
-  function toggleTimer() {
+  // pencerenin simgesi sayacın durumunu göstersin (tarayıcı izin verdiği ölçüde)
+  function syncState() {const ms=session();if(ms&&mode==='video')try{ms.playbackState=running()?'playing':'paused';}catch(e){}}
+  function refreshAll() {if(mode==='video')keepPlaying();else if(lastCanvas)render(lastCanvas);}
+  // Her basış sayacı çevirir (Luna'daki Başla / Duraklat / Devam gibi). Aynı dokunuş iki yoldan gelirse bir kez sayılır.
+  function flip() {
     const now=Date.now();
-    if(now-lastToggle<400)return;
+    if(now-lastToggle<600)return;
     lastToggle=now;
     if(app&&app.miniToggle)app.miniToggle();
+    lastRun=running();
     refreshAll();
   }
-  // görüntü sayaçla aynı durumda kalsın; sayaç durunca son kare ("Duraklatıldı") pencereye ulaştıktan sonra video bekletilir
-  function matchVideo() {
+  // görüntü hep akar: yeni kare hemen çizilir, video durmuşsa yeniden oynatılır
+  function keepPlaying() {
     const v=vid;if(!v||mode!=='video')return;
-    const run=running();lastRun=run;
-    const ms=session();if(ms)try{ms.playbackState=run?'playing':'paused';}catch(e){}
+    syncState();
     if(vcanvas){render(vcanvas);try{const tr=vstream&&vstream.getVideoTracks()[0];if(tr&&tr.requestFrame)tr.requestFrame();}catch(e){}}
-    if(v.paused){selfPlayAt=Date.now();v.play().catch(()=>{selfPauseAt=Date.now();});}
-    if(run)return;
-    // akış saniyede iki kare yollar: yeni kare kesin ulaşsın diye en az 0,7 sn ve bir kare daha beklenir
-    let done=false;const t0=Date.now();
-    const hold=()=>{if(done||v!==vid||mode!=='video'||running()||v.paused)return;done=true;selfPauseAt=Date.now();v.pause();};
-    if(typeof v.requestVideoFrameCallback==='function'){const f=()=>{if(Date.now()-t0>=700)hold();else v.requestVideoFrameCallback(f);};v.requestVideoFrameCallback(f);}
-    setTimeout(hold,1600);
+    if(v.paused)v.play().catch(()=>{});
   }
-  // saniyede bir: sayaç başka bir yoldan durduysa/başladıysa (süre doldu, Luna'dan basıldı) pencere de uysun
+  // saniyede bir: sayaç başka yoldan durduysa/başladıysa (süre doldu, Luna'dan basıldı) simge uysun; görüntü hiç donmasın
   function watch() {
     if(mode!=='video'||!vid)return;
-    const run=running(),now=Date.now();
-    if(run!==lastRun){matchVideo();return;}
-    if(now-Math.max(selfPlayAt,selfPauseAt)<2000||now-pressAt<1500)return;
-    if(run===vid.paused)matchVideo();
+    const run=running();
+    if(run!==lastRun){lastRun=run;syncState();}
+    if(vid.paused&&Date.now()-pressAt>1500)keepPlaying();
+  }
+  // ⏯ simgesi: üçgen ve iki çubuk (her yazı tipinde aynı görünür)
+  function playPause(g,x,y,size,color) {
+    const h=size*0.7,top=y-h,bw=h*0.17;
+    g.fillStyle=color;
+    g.beginPath();g.moveTo(x+1,top);g.lineTo(x+1+h*0.6,top+h/2);g.lineTo(x+1,top+h);g.closePath();g.fill();
+    g.fillRect(x+1+h*0.72,top,bw,h);g.fillRect(x+1+h*0.72+bw*1.9,top,bw,h);
   }
   function placeButton(canvas,theme,s) {
     const r=canvas.getBoundingClientRect&&canvas.getBoundingClientRect();if(!r||!r.width)return;
