@@ -1,0 +1,638 @@
+/* Planlarım arayüzü: Plan sekmesinin üstündeki günlük / haftalık / aylık planlar, ana sayfadaki "Bugünün planı" kartı,
+   gün sonu kartı ve Luna'nın akşam yorumu. Maddeleri yalnızca Hazal yazar; buradaki hiçbir şey kendiliğinden madde eklemez.
+   Yükleme anında sayfaya, verilere ya da başka modüllere dokunulmaz; her şey init'ten sonra çalışır. */
+
+const PlanlarUI = (() => {
+  let App = null;
+  const view = { scope: 'day', key: '', follow: true }; // bakılan dönem her açılışta bugünden başlar
+  const openDetails = new Set(); // gün görünümündeki açık "haftanın / ayın hedefleri" kutuları
+  const SCOPE_KEY = 'luna-plan-scope'; // yalnızca bu cihazda: son seçilen Günlük / Haftalık / Aylık
+  const $ = (s, el = document) => el.querySelector(s);
+  const D = () => Store.data;
+  const esc = (s) => U.esc(s);
+  const noon = (k) => new Date(k + 'T12:00:00');
+
+  const TICK = ['Plandan bir madde daha tamam! ✅', 'Tik! Harika gidiyorsun 🐾', 'Bir adım daha 🌟'];
+  const FULL = ['Bugünün planı tamam! Harikasın 🌟', 'Listenin hepsi tik! Kuyruğum havada 😻', 'Plan bitti, şimdi kendine güzel bir mola ver 💜'];
+  const INTRO = 'Planını sen yazdın, ben de takipteyim 🐾 Akşam nasıl geçtiğine birlikte bakarız.';
+  // bitti konular listede hiç çıkmaz; yarım olanların yanında "(yarım)" yazar
+  // her derste konu yerine seçilebilen soru çözümleri
+  const COZUM = [{ v: 'x:deneme', name: 'Deneme', icon: '📝' }, { v: 'x:test', name: 'Test çözümü', icon: '✏️' }, { v: 'x:karma', name: 'Karma test', icon: '🔀' }];
+
+  const N = {
+    day: { seg: 'Günlük', prev: 'Önceki gün', next: 'Sonraki gün', cur: 'Bugün', empty: 'Bu gün için henüz plan yok.', unit: 'maddeyi',
+      hedef: ['bugüne', 'yarına', 'ertesi güne'], tag: ['→ bugüne taşındı', '→ yarına taşındı'], from: '↪ dünden', when: ['bugün', 'o gün'],
+      kaynak: ['Dünün planını', 'Bugünün planını', 'Önceki günün planını'], ph: ['Örn: Paragraf çalışıp yanlışlarımı incele', 'Örn: 2. ünite tekrarı'] },
+    week: { seg: 'Haftalık', prev: 'Önceki hafta', next: 'Sonraki hafta', cur: 'Bu hafta', empty: 'Bu hafta için henüz hedef yok.', unit: 'hedefi',
+      hedef: ['bu haftaya', 'gelecek haftaya', 'sonraki haftaya'], tag: ['→ bu haftaya taşındı', '→ gelecek haftaya taşındı'], from: '↪ geçen haftadan', when: ['bu hafta', 'o hafta'],
+      kaynak: ['Geçen haftanın hedeflerini', 'Bu haftanın hedeflerini', 'Önceki haftanın hedeflerini'], ph: ['Örn: Türev konusunu bitir', 'Örn: Ödev taslağını bitir'] },
+    month: { seg: 'Aylık', prev: 'Önceki ay', next: 'Sonraki ay', cur: 'Bu ay', empty: 'Bu ay için henüz hedef yok.', unit: 'hedefi',
+      hedef: ['bu aya', 'gelecek aya', 'sonraki aya'], tag: ['→ bu aya taşındı', '→ gelecek aya taşındı'], from: '↪ geçen aydan', when: ['bu ay', 'o ay'],
+      kaynak: ['Geçen ayın hedeflerini', 'Bu ayın hedeflerini', 'Önceki ayın hedeflerini'], ph: ['Örn: 4 TYT denemesi çöz', 'Örn: Vize konularını bitir'] },
+  };
+
+  const isProgram = () => !!(window.Uni && typeof Uni.isProgramMode === 'function' && Uni.isProgramMode());
+  const isEvening = (now) => { const h = now.getHours(); return h >= 20 || h < 5; };
+  const placeholder = (scope) => N[scope].ph[isProgram() ? 1 : 0];
+  // ders: etkin listede yoksa arşivdeki / diğer moddaki adı ve rengi (Store.subject); hiç yoksa ders gösterilmez
+  function subj(id) { if (!id) return null; const s = Store.subject(id); return s && s.id ? s : null; }
+  // maddenin alt yazısı: YKS konusuysa hangi sınavın hangi dersi olduğu ("Problemler" → "TYT Matematik",
+  // "Türev ve Uygulamaları" → "AYT Matematik"); değilse dersin adı. Konu kimliği olmayan eski maddelerde ad, dersin
+  // YKS konularında tek bir yerde geçiyorsa oradan bulunur.
+  function subLabel(it) {
+    const s = subj(it.subjectId), Y = window.YKS && YKS.SUBJECTS ? YKS : null;
+    let t = Y && it.topicId && typeof Y.topic === 'function' ? Y.topic(it.topicId) : null;
+    if (!t && Y && s && typeof Y.field === 'function' && Y.field() && !isProgram()) {
+      const hits = [];
+      for (const k of yksKeysFor(s.id)) for (const x of Y.SUBJECTS[k].topics) if (x.name === it.title) hits.push(x);
+      if (hits.length === 1) t = hits[0];
+    }
+    const yk = t && Y.SUBJECTS[t.subjectKey];
+    return yk ? yk.name : s ? s.name : 'Genel';
+  }
+  // "bugüne / yarına / ertesi güne" (takvimdeki şimdiye göre)
+  function hedefWord(scope, to, now) {
+    const cur = Planlar.keyOf(scope, now);
+    return N[scope].hedef[to === cur ? 0 : to === Planlar.shift(scope, cur, 1) ? 1 : 2];
+  }
+  function loadScope() { try { const s = localStorage.getItem(SCOPE_KEY); if (Planlar.SCOPES.includes(s)) view.scope = s; } catch (e) { /* gizli mod */ } }
+  function saveScope() { try { localStorage.setItem(SCOPE_KEY, view.scope); } catch (e) { /* gizli mod */ } }
+
+  // ---------- Yeniden çizerken yazılan metin kaybolmasın (iOS klavyesi kapanmasın) ----------
+  function saveQuick(el) {
+    const q = el && el.querySelector('[data-mp-quick]');
+    if (!q) return null;
+    const f = q.form;
+    return { value: q.value, focused: document.activeElement === q, start: q.selectionStart, end: q.selectionEnd, scope: f && f.dataset.scope, key: f && f.dataset.key };
+  }
+  function restoreQuick(el, s) {
+    if (!s) return;
+    const q = el.querySelector('[data-mp-quick]');
+    if (!q) return;
+    const f = q.form, same = f && f.dataset.scope === s.scope && f.dataset.key === s.key;
+    if (!same && !s.focused) return; // başka bir listeye geçildi: yazı oraya taşınmasın
+    if (s.value) q.value = s.value;
+    if (s.focused) { try { q.focus({ preventScroll: true }); q.setSelectionRange(s.start, s.end); } catch (e) { /* bazı tarayıcılar */ } }
+  }
+  // aynı içerik yeniden yazılmaz: odak, klavye ve yazılan metin olduğu gibi kalır
+  function paint(el, html) {
+    if (el.__mpHtml === html && el.__mpFirst && el.firstElementChild === el.__mpFirst) return false;
+    const keep = saveQuick(el);
+    el.innerHTML = html;
+    el.__mpHtml = html;
+    el.__mpFirst = el.firstElementChild;
+    restoreQuick(el, keep);
+    return true;
+  }
+  function invalidate() { for (const id of ['#planner-root', '#today-plan', '#today-program']) { const el = $(id); if (el) el.__mpHtml = ''; } }
+  let paintedPhase = ''; // akşam şeridi ve gün sonu kartı 20:00'de kendiliğinden görünsün diye
+  const phaseOf = (now) => (isEvening(now) ? 'eve' : 'day');
+
+  // ---------- Madde satırı (Plan sekmesi ve Dönem modundaki küçük blok) ----------
+  // Çalışılan süreler burada yazmaz: saat ve dakikalar yalnızca İlerleme'deki "Gün gün çalışmaların"da (2.12).
+  function itemHtml(it, scope, key, now, chart = false) {
+    const n = N[scope], cur = Planlar.keyOf(scope, now);
+    const s = subj(it.subjectId);
+    const color = s ? s.color : 'var(--violet)';
+    const parts = [];
+    if (s || it.topicId) parts.push(esc(subLabel(it)));
+    if (it.from) parts.push(it.from === Planlar.shift(scope, key, -1) ? n.from : '↪ ertelenen');
+    let acts;
+    if (it.moved) {
+      const tag = it.moved === cur && key !== cur ? n.tag[0] : it.moved === Planlar.shift(scope, cur, 1) ? n.tag[1] : '→ taşındı';
+      acts = `<span class="mp-tag">${tag}</span>`;
+    } else {
+      acts = `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı: ${esc(it.title)}"${it.done ? ' checked' : ''}>`;
+    }
+    if (chart) return `<tr class="${it.done ? 'done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}">
+      <td><button type="button" class="mp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><span class="plan-text">${esc(it.title)}</span><span class="plan-sub">${s || it.topicId ? esc(subLabel(it)) : 'Genel plan'}</span></button></td>
+      <td><span class="plan-acts">${acts}</span></td></tr>`;
+    return `<li class="plan-item mp-item${it.done ? ' done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}">
+      <span class="plan-dot" style="background:${esc(color)}"></span>
+      <button type="button" class="mp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><span class="plan-text">${esc(it.title)}</span>${parts.length ? `<span class="plan-sub">${parts.join(' · ')}</span>` : ''}</button>
+      <span class="plan-acts">${acts}</span></li>`;
+  }
+  function dailyChart(items, key, now) {
+    return `<div class="mp-chart-wrap"><table class="mp-day-table"><caption>Günlük çalışma çizelgesi · Tamamladığın maddeyi işaretle</caption>
+      <colgroup><col class="mp-col-plan mp-col-wide"><col class="mp-col-done"></colgroup>
+      <thead><tr><th scope="col">Çalışacağım</th><th scope="col">Durum</th></tr></thead>
+      <tbody>${ordered(items).map(it => itemHtml(it, 'day', key, now, true)).join('')}</tbody></table></div>`;
+  }
+  const ordered = (items) => items.filter((x) => !x.moved).concat(items.filter((x) => x.moved));
+  function progHtml(st) {
+    if (!st.total) return `<p class="mp-prog mp-pct muted">${st.moved ? `${st.moved} madde taşındı` : 'Henüz madde yok'}</p>`;
+    return `<div class="mp-prog" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${st.pct}" aria-label="Plan ilerlemesi"><div class="track"><i style="width:${st.pct}%"></i></div>
+      <span class="mp-pct">${st.done}/${st.total} madde tamam · %${st.pct}${st.moved ? ` · ${st.moved} madde taşındı` : ''}</span></div>`;
+  }
+
+  // ---------- Plan sekmesi: #planner-root (her modda) ----------
+  function render() {
+    const root = $('#planner-root');
+    if (!root || !window.Planlar) return;
+    const now = new Date();
+    if (!Planlar.SCOPES.includes(view.scope)) view.scope = 'day';
+    if (view.follow || !Planlar.isKey(view.scope, view.key)) { view.key = Planlar.keyOf(view.scope, now); view.follow = true; }
+    paintedPhase = phaseOf(now);
+    paint(root, cardHtml(now));
+  }
+
+  function cardHtml(now) {
+    const { scope, key } = view, n = N[scope];
+    const cur = Planlar.keyOf(scope, now), lab = Planlar.label(scope, key, now);
+    const items = Planlar.list(scope, key), r = Planlar.roll(scope, key), own = r.own;
+    const segBtn = (s) => `<button type="button" data-mp="scope" data-scope="${s}" class="${s === scope ? 'active' : ''}" aria-pressed="${s === scope}">${N[s].seg}</button>`;
+    let rollLine = '';
+    if (scope !== 'day') {
+      // haftada günler zaten alt alta görünüyor; çalışılan süre burada yazmaz (İlerleme'de gün gün)
+      const parts = scope === 'week'
+        ? (own.total ? [`Haftalık hedefler ${own.done}/${own.total}`, `Günlük maddeler ${r.days.done}/${r.days.total}`] : [])
+        : [`Aylık hedefler ${own.done}/${own.total}`, `Haftalık ${r.weeks.done}/${r.weeks.total}`, `Günlük ${r.days.done}/${r.days.total}`];
+      if (r.all.total && parts.length) parts.push(`Toplam %${r.all.pct}`);
+      if (own.moved) parts.push(`${own.moved} madde taşındı`);
+      if (scope === 'week') { const ek = r.days.moved; if (ek) parts.push(`${ek} konu eksik kalıp ertesi güne geçti`); }
+      rollLine = parts.length ? `<p class="mp-roll">${parts.join(' · ')}</p>` : '';
+    }
+    const remaining = own.remaining.length;
+    const tools = [];
+    if (remaining) {
+      const to = Planlar.carryTarget(scope, key, now), hw = hedefWord(scope, to, now);
+      tools.push(`<button type="button" class="btn soft small-btn" data-mp="carry" data-scope="${scope}" data-key="${esc(key)}" data-to="${esc(to)}" data-hedef="${esc(hw)}">↪ Kalan ${remaining} ${n.unit} ${hw} taşı</button>`);
+    }
+    const pc = Planlar.copyCount(scope, key);
+    if (pc) {
+      const src = Planlar.shift(scope, key, -1);
+      const kay = n.kaynak[src === Planlar.shift(scope, cur, -1) ? 0 : src === cur ? 1 : 2];
+      tools.push(`<button type="button" class="btn soft small-btn" data-mp="copy" data-scope="${scope}" data-key="${esc(key)}">⧉ ${kay} kopyala (${pc})</button>`);
+    }
+    return `<div class="card wide-card mp-card">
+      <div class="mp-head"><h2>🗓️ Planlarım</h2>
+        <div class="seg mp-scope" role="group" aria-label="Plan türü">${Planlar.SCOPES.map(segBtn).join('')}</div></div>
+      <div class="mp-nav">
+        <button type="button" class="icon-btn" data-mp="prev" aria-label="${n.prev}">‹</button>
+        <div class="mp-title"><b>${esc(lab.title)}</b>${lab.rel ? `<small>${lab.rel}</small>` : ''}${key !== cur ? `<button type="button" class="chip" data-mp="today">${n.cur}</button>` : ''}</div>
+        <button type="button" class="icon-btn" data-mp="next" aria-label="${n.next}">›</button></div>
+      ${progHtml(scope === 'day' ? own : { ...r.all, moved: r.all.total ? 0 : own.moved })}
+      ${rollLine}
+      ${scope === 'week' ? weekPlanHtml(key, now) + (items.length ? `<h3 class="sub-h">Haftanın hedefleri</h3><ul class="plan-list mp-list">${ordered(items).map((it) => itemHtml(it, scope, key, now)).join('')}</ul>` : '')
+        : (items.length ? (scope === 'day' ? dailyChart(items, key, now) : `<ul class="plan-list mp-list">${ordered(items).map((it) => itemHtml(it, scope, key, now)).join('')}</ul>`)
+          : `<p class="plan-empty">${n.empty}</p>`)
+          + `<button type="button" class="btn primary mp-add-btn" data-mp="add" data-scope="${scope}" data-key="${esc(key)}">＋ ${scope === 'day' ? 'Plan ekle' : 'Hedef ekle'}</button>`}
+      ${tools.length ? `<div class="mp-tools">${tools.join('')}</div>` : ''}
+      ${scope === 'day' ? questionHtml(key) + upHtml(key, now) + eodHtml(key, now) : ''}
+      ${scope === 'month' ? calHtml(key, now) : ''}
+    </div>`;
+  }
+
+  // gün görünümünde o günün haftasının ve ayının hedefleri (işaretlenebilir)
+  function upHtml(day, now) {
+    const out = [];
+    for (const [scope, icon, word] of [['week', '📅', 'haftanın'], ['month', '🗓️', 'ayın']]) {
+      const k = Planlar.keyOf(scope, noon(day)), items = Planlar.list(scope, k);
+      if (!items.length) continue;
+      const st = Planlar.stats(items), isCur = k === Planlar.keyOf(scope, now);
+      out.push(`<details class="mp-up" data-mp-open="${scope}"${openDetails.has(scope) ? ' open' : ''}><summary>${icon} ${isCur ? 'Bu' : 'O'} ${word} hedefleri (${st.done}/${st.total})</summary>
+        <ul class="plan-list mp-list">${ordered(items).map((it) => itemHtml(it, scope, k, now)).join('')}</ul></details>`);
+    }
+    return out.join('');
+  }
+
+  function questionHtml(day) {
+    if (day > U.dateKey(new Date())) return '';
+    const rows = Planlar.questionEntries('day', day);
+    const total = rows.reduce((n, x) => n + x.questions, 0);
+    const { from, to } = Planlar.range('day', day);
+    const inSessions = D().sessions.filter(s => s.start >= from && s.start < to).reduce((n, s) => n + (+s.questions || 0), 0);
+    return `<section class="question-journal" aria-label="Soru günlüğü">
+      <div class="mp-head"><h3>✍️ Soru günlüğü</h3><span class="journal-total">${total + inSessions} soru</span></div>
+      <p class="hint">Günün sonunda hangi dersten, hangi konudan kaç soru çözdüğünü yaz. Süre eklenmez; önceden hedef belirlemen gerekmez.</p>
+      ${inSessions ? `<p class="hint">${inSessions} soru oturumlarında zaten kayıtlı; aynı soruları yeniden ekleme. Günlükten eklenen: ${total}.</p>` : ''}
+      ${rows.length ? `<ul class="question-list">${rows.map(x => `<li><button type="button" data-mp="question-edit" data-key="${esc(day)}" data-id="${esc(x.id)}" aria-label="Soru kaydını düzenle: ${esc(x.topic)}"><span><b>${esc(Store.subject(x.subjectId).name)}</b><small>${esc(x.topic)}</small></span><strong>${x.questions} <small>soru</small></strong><span aria-hidden="true">✎</span></button></li>`).join('')}</ul>` : '<p class="muted small">Bu gün için henüz konu kaydı yok.</p>'}
+      <button type="button" class="btn soft" data-mp="question-add" data-key="${esc(day)}">＋ Çözdüğüm soruları ekle</button>
+    </section>`;
+  }
+  function openQuestionForm(day, id = '') {
+    const old = id ? (D().questionLogs || []).find(x => x.id === id && !x.del) : null;
+    if (id && !old) return;
+    const subs = D().subjects.slice();
+    if (old && !subs.some(x => x.id === old.subjectId)) { const s = Store.subject(old.subjectId); if (s.id) subs.push(s); }
+    const card = App.openModal(`<h3>✍️ ${old ? 'Soru kaydını düzenle' : 'Çözdüğüm sorular'}</h3>
+      <p class="hint">Yalnızca gerçekten çözdüğün soruları yaz. Oturum bitişinde kaydettiklerini burada tekrar sayma.</p>
+      <label class="field">Gün <input data-qlog="date" type="date" max="${U.dateKey(new Date())}" value="${esc(old ? old.date : day)}"></label>
+      <label class="field">Ders <select data-qlog="subject"><option value="">Ders seç</option>${subs.map(x => `<option value="${esc(x.id)}"${old && x.id === old.subjectId ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+      <label class="field">Konu <input data-qlog="topic" maxlength="120" placeholder="Örn: Paragraf · ana düşünce" value="${esc(old ? old.topic : '')}"></label>
+      <label class="field">Çözdüğüm soru sayısı <input data-qlog="count" type="number" min="1" max="9999" step="1" inputmode="numeric" value="${old ? old.questions : ''}" placeholder="Örn: 35"></label>
+      <p class="hint" data-qlog="error" role="status"></p>
+      <div class="modal-actions">${old ? '<button class="btn danger" data-qlog-act="delete">Sil</button>' : ''}<button class="btn soft" data-qlog-act="cancel">Vazgeç</button><button class="btn primary" data-qlog-act="save">Kaydet</button></div>`);
+    const q = k => card.querySelector(`[data-qlog="${k}"]`);
+    card.addEventListener('click', e => {
+      const b = e.target.closest('[data-qlog-act]'); if (!b) return;
+      if (b.dataset.qlogAct === 'cancel') { App.closeModal(); return; }
+      if (b.dataset.qlogAct === 'delete') {
+        if (!confirm('Bu soru kaydı silinsin mi?')) return;
+        if (!Planlar.removeQuestions(id)) { q('error').textContent = 'Kayıt silinemedi; tekrar dene.'; return; }
+      } else {
+        const saved = Planlar.saveQuestions({ date: q('date').value, subjectId: q('subject').value, topic: q('topic').value, questions: q('count').value }, id);
+        if (!saved) { q('error').textContent = 'Ders, konu, geçmiş veya bugüne ait gün ve 1–9999 arasında tam sayı gir. Kayıt alanı doluysa yer açıp tekrar dene.'; return; }
+      }
+      App.closeModal(); invalidate(); App.refresh(); App.toast('✍️', 'Soru günlüğün güncellendi');
+    });
+  }
+
+  // ---------- Gün sonu kartı (gün görünümü) ----------
+  function eodHtml(day, now) {
+    const today = U.dateKey(now), eve = isEvening(now) && day === Messages.nightKey(now);
+    if (!(day < today || eve)) return '';
+    const v = Planlar.eodView(day, now), st = v.stats;
+    if (!st.total && !st.moved) return '';
+    const next = Planlar.shift('day', day, 1);
+    const to = eve ? next : Planlar.carryTarget('day', day, now);
+    const hw = eve ? 'yarına' : hedefWord('day', to, now);
+    const ring = st.total ? `<span class="mp-ring${st.pct === 100 ? ' full' : ''}" style="--p:${st.pct}"><b>%${st.pct}</b></span>` : '';
+    const nums = st.total ? `${st.done}/${st.total} madde tamam${st.moved ? ` · ${st.moved} madde taşındı` : ''}` : `${st.moved} madde taşındı`;
+    const writeLabel = eve ? 'Yarının' : next === today ? 'Bugünün' : 'Ertesi günün';
+    return `<div class="mp-eod"><div class="mp-eod-head">${ring}
+      <div><b>🌙 Gün sonu</b><small>${nums}</small></div></div>
+      ${v.showText ? `<p class="mp-eod-text"><b>🐾 Luna:</b> ${esc(v.showText)}</p>` : ''}
+      <div class="mp-tools">${st.remaining.length ? `<button type="button" class="btn primary small-btn" data-mp="carry" data-scope="day" data-key="${esc(day)}" data-to="${esc(to)}" data-hedef="${hw}">↪ Kalan ${st.remaining.length} maddeyi ${hw} taşı</button>` : ''}
+        <button type="button" class="btn soft small-btn" data-mp="day" data-key="${esc(next)}" data-focus="1">✍️ ${writeLabel} planını yaz</button></div></div>`;
+  }
+
+  // gün adları ekleriyle: "Salı'dan", "Salı'ya"
+  const DAN = ["Pazar'dan", "Pazartesi'den", "Salı'dan", "Çarşamba'dan", "Perşembe'den", "Cuma'dan", "Cumartesi'den"];
+  const DAY_TO = ["Pazar'a", "Pazartesi'ye", "Salı'ya", "Çarşamba'ya", "Perşembe'ye", "Cuma'ya", "Cumartesi'ye"];
+  // bugüne taşınmış maddenin geldiği gün: "↪ dünden" ya da "↪ Salı'dan"
+  function fromWord(k) {
+    const y = U.dateKey(U.addDays(U.dayStart(new Date()), -1));
+    return k === y ? '↪ dünden' : Planlar.isKey('day', k) ? `↪ ${DAN[noon(k).getDay()]}` : '↪ ertelenen';
+  }
+  // ---------- Haftalık görünüm: haftanın 7 günü tek ekranda ----------
+  // Her gün kendi maddeleriyle ve bir "＋" ile durur: hafta, Hazal nasıl yazdıysa öyle görünür. Maddeye dokununca düzenlenir.
+  function weekPlanHtml(wk, now) {
+    const today = U.dateKey(now);
+    return `<div class="wp-days">${Planlar.daysOf('week', wk).map((k) => {
+      const d = noon(k), items = ordered(Planlar.list('day', k));
+      const rows = items.map((it) => {
+        const sb = subj(it.subjectId);
+        return `<li class="wp-item${it.done ? ' done' : ''}${it.moved ? ' moved' : ''}" data-mp-id="${esc(it.id)}" style="--c:${esc(sb ? sb.color : 'var(--violet)')}">
+          <button type="button" class="wp-edit" data-mp="edit" aria-label="Düzenle: ${esc(it.title)}"><b>${esc(it.title)}</b><small>${esc(subLabel(it))}${it.moved ? ` · <span class="wp-eksik">eksik kaldı → ${Planlar.isKey('day', it.moved) ? DAY_TO[noon(it.moved).getDay()] : 'sonraya'} geçti</span>` : ''}</small></button>
+          ${it.moved ? '<span class="wp-ok" aria-hidden="true">↪</span>' : `<input type="checkbox" class="check" data-mp="done" aria-label="Yapıldı: ${esc(it.title)}"${it.done ? ' checked' : ''}>`}</li>`;
+      }).join('');
+      return `<section class="wp-day${k === today ? ' today' : ''}" aria-label="${U.DAYS[d.getDay()]} ${d.getDate()} ${U.MONTHS[d.getMonth()]}">
+        <div class="wp-head"><b>${U.DAYS[d.getDay()]}</b><small>${d.getDate()} ${U.MONTHS[d.getMonth()]}${k === today ? ' · bugün' : ''}</small>
+          <button type="button" class="wp-add" data-mp="add" data-scope="day" data-key="${k}" aria-label="${U.DAYS[d.getDay()]} gününe ekle">＋</button></div>
+        ${rows ? `<ul class="wp-list">${rows}</ul>` : ''}</section>`;
+    }).join('')}</div>`;
+  }
+
+  // ---------- Aylık görünüm: takvim ----------
+  function calHtml(mk, now) {
+    const today = U.dateKey(now), days = Planlar.daysOf('month', mk);
+    const start = Planlar.keyOf('week', noon(days[0])), end = Planlar.shift('day', Planlar.keyOf('week', noon(days[days.length - 1])), 6);
+    const cells = [];
+    for (let k = start; k <= end; k = Planlar.shift('day', k, 1)) {
+      const st = Planlar.stats(Planlar.list('day', k)), d = noon(k);
+      const cls = st.total ? (st.pct === 100 ? ' full' : st.done ? ' part' : ' zero') : '';
+      const aria = `${d.getDate()} ${U.MONTHS[d.getMonth()]}: ${st.total ? `${st.total} maddeden ${st.done} tanesi tamam` : 'madde yok'}`;
+      cells.push(`<button type="button" class="mp-cal-cell${k.slice(0, 7) !== mk ? ' out' : ''}${k === today ? ' today' : ''}${cls}" data-mp="day" data-key="${k}" aria-label="${aria}">${d.getDate()}<small>${st.total ? `%${st.pct}` : ''}</small></button>`);
+    }
+    return `<div class="mp-cal">${['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((x) => `<span class="mp-cal-h">${x}</span>`).join('')}${cells.join('')}</div>`;
+  }
+
+  // ---------- Ana sayfa şeridi: akşam "gün sonu", sabah "dünden kalan" ----------
+  const eodRec = (day) => { const p = D().plans; return p && p.eod && typeof p.eod === 'object' ? p.eod[day] : null; };
+  function stripHtml(now) {
+    const today = U.dateKey(now);
+    if (isEvening(now)) {
+      const day = Messages.nightKey(now), st = Planlar.stats(Planlar.list('day', day)), rec = eodRec(day);
+      if (!st.remaining.length || (rec && rec.dismissed)) return '';
+      const d = noon(day), lbl = day === today ? '🌙 Gün sonu' : `🌙 ${d.getDate()} ${U.MONTHS[d.getMonth()]}`;
+      return `<div class="mp-strip"><span class="grow">${lbl}: %${st.pct} tamam</span><span class="mp-strip-acts">
+        <button type="button" class="btn primary small-btn" data-mp="carry" data-scope="day" data-key="${day}" data-to="${Planlar.shift('day', day, 1)}" data-hedef="yarına">↪ Kalan ${st.remaining.length} maddeyi yarına taşı</button>
+        <button type="button" class="btn soft small-btn" data-mp="dismiss" data-key="${day}">Gerek yok</button></span></div>`;
+    }
+    const y = U.dateKey(U.addDays(U.dayStart(now), -1)), st = Planlar.stats(Planlar.list('day', y)), rec = eodRec(y);
+    if (!st.remaining.length || (rec && rec.dismissed)) return '';
+    return `<div class="mp-strip"><span class="grow">🌅 Dünden kalan ${st.remaining.length} madde</span><span class="mp-strip-acts">
+      <button type="button" class="btn primary small-btn" data-mp="carry" data-scope="day" data-key="${y}" data-to="${today}" data-hedef="bugüne">Bugüne al</button>
+      <button type="button" class="btn soft small-btn" data-mp="dismiss" data-key="${y}">Gerek yok</button></span></div>`;
+  }
+
+  // ---------- Ana sayfa: Bugün kartındaki program (YKS modu) ----------
+  // Plan'da bugüne yazılan dersler ve konular ve işaret kutusu; süre yazmaz (saatler yalnızca İlerleme'de).
+  // Maddeye dokununca sayaç o konu için sayar (App.pickPlanItem); çalışılan konuda küçük bir nokta yanar.
+  function programRow(it) {
+    const s = subj(it.subjectId), from = it.from ? fromWord(it.from) : '';
+    return `<li class="tp-row${it.done ? ' done' : ''}" data-tp-id="${esc(it.id)}" data-mp-id="${esc(it.id)}" style="--c:${esc(s ? s.color : 'var(--violet)')}">
+      <button type="button" class="tp-go" data-mp="pick"${it.done ? ' disabled' : ''} aria-pressed="false" aria-label="${esc(it.title)}${it.done ? ': tamamlandı' : ': sayaç bu konu için saysın'}">
+        <span class="tp-text"><b>${esc(it.title)}</b><small>${esc(subLabel(it))}${from ? ` · <span class="tp-from">${from}</span>` : ''}</small></span>
+        <span class="tp-min" aria-hidden="true"></span></button>
+      <input type="checkbox" class="check" data-mp="done" aria-label="Bitti: ${esc(it.title)}"${it.done ? ' checked' : ''}></li>`;
+  }
+  function renderProgram(el) {
+    if (!el || !window.Planlar) return;
+    const now = new Date(), today = U.dateKey(now);
+    paintedPhase = phaseOf(now);
+    const act = Planlar.list('day', today).filter((x) => !x.moved);
+    paint(el, `${act.length ? `<ul class="tp-list" aria-label="Bugünün programı">${act.map((it) => programRow(it)).join('')}</ul>` : ''}
+      <button type="button" class="btn soft tp-add" data-mp="add" data-scope="day" data-key="${today}">＋ Plan ekle</button>`);
+  }
+
+  // ---------- Dönem / KPSS modu: UniUI kartının altına küçük blok (yalnızca elle yazılmış madde varsa) ----------
+  function appendToday(el) {
+    if (!el || !window.Planlar) return;
+    const now = new Date(), today = U.dateKey(now);
+    paintedPhase = phaseOf(now);
+    const items = Planlar.list('day', today), strip = stripHtml(now);
+    if (!items.length && !strip) return; // planı kullanmayan için kart eskisiyle birebir aynı kalır
+    const act = items.filter((x) => !x.moved), st = Planlar.stats(items);
+    // Dönem kartının "bugün plan maddesi yok" notu, altında Hazal'ın kendi maddeleri dururken çelişmesin
+    if (act.length) { const rest = el.querySelector(':scope > p.muted.small'); if (rest && /^Bugün dersin ve plan maddesi yok/.test(rest.textContent)) rest.remove(); }
+    el.insertAdjacentHTML('beforeend', `<div class="mp-mini"><h3 class="sub-h">🗓️ Planım <span class="muted small">${st.done}/${st.total}</span></h3>
+      ${act.length ? `<ul class="plan-list mp-list">${act.slice(0, 8).map((it) => itemHtml(it, 'day', today, now)).join('')}${act.length > 8 ? `<li class="mp-more"><button type="button" class="link-btn" data-mp="open" data-scope="day">… ${act.length - 8} madde daha</button></li>` : ''}</ul>` : ''}${strip}</div>`);
+  }
+
+  // ---------- Ekle / düzenle penceresi ----------
+  // Ders seçilince konu listesinde yalnızca o dersin konuları çıkar: Fizik → TYT Fizik ve AYT Fizik konularının hepsi.
+  // Ders seçilmediyse (ya da elle eklenmiş, YKS'de karşılığı olmayan bir dersse) alanın bütün konuları.
+  function yksKeysFor(subjectId) {
+    const s = subjectId ? D().subjects.find((x) => x.id === subjectId) || subj(subjectId) : null;
+    let keys = s && Array.isArray(s.yks) ? s.yks.filter((k) => YKS.SUBJECTS[k]) : [];
+    if (s && !keys.length) { // eşleşmesi kaydedilmemiş ders: adı bir YKS dersininkiyle aynıysa (ör. "Fizik") onun TYT ve AYT konuları
+      const ad = String(s.name || '').toLocaleLowerCase('tr-TR');
+      keys = Object.keys(YKS.SUBJECTS).filter((k) => YKS.SUBJECTS[k].short.toLocaleLowerCase('tr-TR') === ad);
+    }
+    return keys.length ? keys : YKS.subjectKeys();
+  }
+  // Konu takibinde tam bitti işaretlenen konular çıkmaz (düzenlenen maddenin kendi konusu hariç); en üstte
+  // deneme, test çözümü ve karma test durur.
+  function yksOptions(subjectId, selected) {
+    const keys = yksKeysFor(subjectId).slice(), t = selected && YKS.topic(selected);
+    if (t && !keys.includes(t.subjectKey)) keys.push(t.subjectKey); // seçili konu başka dersteyse kaybolmasın
+    const durum = (id) => (typeof YKS.durum === 'function' ? YKS.durum(id) : '');
+    const extras = `<optgroup label="Soru çözümü">${COZUM.map((x) => `<option value="${x.v}"${selected === x.v ? ' selected' : ''}>${x.icon} ${x.name}</option>`).join('')}</optgroup>`;
+    return extras + keys.map((k) => {
+      const s = YKS.SUBJECTS[k], list = s.topics.filter((x) => x.id === selected || durum(x.id) !== 'tam');
+      return list.length ? `<optgroup label="${esc(s.name)}">${list.map((x) => `<option value="${esc(x.id)}"${selected === x.id ? ' selected' : ''}>${esc(x.name)}${durum(x.id) === 'yarim' ? ' (yarım)' : ''}</option>`).join('')}</optgroup>` : '';
+    }).join('');
+  }
+  const uniCourses = () => (D().uni && Array.isArray(D().uni.courses) ? D().uni.courses.filter((c) => c && Array.isArray(c.topics) && c.topics.some((t) => t && t.title)) : []);
+  function uniOptions(subjectId, selected) {
+    const all = uniCourses(), mine = subjectId ? all.filter((c) => c.subjectId === subjectId) : [];
+    return (mine.length ? mine : all).map((c) => `<optgroup label="${esc(c.name)}">${c.topics.map((t, i) => (t && t.title ? `<option value="u:${esc(c.id)}:${i}"${selected === `u:${c.id}:${i}` ? ' selected' : ''}>${esc(t.title)}</option>` : '')).join('')}</optgroup>`).join('');
+  }
+  const OWN = '__own'; // konu listesindeki "Kendim yazayım"
+  function topicKind() {
+    const prog = isProgram();
+    if (!prog && window.YKS && typeof YKS.field === 'function' && YKS.field()) return 'yks';
+    if (prog && uniCourses().length) return 'uni';
+    return '';
+  }
+  const topicOpts = (kind, sid, sel) => (kind === 'yks' ? yksOptions(sid, sel) : kind === 'uni' ? uniOptions(sid, sel) : '');
+  // seçilen konu: adı, dersi ve (YKS konusuysa) kimliği
+  function topicOf(v) {
+    if (!v || v === OWN) return null;
+    const cz = COZUM.find((x) => x.v === v);
+    if (cz) return { name: cz.name, sid: '', id: '' };
+    if (v.startsWith('u:')) {
+      const [, cid, i] = v.split(':');
+      const c = (D().uni.courses || []).find((x) => x && x.id === cid), t = c && c.topics[+i];
+      return t ? { name: t.title, sid: c.subjectId, id: '' } : null;
+    }
+    const t = window.YKS ? YKS.topic(v) : null;
+    return t ? { name: t.name, sid: App.subjectFor(t.subjectKey), id: v } : null;
+  }
+  // düzenleme penceresindeki "Bu madde … taşındı"
+  function movedPhrase(scope, to, now) {
+    const cur = Planlar.keyOf(scope, now);
+    if (to === cur) return N[scope].hedef[0];
+    if (to === Planlar.shift(scope, cur, 1)) return N[scope].hedef[1];
+    const t = Planlar.label(scope, to, now).title;
+    return scope === 'day' ? `${t} gününe` : scope === 'week' ? `${t} haftasına` : `${t} ayına`;
+  }
+  // Ekle / düzenle: yalnızca ders ve konu. Listede olmayan bir şey "Kendim yazayım" ile yazılır;
+  // konu seçilmezse dersin adı yeter. Ders seçilince konu listesi o dersin konularına daralır.
+  function openForm(o) {
+    const f = o.id ? Planlar.find(o.id) : null;
+    if (o.id && !f) { invalidate(); App.refresh(); return; }
+    const scope = f ? f.scope : o.scope, key = f ? f.key : o.key;
+    if (!Planlar.isKey(scope, key)) return;
+    const it = f ? f.item : null, now = new Date(), kind = topicKind();
+    const lab = Planlar.label(scope, key, now);
+    const subs = D().subjects.slice();
+    if (it && it.subjectId && !subs.some((s) => s.id === it.subjectId)) { const s = subj(it.subjectId); if (s) subs.unshift(s); } // arşivdeki ders seçili kalsın
+    const subjOpts = subs.map((s) => `<option value="${esc(s.id)}"${it && it.subjectId === s.id ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
+    const cozum = kind === 'yks' && it && !it.topicId ? COZUM.find((x) => x.name === it.title) : null;
+    const listed = kind === 'yks' && it && it.topicId && YKS.topic(it.topicId) && YKS.topic(it.topicId).name === it.title ? it.topicId : cozum ? cozum.v : '';
+    const own = !!it && !listed; // elle yazılmış eski madde: yazısı açık gelir
+    const topicSelect = (sid, sel) => `<option value="">— Konu seç —</option>${topicOpts(kind, sid, sel)}<option value="${OWN}"${!sel && own ? ' selected' : ''}>✍️ Kendim yazayım</option>`;
+    const card = App.openModal(`<h3>${it ? '✏️ Düzenle' : `＋ ${scope === 'day' ? 'Plan ekle' : 'Hedef ekle'}`}</h3><p class="muted small">${esc(lab.title)}</p>
+      <label class="field">Ders <select data-f="subject"><option value="">— Ders seç —</option>${subjOpts}</select></label>
+      ${kind ? `<label class="field">Konu <select data-f="topic">${topicSelect(it ? it.subjectId : '', listed)}</select></label>` : ''}
+      <label class="field${kind && !own ? ' hidden' : ''}" data-own>${kind ? 'Ne çalışacaksın?' : 'Konu'} <input data-f="title" maxlength="120" placeholder="Örn: Paragraf" value="${it ? esc(it.title) : ''}"></label>
+      ${it && scope === 'day' && !it.moved ? `<label class="field">Gün <input type="date" data-f="date" value="${esc(key)}"></label>` : ''}
+      ${it && it.moved ? `<p class="hint">Bu madde ${esc(movedPhrase(scope, it.moved, now))} taşındı.</p><button class="btn soft small-btn" data-act="uncarry" type="button">↩ Taşımayı geri al</button>` : ''}
+      <div class="modal-actions">${it ? '<button class="btn danger" data-act="del" type="button">Sil</button><span style="flex:1"></span>' : ''}<button class="btn soft" data-act="cancel" type="button">Vazgeç</button><button class="btn primary" data-act="save" type="button">Kaydet</button></div>`);
+    const q = (k) => card.querySelector(`[data-f="${k}"]`);
+    const topicSel = q('topic'), subjSel = q('subject'), ownBox = card.querySelector('[data-own]');
+    const showOwn = (on) => { ownBox.classList.toggle('hidden', !on); if (on) q('title').focus(); };
+    // ders değişince konu listesi o dersin konularına daralır; seçili konu o derste yoksa temizlenir
+    const fillTopics = () => {
+      const cur = topicSel.value;
+      topicSel.innerHTML = topicSelect(subjSel.value, '');
+      topicSel.value = [...topicSel.options].some((x) => x.value === cur) ? cur : '';
+      showOwn(topicSel.value === OWN);
+    };
+    if (topicSel) {
+      subjSel.addEventListener('change', fillTopics);
+      topicSel.addEventListener('change', () => {
+        const v = topicSel.value, t = topicOf(v);
+        showOwn(v === OWN);
+        // konu önce seçildiyse ders de seçilir, liste o derse daralır
+        if (t && t.sid && D().subjects.some((x) => x.id === t.sid) && subjSel.value !== t.sid) { subjSel.value = t.sid; fillTopics(); }
+      });
+    }
+    const done = () => { App.closeModal(); invalidate(); App.refresh(); };
+    card.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      const act = b.dataset.act;
+      if (act === 'cancel') { App.closeModal(); return; }
+      if (act === 'del') { if (!confirm(`"${it.title}" silinsin mi?`)) return; Planlar.remove(it.id); done(); return; }
+      if (act === 'uncarry') {
+        if (!Planlar.uncarry(it.id)) { App.toast('↩️', 'Taşınan madde yapılmış, geri alınamaz'); return; }
+        done(); return;
+      }
+      if (act !== 'save') return;
+      const t = topicSel ? topicOf(topicSel.value) : null;
+      const typed = !topicSel || topicSel.value === OWN || (it && !topicSel.value) ? q('title').value.trim() : '';
+      const sname = subjSel.value ? (subj(subjSel.value) || { name: '' }).name : '';
+      const title = (t ? t.name : typed || sname).slice(0, 120);
+      if (!title) { App.toast('🗓️', kind ? 'Bir ders ya da konu seç 🐾' : 'Konuyu yaz 🐾'); (topicSel && topicSel.value !== OWN ? subjSel : q('title')).focus(); return; }
+      // süre hedefi sorulmaz; eski maddelerde yazılı olan hedef silinmez, yalnızca gösterilmez
+      const data = { title, subjectId: subjSel.value, topicId: t && t.id ? t.id : '' }; // konu kimliği yalnızca YKS konuları için saklanır
+      if (it) {
+        Planlar.update(it.id, data);
+        const dEl = q('date');
+        if (dEl && dEl.value && dEl.value !== key && Planlar.isKey('day', dEl.value)) {
+          if (Planlar.moveToDay(it.id, dEl.value)) App.toast('🗓️', 'Madde taşındı', Planlar.label('day', dEl.value).title);
+          else App.toast('🗓️', 'Bu güne taşınamadı', 'O günün listesi dolu (en fazla 40 madde)');
+        }
+      } else {
+        if (!Planlar.add(scope, key, data)) { App.toast('🗓️', 'Bu listeye en fazla 40 madde eklenebilir'); return; }
+        intro();
+      }
+      done();
+    });
+  }
+  // ilk madde eklenince bir kez
+  function intro() {
+    const p = D().plans;
+    if (!p || p.intro) return;
+    p.intro = true;
+    Store.save();
+    App.sayText(INTRO, { emotion: 'happy' });
+  }
+
+  // ---------- Olaylar ----------
+  function open(scope, key) {
+    if (!Planlar.SCOPES.includes(scope)) scope = 'day';
+    const cur = Planlar.keyOf(scope);
+    view.scope = scope;
+    view.key = key && Planlar.isKey(scope, key) ? key : cur;
+    view.follow = view.key === cur;
+    saveScope();
+    invalidate();
+    App.showTab('plan');
+    const root = $('#planner-root');
+    if (root && root.getBoundingClientRect().top < 0) root.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+  function onClick(ev) {
+    const b = ev.target.closest('[data-mp]');
+    if (!b || !ev.currentTarget.contains(b)) return;
+    const a = b.dataset.mp, li = b.closest('[data-mp-id]'), id = li ? li.dataset.mpId : '';
+    const now = new Date();
+    invalidate();
+    try {
+      if (a === 'scope') { if (Planlar.SCOPES.includes(b.dataset.scope)) { view.scope = b.dataset.scope; view.follow = true; saveScope(); render(); } }
+      else if (a === 'prev' || a === 'next') {
+        if (!Planlar.isKey(view.scope, view.key)) view.key = Planlar.keyOf(view.scope, now);
+        view.key = Planlar.shift(view.scope, view.key, a === 'prev' ? -1 : 1);
+        view.follow = view.key === Planlar.keyOf(view.scope, now);
+        render();
+      } else if (a === 'today') { view.follow = true; render(); }
+      else if (a === 'done') {
+        const on = b.checked;
+        if (on && App.finishPlanItem) App.finishPlanItem(id); // sayaç bu maddeye sayıyorsa oturum biter, süre maddeye yazılır
+        const r = Planlar.setDone(id, on);
+        if (r && on) {
+          if (r.fullDay) { App.sayText(U.pick(FULL), { emotion: 'proud' }); App.celebrate(); }
+          else App.sayText(U.pick(TICK));
+        }
+        App.refresh();
+      } else if (a === 'pick') { if (App.pickPlanItem) App.pickPlanItem(id); }
+      else if (a === 'question-add') openQuestionForm(b.dataset.key);
+      else if (a === 'question-edit') openQuestionForm(b.dataset.key, b.dataset.id);
+      else if (a === 'edit') openForm({ id });
+      else if (a === 'add') openForm({ scope: b.dataset.scope || view.scope, key: b.dataset.key || view.key });
+      else if (a === 'carry') {
+        const r = Planlar.carry(b.dataset.scope, b.dataset.key, { to: b.dataset.to });
+        App.toast('↪', r.moved ? `${r.moved} madde ${b.dataset.hedef || hedefWord(b.dataset.scope, r.to, now)} taşındı` : 'Taşınacak madde kalmadı');
+        App.refresh();
+      } else if (a === 'copy') {
+        const scope = b.dataset.scope || view.scope, key = b.dataset.key || view.key;
+        const n = Planlar.copyCount(scope, key);
+        if (Planlar.list(scope, key).length && !confirm(`Önceki listedeki ${n} madde bu listeye eklensin mi? Şimdiki maddelerin olduğu gibi kalır.`)) return;
+        const added = Planlar.copyPrev(scope, key);
+        App.toast('⧉', added ? `${added} madde kopyalandı` : 'Kopyalanacak yeni madde yok');
+        App.refresh();
+      } else if (a === 'day') {
+        open('day', b.dataset.key);
+        if (b.dataset.focus) { const q = $('#planner-root [data-mp-quick]'); if (q) q.focus(); }
+      } else if (a === 'open') open(b.dataset.scope, b.dataset.key);
+      else if (a === 'dismiss') { Planlar.dismissEod(b.dataset.key); App.refreshHome(); }
+      else if (a === 'to-yks') App.showTab('plan');
+    } catch (e) {
+      ErrLog.add('Planlar: ' + ((e && e.message) || e), 'planlar-ui.js');
+      App.toast('⚠️', 'Bu işlem şu an yapılamadı', 'Kayıtların güvende');
+    }
+  }
+  function onSubmit(ev) {
+    const form = ev.target.closest && ev.target.closest('form[data-mp-form]');
+    if (!form) return;
+    ev.preventDefault();
+    const input = form.querySelector('[data-mp-quick]'), box = ev.currentTarget;
+    try {
+      const title = input.value.trim();
+      if (!title) { App.toast('🗓️', 'Önce ne yapacağını yaz 🐾'); return; }
+      if (!Planlar.add(form.dataset.scope, form.dataset.key, { title })) { App.toast('🗓️', 'Bu listeye en fazla 40 madde eklenebilir'); return; }
+      input.value = '';
+      intro();
+      invalidate();
+      App.refresh();
+      // klavye açık kalsın: art arda birkaç madde yazılabilsin (iOS'ta odak aynı dokunuşun içinde verilmeli)
+      const q = box.querySelector('[data-mp-quick]');
+      if (q) q.focus({ preventScroll: true });
+    } catch (e) {
+      ErrLog.add('Planlar: ' + ((e && e.message) || e), 'planlar-ui.js');
+      App.toast('⚠️', 'Madde eklenemedi', 'Kayıtların güvende');
+    }
+  }
+  function bind() {
+    for (const id of ['#planner-root', '#today-plan', '#today-program']) {
+      const el = $(id);
+      if (!el) continue;
+      el.addEventListener('click', onClick);
+      el.addEventListener('submit', onSubmit);
+    }
+    const root = $('#planner-root');
+    if (root) root.addEventListener('toggle', (ev) => {
+      const d = ev.target;
+      if (!d.matches || !d.matches('details[data-mp-open]')) return;
+      if (d.open) openDetails.add(d.dataset.mpOpen); else openDetails.delete(d.dataset.mpOpen);
+      root.__mpHtml = ''; // açık / kapalı bilgisi bir sonraki çizimde doğru yazılsın
+    }, true);
+  }
+
+  // ---------- Bitmeyen maddeler ertesi güne (kendiliğinden) ----------
+  let carried = 0; // taşınıp henüz söylenmemiş madde sayısı
+  function carryOver(now = new Date()) {
+    if (!window.Planlar || isProgram()) return 0;
+    const r = Planlar.autoCarry(now);
+    if (r.moved) { carried += r.count || r.moved; invalidate(); }
+    return r.moved;
+  }
+  const carriedLine = (n) => (n === 1 ? 'Dünden kalan bir konuyu bugünün planına ekledim, kaldığın yerden devam 🐾' : `Dünden kalan ${n} konuyu bugünün planına ekledim, kaldığın yerden devam 🐾`);
+
+  // ---------- Gün sonu: Luna'nın yorumu (günde bir kez) ----------
+  function maybeComment(now = new Date()) {
+    if (!App || document.hidden) return false;
+    if (carryOver(now)) { App.refreshHome(); if (document.querySelector('#tab-plan.active')) render(); }
+    if (carried && !App.isBusy() && App.sayText(carriedLine(carried), { emotion: 'happy', ms: 9000 })) { carried = 0; return true; }
+    if (paintedPhase && phaseOf(now) !== paintedPhase) { App.refreshHome(); if (document.querySelector('#tab-plan.active')) render(); } // 20:00 / 05:00 geçişi
+    if (App.isBusy() || App.quietFor(20000) || !Store.data.settings.msgInterval) return false;
+    const due = Planlar.eodDue(now);
+    if (!due) return false;
+    const seq = Store.data.plans.eodSeq;
+    const c = Messages.planComment(due.band, due.slot, due.vars, seq);
+    if (!App.sayText(c.text, { emotion: c.emotion, ms: 12000 })) return false;
+    seq[c.key] = (Number(seq[c.key]) || 0) + 1;
+    Planlar.markEod(due.day, { pct: due.stats.pct, done: due.stats.done, total: due.stats.total, moved: due.stats.moved, band: due.band, slot: due.slot, text: c.text, at: Date.now() });
+    invalidate();
+    App.refreshHome();
+    if (document.querySelector('#tab-plan.active')) render();
+    return true;
+  }
+
+  return {
+    init(app) { App = app; loadScope(); bind(); carryOver(); }, // ilk çizimden önce: dünden kalanlar bugünde görünsün
+    render,
+    renderProgram,
+    appendToday,
+    onSession(session) { return Planlar.onSession(session); }, // sessiz: app.js zaten "tamam" der ve yeniden çizer
+    maybeComment,
+    open,
+  };
+})();
+
+// app.js varlık kontrolü için (üst düzey const window'a eklenmez)
+if (typeof window !== 'undefined') { window.PlanlarUI = PlanlarUI; }

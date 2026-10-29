@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="tr" data-theme="light" data-surum="2.14.6">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Luna</title>
+  <style>
+  /* Açılış ekranı: telefonun kendi açılış ekranıyla aynı koyu alacakaranlık zemini (manifest background_color) ve aynı yerde,
+     aynı boyda kedi; üstüne yumuşak ışık, soluk yıldızlar, "Luna" ve üç nokta. Uygulama hazır olunca (LunaBoot.ready) solar.
+     Stil dosyası yüklenmeden çizilsin diye burada. */
+  #luna-acilis { position: fixed; inset: 0; z-index: 2147483000; overflow: hidden; background: #241c3d; color: #efe6ff; transition: opacity .5s ease, visibility .5s; }
+  #luna-acilis.git { opacity: 0; visibility: hidden; }
+  #luna-acilis .ac-isik, #luna-acilis .ac-yildiz { position: absolute; inset: 0; animation: ac-gel .9s ease both; }
+  #luna-acilis .ac-isik { background: radial-gradient(circle at 50% 50%, rgba(183, 150, 242, .34), rgba(183, 150, 242, .1) 28%, transparent 52%); }
+  #luna-acilis .ac-yildiz { opacity: .75; background-image:
+    radial-gradient(1.6px 1.6px at 14% 22%, #fff 50%, transparent 52%), radial-gradient(1.2px 1.2px at 78% 16%, #fff 50%, transparent 52%),
+    radial-gradient(1.8px 1.8px at 86% 64%, #ffe9b8 50%, transparent 52%), radial-gradient(1.2px 1.2px at 24% 74%, #fff 50%, transparent 52%),
+    radial-gradient(1.4px 1.4px at 62% 86%, #fff 50%, transparent 52%), radial-gradient(1.2px 1.2px at 40% 10%, #ffe9b8 50%, transparent 52%),
+    radial-gradient(1.5px 1.5px at 8% 48%, #fff 50%, transparent 52%), radial-gradient(1.3px 1.3px at 94% 38%, #fff 50%, transparent 52%); }
+  #luna-acilis .ac-kedi { --ac: min(270px, 65vw, 42vh); position: absolute; left: 50%; top: 50%; width: var(--ac); height: var(--ac); margin: calc(var(--ac) / -2) 0 0 calc(var(--ac) / -2);
+    border-radius: 38%; box-shadow: 0 0 0 1px rgba(255, 255, 255, .12), 0 22px 60px rgba(8, 4, 20, .55), 0 0 70px rgba(183, 150, 242, .35); animation: ac-nefes 2.6s ease-in-out .6s infinite; }
+  #luna-acilis .ac-alt { position: absolute; left: 0; right: 0; top: calc(50% + min(270px, 65vw, 42vh) / 2 + 26px); display: flex; flex-direction: column; align-items: center; gap: 12px; animation: ac-gel .7s ease .15s both; }
+  #luna-acilis .ac-alt b { font: 800 24px Nunito, system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .12em; }
+  #luna-acilis .ac-nokta { display: flex; gap: 8px; }
+  #luna-acilis .ac-nokta i { width: 7px; height: 7px; border-radius: 50%; background: #cdb8ff; opacity: .3; animation: ac-nokta 1.2s ease-in-out infinite; }
+  #luna-acilis .ac-nokta i:nth-child(2) { animation-delay: .18s; }
+  #luna-acilis .ac-nokta i:nth-child(3) { animation-delay: .36s; }
+  @keyframes ac-gel { from { opacity: 0; } }
+  @keyframes ac-nefes { 50% { transform: scale(1.035); } }
+  @keyframes ac-nokta { 40% { opacity: 1; transform: translateY(-3px); } }
+  @media (prefers-reduced-motion: reduce) { #luna-acilis *, #luna-acilis { animation: none !important; transition: none !important; } }
+  </style>
+  <script>
+  // Açılış koruması: Luna açılamazsa (yarım/bozuk bir güncelleme) kayıtlara dokunmadan bu cihazda sorunsuz açılmış
+  // önceki sürüme döner; o da yoksa onarım ekranını gösterir. Bu betik sayfanın içinde durur: başka dosya bozuk olsa da çalışır.
+  // Tarayıcıdaki kurulum sayfasında (js/kurulum.js) hiçbir şey yapmaz: orada uygulama zaten başlamaz.
+  window.LunaBoot = (() => {
+    const VERSION = document.documentElement.dataset.surum || '';
+    let ready = false, problem = '', shown = false, rollbackTried = false;
+    const sw = 'serviceWorker' in navigator ? navigator.serviceWorker : null;
+    const gate = () => !!(window.LunaKurulum && LunaKurulum.active);
+    const ask = (msg) => new Promise((res) => {
+      const c = sw && sw.controller; if (!c) return res(null);
+      const ch = new MessageChannel(), t = setTimeout(() => res(null), 3000);
+      ch.port1.onmessage = (e) => { clearTimeout(t); res(e.data); };
+      c.postMessage(msg, [ch.port2]);
+    });
+    const saved = () => { try { return localStorage.getItem('luna-study-v1'); } catch (e) { return null; } };
+    const note = () => { try { return JSON.parse(localStorage.getItem('luna-geri-donus') || 'null'); } catch (e) { return null; } };
+    async function backup() { // onarım ekranından bile yedek alınabilsin (yalnızca okur): telefonda paylaşım menüsü, olmazsa indirme
+      const raw = saved(); if (!raw) return;
+      const d = new Date(), name = 'luna-yedek-' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + '.json';
+      const blob = new Blob([raw], { type: 'application/json' });
+      try {
+        if (matchMedia('(pointer: coarse)').matches && navigator.canShare && window.File) {
+          const file = new File([blob], name, { type: 'application/json' });
+          if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Luna yedeği' }); return; }
+        }
+      } catch (e) { if (e && e.name === 'AbortError') return; }
+      try {
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      } catch (e) { /* yok say */ }
+    }
+    function show() {
+      if (ready || shown || !document.body || gate()) return;
+      shown = true; const box = document.createElement('section'); box.id = 'luna-boot-repair';
+      box.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#eee5ff;color:#30234f;display:grid;place-content:center;padding:28px;font:17px system-ui;overflow:auto';
+      box.innerHTML = '<h2>Luna biraz uykulu 💜</h2><p>Bu sefer açılamadı. Çalışmaların, notların ve ayarların yerinde duruyor.</p><p><button id="luna-boot-retry" style="padding:14px">Yeniden dene</button>' + (saved() ? ' <button id="luna-boot-backup" style="padding:14px">Yedeğimi indir</button>' : '') + '</p><p><a href="repair.html?guncel=repair">Güvenli onarımı aç</a></p><details><summary style="font-size:14px">Ayrıntı</summary><small id="luna-boot-error"></small></details>';
+      document.body.appendChild(box); box.querySelector('#luna-boot-error').textContent = problem;
+      box.querySelector('#luna-boot-retry').onclick = () => location.reload();
+      const b = box.querySelector('#luna-boot-backup'); if (b) b.onclick = backup;
+    }
+    // Karar tek yerde: sayfa yüklendiğinde uygulama hâlâ hazır değilse açılış gerçekten başarısızdır (önceki hatalar yalnızca not edilir).
+    // 25 sn güvenlik zamanlayıcısı yalnızca ekranı gösterir; geri dönüşü yalnızca kesin başarısızlık başlatır (sürüm başına sekmede bir kez).
+    async function failed(mayRollBack) {
+      if (ready || gate()) return;
+      let tried = true;
+      if (mayRollBack && !rollbackTried) { rollbackTried = true; try { tried = sessionStorage.getItem('luna-geri-' + VERSION) === '1'; sessionStorage.setItem('luna-geri-' + VERSION, '1'); } catch (e) { /* gizli mod */ } }
+      if (!tried && VERSION) {
+        const r = await ask({ type: 'LUNA_ROLLBACK', version: VERSION });
+        if (r && r.ok && !ready) { try { localStorage.setItem('luna-geri-donus', JSON.stringify({ bad: VERSION, good: r.to, at: Date.now() })); } catch (e) { /* yok say */ } location.reload(); return; }
+      }
+      show();
+    }
+    function fail(error) { if (!problem) problem = String((error && error.message) || error || ''); }
+    window.addEventListener('error', (e) => { if (!ready && !problem) problem = e.target && e.target.tagName === 'SCRIPT' ? 'Bir uygulama dosyası yüklenemedi: ' + (e.target.src || '') : String(e.message || ''); }, true);
+    window.addEventListener('load', () => {
+      setTimeout(() => { if (!ready) failed(true); }, 0);
+      if (sw) sw.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
+    });
+    setTimeout(() => { if (!ready) failed(false); }, 25000);
+    // onarım ekranı açıkken düzeltilmiş sürüm gelirse kendiliğinden yenile
+    if (sw) sw.addEventListener('controllerchange', () => { if (!ready && shown) location.reload(); });
+    return {
+      fail,
+      ready() {
+        ready = true; document.getElementById('luna-boot-repair')?.remove();
+        // açılış ekranı yumuşakça kaybolur (uygulama altında çoktan çizildi)
+        const ac = document.getElementById('luna-acilis');
+        if (ac) requestAnimationFrame(() => { ac.classList.add('git'); setTimeout(() => ac.remove(), 600); });
+        if (gate()) return; // kurulum sayfası uygulamayı başlatmaz: bu sürümü "bu cihazda sorunsuz açıldı" sayma
+        const good = () => { const c = sw && sw.controller; if (c && VERSION) c.postMessage({ type: 'LUNA_GOOD', version: VERSION }); return !!c; };
+        // ilk açılışta henüz denetleyici yok: kurulunca bu sürüm de "bu cihazda sorunsuz açıldı" sayılsın (geri dönüş hedefi olabilsin)
+        if (!good() && sw) { const once = () => { sw.removeEventListener('controllerchange', once); good(); }; sw.addEventListener('controllerchange', once); }
+        const g = note(); if (g && g.good !== VERSION) try { localStorage.removeItem('luna-geri-donus'); } catch (e) { /* yok say */ }
+      },
+      // bu cihazda açılamayıp geri dönülen sürüm: { bad, good, at, told }
+      rolledBack: note,
+      told() { const g = note(); if (g) try { localStorage.setItem('luna-geri-donus', JSON.stringify({ ...g, told: true })); } catch (e) { /* yok say */ } },
+    };
+  })();
+  </script>
+  <meta name="description" content="Luna ile ders çalış: sayaç, plan, deneme, notlar ve kütüphane">
+  <meta name="theme-color" content="#241c3d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Luna">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon-48.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="application-name" content="Luna">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet" media="print" onload="this.media='all'" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" crossorigin="anonymous">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Luna">
+  <meta property="og:description" content="Senin için hazırlandı 💜 Dokun ve yükle.">
+  <meta property="og:url" content="https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/">
+  <meta property="og:image" content="https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/icons/og-512.jpg">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="css/style.css?v=2.14.6">
+  <script src="js/kurulum.js?v=2.14.6"></script>
+</head>
+<body>
+  <script>if (window.LunaKurulum && LunaKurulum.active && LunaKurulum.mount) LunaKurulum.mount();</script>
+  <div id="luna-acilis" aria-hidden="true"><div class="ac-isik"></div><div class="ac-yildiz"></div><img class="ac-kedi" src="icons/icon-512.png" alt="" width="270" height="270"><div class="ac-alt"><b>Luna</b><span class="ac-nokta"><i></i><i></i><i></i></span></div></div>
+  <script>if (window.LunaKurulum && LunaKurulum.active) document.getElementById('luna-acilis').remove();</script>
+  <div class="update-banner hidden" id="update-banner" role="status" aria-live="polite"></div>
+  <div id="app">
+    <!-- Sahne -->
+    <header class="scene">
+      <canvas id="sky" aria-label="Luna ve gökyüzü"></canvas>
+      <div class="hud">
+        <div class="hud-left">
+          <div id="hud-time" class="hud-time">--:--</div>
+          <div id="hud-date" class="hud-date"></div>
+          <div id="hud-greet" class="hud-greet"></div>
+        </div>
+        <div class="hud-right">
+          <button id="hud-weather" class="hud-chip btn-chip hidden" title="Hava durumu" aria-expanded="false"></button>
+          <div id="hud-sun" class="hud-chip"></div>
+          <button id="feed-btn" class="hud-chip btn-chip" title="Luna'ya balık ver">🐟 <span id="fish-count">0</span></button>
+          <div id="hud-streak" class="hud-chip" title="Çalışma serisi">🔥 0</div>
+        </div>
+      </div>
+      <div id="weather-pop" class="weather-pop hidden" role="dialog" aria-label="Hava durumu"></div>
+      <div id="mini-timer" class="mini-timer hidden" role="button" tabindex="0" title="Sayaca dön"></div>
+      <div id="bubble" class="bubble hidden"></div>
+    </header>
+    <!-- Sekmeler -->
+    <nav class="tabs" id="tabs">
+      <button data-tab="home" class="active"><span>🏠</span><b>Çalış</b></button>
+      <button data-tab="plan"><span>🗓️</span><b>Plan</b></button>
+      <button data-tab="deneme"><span>📝</span><b>Deneme</b></button>
+      <button data-tab="notes"><span>📚</span><b>Notlar</b></button>
+      <button data-tab="progress"><span>📈</span><b>İlerleme</b></button>
+      <button data-tab="takvim"><span>📅</span><b>Takvim</b></button>
+      <button data-tab="settings"><span>⚙️</span><b>Ayarlar</b></button>
+    </nav>
+    <main>
+      <!-- ÇALIŞ -->
+      <section class="tab active" id="tab-home">
+        <div class="grid">
+          <div class="card welcome wide-card" id="welcome"></div>
+          <div class="card wide-card dunya-kart" id="dunya-kart" hidden></div>
+          <div class="card timer-card">
+            <button class="focus-exit" id="focus-exit" type="button" title="Sayaç çalışmaya devam eder; sahnedeki küçük sayaca dokununca geri dönersin">Diğer ekranlar ↗</button>
+            <div class="seg" id="kind-seg">
+              <button type="button" data-kind="free">⏱️ Serbest<small>Kronometre</small></button>
+              <button type="button" data-kind="countdown">⏳ Geri sayım<small>Süreyi sen belirle</small></button>
+              <button type="button" data-kind="countdown" data-exam="tyt">TYT<small>165 dakika</small></button>
+              <button type="button" data-kind="countdown" data-exam="ayt">AYT<small>180 dakika</small></button>
+            </div>
+            <div class="phase" id="phase-label">ODAK</div>
+            <div class="ring-wrap">
+              <svg viewBox="0 0 200 200" class="ring">
+                <circle cx="100" cy="100" r="88" class="ring-bg"/>
+                <circle cx="100" cy="100" r="88" class="ring-fg" id="ring-fg"/>
+              </svg>
+              <div class="ring-inner">
+                <div id="timer-time" class="timer-time">25:00</div><div id="timer-duration-label" class="small muted" aria-live="off"></div>
+                <div id="timer-sub" class="timer-sub"></div>
+              </div>
+            </div>
+            <div class="dots" id="cycle-dots"></div>
+            <div class="allow-apps hidden" id="allow-apps" aria-label="Sayacı durdurmadan açılabilen uygulamalar"></div>
+            <div id="countdown-setup" class="countdown-setup" role="group" aria-label="Geri sayım zamanı">
+              <label>Saat<input id="countdown-hours" type="number" min="0" max="23" step="1" value="0" inputmode="numeric"></label>
+              <span aria-hidden="true">:</span><label>Dakika<input id="countdown-minutes" type="number" min="0" max="59" step="1" value="25" inputmode="numeric"></label>
+              <span aria-hidden="true">:</span><label>Saniye<input id="countdown-seconds" type="number" min="0" max="59" step="1" value="0" inputmode="numeric"></label>
+            </div>
+            <p id="countdown-error" class="hint" role="status" hidden></p>
+            <div class="controls">
+              <button class="btn ghost" id="btn-reset" title="Sıfırla">↺</button>
+              <button class="btn primary big" id="btn-toggle">Başla</button>
+              <button class="btn soft" id="mini-timer-open" type="button">🐾 Mini sayaç</button>
+              <button class="btn ghost" id="btn-finish" title="Bitir ve kaydet">✓</button>
+            </div>
+            <form class="park" id="park-form" autocomplete="off">
+              <input id="park-input" maxlength="140" placeholder="💭 Aklına gelen?" aria-label="Aklına gelen başka bir şeyi yaz, sonraya bırak">
+              <button class="btn soft">Sonraya</button>
+            </form>
+          </div>
+          <div class="card today-card">
+            <h2>Bugün</h2>
+            <div class="goal">
+              <div class="goal-ring" id="goal-ring"><span id="goal-pct">0%</span></div>
+              <div>
+                <div class="big-num" id="today-min">0 dk</div>
+                <div class="muted" id="goal-text">Hedef: 3 sa</div>
+                <div class="muted small" id="today-sessions-count"></div>
+              </div>
+            </div>
+            <div class="timeline" id="day-timeline" aria-label="Bugünün zaman çizelgesi"></div>
+            <!-- YKS modunda: Plan'da bugüne yazılan dersler ve konular -->
+            <div class="today-program" id="today-program"></div>
+            <!-- Dönem modunda: ders kutucukları ve oturumlar -->
+            <div id="today-legacy" class="hidden">
+              <h3 class="sub-h">Derslerim <span class="muted small">dokun, o dersle başlasın</span></h3>
+              <div class="subj-tiles" id="subject-tiles"></div>
+              <details class="today-sessions">
+                <summary><span id="today-sessions-label">Bugünün oturumları</span></summary>
+                <ul class="session-list" id="today-list"></ul>
+              </details>
+              <button class="btn soft wide" id="btn-manual">＋ Çalışmamı elle ekle</button>
+            </div>
+          </div>
+          <details class="card wide-card music-card" id="music-card">
+            <summary><span>🎧 Müzik ve odak sesleri</span><span class="muted small" id="music-now"></span></summary>
+            <div class="music-body">
+              <p class="muted small">Spotify Premium hesabını bağla, listeni seç ve müziği Luna içinde dinle. Giriş Spotify’ın kendi sayfasında tamamlanır; şifren Luna’ya verilmez.</p>
+              <div class="sp-account" id="sp-account"></div>
+              <div id="sp-music-window" class="sp-music-window" hidden>
+                <div id="sp-playback" class="sp-live-player" hidden></div>
+                <div id="sp-song-list" class="sp-song-list" hidden></div>
+              </div>
+              <form class="inline-form" id="spotify-form">
+                <input id="spotify-input" placeholder="https://open.spotify.com/playlist/…">
+                <button class="btn primary">Yükle</button>
+              </form>
+              <div class="chips" id="spotify-presets"></div>
+              <div class="sp-library" id="sp-library"></div>
+              <div class="spotify-frame" id="spotify-frame"></div>
+              <h3 class="sub-h">🌧️ Odak sesleri</h3>
+              <div class="mixer" id="mixer"></div>
+            </div>
+          </details>
+          <div class="card love-card" id="love-card"></div>
+          <div class="card siir-card" id="siir-card" hidden></div>
+          <div class="card mektup-card" id="mektup-card" hidden></div>
+          <div class="card today-plan" id="today-plan"></div>
+        </div>
+      </section>
+      <!-- İLERLEME -->
+      <section class="tab" id="tab-progress">
+        <div class="card hafta-ozet" id="hafta-ozet"></div>
+        <div class="card gun-ozet" id="gun-ozet"></div>
+        <div class="report-head card">
+          <canvas class="report-luna" id="report-luna" aria-hidden="true"></canvas>
+          <div>
+            <h2>Luna'nın Raporu</h2>
+            <p class="muted" id="report-intro"></p>
+          </div>
+        </div>
+        <div class="seg period" id="period-seg">
+          <button data-days="7" class="active">Bu hafta</button>
+          <button data-days="30">30 gün</button>
+          <button data-days="0">Tümü</button>
+        </div>
+        <div class="tiles" id="report-highlights"></div>
+        <div class="grid">
+          <div class="card wide-card">
+            <h2>Yıldız haritan <span class="muted small">(son 16 hafta · ★ = hedef tamam)</span></h2>
+            <div class="calendar" id="calendar"></div>
+          </div>
+          <div class="card wide-card">
+            <h2>🏅 Rozetler</h2>
+            <div class="badges-wrap" id="badges"></div>
+          </div>
+          <div class="card wide-card">
+            <h2>📓 Notların ve oturumların</h2>
+            <ul class="session-list history" id="history"></ul>
+          </div>
+        </div>
+      </section>
+      <!-- PLAN -->
+      <section class="tab" id="tab-plan">
+        <div id="planner-root"></div>
+        <div id="plan-root"></div>
+        <div id="uni-root" class="hidden"></div>
+      </section>
+      <!-- NOTLAR & KARTLAR -->
+      <section class="tab" id="tab-notes">
+        <div id="notes-root"></div>
+      </section>
+      <!-- DENEME -->
+      <section class="tab" id="tab-deneme">
+        <div id="deneme-root"></div>
+      </section>
+      <!-- AYARLAR -->
+      <!-- TAKVİM -->
+      <section class="tab" id="tab-takvim">
+        <div class="grid takvim-grid">
+          <div class="card takvim-card" id="takvim-card"></div>
+          <div class="card takvim-gun" id="takvim-gun"></div>
+          <div class="card takvim-yakin wide-card" id="takvim-yakin"></div>
+        </div>
+      </section>
+      <section class="tab" id="tab-settings">
+        <div class="card guide">
+          <details class="guide-all" id="guide-all">
+          <summary><h2>📖 Kılavuz <span class="muted small">— Luna anlatıyor 🐾</span></h2></summary>
+          <p class="hint">Merak ettiğin bölüme dokun. Her şey burada, sade ve kısa.</p>
+          <details>
+            <summary>🏠 Çalış ekranı</summary>
+            <ul>
+              <li><b>Geri sayım</b> seçtiğin dakikadan sıfıra iner; süre bitince oturum kaydedilir. <b>Kronometre</b> geçen süreyi sayar ve bir saatten sonra saat, dakika, saniye gösterir. Süreyi başlamadan önce ayarlayabilirsin.</li>
+              <li><b>Başla</b>'ya basınca sade odak ekranı açılır: sadece ben ve sayaç. Sayaç sayfa kapansa da doğru sayar.</li>
+              <li><b>💭 Aklına başka bir şey mi geldi?</b> Yaz, Plan sekmesine kaydedeyim; sen derse dön.</li>
+              <li><b>✓</b> oturumu bitirip kaydeder, <b>↺</b> sıfırlar. Bitince neler çalıştığını, kaç soru çözdüğünü ve verimini (1–5 ⭐) yazarsın.</li>
+              <li><b>Bugün</b> kartında Plan'da bugüne yazdığın dersler ve konular durur. Hangisine çalışıyorsan ona dokun: sayaç durmuşsa o konu için hemen başlar. Çalış ekranında süre yalnızca sayaçta görünür; konuların süresi İlerleme'ye yazılır. Sayaç çalışırken başka konuya dokunursan ana sayaç durmadan devam eder, süre konulara ayrı ayrı yazılır. Konuyu bitirince kutusunu işaretle; sayaç o konuya sayıyorsa oturum biter ve "Toplam 1 sa: Matematik 40 dk · Fizik 20 dk" gibi özetini görürsün. Halka planının yüzde kaçını bitirdiğini gösterir.</li>
+              <li><b>🎧 Müzik ve odak sesleri</b> Bugün kartının hemen altında; programına bakarken müziğe de elin yetişir.</li>
+              <li><b>Zaman çizelgesi</b> gün boyu hangi saatte hangi dersi çalıştığını renkli şeritlerle gösterir; pembe çizgi şu anki saattir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🗓️ Planlarım ve YKS konuları</summary>
+            <ul>
+              <li>Önce <b>alanını</b> (SAY / EA / SÖZ / DİL) seç; derslerin buna göre ayarlanır.</li>
+              <li><b>Konu takibi:</b> Plan sekmesinde bir derse dokununca konuları açılır. Konunun yanındaki kutuya bir kez dokun: <b>✓ bitti</b> (üstü çizilir); bir daha dokun: <b>− yarım</b>; bir daha: boş. ✎ ile konuya not yazarsın. Bitirdiğin konular plan eklerken konu listesinde artık çıkmaz, yarım olanların yanında (yarım) yazar. Konu yerine 📝 Deneme, ✏️ Test çözümü ya da 🔀 Karma test de seçebilirsin.</li>
+              <li><b>≈ sayılar</b> o konudan YKS'de yılda ortalama kaç soru geldiğini gösterir (2018–2025 sınavlarından derlendi; kaynaklar sayfanın altında). Yüzdeler de bu ağırlığa göre: soru getiren konuyu bitirmek daha çok sayılır.</li>
+              <li><b>Planlarım:</b> Günlük, Haftalık ve Aylık planlarını sen yazarsın; uygulama kendiliğinden ya da rastgele plan oluşturmaz. ‹ › ile önceki ve sonraki güne, haftaya, aya geçersin.</li>
+              <li><b>Haftalık</b> görünümde haftanın yedi günü alt alta durur; her günün yanındaki <b>＋</b> ile o güne ders ve konu eklersin. Ders seçince yalnızca o dersin konuları çıkar; listede olmayanı "Kendim yazayım" ile yazarsın. Süre sorulmaz.</li>
+              <li><b>Bugünün planı</b> Çalış ekranındaki Bugün kartında durur. Maddeye dokunarak düzenlemek ya da silmek için Plan sekmesine gelirsin.</li>
+              <li><b>İlerleme</b> sekmesinin en üstünde haftanın grafiği var: altta günler, solda saat. Her günün üstünde o gün kaç ders çalıştıysan o kadar ayrı renkli sütun durur (M Matematik, F Fizik, T Türkçe, K Kimya gibi); sütun ne kadar uzunsa o derse o kadar çalışmışsın. Sayaç çalışırken sütun canlı canlı uzar. ‹ › ile önceki haftalara bakarsın.</li>
+              <li>Grafikte bir güne dokununca hemen altında o günün pastası açılır: hangi dersten ve hangi konudan saat, dakika, saniye ne kadar, yüzdesi, bitirdiğin ve eksik kalan konular. Aynı güne ya da × düğmesine dokununca kapanır. Pastanın altında bu hafta her dersten ne kadar çalıştığın yazar.</li>
+              <li>En altta <b>Gün gün çalışmaların</b>: her gün tarihiyle, toplamı ve çalıştığın derslerle alt alta; birine dokununca o günün pastası orada açılır. En yeni gün en üstte; "Daha eski günler" ile geriye gidersin.</li>
+              <li><b>Bitmeyenler kaybolmaz:</b> bir günün işaretlenmemiş maddeleri ertesi sabah (05:00'ten sonra) kendiliğinden bugünün planına geçer, yanında "↪ dünden" yazar. Haftalık görünümde o günün altında "eksik kaldı" diye durur; böylece neyin kaldığını hep görürsün.</li>
+              <li><b>Başla</b>'ya bastığında bir konu seçmediysen bugünün ilk bitmemiş konusu seçilir; başka bir şeye çalışıyorsan Bugün kartında ona dokunman yeter.</li>
+              <li><b>↪ Taşı:</b> biten maddeler kalır, kalanları tek dokunuşla ertesi güne (haftaya, aya) taşırsın. <b>⧉ Kopyala</b> önceki listeyi başlangıç olarak ekler; sen dokunmadan hiçbir şey eklenmez.</li>
+              <li><b>Gün sonu:</b> akşam 20:00'den sonra Luna günün planına bakar, yüzde kaçını bitirdiğini ve sıradaki küçük adımı söyler. Akşam uygulamayı açmadıysan ertesi gün ilk açılışta dünü özetler.</li>
+              <li>Sınav tarihi şimdilik tahmini; ÖSYM açıklayınca kendiliğinden güncellenir, geri sayım da ona uyar. İstersen Plan sekmesinden kendi tarihini seçebilirsin.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🎓 Üniversite, KPSS ve yüksek lisans modu</summary>
+            <ul>
+              <li>YKS bitince <b>Ayarlar → 🎓 Eğitim modu</b>'ndan <b>Üniversite</b>'ye dokun. YKS konuların, denemelerin ve bütün oturumların silinmez; istediğin an geri dönebilirsin.</li>
+              <li>Plan sekmesi <b>Dönem</b> olur. Derslerini saatleri, derslikleri ve hocalarıyla ekle; her ders sayaçtaki ders listene de eklenir.</li>
+              <li>Her derse kredi, AKTS, değerlendirme ağırlıkları (vize %40, final %60…) ve haftalık konular girebilirsin.</li>
+              <li><b>🏫 Akademik takvim:</b> okulunun takvimindeki vize, final, bütünleme ve tatil tarihlerini ekle; geri sayımlar ve çalışma planı bunlara göre oluşur.</li>
+              <li><b>Bugünün planı</b>nı sen yazarsın: Plan sekmesinden günlük, haftalık ve aylık maddeler eklersin, uygulama kendiliğinden ya da rastgele bir liste oluşturmaz. Derse bağlı bir maddede ▶ ile sayaç başlar; oturum bitince madde işaretlenir. Akşam Luna o günün planının yüzde kaçını bitirdiğini söyler.</li>
+              <li><b>Devamsızlık:</b> bugünkü derste "Gelmedim"e dokun; kaç saat hakkın kaldığını sayarım, sınıra yaklaşınca nazikçe uyarırım.</li>
+              <li><b>Not ortalaması:</b> vize ve final notlarını gir; ders notun, harf notun, dönem ortalaman ve GANO hesaplanır. Finalden en az kaç alman gerektiğini de yazarım.</li>
+              <li><b>📅 Telefon takvimine aktar</b> dersleri haftalık tekrar eden etkinlik, sınavları da bir gün önceden hatırlatmalı olarak telefonunun takvimine ekler.</li>
+              <li><b>KPSS</b> modunda derslerini (Türkçe, Matematik, Tarih…) tek dokunuşla ekleyebilir, sınav tarihini girip geri sayım ve tekrar planı alabilirsin.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📝 Deneme takibi</summary>
+            <ul>
+              <li><b>Net = Doğru − Yanlış ÷ 4</b> (4 yanlış 1 doğruyu götürür); ben hesaplarım.</li>
+              <li>Deneme eklerken TYT / AYT / Branş seç, her dersin doğru-yanlışını gir. Doğru + yanlış dersin soru sayısını geçemez.</li>
+              <li><b>Eksik çıkan konuları</b> işaretlersen, onları YKS'deki soru ağırlığıyla çarpıp <b>öncelikli konular</b> listesi yaparım; "Çalış ▶" ile hemen başlarsın.</li>
+              <li>Grafik netlerinin zaman içindeki gidişini, tablo her dersin son netini ve değişimini gösterir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📅 Takvim ve sticker defteri</summary>
+            <ul>
+              <li><b>Takvim</b> sekmesinde bir güne dokun; o günün sayfası açılır (telefonda takvimin altında, tablette yanında). En üstteki <b>📝 Güne not al</b> ile "Doğum günüm 🎂" gibi notlar yaz. <b>Her yıl tekrarla</b> açıksa not her yıl o gün görünür; <b>Bir gün önce haber versin</b> açıksa bir gün önceden söylerim.</li>
+              <li>Notu olan günde küçük simgesi durur; o gün gelince takvimin başında yazar, ben de bir kez hatırlatırım. Bayramları, yılbaşını ve YKS günlerini takvim kendisi bilir.</li>
+              <li><b>📝 Deneme:</b> bir güne TYT, AYT ya da branş denemesi planla. Deneme sekmesinde de görünür; "Sonuçları gir" deyince form hazır açılır, kaydedince analizine katılır.</li>
+              <li><b>🌈 Sticker ve renk:</b> bir güne en çok 3 sticker yapıştırırsın; gün, ilk stickerın rengine boyanır. Rengi alttaki yuvarlaklardan kendin de seçebilirsin ("Renksiz" dahil); senin seçtiğin kalır. Yapışan stickera dokununca kalkar.</li>
+              <li><b>📒 Sticker defteri:</b> defter simgesine dokun. Sayfaları alttaki ‹ › oklarla çevir; bir stickera dokununca güne uçup yapışır, o güne yapışmış olanların köşesinde ✓ durur. Sağ alttaki küçük kapaktan beş defterden birini seçersin; seçtiğin kalır.</li>
+              <li>Günün sayfasında o günün planı da var (Planlarım ile aynı liste); unuttuğun bir çalışmayı geçmiş bir güne ekleyebilirsin.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🏡 Hazal'ın Küçük Dünyası</summary>
+            <ul>
+              <li>Çalış sekmesindeki <b>Hazal'ın Küçük Dünyası</b> kartına dokun: yıldızlı pencerenin önünde Luna, Vesper ve Güçlü'nün dinlendiği odan açılır. Telefonda odayı sağa sola kaydırabilirsin.</li>
+              <li><b>Rozetlerin odayı süsler:</b> ilk adımlar, denemeler ve özel günler duvarda çerçeve; süre rozetleri kupa, seriler madalya; konular, odak ve kesintisiz çalışma kitaplıkta kitap olur. Bir rozete dokununca kartı açılır. Rozetlerin hiç silinmez, yenileri kendiliğinden eklenir.</li>
+              <li><b>Eşyalar:</b> Planlarım'da bir günün ilk maddesini bitirince odana bir eşya gelir; günün planı tamamen bitince bir tane daha. İşareti kaldırıp yeniden koymak ikinci eşya getirmez. Eşyalar bitince renkli olanların yeni renkleri gelir.</li>
+              <li>Eşyaya odada ya da listede dokunup <b>Yerini seç</b>: parlayan yerlerden birine koy, dilersen dolaba kaldır. Renkli eşyaların rengini listeden değiştirirsin.</li>
+              <li><b>Mektup kutusu:</b> Çağan'ın mektupları burada durur; her biri kendi gününde ya da emeğin bir eşiğe varınca açılır, açtıklarını istediğin zaman yeniden okursun.</li>
+              <li>Ara verdiğin günlerde odandan hiçbir şey kaybolmaz; eşyaların ve okuduğun mektuplar yedeğine de girer.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📚 Notlar ve bilgi kartları</summary>
+            <ul>
+              <li><b>Notlar:</b> derse göre not al, ara, 📌 ile üste sabitle. <code>**kalın**</code>, <code>`kod`</code> ve satır başında "- " ile madde yazabilirsin.</li>
+              <li><b>Kartlar</b> aralıklı tekrar (Leitner) ile çalışır: ön yüze soru, arka yüze cevap. Bildiğin kart bir üst kutuya geçer ve daha seyrek gelir (1 → her gün, 2 → 1 gün, 3 → 3 gün, 4 → haftada bir, 5 → 16 günde bir). Bilemediğin kart 1. kutuya döner. Bu, bilgiyi kalıcı yapmanın en etkili yollarından biri.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>❌ Hata defteri</summary>
+            <ul>
+              <li>Notlar → <b>Hatalar</b>'da denemede ya da testte yanlış yaptığın sorunun fotoğrafını çek; dersini, konusunu, <b>neden</b> yanlış yaptığını (bilgi eksiği, yorum, işlem, dikkat, süre) ve doğru cevabı/püf noktasını yaz.</li>
+              <li>Soru ertesi gün, sonra 3, 7 ve 21 gün sonra yeniden karşına çıkar. Önce kendin çöz, sonra notu aç. Bilemezsen başa döner; dört kez üst üste doğru çözdüğün soru "öğrenildi" olur. Bu, aralıklı tekrar ve kendini sınamanın birleşimi; kalıcı öğrenmenin en güçlü yollarından.</li>
+              <li><b>Hata analizi</b> en sık hata nedenini ve en çok soru biriken konuları gösterir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📚 Kaynaklar ve kaynakça</summary>
+            <ul>
+              <li>Notlar → <b>Kaynaklar</b>'da makale arayabilir (OpenAlex), <b>DOI</b> (makale) ya da <b>ISBN</b> (kitap) yapıştırıp künyeyi otomatik doldurabilir ya da elle ekleyebilirsin.</li>
+              <li>Kaynakların seçtiğin biçimde yazılır: <b>APA 7</b>, <b>Vancouver</b> (tıp ve sağlık bölümleri için önerilir) ya da <b>IEEE</b> (mühendislik). APA'da metin içi atıf da gösterilir. <b>Kopyala</b> ile Word'e yapıştırınca italikler korunur; <b>Kaynakçayı kopyala</b> dersin tüm kaynaklarını sıralı verir.</li>
+              <li>Açık erişimli makalelerde 🔓 bağlantısı tam metne gider.</li>
+              <li>Künyeyi yine de kontrol et: veritabanlarındaki bilgiler bazen eksik olabilir (ör. kitap baskısı); ✏️ ile düzeltebilirsin.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🗂️ Kütüphane ve Google Drive</summary>
+            <ul>
+              <li>Notlar → <b>Kütüphane</b>'de ders fotoğraflarını, PDF'leri, çalışma kağıtlarını ve ödevleri ders ders saklarsın. <b>📷 Fotoğraf çek</b> ile tahtayı ya da kağıdı çekip doğrudan derse koyabilirsin; galeride aramana gerek kalmaz.</li>
+              <li>PDF'ler ve fotoğraflar uygulamanın içinde tam ekran açılır (yakınlaştırma, sayfa sayısı). Word, PowerPoint gibi dosyalar Drive'da açılır.</li>
+              <li>Fotoğraflar okunaklı kalacak şekilde küçültülür; böylece hem hızlı açılır hem az yer tutar.</li>
+              <li><b>Google Drive'ı bağlarsan</b> dosyalar senin Drive'ındaki <b>Luna Depo</b> klasöründe durur: iPad'inde yer kaplamaz, telefonda da aynı dosyaları görürsün (Depo → ↻ Eşitle). Uygulama sadece kendi yüklediği dosyaları görebilir; Drive'ının geri kalanına dokunamaz.
+                <ol>
+                  <li><a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a>'a Google hesabınla gir, yeni bir proje aç (ör. "Luna").</li>
+                  <li><b>APIs &amp; Services → Library</b>'den <b>Google Drive API</b>'yi bul ve <b>Enable</b> de.</li>
+                  <li><b>Google Auth Platform</b> (OAuth izin ekranı) → <b>Get started</b>: uygulama adı "Luna", kitle <b>External</b>. Sonra <b>Audience → Test users</b>'a Hazal'ın Gmail adresini ekle.</li>
+                  <li><b>Clients → Create client → Web application</b>. <b>Authorized JavaScript origins</b>: <code>https://cagansezerkaraman00-byte.github.io</code>, <b>Authorized redirect URIs</b>: Kütüphane'de yazan adres (sonunda <code>/</code> ile).</li>
+                  <li>Çıkan <b>Client ID</b>'yi Kütüphane'deki alana yapıştır, <b>Bağlan</b> de, Google hesabını seç ve izin ver. "Google bu uygulamayı doğrulamadı" uyarısı çıkarsa bu senin kendi uygulaman; <b>Devam</b> diyebilirsin.</li>
+                </ol></li>
+              <li>Güvenlik için Google bağlantıyı saatte bir yeniler; Kütüphane'de "Drive bağlantısını yenile"ye dokunman yeter. O arada eklediğin dosyalar bu cihaza kaydedilir, sonra <b>Drive'a taşı</b> ile tek dokunuşla Drive'a geçer.</li>
+              <li>Silinen dosya Drive çöp kutusuna gider; 30 gün içinde oradan geri alabilirsin.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📈 İlerleme ve rapor</summary>
+            <ul>
+              <li><b>Luna'nın raporu:</b> güçlü yönlerin, gelişim fırsatların ve önerilerim. Hep yol gösteren bir dille yazarım 💛</li>
+              <li><b>Saatlere göre verim:</b> çubuğun yüksekliği o saatte ne kadar çalıştığını, rengi verdiğin verim yıldızlarını gösterir. Böylece en verimli saatlerini buluruz.</li>
+              <li><b>Yıldız haritası:</b> son 16 hafta; renk koyulaştıkça çok çalışmışsın, ★ o gün hedefini tamamladın demek.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🏅 Rozetler</summary>
+            <ul>
+              <li>Çalıştıkça, seri yaptıkça, konu bitirip deneme girdikçe rozet kazanırsın. Kilitli rozetlerde hedefe ne kadar yaklaştığını çubuk gösterir.</li>
+              <li>Her rozetin içinde sana yazılmış kısa bir not var 💌 Kazanınca açılır; İlerleme → Rozetler'den dokunup tekrar okuyabilirsin.</li>
+              <li>Odaklanırken kutlama göstermem; oturum bitince sırayla açarım.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🐾 Ben, Vesper ve minik Güçlü</summary>
+            <ul>
+              <li>Bana dokunursan zıplarım 💕 Her odak oturumunda bir 🐟 kazanırsın; üstteki balık düğmesiyle beni besleyebilirsin.</li>
+              <li>Molada ve boştayken arada yün yumağıyla oynarım; yumağa sen de dokunabilirsin 🧶 Akşamları daha çok kıvrılıp uyurum.</li>
+              <li><b>Vesper</b> (mavi gözlü siyah kedi) ve sarı yavrumuz <b>Güçlü</b> arada bir uğrar; geceleri yanımda uyurlar. Odaklanırken seni rahatsız etmezler. Ayarlar → Kediler'den çağırabilirsin.</li>
+              <li>Dünya gerçek zamanlı: güneş ve ay bulunduğun şehre göre hareket eder, mevsimler aya göre değişir (kışın kar, ilkbaharda çiçekli ağaç, yazın ayçiçekleri, sonbaharda düşen yapraklar). Geceleri zambaklar açar, mevsimin takımyıldızı görünür. Yılbaşı, bayramlar, ulusal bayramlar ve 14 Şubat'ta sahne süslenir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🌦️ Hava durumu</summary>
+            <ul>
+              <li>Ayarlar → Konum'dan şehrini seç ya da konumunu kullan. Üstteki hava çipine dokununca bugün ve yarının özetini görürsün; yağmur, kar, sis sahnede de görünür.</li>
+              <li>Veri Open-Meteo'dan gelir (ücretsiz, anahtarsız); yarım saatte bir yenilenir. İnternet yoksa son bilinen durum gösterilir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🎧 Müzik ve Spotify</summary>
+            <ul>
+              <li>Çalış ekranındaki <b>Müzik ve odak sesleri</b> kutusunda <b>Spotify ile giriş yap</b>'a dokun; giriş Spotify'ın kendi sayfasında tamamlanır, şifren Luna'ya verilmez. Tam şarkı çalmak için Spotify Premium gerekir.</li>
+              <li>Bağlanınca en üstte <b>Luna oynatıcısı</b> durur; altında seçtiğin listenin şarkıları, en altta <b>Kütüphanemdeki listeler</b>. Bir listeye dokun, şarkıları gelsin; bir şarkıya dokun, Luna'da çalsın. İleri, geri ve çubukla sarma oynatıcıdan yapılır.</li>
+              <li>Hesap bağlı değilken hazır listeler (Lofi, Sakin Piyano, Derin Odak) ya da yapıştırdığın bir Spotify bağlantısı Spotify'ın kendi oynatıcısıyla açılır; o oynatıcı hesabına göre yalnızca önizleme çalabilir. <b>Spotify'da dinle</b> düğmesi içeriği Spotify'da açar.</li>
+              <li>Odak sesleri (yağmur, dalga, şömine, kütüphane…) müzikle birlikte ya da tek başına açılabilir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>📱 Telefona ve tablete yükleme</summary>
+            <ul>
+              <li><b>iPhone / iPad (Safari):</b> Paylaş → <b>Ana Ekrana Ekle</b>.</li>
+              <li><b>Android (Chrome):</b> ⋮ menü → <b>Uygulamayı yükle</b>.</li>
+              <li>Yükledikten sonra uygulama gibi tam ekran açılır ve internet olmadan da çalışır.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>💾 Veriler, gizlilik ve yedek</summary>
+            <ul>
+              <li>Bütün verilerin sadece bu cihazda saklanır; kimse göremez, hesap yok.</li>
+              <li>Ayarlar → Veriler → <b>Yedek al</b> ile verilerini bir dosyaya kaydet (telefonda paylaşım menüsü açılır: Dosyalar'a kaydet, Drive…). Ayda bir yedek almak iyi bir alışkanlık; bir aydır yedek yoksa sana nazikçe hatırlatırım.</li>
+              <li>Yeni cihazda <b>İçe aktar</b> de: <b>Birleştir</b> şimdiki verilerini korur ve yedekteki eksikleri ekler; <b>Tamamen değiştir</b> bu cihazı yedekteki hale getirir.</li>
+              <li>Uygulamayı Ana Ekrana eklemek verilerini de korur: tarayıcı sekmesinde uzun süre açılmayan sitelerin verilerini bazı tarayıcılar temizleyebilir.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>🔄 Güncellemeler ve kurulum</summary>
+            <ul>
+              <li>Yeni bir sürüm çıkınca sana haber veririm: üstte <b>"Güncelleme hazır"</b> kartı belirir, Ayarlar sekmesinde küçük bir nokta yanar; bildirim izni verdiysen bir de bildirim gelir.</li>
+              <li><b>Güncelle</b>'ye dokununca yeni sürüm yüklenir ve uygulama yenilenir. Verilerin, ayarların ve çalışan sayacın olduğu gibi kalır; hiçbir şey sıfırlanmaz.</li>
+              <li>Güncellemeden sonra <b>Yenilikler</b> penceresinde neyin değiştiğini görürsün. Ayarlar → Güncellemeler'de bütün sürümlerin notları ve <b>Güncellemeleri denetle</b> düğmesi var.</li>
+              <li>Bir şeyle meşgul değilken uygulamadan çıkarsan yeni sürümü sessizce de yükleyebilirim; sayaç çalışırken ya da bir pencere açıkken asla yenilemem.</li>
+              <li><b>Ana ekrana ekle:</b> Luna'yı tarayıcıda açarsan bunu nasıl yapacağını gösteririm. Ana ekrandaki Luna tam ekran açılır, internetsiz çalışır ve verilerini kendi içinde saklar; bundan sonra hep oradan aç.</li>
+            </ul>
+          </details>
+          <details>
+            <summary>❓ Sık sorulanlar</summary>
+            <ul>
+              <li><b>Sayfayı kapatırsam sayaç durur mu?</b> Hayır; geri geldiğinde doğru süreyi gösterir. Ama <b>tam odak</b> açıksa (varsayılan) uygulamadan çıkınca 15 saniye sonra durur; geri gelince "Devam" demen yeterli. İzinli uygulamalarda (ChatGPT, Gemini, YouTube, Spotify) çalışırken sayaç durmaz: odak ekranındaki düğmeden açarsan hiç sormam, başka yoldan geçtiysen dönüşte "Neredeydin?" diye sorarım. Ayarlar → Odak'tan kapatabilir ya da izinli uygulamaları seçebilirsin.</li>
+              <li><b>Mini pencere:</b> Sayaç çalışırken <b>🐾 Mini pencere</b>'ye dokun. Android'de ve Safari'de sayaç köşede küçük bir pencerede kalır, YouTube ya da ChatGPT'ye geçsen de durmaz; Luna'ya dönünce kapanır. iPad'deki Luna uygulamasında düğme, Luna'yı küçük pencereye alıp diğer uygulamanın yanına koymayı gösterir; Luna görünür kaldıkça sayaç akar.</li>
+              <li><b>Luna "nasılsın?" diye sorunca</b> ana sayfadaki üç düğmeden birine dokun; sana göre bir şey söyler.</li>
+              <li><b>Bildirim gelmiyor?</b> Ayarlar → Odak → Bildirim'i aç ve izin ver. iPhone'da bildirimler için uygulamayı Ana Ekrana eklemiş olman gerekir.</li>
+              <li><b>Bir şey çalışmıyor mu (hava durumu, Spotify…)?</b> Ayarlar → <b>Tanılama</b>'yı aç: neyin neden çalışmadığını orada yazarım. <b>Bağlantıları test et</b> ile internetin hangi servislere ulaştığını görebilir, <b>Raporu kopyala</b> ile durumu paylaşabilirsin.</li>
+              <li><b>Luna çok konuşuyor / hiç konuşmuyor?</b> Ayarlar → Odak'tan konuşma sıklığını değiştir; odaklanırken zaten sessizim.</li>
+            </ul>
+          </details>
+          </details>
+        </div>
+        <div class="grid">
+          <div class="card update-card" id="update-card"></div>
+          <div class="card">
+            <h2>🎨 Görünüm</h2>
+            <div class="seg" id="theme-seg">
+              <button data-theme="light">🪻 Lavanta</button>
+              <button data-theme="dark">🌙 Gece</button>
+              <button data-theme="auto">🌗 Otomatik</button>
+              <button data-theme="zambak">🌺 Zambak</button>
+            </div>
+            <p class="hint">Lavanta ve pembe tonları. Gece görünümünde fonda hafif yıldızlar; otomatik seçersen gün batımında geçiş yapar. Zambak, şiirdeki gökkuşağı zambağın gecesi: lacivert gökyüzü, altın yazılar ve parıldayan yıldızlar.</p>
+          </div>
+          <div class="card">
+            <h2>👤 Kişisel</h2>
+            <label class="field">Adın <input id="set-name" maxlength="30"></label>
+            <label class="field">Sevgilinin adı <input id="set-partner" maxlength="30" placeholder="Notlarda görünür"></label>
+            <label class="field">Günlük hedef (dakika) <input type="number" id="set-goal" min="10" max="900" step="10"></label>
+          </div>
+          <div class="card edu-card" id="edu-card">
+            <h2>🎓 Eğitim modu</h2>
+            <div class="seg edu-seg" id="level-seg" role="group" aria-label="Eğitim modu">
+              <button type="button" data-level="yks">📘 YKS</button>
+              <button type="button" data-level="uni">🎓 Üniversite</button>
+              <button type="button" data-level="kpss">🏛️ KPSS</button>
+              <button type="button" data-level="yl">🔬 Yüksek lisans</button>
+            </div>
+            <p class="hint" id="level-hint"></p>
+            <div class="row2">
+              <label class="field">Bölüm / alan <input id="set-dept" maxlength="60" placeholder="Örn: Tıp, Fizik, Hukuk"></label>
+              <label class="field">Sınıf <input id="set-year" maxlength="20" placeholder="Örn: 1. sınıf"></label>
+            </div>
+            <div id="uni-fields">
+              <div class="row2">
+                <label class="field">Okul <input id="set-school" maxlength="80" placeholder="Örn: Ege Üniversitesi"></label>
+                <label class="field">Fakülte <input id="set-faculty" maxlength="80" placeholder="Örn: Tıp Fakültesi"></label>
+              </div>
+              <div class="row2">
+                <label class="field">Dönem <input id="set-term" maxlength="30" placeholder="Örn: 2027-2028 Güz"></label>
+                <label class="field">Dönem kaç hafta <input type="number" id="set-weeks" min="6" max="22"></label>
+              </div>
+              <div class="row2">
+                <label class="field">Dönem başlangıcı <input type="date" id="set-termstart"></label>
+                <label class="field">Son ders günü <input type="date" id="set-termend"></label>
+              </div>
+              <label class="field school-only">Devamsızlık sınırı (%) <input type="number" id="set-abs" min="0" max="100"></label>
+            </div>
+          </div>
+          <div class="card">
+            <h2>🍅 Zamanlayıcı</h2>
+            <div class="row3">
+              <label class="field">Geri sayım (dakika) <input type="number" id="set-focus" min="1" max="900"></label>
+              <label class="field">Kısa mola <input type="number" id="set-short" min="1" max="60"></label>
+              <label class="field">Uzun mola <input type="number" id="set-long" min="1" max="90"></label>
+            </div>
+            <label class="field">Kaç odakta bir uzun mola? <input type="number" id="set-every" min="2" max="10"></label>
+            <label class="switch"><input type="checkbox" id="set-autobreak"> Odak bitince mola otomatik başlasın</label>
+            <label class="switch"><input type="checkbox" id="set-autofocus"> Mola bitince odak otomatik başlasın</label>
+          </div>
+          <div class="card">
+            <h2>🎯 Odak</h2>
+            <label class="switch"><input type="checkbox" id="set-focusmode"> Başlayınca sade odak ekranına geç</label>
+            <label class="switch"><input type="checkbox" id="set-quiet"> Odaklanırken Luna sessiz kalsın</label>
+            <label class="switch"><input type="checkbox" id="set-pauseleave"> 🔒 Tam odak: uygulamadan çıkınca sayaç dursun</label>
+            <div class="allow-set" id="allow-set">
+              <p class="muted small">İşaretlediğin uygulamalarda sayaç durmaz. Dönünce "Neredeydin?" diye sorarım; izinli uygulamayı seçersen sayaç hiç durmamış gibi devam eder. Başka bir yere geçersen 15 saniye sonra durur.</p>
+              <div class="chips" id="allow-chips"></div>
+            </div>
+            <label class="switch"><input type="checkbox" id="set-sound"> Sesler açık</label>
+            <fieldset class="timer-alarm-settings">
+              <legend>🐾 Sayaç bitiş uyarısı</legend>
+              <p class="muted small">Geri sayım, TYT veya AYT süresi dolunca Luna haber versin.</p>
+              <p class="hint">Beş farklı gerçek kedi miyavı arasından seç. Sesleri internet olmadan da dinleyebilirsin.</p>
+              <label class="field">Miyav sesi <select id="set-timer-meow"></select></label>
+              <label class="switch"><input type="checkbox" id="set-timer-vibrate"> Süre dolunca titreştir</label>
+              <label class="field">Titreşim ritmi <select id="set-timer-vibration"></select></label>
+              <p class="hint" id="timer-vibration-support"></p><details class="vibration-help"><summary>Titreşimi hissetmedim</summary><p>Android’de telefonun Ses ve titreşim ayarlarından titreşimi aç. Sessiz veya Rahatsız Etmeyin modunu kapatıp uygulama açıkken tekrar dene. Miyav için medya sesini de kontrol et.</p><p>Tarayıcı isteği kabul etse bile fiziksel titreşimi ölçemeyiz. iPhone/iPad web uygulamasında titreşim desteklenmez; miyav ve ekrandaki bitiş uyarısı çalışır.</p></details>
+              <div class="timer-alarm-actions"><button class="btn soft" type="button" id="test-timer-alarm">🐈 Uyarıyı dene</button><button class="btn soft" type="button" id="test-timer-vibration">📳 Yalnızca titreşimi dene</button><button class="btn ghost" type="button" id="stop-timer-alarm">Durdur</button></div>
+              <p class="hint" id="timer-alarm-test-result" role="status"></p>
+              <p class="hint">Miyav için “Sesler açık” olmalı. Uygulama kapatılırsa veya cihaz arka planda askıya alırsa uyarı gecikebilir; sınav sırasında uygulamayı açık tut.</p>
+            </fieldset>
+            <fieldset class="mini-theme-picker">
+              <legend>Mini pencere rengi</legend>
+              <p class="muted">Uyuyan kedilerin yanındaki sayaç için bir renk seç.</p>
+              <div class="mini-theme-options">
+                <label class="mini-theme-option"><input type="radio" name="mini-theme" value="cream"><span class="mini-theme-dot" style="--swatch:#eed6c1" aria-hidden="true"></span><span>Sıcak krem</span></label>
+                <label class="mini-theme-option"><input type="radio" name="mini-theme" value="lavender"><span class="mini-theme-dot" style="--swatch:#b69bd5" aria-hidden="true"></span><span>Lavanta</span></label>
+                <label class="mini-theme-option"><input type="radio" name="mini-theme" value="sage"><span class="mini-theme-dot" style="--swatch:#8bab8c" aria-hidden="true"></span><span>Adaçayı</span></label>
+                <label class="mini-theme-option"><input type="radio" name="mini-theme" value="rose"><span class="mini-theme-dot" style="--swatch:#cb94a5" aria-hidden="true"></span><span>Gül kurusu</span></label>
+                <label class="mini-theme-option"><input type="radio" name="mini-theme" value="midnight"><span class="mini-theme-dot" style="--swatch:#27344c" aria-hidden="true"></span><span>Gece mavisi</span></label>
+              </div>
+            </fieldset>
+            <label class="switch"><input type="checkbox" id="set-notify"> Bildirim gönder (uygulama arka plandayken)</label>
+            <label class="switch"><input type="checkbox" id="set-reminders"> Luna çalışma ve hedef hatırlatmaları</label>
+            <p class="hint">Luna günde en fazla 3 kez, 09–22 arası nazikçe hatırlatır; çoğunlukla uygulamayı açınca kendisi söyler.</p>
+            <label class="field">Luna molada/boşta ne sıklıkla konuşsun? (dakika, 0 = hiç) <input type="number" id="set-msg" min="0" max="240"></label>
+          </div>
+          <div class="card">
+            <h2>🐈 Kediler</h2>
+            <p class="muted small">Luna ana karakter; Vesper (mavi gözlü siyah kedi) ve sarı yavru Güçlü arada bir uğrar. Molada ve boştayken gelirler, odaklanırken seni rahatsız etmezler.</p>
+            <div class="row" id="call-cats">
+              <button class="btn soft" data-visit="vesper">🐈‍⬛ Vesper'ı çağır</button>
+              <button class="btn soft" data-visit="kitten">🧡 Güçlü'yü çağır</button>
+              <button class="btn soft" data-visit="family">🐾 Hepsi</button>
+            </div>
+          </div>
+          <div class="card">
+            <h2>📚 Dersler</h2>
+            <ul class="subject-edit" id="subject-edit"></ul>
+            <form class="inline-form" id="subject-form">
+              <input id="subject-name" placeholder="Yeni ders adı" maxlength="30" required>
+              <input type="color" id="subject-color" value="#ffd84d">
+              <button class="btn primary">Ekle</button>
+            </form>
+          </div>
+          <div class="card wide-card">
+            <h2>💌 Sevgilinden notlar</h2>
+            <p class="muted small">Her satır bir not. Günlük hedefe ulaşınca günün gizli notu açılır; Luna da molalarda arada birini söyler.</p>
+            <textarea id="set-love" rows="7"></textarea>
+            <button class="btn primary" id="save-love">Notları kaydet</button>
+          </div>
+          <div class="card">
+            <h2>🌅 Konum ve hava durumu</h2>
+            <p class="muted small">Güneşin doğuş/batış saatleri ve günlük hava durumu için.</p>
+            <label class="switch"><input type="checkbox" id="set-weather"> Hava durumunu göster</label>
+            <div class="chips" id="city-chips"></div>
+            <button class="btn soft small-btn" id="use-location">📍 Konumumu kullan</button>
+            <p class="muted small" id="loc-text"></p>
+          </div>
+          <div class="card">
+            <h2>💾 Veriler</h2>
+            <p class="muted small">Her şey sen yazarken bu cihaza kendiliğinden kaydedilir; uygulamayı kapatsan da, güncellesen de kaybolmaz. Telefon değiştirirken <b>Yedek al</b>, yeni cihazda <b>İçe aktar</b>.</p>
+            <p class="small backup-info" id="backup-info"></p>
+            <div class="rescue hidden" id="rescue-info">
+              <p class="small"><b>🛟 Kurtarma kopyası var.</b> Uygulama bir ara verilerini okuyamadı ve bozulmasın diye ham hâlini sakladı. İndirip <b>İçe aktar</b> ile geri yükleyebilirsin.</p>
+              <div class="row"><button class="btn soft" id="rescue-dl" type="button">Kurtarma kopyasını indir</button><button class="btn soft" id="rescue-del" type="button">Sil</button></div>
+            </div>
+            <div class="row">
+              <button class="btn soft" id="export">Yedek al</button>
+              <label class="btn soft">İçe aktar<input type="file" id="import" accept="application/json,.json" hidden></label>
+            </div>
+            <button class="btn danger small-btn" id="reset">Her şeyi sıfırla</button>
+          </div>
+          <details class="card wide-card diag-card" id="diag-card">
+            <summary><span>🔧 Tanılama</span><span class="muted small">hava, Spotify, bağlantı ve hata kayıtları</span></summary>
+            <div id="diag-root" class="diag-root"></div>
+            <button class="btn soft" type="button" id="test-notification">🔔 Bildirim ve logoyu test et</button>
+          </details>
+        </div>
+        <p class="footer"></p>
+      </section>
+    </main>
+  </div>
+  <!-- Modal -->
+  <div class="modal hidden" id="modal" role="dialog" aria-modal="true">
+    <div class="modal-card" id="modal-card"></div>
+  </div>
+  <div class="viewer hidden" id="viewer" role="dialog" aria-modal="true" aria-label="Dosya görüntüleyici">
+    <div class="vw-bar">
+      <button class="icon-btn" data-vw="close" type="button" title="Kapat">✕</button>
+      <div class="vw-title" id="vw-title"></div>
+      <span class="vw-pageno" id="vw-page"></span>
+      <div class="vw-tools">
+        <span class="vw-zoom" id="vw-zoom"><button class="icon-btn" data-vw="out" type="button" title="Uzaklaştır">−</button><button class="vw-zoom-val" id="vw-zoom-val" data-vw="fit" type="button" title="Sığdır">100%</button><button class="icon-btn" data-vw="in" type="button" title="Yakınlaştır">＋</button></span>
+        <button class="icon-btn" data-vw="download" type="button" title="İndir / paylaş">⬇️</button>
+        <button class="icon-btn" data-vw="edit" type="button" title="Düzenle / sil">✏️</button>
+      </div>
+    </div>
+    <div class="vw-body" id="vw-body"></div>
+  </div>
+  <div class="toasts" id="toasts"></div>
+  <div id="timer-end-alert" class="timer-end-alert" role="status" hidden><span id="timer-end-message"></span><button type="button" class="btn soft" id="dismiss-timer-alarm">Tamam</button></div>
+  <script src="js/storage.js?v=2.14.6"></script>
+  <script src="js/surum.js?v=2.14.6"></script>
+  <script src="js/messages.js?v=2.14.6"></script>
+  <script src="js/audio.js?v=2.14.6"></script>
+  <script src="js/takvim.js?v=2.14.6"></script>
+  <script src="js/scene.js?v=2.14.6"></script>
+  <script src="js/timer.js?v=2.14.6"></script>
+  <script src="js/stats.js?v=2.14.6"></script>
+  <script src="js/weather.js?v=2.14.6"></script>
+  <script src="js/yks.js?v=2.14.6"></script>
+  <script src="js/plan.js?v=2.14.6"></script>
+  <script src="js/planlar.js?v=2.14.6"></script>
+  <script src="js/planlar-ui.js?v=2.14.6"></script>
+  <script src="js/stickers.js?v=2.14.6"></script>
+  <script src="js/takvim-ui.js?v=2.14.6"></script>
+  <script src="js/deneme.js?v=2.14.6"></script>
+  <script src="js/notes.js?v=2.14.6"></script>
+  <script src="js/giris.js?v=2.14.6"></script>
+  <script src="js/depo.js?v=2.14.6"></script>
+  <script src="js/depo-ui.js?v=2.14.6"></script>
+  <script src="js/hata.js?v=2.14.6"></script>
+  <script src="js/kaynak.js?v=2.14.6"></script>
+  <script src="js/kaynak-ui.js?v=2.14.6"></script>
+  <script src="js/badges.js?v=2.14.6"></script>
+  <script src="js/mektuplar.js?v=2.14.6"></script>
+  <script src="js/dunya.js?v=2.14.6"></script>
+  <script src="js/dunya-ui.js?v=2.14.6"></script>
+  <script src="js/spotify-config.js?v=2.14.6"></script>
+  <script src="js/spotify-playback.js?v=2.14.6"></script>
+  <script src="js/spotify.js?v=2.14.6"></script>
+  <script src="js/uni.js?v=2.14.6"></script>
+  <script src="js/uni-ui.js?v=2.14.6"></script>
+  <script src="js/diag.js?v=2.14.6"></script>
+  <script src="js/guncelleme.js?v=2.14.6"></script>
+  <script src="js/notifications.js?v=2.14.6"></script>
+  <script src="js/mini-timer.js?v=2.14.6"></script>
+  <script src="js/app.js?v=2.14.6"></script>
+</body>
+</html>
+
