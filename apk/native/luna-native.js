@@ -81,13 +81,121 @@
     try { if (typeof SpotifyPlayback !== 'undefined' && SpotifyPlayback.pauseForEmbed) SpotifyPlayback.pauseForEmbed(); } catch (e) { /* yok say */ }
     embeds.forEach((c) => { try { Promise.resolve(c.pause && c.pause()).catch(() => {}); } catch (e) { /* yok say */ } });
   };
-  // Tanı satırı (yalnızca cihaz günlüğüne yazılır): Spotify oynatıcısının ihtiyaç duyduğu korumalı müzik desteği var mı
-  try {
-    navigator.requestMediaKeySystemAccess('com.widevine.alpha', [{ initDataTypes: ['cenc'], audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"' }] }])
-      .then(() => console.info('Luna APK: korumalı müzik (Widevine) var'), (e) => console.warn('Luna APK: korumalı müzik (Widevine) yok: ' + ((e && e.name) || e)));
-  } catch (e) { console.warn('Luna APK: korumalı müzik denetlenemedi'); }
+  // Tanı: Spotify oynatıcısının ihtiyaç duyduğu korumalı müzik desteği var mı. Sonuç Ayarlar → Tanılama → Hata günlüğünde görünür.
+  const note = (msg) => { console.info('Luna APK: ' + msg); try { if (window.ErrLog) ErrLog.add('Uygulama: ' + msg, 'luna-native.js'); } catch (e) { /* yok say */ } };
+  window.addEventListener('load', () => {
+    try {
+      navigator.requestMediaKeySystemAccess('com.widevine.alpha', [{ initDataTypes: ['cenc'], audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"' }] }])
+        .then(() => note('korumalı müzik (Widevine) var'), (e) => note('korumalı müzik (Widevine) YOK: ' + ((e && (e.name + ' ' + e.message)) || e)));
+    } catch (e) { note('korumalı müzik denetlenemedi: ' + ((e && e.message) || e)); }
+    // Spotify oynatıcısının kendi hataları da günlüğe düşsün (Luna'nın gösterdiği mesajın yanında asıl sebep)
+    const watch = () => {
+      const Sp = window.Spotify;
+      if (!Sp || !Sp.Player || Sp.Player.__luna) return !!(Sp && Sp.Player && Sp.Player.__luna);
+      const Orig = Sp.Player;
+      Sp.Player = function (opts) {
+        const p = new Orig(opts);
+        ['initialization_error', 'authentication_error', 'account_error', 'playback_error'].forEach((ev) => p.addListener(ev, (e) => note('Spotify ' + ev + ': ' + ((e && e.message) || ''))));
+        p.addListener('not_ready', () => note('Spotify oynatıcısı hazır değil (not_ready)'));
+        return p;
+      };
+      Sp.Player.prototype = Orig.prototype; Sp.Player.__luna = true;
+      return true;
+    };
+    const iv = setInterval(() => { if (watch()) clearInterval(iv); }, 500);
+    setTimeout(() => clearInterval(iv), 10 * 60000);
+  });
 
   document.addEventListener('visibilitychange', () => { if (document.hidden) pauseMusic(); });
   document.addEventListener('pause', pauseMusic); // Capacitor: uygulama arkaya geçti
   if (P.App) P.App.addListener('pause', pauseMusic);
+
+  // Mini pencere: Android'in kendi "resim içinde resim" penceresi (Chrome'daki video penceresinin yerine).
+  // Luna köşeye küçülür ve yalnızca sayacı gösterir; penceredeki tuş Luna'daki Başla / Duraklat ile aynı işi yapar.
+  // Pencere açıkken Luna "arkada" sayılır: Chrome'daki mini pencereyle aynı kurallar (ses çıkmaz, Tam odak izinli çıkış sayar).
+  const Pip = P.LunaPip;
+  if (!Pip) return;
+  let pipOn = false, last = null, tick = 0, view = null;
+  const hd = Object.getOwnPropertyDescriptor(Document.prototype, 'hidden');
+  const vd = Object.getOwnPropertyDescriptor(Document.prototype, 'visibilityState');
+  if (hd && hd.get && vd && vd.get) {
+    Object.defineProperty(Document.prototype, 'hidden', { configurable: true, get() { return pipOn || hd.get.call(this); } });
+    Object.defineProperty(Document.prototype, 'visibilityState', { configurable: true, get() { return pipOn ? 'hidden' : vd.get.call(this); } });
+  }
+  const css = document.createElement('style');
+  css.textContent = `
+    html.luna-pip body > *:not(#luna-pip-view) { display: none !important; }
+    #luna-pip-view { display: none; }
+    html.luna-pip #luna-pip-view {
+      display: flex; position: fixed; inset: 0; z-index: 2147483647; flex-direction: column; align-items: center; justify-content: center; gap: 3vh;
+      color: #fff; font-family: Nunito, system-ui, sans-serif; text-align: center; overflow: hidden;
+      background: radial-gradient(circle at 25% 15%, #6b4fa8 0%, #3a2c66 55%, #241c3d 100%);
+    }
+    html.luna-pip #luna-pip-view[data-faz="mola"] { background: radial-gradient(circle at 25% 15%, #3f8f7a 0%, #2a5a55 55%, #1b2f33 100%); }
+    html.luna-pip #luna-pip-view[data-faz="dur"] { background: radial-gradient(circle at 25% 15%, #5d5675 0%, #3a3550 55%, #24202f 100%); }
+    #luna-pip-view .lp-ust { font-size: 12vh; font-weight: 700; opacity: .9; letter-spacing: .02em; white-space: nowrap; }
+    #luna-pip-view .lp-saat { font-size: 46vh; font-weight: 800; line-height: .95; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+    #luna-pip-view .lp-alt { font-size: 10vh; opacity: .75; white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }`;
+  document.head.appendChild(css);
+
+  const state = () => { try { return Timer.state(); } catch (e) { return null; } };
+  const draw = () => {
+    const s = state();
+    if (!view || !s) return;
+    const sec = Math.max(0, s.countdown ? Math.ceil(s.remaining) : Math.floor(s.elapsed));
+    const label = s.fresh ? 'Hazır' : !s.running ? 'Duraklatıldı' : s.phase === 'focus' ? 'Odak zamanı' : 'Mola zamanı';
+    let sub = '';
+    try { if (s.phase === 'focus') sub = Store.subject((Store.data.timer || {}).subjectId || '').name; } catch (e) { /* yok say */ }
+    view.dataset.faz = !s.running ? 'dur' : s.phase === 'focus' ? 'odak' : 'mola';
+    view.querySelector('.lp-ust').textContent = label;
+    view.querySelector('.lp-saat').textContent = U.fmtClock(sec);
+    view.querySelector('.lp-alt').textContent = sub;
+  };
+  const sync = () => {
+    const s = state(), run = !!(s && s.running);
+    if (run !== last) { last = run; Pip.setState({ running: run }).catch(() => {}); }
+  };
+  const loop = () => {
+    sync();
+    if (pipOn) draw();
+    clearTimeout(tick);
+    tick = setTimeout(loop, pipOn ? 1000 - (Date.now() % 1000) + 20 : 1000);
+  };
+  Pip.addListener('toggle', () => {
+    try { App.miniToggle(); } catch (e) { note('mini pencere tuşu çalışmadı: ' + ((e && e.message) || e)); }
+    last = null; sync(); draw();
+  });
+  Pip.addListener('pip', (e) => {
+    const on = !!(e && e.inPip);
+    if (on === pipOn) return;
+    if (on) { try { App.allowExit('miniTimer'); } catch (err) { /* yok say */ } }
+    pipOn = on;
+    document.documentElement.classList.toggle('luna-pip', on);
+    draw();
+    document.dispatchEvent(new Event('visibilitychange')); // Luna: mini pencereye geçildi / mini pencereden dönüldü
+    loop();
+  });
+  window.addEventListener('load', () => {
+    Pip.isSupported().then((r) => {
+      if (!r || !r.supported) return;
+      view = document.createElement('div');
+      view.id = 'luna-pip-view';
+      view.innerHTML = '<div class="lp-ust"></div><div class="lp-saat"></div><div class="lp-alt"></div>';
+      document.body.appendChild(view);
+      if (window.MiniTimer) { const isOpen = MiniTimer.isOpen; MiniTimer.isOpen = () => pipOn || isOpen(); } // Tam odak: izinli çıkış
+      const btn = document.getElementById('mini-timer-open');
+      if (btn) {
+        btn.hidden = false;
+        btn.textContent = '🐾 Mini pencere';
+        btn.title = 'Luna köşeye küçülür; sayaç orada sayar, tuşuyla durdurup başlatırsın.';
+        btn.addEventListener('click', () => {
+          const s = state();
+          Pip.enter({ running: !!(s && s.running) }).catch(() => {
+            try { App.toast('🐾', 'Mini pencere açılamadı', 'Ayarlar → Uygulamalar → Luna → Resim içinde resim iznini aç', 8000); } catch (e) { /* yok say */ }
+          });
+        });
+      }
+      loop();
+    }).catch(() => {});
+  });
 })();

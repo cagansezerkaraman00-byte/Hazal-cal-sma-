@@ -110,12 +110,11 @@ jobs:
           APK=cikti/luna.apk; [ -f "$APK" ] || APK=cikti/luna-deneme.apk
           echo "== kuruluyor: $APK"; adb install -r "$APK"
           adb logcat -c
+          adb logcat -v time > cikti/gunluk.txt 2>&1 & # emülatör çökse de günlük kalsın
           adb shell am start -n com.hazal.luna/.MainActivity
-          sleep 40
+          sleep 25
           adb exec-out screencap -p > cikti/ekran-telefon.png
-          adb shell input keyevent KEYCODE_HOME
-          sleep 3
-          adb logcat -d > cikti/gunluk.txt
+          sleep 5
           echo "== Luna'nın günlüğü (konsol ve hatalar)"
           grep -E "Capacitor/Console|Luna APK|AndroidRuntime|FATAL|chromium.*(Uncaught|Error)" cikti/gunluk.txt | tail -150
           exit 0
