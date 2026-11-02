@@ -19,7 +19,7 @@ concurrency:
 jobs:
   apk:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -60,19 +60,37 @@ jobs:
           fi
           ls -la ../../cikti
 
+      - name: "Sürüm sayfasına koy (apk-son)"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete apk-son --yes --cleanup-tag || true
+          NOT="Luna $LUNA_SURUM · derleme $LUNA_SURUM_KODU · $(git log -1 --format=%h)
+          luna-deneme.apk: deneme anahtarıyla imzalı; Hazal'ın tabletine kurulmaz.
+          luna.apk: kalıcı anahtarla imzalı (varsa); Hazal'ın tableti için."
+          gh release create apk-son cikti/*.apk --prerelease --target "$GITHUB_SHA" --title "Luna APK $LUNA_SURUM (derleme $LUNA_SURUM_KODU)" --notes "$NOT"
+
       - name: Emülatöre izin (KVM)
+        continue-on-error: true
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Emülatörde aç (telefon ve tablet)
+        continue-on-error: true
+        timeout-minutes: 20
         run: |
           SDK="$ANDROID_HOME"; export PATH="$SDK/platform-tools:$SDK/emulator:$PATH"
-          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" > /dev/null
+          ls -la /dev/kvm || echo "KVM yok"
+          echo "== $(date +%T) sistem görüntüsü iniyor"
+          yes | timeout 600 "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" > sdk.log 2>&1 || { tail -20 sdk.log; exit 1; }
+          echo "== $(date +%T) emülatör kuruluyor"
           echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd -n luna -k "system-images;android-35;google_apis;x86_64" -d pixel_6
           emulator -avd luna -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -camera-back none > emulator.log 2>&1 &
-          adb wait-for-device
-          for i in $(seq 1 120); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 2; done
+          echo "== $(date +%T) emülatör açılıyor"
+          timeout 300 adb wait-for-device || { echo "emülatör bağlanmadı"; tail -40 emulator.log; exit 1; }
+          for i in $(seq 1 150); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 2; done
+          echo "== $(date +%T) açıldı: $(adb shell getprop sys.boot_completed)"
           adb install -r cikti/luna-deneme.apk
           adb logcat -c
           adb shell am start -n com.hazal.luna/.MainActivity
@@ -89,17 +107,15 @@ jobs:
           adb logcat -d > cikti/gunluk.txt
           echo "== Luna'nın günlüğü (konsol ve hatalar)"
           grep -E "Capacitor/Console|Luna APK|AndroidRuntime|FATAL" cikti/gunluk.txt | tail -120 || true
+      - name: Ekran görüntülerini sürüm sayfasına ekle
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ls cikti/ekran-*.png >/dev/null 2>&1 && gh release upload apk-son cikti/ekran-*.png --clobber || echo "ekran görüntüsü yok"
       - name: Yükle
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: luna-apk
           path: cikti/
-      - name: "Sürüm sayfasına koy (apk-son)"
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release delete apk-son --yes --cleanup-tag || true
-          NOT="Luna $LUNA_SURUM · derleme $LUNA_SURUM_KODU · $(git log -1 --format=%h)
-          luna-deneme.apk: deneme anahtarıyla imzalı; Hazal'ın tabletine kurulmaz.
-          luna.apk: kalıcı anahtarla imzalı (varsa); Hazal'ın tableti için."
-          gh release create apk-son cikti/*.apk cikti/ekran-*.png --prerelease --target "$GITHUB_SHA" --title "Luna APK $LUNA_SURUM (derleme $LUNA_SURUM_KODU)" --notes "$NOT"
