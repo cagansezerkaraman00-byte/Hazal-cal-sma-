@@ -1,5 +1,5 @@
-# Luna'nın Android uygulamasını (APK) derler, bir Android emülatöründe açıp ekran görüntüsü alır ve
-# "apk-son" GitHub sürümüne koyar (telefondan doğrudan indirilebilsin).
+# Luna'nın Android uygulamasını (APK) derler, imzasını doğrular, her derlemeyi kendi GitHub sürümüne koyar
+# (telefondan doğrudan indirilebilsin) ve bir Android emülatöründe açıp ekran görüntüsü alır.
 # Luna'nın kendi dosyalarına dokunmaz: apk/scripts/web.cjs onları uygulamanın içine kopyalar.
 # LUNA_IMZA_ANAHTARI (anahtar dosyası, base64) ve LUNA_IMZA_SIFRESI sırları tanımlıysa kalıcı anahtarla imzalı
 # luna.apk (Hazal'ın tableti için) de çıkar; yoksa yalnızca luna-deneme.apk çıkar. Anahtar depoya asla girmez.
@@ -60,15 +60,29 @@ jobs:
           fi
           ls -la ../../cikti
 
-      - name: "Sürüm sayfasına koy (apk-son)"
+      - name: İmzaları Android'in kendi aracıyla doğrula
+        run: |
+          AS="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
+          for f in cikti/*.apk; do
+            echo "== $f"
+            "$AS" verify --verbose --print-certs "$f" > imza.txt 2>&1 || { cat imza.txt; echo "İMZA DOĞRULANAMADI: $f"; exit 1; }
+            grep -E "^Verified|Signer #1 certificate (DN|SHA-256)" imza.txt
+          done
+
+      # Her derleme kendi sürüm sayfasına konur; bağlantı indirme sırasında asla silinmez.
+      # Kalıcı bağlantı: https://github.com/<depo>/releases/latest/download/luna.apk (en yeni tamamlanmış derleme)
+      - name: Sürüm sayfasına koy
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete apk-son --yes --cleanup-tag || true
+          TAG="apk-$LUNA_SURUM_KODU"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
           NOT="Luna $LUNA_SURUM · derleme $LUNA_SURUM_KODU · $(git log -1 --format=%h)
-          luna-deneme.apk: deneme anahtarıyla imzalı; Hazal'ın tabletine kurulmaz.
-          luna.apk: kalıcı anahtarla imzalı (varsa); Hazal'ın tableti için."
-          gh release create apk-son cikti/*.apk --prerelease --target "$GITHUB_SHA" --title "Luna APK $LUNA_SURUM (derleme $LUNA_SURUM_KODU)" --notes "$NOT"
+          luna.apk: kalıcı anahtarla imzalı; Hazal'ın tableti ve senin telefonun için.
+          luna-deneme.apk: deneme anahtarıyla imzalı; kurma."
+          gh release create "$TAG" cikti/*.apk --latest --target "$GITHUB_SHA" --title "Luna APK $LUNA_SURUM (derleme $LUNA_SURUM_KODU)" --notes "$NOT"
+          # eski derlemelerden son 3'ü kalsın
+          gh release list --limit 50 --json tagName --jq '.[].tagName' | grep -E '^apk-[0-9]+$' | tail -n +4 | xargs -r -I{} gh release delete {} --yes --cleanup-tag || true
 
       - name: Emülatöre izin (KVM)
         continue-on-error: true
@@ -76,7 +90,7 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Emülatörde aç (telefon ve tablet)
+      - name: Emülatörde aç
         continue-on-error: true
         timeout-minutes: 20
         run: |
@@ -92,28 +106,26 @@ jobs:
           timeout 300 adb wait-for-device || { echo "emülatör bağlanmadı"; tail -40 emulator.log; exit 1; }
           for i in $(seq 1 150); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 2; done
           echo "== $(date +%T) açıldı: $(adb shell getprop sys.boot_completed)"
-          adb install -r cikti/luna-deneme.apk
+          set +e
+          APK=cikti/luna.apk; [ -f "$APK" ] || APK=cikti/luna-deneme.apk
+          echo "== kuruluyor: $APK"; adb install -r "$APK"
           adb logcat -c
           adb shell am start -n com.hazal.luna/.MainActivity
-          sleep 35
+          sleep 40
           adb exec-out screencap -p > cikti/ekran-telefon.png
           adb shell input keyevent KEYCODE_HOME
           sleep 3
-          adb shell wm size 2560x1600
-          adb shell wm density 320
-          adb shell am force-stop com.hazal.luna
-          adb shell am start -n com.hazal.luna/.MainActivity
-          sleep 35
-          adb exec-out screencap -p > cikti/ekran-tablet.png
           adb logcat -d > cikti/gunluk.txt
           echo "== Luna'nın günlüğü (konsol ve hatalar)"
-          grep -E "Capacitor/Console|Luna APK|AndroidRuntime|FATAL" cikti/gunluk.txt | tail -120 || true
+          grep -E "Capacitor/Console|Luna APK|AndroidRuntime|FATAL|chromium.*(Uncaught|Error)" cikti/gunluk.txt | tail -150
+          exit 0
       - name: Ekran görüntülerini sürüm sayfasına ekle
         if: always()
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: ls cikti/ekran-*.png >/dev/null 2>&1 && gh release upload apk-son cikti/ekran-*.png --clobber || echo "ekran görüntüsü yok"
+        run: |
+          for f in cikti/ekran-*.png; do [ -s "$f" ] && gh release upload "$TAG" "$f" --clobber; done || echo "ekran görüntüsü yok"
       - name: Yükle
         if: always()
         uses: actions/upload-artifact@v4
