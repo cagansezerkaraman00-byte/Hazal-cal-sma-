@@ -45,4 +45,8 @@ replaceOnce('index.html', '<script>\n  // Açılış koruması:', '<script src="
 replaceOnce('js/spotify.js', 'const redirectUri = () => location.origin + location.pathname;', "const redirectUri = () => 'com.hazal.luna://spotify-callback';");
 replaceOnce('js/spotify.js', "location.href = AUTH + '?' + q.toString();", "if (window.LunaApk) window.LunaApk.open(AUTH + '?' + q.toString()); else location.href = AUTH + '?' + q.toString();");
 
+// 4) Mini pencere Chrome'dakiyle birebir aynı çizilir (MiniTimer.render); Android penceresinin tuşu da ⏯ olduğu için
+//    "Duraklatıldı · ⏯ ile devam" ipucu uygulamanın penceresinde de görünsün
+replaceOnce('js/mini-timer.js', "if(mode==='video'&&!s.running) {", "if((mode==='video'||window.LUNA_PIP)&&!s.running) {");
+
 console.log('APK web kopyası hazır: ' + www);

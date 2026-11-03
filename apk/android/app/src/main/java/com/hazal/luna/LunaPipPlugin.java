@@ -106,7 +106,7 @@ public class LunaPipPlugin extends Plugin {
         String title = running ? "Duraklat" : "Başlat";
         RemoteAction action = new RemoteAction(icon, title, title, pending);
         return new PictureInPictureParams.Builder()
-            .setAspectRatio(new Rational(2, 1))
+            .setAspectRatio(new Rational(640, 268)) // Chrome'daki mini pencereyle aynı oran
             .setActions(Collections.singletonList(action))
             .build();
     }
