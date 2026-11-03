@@ -95,14 +95,34 @@ const HAZIR = 'typeof App !== "undefined" && typeof Timer !== "undefined" && typ
   await bekle(3000);
   yaz('dönünce: ' + JSON.stringify(await pip()));
   await shot('05-donus');
-  // 5) Spotify girişinden dönüş yolu: uygulama içi Chrome sekmesi açılır, sunucu hemen com.hazal.luna://spotify-callback'e yönlendirir
-  //    (Spotify izin sayfası atlandığında olan budur). Luna bu adresi alırsa Tanılama'ya "Spotify dönüşü geldi" yazar.
-  await page.evaluate(() => Capacitor.Plugins.Browser.open({ url: 'https://httpbin.org/redirect-to?url=' + encodeURIComponent('com.hazal.luna://spotify-callback?code=DENEME&state=emu') }).catch((e) => console.info('Luna APK: deneme sekmesi açılamadı ' + e.message)));
-  await bekle(9000);
-  await shot('06-spotify-donus-sekme');
-  yaz('ön plandaki: ' + String(await device.shell('dumpsys activity activities | grep -E "topResumedActivity|mResumedActivity" | head -3')).trim());
+  // 5) Spotify girişinden dönüş yolu (donus-sunucu.cjs taklit eder): uygulama içi Chrome sekmesi com.hazal.luna://spotify-callback'e
+  //    yönlenince Luna öne gelip "Spotify dönüşü geldi" yazmalı. İki durum: (a) Spotify izin sayfasını atlayıp hemen yönlendirir,
+  //    (b) Hazal izin sayfasında "Kabul et"e basar (uygulama izin sayfasını her seferinde gösterir: show_dialog).
+  const SUNUCU = process.env.DONUS_SUNUCU || 'http://10.0.2.2:8089';
+  const donusSay = () => page.evaluate(() => (window.ErrLog ? ErrLog.list() : []).filter((x) => /Spotify dönüşü geldi/.test(x.m)).map((x) => x.m)).catch(() => []);
+  const onde = async () => String(await device.shell('dumpsys activity activities | grep -m1 -E "topResumedActivity"')).trim().replace(/^.*ActivityRecord\{\S+ \S+ /, '').replace(/ t\d+\}$/, '');
+  const dene = async (ad, url, dokun) => {
+    await device.shell('am start -n com.hazal.luna/.MainActivity');
+    await bekle(2500);
+    try { await page.waitForFunction(HAZIR, null, { timeout: 30000 }); } catch (e) { /* aşağıda yazılır */ }
+    const once = (await donusSay()).length;
+    await page.evaluate((u) => Capacitor.Plugins.Browser.open({ url: u }), url).catch((e) => yaz(ad + ': sekme açılamadı ' + e.message));
+    await bekle(5000);
+    if (dokun) {
+      const m = String(await device.shell('wm size')).match(/(\d+)x(\d+)/);
+      await device.shell(`input tap ${Math.round(+m[1] / 2)} ${Math.round(+m[2] / 2)}`);
+    }
+    await bekle(7000);
+    await shot('06-spotify-donus-' + ad);
+    const on = await onde();
+    let gelen = [];
+    try { await page.waitForFunction(HAZIR, null, { timeout: 15000 }); gelen = (await donusSay()).slice(once); } catch (e) { /* Luna öne gelmedi */ }
+    yaz(`Spotify dönüşü (${ad}): ${gelen.length ? 'LUNA ALDI ✓ ' + gelen.join(' | ') : 'LUNA ALMADI ✗'} · öndeki ekran: ${on}`);
+  };
+  await dene('izin-sayfasi-atlaninca', SUNUCU + '/r?k=OTO', false);
+  await dene('kabul-et-dokununca', SUNUCU + '/dokun', true);
   await device.shell('am start -n com.hazal.luna/.MainActivity');
-  await bekle(4000);
+  await bekle(3000);
   try { await page.waitForFunction(HAZIR, null, { timeout: 30000 }); } catch (e) { yaz('dönüşten sonra Luna hazır değil: ' + e.message); }
   // Tanılama günlüğü (Luna'nın kendi hata günlüğü)
   const gunluk = await page.evaluate(() => (window.ErrLog ? ErrLog.list() : []).map((x) => x.m));

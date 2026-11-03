@@ -76,6 +76,7 @@ jobs:
         timeout-minutes: 12
         run: |
           export PATH="$ANDROID_HOME/platform-tools:$PATH"
+          (node apk/test/donus-sunucu.cjs > cikti/donus-sunucu.txt 2>&1 &)
           node apk/test/emulator-test.cjs cikti || echo "deneme yarıda kaldı"
           pgrep -f qemu-system > /dev/null && echo "emülatör ayakta" || { echo "EMÜLATÖR ÇÖKTÜ"; tail -30 cikti/emulator.log; }
           grep -E "Luna APK|AndroidRuntime|FATAL|chromium.*(Uncaught|Error)" cikti/gunluk.txt | tail -60 || true
