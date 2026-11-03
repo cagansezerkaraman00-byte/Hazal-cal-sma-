@@ -1,10 +1,18 @@
 # Luna'nın Android uygulamasını gerçek bir Android emülatöründe dener: açılış, mini pencere, Spotify'ın ihtiyaç duyduğu
-# korumalı müzik desteği. Son derlemenin deneme APK'sını (luna-deneme.apk) kullanır; ekran görüntüleri ve rapor "Artifacts"ta.
+# korumalı müzik desteği ve Spotify girişinden dönüş. Her APK derlemesinden sonra apk.yml çağırır (o derlemenin deneme APK'sı);
+# deneme dosyaları değişince ya da elle çalıştırılınca en yeni sürümün deneme APK'sını kullanır.
+# Ekran görüntüleri ve rapor "emu-sonuc" ön sürümünde.
 name: Android emülatör denemesi
 on:
   push:
     paths: ['.github/workflows/emulator.yml', 'apk/test/**']
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      yapit:
+        description: Deneme APK'sının bulunduğu yapıt (aynı çalıştırmada derlenen)
+        type: string
+        default: ''
 permissions:
   contents: write # sonuçlar "emu-sonuc" ön sürümüne konur (en yeni derleme sayılmaz, telefonlara teklif edilmez)
 jobs:
@@ -29,7 +37,14 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Son derlemenin deneme APK'sı
+      - name: Bu derlemenin deneme APK'sı
+        if: inputs.yapit != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.yapit }}
+          path: cikti
+      - name: En yeni sürümün deneme APK'sı
+        if: inputs.yapit == ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -52,6 +67,9 @@ jobs:
           for i in $(seq 1 150); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 2; done
           echo "açıldı: $(adb shell getprop sys.boot_completed)"
           adb install -r cikti/luna-deneme.apk
+          # yeni kurulmuş Chrome'un "hoş geldin" ekranı atlansın (Spotify girişi uygulama içi Chrome sekmesinde açılır)
+          adb shell 'echo "_ --disable-fre --no-default-browser-check --no-first-run" > /data/local/tmp/chrome-command-line'
+          adb shell am set-debug-app --persistent com.android.chrome
           adb shell settings put global window_animation_scale 0
           (adb logcat -v time > cikti/gunluk.txt 2>&1 &)
       - name: Deneme

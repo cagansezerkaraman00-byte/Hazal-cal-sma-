@@ -9,9 +9,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Rect;
 import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.util.Rational;
+import android.view.View;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSObject;
@@ -32,6 +34,9 @@ public class LunaPipPlugin extends Plugin {
     static final String ACTION_TOGGLE = "com.hazal.luna.MINI_TOGGLE";
     private boolean running = false;
     private BroadcastReceiver receiver;
+    // Luna'da mini pencerenin görüntüsünün durduğu yer: Android pencereyi tam oradan küçültür
+    // (verilmezse küçülürken birkaç saniye Luna'nın simgesi görünüyor)
+    private Rect hint = null;
 
     @Override
     public void load() {
@@ -85,7 +90,15 @@ public class LunaPipPlugin extends Plugin {
             return;
         }
         running = Boolean.TRUE.equals(call.getBoolean("running", running));
+        Integer x = call.getInt("x"), y = call.getInt("y"), w = call.getInt("w"), h = call.getInt("h");
         activity.runOnUiThread(() -> {
+            hint = null;
+            if (x != null && y != null && w != null && h != null && w > 0 && h > 0) {
+                int[] at = new int[2];
+                View web = getBridge() != null ? getBridge().getWebView() : null;
+                if (web != null) web.getLocationInWindow(at);
+                hint = new Rect(at[0] + x, at[1] + y, at[0] + x + w, at[1] + y + h);
+            }
             try {
                 JSObject result = new JSObject();
                 result.put("ok", activity.enterPictureInPictureMode(params()));
@@ -105,10 +118,13 @@ public class LunaPipPlugin extends Plugin {
         Icon icon = Icon.createWithResource(context, running ? R.drawable.luna_mini_pause : R.drawable.luna_mini_play);
         String title = running ? "Duraklat" : "Başlat";
         RemoteAction action = new RemoteAction(icon, title, title, pending);
-        return new PictureInPictureParams.Builder()
+        PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder()
             .setAspectRatio(new Rational(640, 268)) // Chrome'daki mini pencereyle aynı oran
-            .setActions(Collections.singletonList(action))
-            .build();
+            .setActions(Collections.singletonList(action));
+        if (hint != null) builder.setSourceRectHint(hint);
+        // yazı ve resim (video değil): pencere büyütülüp küçültülürken bulanık esnemesin, yeniden çizilsin
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setSeamlessResizeEnabled(false);
+        return builder.build();
     }
 
     private void applyParams() {
@@ -122,6 +138,10 @@ public class LunaPipPlugin extends Plugin {
     }
 
     void onPipChanged(boolean inPip) {
+        if (inPip && hint != null) {
+            hint = null; // yalnızca açılış için; Luna'ya dönüşte tam ekran görünüm başka yerdedir
+            applyParams();
+        }
         JSObject data = new JSObject();
         data.put("inPip", inPip);
         notifyListeners("pip", data, true);

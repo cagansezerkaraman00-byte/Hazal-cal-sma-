@@ -15,6 +15,7 @@ const HAZIR = 'typeof App !== "undefined" && typeof Timer !== "undefined" && typ
   const [device] = await _android.devices();
   if (!device) throw new Error('cihaz yok');
   yaz(`cihaz: ${device.model()} · ${device.serial()}`);
+  yaz('Luna: ' + String(await device.shell('dumpsys package com.hazal.luna | grep -m1 -o "versionCode=[0-9]*"')).trim());
   const shot = async (ad) => { await device.screenshot({ path: path.join(out, ad + '.png') }); yaz('ekran: ' + ad + '.png'); };
 
   await device.shell('am force-stop com.hazal.luna');

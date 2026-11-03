@@ -295,11 +295,12 @@
   document.head.appendChild(css);
 
   const state = () => { try { return Timer.state(); } catch (e) { return null; } };
+  const acik = () => pipOn || document.documentElement.classList.contains('luna-pip'); // pencerede ya da açılmak üzere
   // Chrome'daki mini pencerenin kendisi: aynı çizim (MiniTimer.render), aynı renk teması, aynı aile resmi
   const draw = () => {
     if (!view || !window.MiniTimer) return;
     try {
-      window.LUNA_PIP = pipOn;
+      window.LUNA_PIP = acik();
       MiniTimer.render(view.firstChild);
       view.style.background = MiniTimer.palette().bg;
     } catch (e) { note('mini pencere çizilemedi: ' + ((e && e.message) || e)); }
@@ -316,20 +317,36 @@
   };
   const loop = () => {
     sync();
-    if (pipOn) draw();
+    if (acik()) draw();
     clearTimeout(tick);
-    tick = setTimeout(loop, pipOn ? msToNext(state()) : 1000);
+    tick = setTimeout(loop, acik() ? msToNext(state()) : 1000);
   };
   Pip.addListener('toggle', () => {
     try { App.miniToggle(); } catch (e) { note('mini pencere tuşu çalışmadı: ' + ((e && e.message) || e)); }
     last = null; sync(); draw();
   });
+  // Mini pencere açılmadan hemen önce görüntüsü tam ekranda hazırlanır (Chrome'daki video gibi):
+  // Android pencereyi bu görüntüden küçültür. Açılamazsa ya da Luna'ya dönülünce Luna ve kaydırma yeri geri gelir.
+  let kaydirma = 0;
+  const hazirla = () => {
+    if (!document.documentElement.classList.contains('luna-pip')) kaydirma = window.scrollY || 0;
+    document.documentElement.classList.add('luna-pip');
+    draw();
+    loop(); // saniyeler pencere açılırken de aksın
+  };
+  const geriAl = () => {
+    if (pipOn || !document.documentElement.classList.contains('luna-pip')) return;
+    document.documentElement.classList.remove('luna-pip');
+    window.LUNA_PIP = false;
+    window.scrollTo(0, kaydirma);
+    loop();
+  };
   Pip.addListener('pip', (e) => {
     const on = !!(e && e.inPip);
     if (on === pipOn) return;
     if (on) { try { App.allowExit('miniTimer'); } catch (err) { /* yok say */ } }
     pipOn = on;
-    document.documentElement.classList.toggle('luna-pip', on);
+    if (on) document.documentElement.classList.add('luna-pip'); else geriAl();
     draw();
     document.dispatchEvent(new Event('visibilitychange')); // Luna: mini pencereye geçildi / mini pencereden dönüldü
     loop();
@@ -341,6 +358,7 @@
       view.id = 'luna-pip-view';
       view.innerHTML = '<canvas width="1280" height="536"></canvas>';
       document.body.appendChild(view);
+      draw(); // aile resmi şimdiden yüklensin: pencere açılınca ilk anda da kediler görünsün
       if (window.MiniTimer) {
         const isOpen = MiniTimer.isOpen; MiniTimer.isOpen = () => pipOn || isOpen(); // Tam odak: izinli çıkış
         const refresh = MiniTimer.refreshTheme; MiniTimer.refreshTheme = () => { refresh(); draw(); }; // renk değişince pencere de hemen değişsin
@@ -353,10 +371,22 @@
         btn.textContent = '🐾 Mini pencere';
         btn.title = 'Başka uygulamaya geçmeden önce aç; Luna\'ya dönünce kapanır.';
         btn.addEventListener('click', () => {
+          if (pipOn) return;
           const s = state();
-          Pip.enter({ running: !!(s && s.running) }).catch(() => {
-            try { App.toast('🐾', 'Mini pencere açılamadı', 'Ayarlar → Uygulamalar → Luna → Resim içinde resim iznini aç', 8000); } catch (e) { /* yok say */ }
-          });
+          hazirla();
+          // görüntü ekrana çizildikten sonra (iki kare) pencere istenir; görüntünün yeri Android'e verilir
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            const c = view.firstChild, r = c.getBoundingClientRect(), k = window.devicePixelRatio || 1;
+            let w = r.width, h = r.height; // tuval kutusunun içinde çizimin gerçekten durduğu yer (object-fit: contain)
+            if (w / h > c.width / c.height) w = h * c.width / c.height; else h = w * c.height / c.width;
+            const x = r.left + (r.width - w) / 2, y = r.top + (r.height - h) / 2;
+            Pip.enter({ running: !!(s && s.running), x: Math.round(x * k), y: Math.round(y * k), w: Math.round(w * k), h: Math.round(h * k) })
+              .then((res) => { if (!res || !res.ok) geriAl(); })
+              .catch(() => {
+                geriAl();
+                try { App.toast('🐾', 'Mini pencere açılamadı', 'Ayarlar → Uygulamalar → Luna → Resim içinde resim iznini aç', 8000); } catch (e) { /* yok say */ }
+              });
+          }));
         });
       }
       loop();

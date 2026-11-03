@@ -1,5 +1,5 @@
 # Luna'nın Android uygulamasını (APK) derler, imzasını doğrular, her derlemeyi kendi GitHub sürümüne koyar
-# (telefondan doğrudan indirilebilsin) ve bir Android emülatöründe açıp ekran görüntüsü alır.
+# (telefondan doğrudan indirilebilsin) ve Android emülatöründe dener (emulator.yml: telefon ve tablet).
 # Luna'nın kendi dosyalarına dokunmaz: apk/scripts/web.cjs onları uygulamanın içine kopyalar.
 # LUNA_IMZA_ANAHTARI (anahtar dosyası, base64) ve LUNA_IMZA_SIFRESI sırları tanımlıysa kalıcı anahtarla imzalı
 # luna.apk (Hazal'ın tableti için) de çıkar; yoksa yalnızca luna-deneme.apk çıkar. Anahtar depoya asla girmez.
@@ -93,50 +93,16 @@ jobs:
           KORU="apk-$(node -e "console.log(require('./apk/guncel.json').kod||0)")"
           gh release list --limit 50 --json tagName --jq '.[].tagName' | grep -E '^apk-[0-9]+$' | grep -vx "$KORU" | tail -n +6 | xargs -r -I{} gh release delete {} --yes --cleanup-tag || true
 
-      - name: Emülatöre izin (KVM)
-        continue-on-error: true
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: Emülatörde aç
-        continue-on-error: true
-        timeout-minutes: 20
-        run: |
-          SDK="$ANDROID_HOME"; export PATH="$SDK/platform-tools:$SDK/emulator:$PATH"
-          export ANDROID_AVD_HOME="$HOME/.android/avd"; mkdir -p "$ANDROID_AVD_HOME" # avdmanager ile emülatör aynı yere baksın
-          ls -la /dev/kvm || echo "KVM yok"
-          echo "== $(date +%T) sistem görüntüsü iniyor"
-          yes | timeout 600 "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" > sdk.log 2>&1 || { tail -20 sdk.log; exit 1; }
-          echo "== $(date +%T) emülatör kuruluyor"
-          echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd -n luna -k "system-images;android-35;google_apis;x86_64" -d pixel_6
-          emulator -avd luna -no-window -no-audio -no-boot-anim -no-snapshot -gpu guest -camera-back none > emulator.log 2>&1 &
-          echo "== $(date +%T) emülatör açılıyor"
-          timeout 300 adb wait-for-device || { echo "emülatör bağlanmadı"; tail -40 emulator.log; exit 1; }
-          for i in $(seq 1 150); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 2; done
-          echo "== $(date +%T) açıldı: $(adb shell getprop sys.boot_completed)"
-          set +e
-          APK=cikti/luna.apk; [ -f "$APK" ] || APK=cikti/luna-deneme.apk
-          echo "== kuruluyor: $APK"; adb install -r "$APK"
-          adb logcat -c
-          adb logcat -v time > cikti/gunluk.txt 2>&1 & # emülatör çökse de günlük kalsın
-          adb shell am start -n com.hazal.luna/.MainActivity
-          sleep 25
-          adb exec-out screencap -p > cikti/ekran-telefon.png
-          sleep 5
-          echo "== Luna'nın günlüğü (konsol ve hatalar)"
-          grep -E "Capacitor/Console|Luna APK|AndroidRuntime|FATAL|chromium.*(Uncaught|Error)" cikti/gunluk.txt | tail -150
-          exit 0
-      - name: Ekran görüntülerini sürüm sayfasına ekle
-        if: always()
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          for f in cikti/ekran-*.png; do [ -s "$f" ] && gh release upload "$TAG" "$f" --clobber; done || echo "ekran görüntüsü yok"
       - name: Yükle
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: luna-apk
           path: cikti/
+
+  # Her derleme Android emülatöründe (telefon ve tablet) denenir: açılış, mini pencere, Spotify (emulator.yml)
+  emulator:
+    needs: apk
+    uses: ./.github/workflows/emulator.yml
+    with:
+      yapit: luna-apk
