@@ -153,13 +153,17 @@
     const KAYNAK = 'https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/apk/guncel.json';
     const SON_DERLEME = 'https://api.github.com/repos/cagansezerkaraman00-byte/Hazal-cal-sma-/releases/latest';
     const DENEME = 'luna-apk-deneme';
-    const deneme = () => { try { return localStorage.getItem(DENEME) === '1'; } catch (e) { return false; } };
+    // Denetimli kopya (luna-deneme.apk: bilgisayardaki sanal telefonda Chrome'un chrome://inspect sayfasından incelenebilen sürüm):
+    // başka anahtarla imzalı olduğu için yalnızca kendi türüyle güncellenir; her zaman en yeni derlemeyi alır.
+    const denetimli = !!cap.DEBUG;
+    const APK_ADI = denetimli ? 'luna-deneme.apk' : 'luna.apk';
+    const deneme = () => { if (denetimli) return true; try { return localStorage.getItem(DENEME) === '1'; } catch (e) { return false; } };
     const g = { kod: 0, surum: '', yeni: null, durum: 'bekle', yuzde: -1, izin: false, hata: '', bakildi: 0, haber: 0 };
     let dokunus = [];
     // GitHub'daki derleme → guncel.json biçimi (kod, sürüm, apk, yenilikler)
     const derleme = (r) => {
       const kod = +String(r.tag_name || '').replace(/^apk-/, '');
-      const a = (r.assets || []).find((x) => x.name === 'luna.apk' && x.state === 'uploaded' && x.size > 0);
+      const a = (r.assets || []).find((x) => x.name === APK_ADI && x.state === 'uploaded' && x.size > 0);
       if (!(kod > 0) || !a) return null;
       const ust = String(r.body || '').split(/\n---\n/)[0];
       return {
@@ -183,7 +187,7 @@
       const y = g.yeni, mesgul = g.durum === 'bakiliyor' || g.durum === 'indiriliyor';
       const durum = g.durum === 'bakiliyor' ? 'Bakılıyor…' : g.durum === 'indiriliyor' ? 'İndiriliyor…' : y ? 'Yeni sürüm hazır' : g.durum === 'hata' ? 'Bakılamadı' : 'Güncel ✓';
       kart.innerHTML = `<h2>📲 Uygulama güncellemesi</h2>
-        <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna uygulaması</b><small data-ag="surum">Sürüm ${esc(g.surum || '?')} · derleme ${esc(g.kod || '?')}${deneme() ? ' · 🧪 deneme kanalı' : ''}</small></div>
+        <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna uygulaması</b><small data-ag="surum">Sürüm ${esc(g.surum || '?')} · derleme ${esc(g.kod || '?')}${denetimli ? ' · 🔍 denetimli kopya' : deneme() ? ' · 🧪 deneme kanalı' : ''}</small></div>
           <span class="upd-state ${y ? 'new' : ''}">${durum}</span></div>
         ${y ? `<div class="upd-new">${Array.isArray(y.yenilikler) && y.yenilikler.length ? `<ul class="ag-liste">${y.yenilikler.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
           ${g.durum === 'indiriliyor'
@@ -205,11 +209,12 @@
             if (r.ok) j = derleme(await r.json());
           } catch (e) { /* aşağıda onaylı sürüme bakılır */ }
         }
-        if (!j) {
+        if (!j && !denetimli) { // onaylı sürüm (guncel.json) kalıcı anahtarlıdır; denetimli kopyaya kurulamaz
           const r = await fetch(KAYNAK + '?t=' + Date.now(), { cache: 'no-store' });
           if (!r.ok) throw new Error('HTTP ' + r.status);
           j = await r.json();
         }
+        if (!j) throw new Error('derleme bulunamadı');
         g.yeni = +j.kod > +g.kod && /^https:\/\//.test(j.apk || '') ? j : null;
         g.durum = 'tamam';
         // aynı sürüm için tek haber (Luna'ya her dönüşte yeniden çıkmasın)
@@ -253,7 +258,7 @@
         kart.addEventListener('click', (e) => {
           const b = e.target.closest('[data-ag]');
           if (!b) return;
-          if (b.dataset.ag === 'surum') {
+          if (b.dataset.ag === 'surum' && !denetimli) {
             // sürüm yazısına 3 saniye içinde 5 dokunuş: deneme kanalı açılır / kapanır
             const simdi = Date.now();
             dokunus = dokunus.filter((t) => simdi - t < 3000).concat(simdi);
