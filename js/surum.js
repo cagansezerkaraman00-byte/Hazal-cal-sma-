@@ -6,6 +6,16 @@
 
 const SURUMLER = /*SURUMLER*/[
 {
+  "surum": "2.14.7",
+  "tarih": "2026-11-03",
+  "baslik": "Uyarılar yeni kartlarında",
+  "notlar": [
+    "🌙 Bütün uyarılar artık Luna'nın kendi kartlarında: açık temada zambaklar, koyu temada mor bahçe, zambak temasında dolunay.",
+    "📘 TYT'ye ya da AYT'ye geçerken kart sayaçtaki süreyi gösterir; kaydetmek istersen önce Bitir'e basabilirsin.",
+    "🗑️ Silme uyarıları pembe kartta gelir. Vazgeç'e basınca hiçbir şey değişmez; açık pencere ve yazdıkların yerinde kalır."
+  ]
+},
+{
   "surum": "2.14.6",
   "tarih": "2026-10-29",
   "baslik": "Tablette mini pencere kararmıyor",

@@ -1089,6 +1089,72 @@ button.block:hover { border-color: var(--line-strong); }
   animation: pop .3s cubic-bezier(.2, 1.4, .5, 1); box-shadow: var(--shadow-lg);
 }
 .modal-card.wide, .modal-card:has(.net-grid) { width: min(560px, 100%); }
+/* Luna'nın uyarı kartı (tarayıcının düz Tamam/İptal kutusu yerine). Başlık çizimi temaya göre:
+   açık tema leylak zambaklar (silme ve AYT'de pembe ay), koyu tema mor bahçe, zambak teması dolunaylı gece. */
+.uyari-katman {
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(28, 18, 58, .42); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  animation: uyari-sis .2s ease-out;
+}
+.uyari-katman.kapaniyor { animation: uyari-sis .18s ease-in reverse forwards; }
+.uyari-katman.kapaniyor .uyari { animation: uyari-gir .18s ease-in reverse forwards; }
+@keyframes uyari-sis { from { opacity: 0; } }
+@keyframes uyari-gir { from { opacity: 0; transform: translateY(14px) scale(.94); } }
+.uyari {
+  --u-resim: url("../assets/uyari/lila.webp");
+  --u-kart1: #f1e9ff; --u-kart2: #fbf8ff; --u-yazi: #2a2150; --u-soluk: #5b5280; --u-vurgu: #8f74f0; --u-cizgi: #b7a5f0;
+  --u-ipucu: rgba(143, 116, 240, .10); --u-ipucu-cizgi: rgba(143, 116, 240, .22); --u-vazgec: #ece4ff;
+  --u-evet1: #9a7cf5; --u-evet2: #6f53e3; --u-golge: rgba(111, 83, 227, .38);
+  --u-ikon: #ffffff; --u-halka: rgba(255, 255, 255, .9); --u-kenar: rgba(255, 255, 255, .92); --u-isik: rgba(110, 80, 200, .35);
+  width: min(400px, 100%); max-height: 100%; overflow: auto; overscroll-behavior: contain; text-align: center;
+  background: linear-gradient(180deg, var(--u-kart1), var(--u-kart2)); color: var(--u-yazi);
+  border: 1.5px solid var(--u-kenar); border-radius: 28px; padding-bottom: 22px;
+  box-shadow: 0 26px 60px var(--u-isik), 0 0 0 5px rgba(255, 255, 255, .14);
+  animation: uyari-gir .26s cubic-bezier(.2, 1.3, .5, 1);
+}
+.uyari:is([data-ton="ayt"], [data-ton="sil"]) {
+  --u-resim: url("../assets/uyari/pembe.webp");
+  --u-kart1: #fbe4f6; --u-kart2: #fff6fc; --u-vurgu: #e8579a; --u-cizgi: #f0a6c8;
+  --u-ipucu: rgba(232, 87, 154, .09); --u-ipucu-cizgi: rgba(232, 87, 154, .22); --u-vazgec: #f8e2f1;
+  --u-evet1: #f584b6; --u-evet2: #e0508f; --u-golge: rgba(224, 80, 143, .36); --u-isik: rgba(200, 80, 150, .3);
+}
+html[data-theme="dark"] .uyari {
+  --u-resim: url("../assets/uyari/mor.webp");
+  --u-kart1: #3a2a60; --u-kart2: #2b1f4e; --u-yazi: #f4efff; --u-soluk: #cdc2ec; --u-vurgu: #c4a8ff; --u-cizgi: #8f74f0;
+  --u-ipucu: rgba(255, 255, 255, .07); --u-ipucu-cizgi: rgba(255, 255, 255, .14); --u-vazgec: rgba(255, 255, 255, .1);
+  --u-evet1: #a585ff; --u-evet2: #7a5cf0; --u-golge: rgba(122, 92, 240, .45);
+  --u-ikon: #2b1f4d; --u-halka: rgba(185, 160, 255, .55); --u-kenar: rgba(176, 148, 255, .55); --u-isik: rgba(120, 80, 230, .45);
+}
+html[data-tema="zambak"] .uyari {
+  --u-resim: url("../assets/uyari/gece.webp");
+  --u-kart1: #1f2a5c; --u-kart2: #161d46; --u-yazi: #eef1ff; --u-soluk: #c3c8ee; --u-vurgu: #b9b0ff; --u-cizgi: #6f6fe0;
+  --u-ipucu: rgba(255, 255, 255, .06); --u-ipucu-cizgi: rgba(255, 255, 255, .13); --u-vazgec: rgba(255, 255, 255, .09);
+  --u-ikon: #1b2252; --u-halka: rgba(160, 170, 255, .5); --u-kenar: rgba(150, 160, 255, .5); --u-isik: rgba(60, 70, 200, .45);
+}
+html[data-theme="dark"] .uyari:is([data-ton="ayt"], [data-ton="sil"]) { --u-evet1: #f584b6; --u-evet2: #d9508a; --u-golge: rgba(217, 80, 138, .45); --u-vurgu: #ff9cc8; }
+.uyari-resim {
+  position: relative; aspect-ratio: 952 / 344; background: var(--u-resim) center / cover no-repeat;
+  -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent); mask-image: linear-gradient(180deg, #000 78%, transparent);
+}
+.uyari-ikon {
+  position: absolute; left: 50%; top: 69%; transform: translate(-50%, -50%);
+  width: 76px; height: 76px; border-radius: 50%; display: grid; place-items: center; font-size: 2.1rem;
+  background: var(--u-ikon); box-shadow: 0 0 0 4px var(--u-halka), 0 10px 24px rgba(50, 30, 110, .3);
+}
+.uyari h3 { margin: 14px 22px 0; font-size: 1.32rem; font-weight: 800; line-height: 1.25; text-wrap: balance; color: var(--u-yazi); }
+.uyari-ayrac { display: flex; align-items: center; gap: 10px; width: 62%; margin: 10px auto 12px; color: var(--u-vurgu); font-size: .95rem; }
+.uyari-ayrac::before, .uyari-ayrac::after { content: ''; flex: 1; height: 1.5px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--u-cizgi)); }
+.uyari-ayrac::after { background: linear-gradient(270deg, transparent, var(--u-cizgi)); }
+.uyari-metin { margin: 0 24px; color: var(--u-soluk); line-height: 1.5; }
+.uyari-ipucu { margin: 14px 22px 0; padding: 10px 14px; border-radius: 16px; background: var(--u-ipucu); border: 1px solid var(--u-ipucu-cizgi); color: var(--u-yazi); font-size: .93rem; line-height: 1.45; }
+.uyari-dugmeler { display: flex; gap: 12px; margin: 18px 22px 0; }
+.uyari-dugmeler button { min-height: 50px; border: 0; border-radius: 16px; font: inherit; font-size: 1.02rem; font-weight: 800; cursor: pointer; transition: transform .08s, filter .15s; }
+.uyari-dugmeler button:active { transform: translateY(2px); }
+.uyari-vazgec { flex: .8 1 0; background: var(--u-vazgec); color: var(--u-yazi); box-shadow: inset 0 0 0 1px var(--u-ipucu-cizgi); }
+.uyari-evet { flex: 1.25 1 0; color: #fff; background: linear-gradient(135deg, var(--u-evet1), var(--u-evet2)); box-shadow: 0 7px 18px var(--u-golge), inset 0 1px 0 rgba(255, 255, 255, .35); }
+.uyari-evet span { color: #fff6c8; margin-left: 4px; }
+.uyari-dugmeler button:focus-visible { outline: 3px solid var(--u-vurgu); outline-offset: 2px; }
 .modal-card h3 { margin: 0 0 4px; font-size: 1.2rem; }
 .modal-card .sub { color: var(--muted); margin: 0 0 14px; font-size: .9rem; }
 .modal-card label { display: block; font-weight: 700; font-size: .85rem; color: var(--muted); margin: 12px 0 6px; }

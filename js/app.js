@@ -581,17 +581,28 @@
       Timer.toggle();
     });
     $('#btn-finish').addEventListener('click', () => Timer.finish());
-    $('#btn-reset').addEventListener('click', () => {
+    $('#btn-reset').addEventListener('click', async () => {
       const s = Timer.state();
       if (s.fresh) return;
-      if (s.phase === 'focus' && s.elapsed > 120 && !confirm('Bu oturum kaydedilmeden sıfırlansın mı?')) return;
+      if (s.phase === 'focus' && s.elapsed > 120 && !(await ask({ icon: '🔄', tone: 'sil', title: 'Sayaç sıfırlansın mı?', text: `Bu oturumdaki ${U.fmtClock(Math.floor(s.elapsed))} kaydedilmeden silinir.`, tip: 'Kaydetmek istersen önce Bitir’e bas.', yes: 'Sıfırla' }))) return;
       Timer.reset();
     });
-    $$('#kind-seg button').forEach((b) => b.addEventListener('click', () => {
+    $$('#kind-seg button').forEach((b) => b.addEventListener('click', async () => {
       const s = Timer.state();
       const exam = b.dataset.exam || null;
       if (s.kind === b.dataset.kind && (s.exam || null) === exam) return;
-      if (!s.fresh && !confirm('Mevcut sayaç sıfırlanacak. Devam edilsin mi?')) return;
+      if (!s.fresh) {
+        const to = exam || b.dataset.kind;
+        const ok = await ask({
+          icon: { tyt: '📘', ayt: '📕', free: '⏱️', countdown: '⏳' }[to],
+          tone: to,
+          title: { tyt: 'TYT sayacına geçilsin mi?', ayt: 'AYT sayacına geçilsin mi?', free: 'Serbest sayaca geçilsin mi?', countdown: 'Geri sayıma geçilsin mi?' }[to],
+          text: `Sayaçta ${U.fmtClock(Math.floor(s.elapsed))} var. Geçersen bu süre kaydedilmeden sıfırlanır.`,
+          tip: 'Kaydetmek istersen önce Bitir’e bas, sonra geç.',
+          yes: 'Sıfırla ve geç',
+        });
+        if (!ok) return;
+      }
       dismissTimerAlarm();
       Timer.setKind(b.dataset.kind, exam);
       syncSceneMode();
@@ -691,8 +702,8 @@
       modalDirty = true;
     }));
     $('#m-cancel').addEventListener('click', closeModal);
-    $('#m-del') && $('#m-del').addEventListener('click', () => {
-      if (!confirm('Bu oturum silinsin mi?')) return;
+    $('#m-del') && $('#m-del').addEventListener('click', async () => {
+      if (!(await ask({ icon: '🗑️', tone: 'sil', title: 'Bu oturum silinsin mi?', text: 'Süresi İlerleme’den ve istatistiklerden de kalkar.', yes: 'Sil' }))) return;
       D().sessions = D().sessions.filter((x) => x.id !== s.id); Store.forget(s.id);
       save(); closeModal(); afterDataChange();
     });
@@ -755,13 +766,20 @@
   }
   // Plan'daki "Başla ▶": dersi ve hedefi seçip sayacı başlatır.
   // planId: Bugün kartındaki maddeden başlatıldı; süre o maddeye yazılır, sayaç kronometredir (kendiliğinden durmaz).
-  function startStudy({ subjectId, intent, kind, planId } = {}) {
+  function startStudy(opts = {}) {
     const s = Timer.state();
     if (s.running && s.phase === 'focus') { toast('⏱️', 'Zaten bir oturum sürüyor', 'Önce onu bitir ya da duraklat'); return false; }
-    if (!s.fresh || s.phase !== 'focus') {
-      if (s.phase === 'focus' && s.elapsed > 120 && !confirm('Duraklatılmış oturum kaydedilmeden sıfırlansın mı?')) return false;
-      Timer.reset();
+    if (s.phase === 'focus' && !s.fresh && s.elapsed > 120) { // duraklatılmış oturum: önce sor, onaylanınca başlar
+      ask({ icon: '⏱️', tone: 'sil', title: 'Yeni çalışma başlasın mı?', text: `Duraklatılmış oturumdaki ${U.fmtClock(Math.floor(s.elapsed))} kaydedilmeden sıfırlanır.`, tip: 'Kaydetmek istersen önce Bitir’e bas.', yes: 'Sıfırla ve başla' })
+        .then((ok) => { if (ok) beginStudy(opts); });
+      return false;
     }
+    return beginStudy(opts);
+  }
+  function beginStudy({ subjectId, intent, kind, planId } = {}) {
+    const s = Timer.state();
+    if (s.running && s.phase === 'focus') return false;
+    if (!s.fresh || s.phase !== 'focus') Timer.reset();
     if (kind && kind !== Timer.state().kind) Timer.setKind(kind);
     if (subjectId != null && (subjectId === '' || D().subjects.some((x) => x.id === subjectId))) Timer.setSubject(subjectId);
     Timer.setIntent(intent || '');
@@ -807,6 +825,38 @@
       .sort((a, b) => b.rating - a.rating)
       .map((h) => h.hour);
   }
+  // Luna'nın uyarı kartı (tarayıcının düz "Tamam / İptal" kutusu yerine): temaya göre çizimli başlık (açık temada leylak,
+  // silme ve AYT'de pembe; koyu temada mor bahçe; zambakta dolunay), ortada simge, yıldızlı ayraç, iki düğme.
+  // Kendi katmanında açılır: altındaki pencere (ör. oturum düzenleme) olduğu gibi kalır.
+  // Evet'e basılırsa true döner; Vazgeç, boşluğa dokunmak, Esc ya da geri tuşu false.
+  function ask({ icon = '🐾', tone = '', title, text = '', tip = '', yes = 'Evet', no = 'Vazgeç' }) {
+    return new Promise((resolve) => {
+      const layer = document.createElement('div');
+      layer.className = 'uyari-katman';
+      layer.innerHTML = `<div class="uyari" data-ton="${U.esc(tone)}" role="alertdialog" aria-modal="true" aria-labelledby="uyari-baslik">
+        <div class="uyari-resim"><span class="uyari-ikon" aria-hidden="true">${icon}</span></div>
+        <h3 id="uyari-baslik">${U.esc(title)}</h3>
+        <div class="uyari-ayrac" aria-hidden="true"><span>✦</span></div>
+        ${text ? `<p class="uyari-metin">${U.esc(text)}</p>` : ''}${tip ? `<p class="uyari-ipucu">💡 ${U.esc(tip)}</p>` : ''}
+        <div class="uyari-dugmeler"><button class="uyari-vazgec" type="button" data-uyari="0">${U.esc(no)}</button><button class="uyari-evet" type="button" data-uyari="1">${U.esc(yes)} <span aria-hidden="true">✦</span></button></div>
+      </div>`;
+      const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); done(false); } };
+      function done(v) {
+        if (layer.classList.contains('kapaniyor')) return;
+        document.removeEventListener('keydown', onKey, true);
+        layer.classList.add('kapaniyor');
+        setTimeout(() => layer.remove(), 180);
+        resolve(v);
+      }
+      layer.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-uyari]');
+        if (b) done(b.dataset.uyari === '1');
+        else if (e.target === layer) done(false);
+      });
+      document.addEventListener('keydown', onKey, true);
+      document.body.appendChild(layer);
+    });
+  }
   // Modüller (Plan, Deneme) için genel pencere
   function openModal(html, mount) {
     // her açılışta yeni bir kutu: önceki pencerenin dinleyicileri taşınmasın
@@ -822,9 +872,9 @@
   }
   let modalDirty = false;
   // boşluğa dokunma / Esc: yazılanlar kaydedilmediyse önce sor ("Vazgeç" ve "Kaydet" doğrudan kapatır)
-  function dismissModal() {
+  async function dismissModal() {
     if ($('#modal').classList.contains('hidden')) return;
-    if (modalDirty && !confirm('Yazdıkların kaydedilmedi. Pencere kapatılsın mı?')) return;
+    if (modalDirty && !(await ask({ icon: '✍️', title: 'Pencere kapatılsın mı?', text: 'Yazdıkların henüz kaydedilmedi; kapatırsan kaybolur.', yes: 'Kapat' }))) return;
     closeModal();
   }
   // ======================================================================
@@ -837,6 +887,7 @@
     const press = (sel) => { const b = $(sel); return b && (() => b.click()); };
     // en üstteki önce
     const layers = [
+      () => press('body > .uyari-katman:not(.kapaniyor) [data-uyari="0"]'), // uyarı kartı: geri tuşu = Vazgeç
       () => press('body > .df-sahne:not(.kapaniyor) [data-df="close"]'),
       () => siirEl && (() => { const tam = siirEl.querySelector('.sg-tam'); if (tam) tam.remove(); else closeSiir(); }),
       () => shown('#modal') && dismissModal,
@@ -1755,12 +1806,13 @@
     $('#set-termend').value = x.termEnd || '';
     $('#set-abs').value = x.absPct ?? 30;
   }
-  function changeLevel(lvl) {
+  async function changeLevel(lvl) {
     const old = D().settings.profile.level || 'yks';
     if (lvl === old) return;
     const msg = lvl === 'yks' ? 'YKS moduna dönülsün mü? Dönem verilerin silinmez, saklanır.'
       : old === 'yks' ? `${({ uni: 'Üniversite', kpss: 'KPSS', yl: 'Yüksek lisans' })[lvl] || 'Yeni'} moduna geçilsin mi? YKS konuların, denemelerin ve oturumların silinmez; istediğin an geri dönebilirsin.` : null;
-    if (msg && !confirm(msg)) { renderEdu(); return; }
+    const q = msg ? msg.indexOf('?') + 1 : 0;
+    if (msg && !(await ask({ icon: '🎓', title: msg.slice(0, q), text: msg.slice(q).trim(), yes: 'Geç' }))) { renderEdu(); return; }
     Uni.setMode(lvl);
     // sayaçtaki ders eski modun listesinde kaldıysa yeni listenin ilk dersine geç
     if (!D().subjects.some((x) => x.id === Timer.state().subjectId)) Timer.setSubject(D().subjects[0] ? D().subjects[0].id : '');
@@ -1916,11 +1968,11 @@
       if (e.target.dataset.f === 'color') s.color = e.target.value;
       save(); renderSubjectSelects();
     });
-    $('#subject-edit').addEventListener('click', (e) => {
+    $('#subject-edit').addEventListener('click', async (e) => {
       if (e.target.dataset.f !== 'del') return;
       const li = e.target.closest('li');
       const s = D().subjects.find((x) => x.id === li.dataset.id);
-      if (!s || !confirm(`"${s.name}" dersi silinsin mi? (Geçmiş oturumlar "Genel" olarak kalır)`)) return;
+      if (!s || !(await ask({ icon: '🗑️', tone: 'sil', title: `"${s.name}" dersi silinsin mi?`, text: 'Geçmiş oturumların silinmez; "Genel" olarak kalır.', yes: 'Sil' }))) return;
       D().subjects = D().subjects.filter((x) => x.id !== s.id);
       if (Timer.state().subjectId === s.id) Timer.setSubject(D().subjects[0] ? D().subjects[0].id : '');
       save(); renderSubjectEdit(); renderSubjectSelects();
@@ -1970,8 +2022,8 @@
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     });
-    $('#rescue-del').addEventListener('click', () => {
-      if (!confirm('Kurtarma kopyası silinsin mi? Önce indirmeni öneririm.')) return;
+    $('#rescue-del').addEventListener('click', async () => {
+      if (!(await ask({ icon: '🛟', tone: 'sil', title: 'Kurtarma kopyası silinsin mi?', text: 'Silinince geri gelmez.', tip: 'Önce indirmeni öneririm.', yes: 'Sil' }))) return;
       Store.dropRescue(); renderBackupInfo();
     });
     $('#import').addEventListener('change', (e) => {
@@ -1992,12 +2044,12 @@
             <button class="btn soft" data-imp="replace">♻️ Tamamen değiştir <small>Bu cihazdaki veriler yedektekiyle değişir</small></button>
           </div>
           <div class="modal-actions"><button class="btn soft" data-imp="cancel">Vazgeç</button></div>`, (card) => {
-          card.addEventListener('click', (ev) => {
+          card.addEventListener('click', async (ev) => {
             const b = ev.target.closest('[data-imp]');
             if (!b) return;
             if (b.dataset.imp === 'cancel') { closeModal(); return; }
             if (b.dataset.imp === 'replace') {
-              if (!confirm('Bu cihazdaki bütün veriler yedektekiyle değişecek. Emin misin?')) return;
+              if (!(await ask({ icon: '♻️', tone: 'sil', title: 'Bütün veriler değişsin mi?', text: 'Bu cihazdaki bütün veriler yedektekiyle değişecek.', tip: 'Şimdiki verilerin de kalsın istersen Birleştir’i seç.', yes: 'Değiştir' }))) return;
               if (!Store.importJSON(obj)) { toast('⚠️', 'Yedek bu cihaza yazılamadı', 'Depolama dolu olabilir; Notlar → Kütüphane’den yer açıp tekrar dene', 8000); return; }
               Geri.reload();
               return;
@@ -2014,9 +2066,9 @@
       };
       r.readAsText(f);
     });
-    $('#reset').addEventListener('click', () => {
-      if (!confirm('Bütün oturumlar, denemeler, notlar ve ayarlar silinecek. Önce "Yedek al" ile bir kopya saklamanı öneririm. Devam edilsin mi?')) return;
-      if (!confirm('Gerçekten emin misin? Bu geri alınamaz.')) return;
+    $('#reset').addEventListener('click', async () => {
+      if (!(await ask({ icon: '⚠️', tone: 'sil', title: 'Bütün veriler silinsin mi?', text: 'Bütün oturumlar, denemeler, notlar ve ayarlar silinecek.', tip: 'Önce “Yedek al” ile bir kopya saklamanı öneririm.', yes: 'Devam' }))) return;
+      if (!(await ask({ icon: '🛑', tone: 'sil', title: 'Gerçekten emin misin?', text: 'Bu geri alınamaz.', yes: 'Hepsini sil' }))) return;
       Store.reset(); Geri.reload();
     });
   }
@@ -2169,6 +2221,7 @@
     quietFor(ms) { return Date.now() - lastMsgAt < ms; },
     openModal,
     closeModal,
+    ask,
     startStudy,
     pickPlanItem,
     finishPlanItem,

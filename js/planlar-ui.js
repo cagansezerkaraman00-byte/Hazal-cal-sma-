@@ -224,11 +224,11 @@ const PlanlarUI = (() => {
       <p class="hint" data-qlog="error" role="status"></p>
       <div class="modal-actions">${old ? '<button class="btn danger" data-qlog-act="delete">Sil</button>' : ''}<button class="btn soft" data-qlog-act="cancel">Vazgeç</button><button class="btn primary" data-qlog-act="save">Kaydet</button></div>`);
     const q = k => card.querySelector(`[data-qlog="${k}"]`);
-    card.addEventListener('click', e => {
+    card.addEventListener('click', async e => {
       const b = e.target.closest('[data-qlog-act]'); if (!b) return;
       if (b.dataset.qlogAct === 'cancel') { App.closeModal(); return; }
       if (b.dataset.qlogAct === 'delete') {
-        if (!confirm('Bu soru kaydı silinsin mi?')) return;
+        if (!(await App.ask({ icon: '🗑️', tone: 'sil', title: 'Bu soru kaydı silinsin mi?', yes: 'Sil' }))) return;
         if (!Planlar.removeQuestions(id)) { q('error').textContent = 'Kayıt silinemedi; tekrar dene.'; return; }
       } else {
         const saved = Planlar.saveQuestions({ date: q('date').value, subjectId: q('subject').value, topic: q('topic').value, questions: q('count').value }, id);
@@ -452,12 +452,12 @@ const PlanlarUI = (() => {
       });
     }
     const done = () => { App.closeModal(); invalidate(); App.refresh(); };
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', async (e) => {
       const b = e.target.closest('[data-act]');
       if (!b) return;
       const act = b.dataset.act;
       if (act === 'cancel') { App.closeModal(); return; }
-      if (act === 'del') { if (!confirm(`"${it.title}" silinsin mi?`)) return; Planlar.remove(it.id); done(); return; }
+      if (act === 'del') { if (!(await App.ask({ icon: '🗑️', tone: 'sil', title: `"${it.title}" silinsin mi?`, yes: 'Sil' }))) return; Planlar.remove(it.id); done(); return; }
       if (act === 'uncarry') {
         if (!Planlar.uncarry(it.id)) { App.toast('↩️', 'Taşınan madde yapılmış, geri alınamaz'); return; }
         done(); return;
@@ -506,7 +506,7 @@ const PlanlarUI = (() => {
     const root = $('#planner-root');
     if (root && root.getBoundingClientRect().top < 0) root.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }
-  function onClick(ev) {
+  async function onClick(ev) {
     const b = ev.target.closest('[data-mp]');
     if (!b || !ev.currentTarget.contains(b)) return;
     const a = b.dataset.mp, li = b.closest('[data-mp-id]'), id = li ? li.dataset.mpId : '';
@@ -541,7 +541,7 @@ const PlanlarUI = (() => {
       } else if (a === 'copy') {
         const scope = b.dataset.scope || view.scope, key = b.dataset.key || view.key;
         const n = Planlar.copyCount(scope, key);
-        if (Planlar.list(scope, key).length && !confirm(`Önceki listedeki ${n} madde bu listeye eklensin mi? Şimdiki maddelerin olduğu gibi kalır.`)) return;
+        if (Planlar.list(scope, key).length && !(await App.ask({ icon: '⧉', title: 'Önceki liste eklensin mi?', text: `Önceki listedeki ${n} madde bu listeye eklenir. Şimdiki maddelerin olduğu gibi kalır.`, yes: 'Ekle' }))) return;
         const added = Planlar.copyPrev(scope, key);
         App.toast('⧉', added ? `${added} madde kopyalandı` : 'Kopyalanacak yeni madde yok');
         App.refresh();

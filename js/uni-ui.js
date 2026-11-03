@@ -202,14 +202,14 @@ const UniUI = (() => {
       <div class="modal-actions">${isNew ? '' : '<button class="btn danger" data-act="del" type="button">Sil</button><span style="flex:1"></span>'}<button class="btn soft" data-act="cancel" type="button">Vazgeç</button><button class="btn primary" data-act="save" type="button">Kaydet</button></div>`);
     const rows = { slots: slotRow, weights: wRow, topics: tRow };
     let clearAbs = false; // "Sıfırla" ancak Kaydet'e basılınca uygulanır
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', async (e) => {
       const add = e.target.closest('[data-add]');
       if (add) { card.querySelector(`[data-list="${add.dataset.add}"]`).insertAdjacentHTML('beforeend', rows[add.dataset.add]()); return; }
       if (e.target.closest('[data-x="row"]')) { e.target.closest('.slot-row, .w-row, .t-row').remove(); return; }
       if (e.target.closest('[data-x="clear-abs"]')) { clearAbs = true; e.target.closest('p').textContent = 'Kayıtlı devamsızlık: yok (kaydedince silinir)'; return; }
       const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
       if (act === 'cancel') App.closeModal();
-      if (act === 'del' && confirm(`"${c.name}" dersi silinsin mi? Sınav ve ödev kayıtları da silinir; geçmiş çalışma oturumların kalır.`)) { Uni.removeCourse(c.id); App.closeModal(); refresh(); }
+      if (act === 'del' && await App.ask({ icon: '🗑️', tone: 'sil', title: `"${c.name}" dersi silinsin mi?`, text: 'Sınav ve ödev kayıtları da silinir; geçmiş çalışma oturumların kalır.', yes: 'Sil' })) { Uni.removeCourse(c.id); App.closeModal(); refresh(); }
       if (act !== 'save') return;
       const v = (f) => card.querySelector(`[data-f="${f}"]`).value;
       const name = v('name').trim();
@@ -258,12 +258,12 @@ const UniUI = (() => {
       <label class="field">Not / konular <input data-f="note" value="${esc(e.note || '')}" maxlength="200" placeholder="Ör. 1-6. hafta konuları"></label>
       ${isNew ? '' : `<div class="row2"><label class="field">Aldığın not <input type="number" data-f="grade" value="${esc(e.grade ?? '')}" min="0" max="100"></label><label class="switch"><input type="checkbox" data-f="done" ${e.done ? 'checked' : ''}> Bitti</label></div>`}
       <div class="modal-actions">${isNew ? '' : '<button class="btn danger" data-act="del" type="button">Sil</button><span style="flex:1"></span>'}<button class="btn soft" data-act="cancel" type="button">Vazgeç</button><button class="btn primary" data-act="save" type="button">Kaydet</button></div>`);
-    card.addEventListener('click', (ev) => {
+    card.addEventListener('click', async (ev) => {
       const kb = ev.target.closest('[data-kind]');
       if (kb) { kind = kb.dataset.kind; card.querySelectorAll('[data-kind]').forEach((b) => b.classList.toggle('active', b === kb)); return; }
       const act = ev.target.closest('[data-act]') && ev.target.closest('[data-act]').dataset.act;
       if (act === 'cancel') App.closeModal();
-      if (act === 'del' && confirm('Bu kayıt silinsin mi?')) { u().events = u().events.filter((x) => x.id !== e.id); App.save(); App.closeModal(); refresh(); }
+      if (act === 'del' && await App.ask({ icon: '🗑️', tone: 'sil', title: 'Bu kayıt silinsin mi?', yes: 'Sil' })) { u().events = u().events.filter((x) => x.id !== e.id); App.save(); App.closeModal(); refresh(); }
       if (act !== 'save') return;
       const v = (f) => (card.querySelector(`[data-f="${f}"]`) || {}).value;
       const date = v('date');

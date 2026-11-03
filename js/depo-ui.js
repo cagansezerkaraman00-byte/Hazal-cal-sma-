@@ -293,7 +293,7 @@ const DepoUI = (() => {
         if (V.item === item) $('#vw-title').innerHTML = `${U.esc(item.name)}<small>${U.esc(subjName(item.subjectId))} · ${(K()[item.kind] || K().diger).join(' ')}${item.note ? ' · ' + U.esc(item.note) : ''}</small>`;
       }
       if (act === 'del') {
-        if (!confirm(`"${item.name}" silinsin mi?${item.src === 'drive' ? ' (Drive çöp kutusuna gider, 30 gün içinde geri alınabilir)' : ''}`)) return;
+        if (!(await App.ask({ icon: '🗑️', tone: 'sil', title: `"${item.name}" silinsin mi?`, text: item.src === 'drive' ? 'Drive çöp kutusuna gider; 30 gün içinde geri alınabilir.' : 'Bu cihazdan silinir.', yes: 'Sil' }))) return;
         try { await Depo.remove(item); } catch (err) { App.toast('⚠️', 'Silinemedi', err instanceof Depo.NeedAuth ? 'Drive bağlantısını yenile' : err.message); return; }
         App.closeModal(); closeViewer(); render();
         App.toast('🗑️', 'Dosya silindi');
@@ -321,7 +321,7 @@ const DepoUI = (() => {
         }
         Depo.authorize();
       } else if (act === 'disconnect') {
-        if (!confirm('Drive bağlantısı bu cihazda kapatılsın mı? Drive’daki dosyaların silinmez; yeniden bağlanınca geri gelir.')) return;
+        if (!(await App.ask({ icon: '☁️', title: 'Drive bağlantısı kapatılsın mı?', text: 'Drive’daki dosyaların silinmez; yeniden bağlanınca geri gelir.', yes: 'Kapat' }))) return;
         Object.assign(Depo.cfg(), { connected: false, folderId: '' });
         Depo.saveCfg();
         GAuth.forget();

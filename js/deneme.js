@@ -416,14 +416,14 @@ const DenemeUI = (() => {
 
   function bind() {
     const root = $('#deneme-root');
-    root.addEventListener('click', (ev) => {
+    root.addEventListener('click', async (ev) => {
       const b = ev.target.closest('button');
       if (!b) return;
       if (b.dataset.act === 'add') return openForm(null);
       const pl = b.closest('[data-plan]');
       if (pl) {
         if (b.dataset.act === 'plan-result') openPlan(pl.dataset.plan);
-        if (b.dataset.act === 'plan-del' && confirm('Bu deneme planı silinsin mi?')) { removePlan(pl.dataset.plan); App.save(); App.refresh(); render(); }
+        if (b.dataset.act === 'plan-del' && await App.ask({ icon: '🗓️', tone: 'sil', title: 'Bu deneme planı silinsin mi?', yes: 'Sil' })) { removePlan(pl.dataset.plan); App.save(); App.refresh(); render(); }
         return;
       }
       if (b.dataset.type && b.closest('[data-role="table-seg"]')) { tableType = b.dataset.type; render(); return; }
@@ -432,7 +432,7 @@ const DenemeUI = (() => {
         const e = D().denemeler.find((x) => x.id === li.dataset.id);
         if (!e) return;
         if (b.dataset.act === 'edit') openForm(e);
-        if (b.dataset.act === 'del' && confirm('Bu deneme silinsin mi?')) {
+        if (b.dataset.act === 'del' && await App.ask({ icon: '🗑️', tone: 'sil', title: 'Bu deneme silinsin mi?', text: 'Sonuçları istatistiklerden de kalkar.', yes: 'Sil' })) {
           D().denemeler = D().denemeler.filter((x) => x.id !== e.id); Store.forget(e.id);
           App.save(); App.refresh(); render();
         }

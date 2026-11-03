@@ -143,10 +143,10 @@ const NotesUI = (() => {
       card.querySelector('h3').insertAdjacentHTML('afterend', '<p class="hint">📝 Yarım kalan notun geri geldi.</p>');
     }
     card.addEventListener('input', () => setDraft({ id: n.id, isNew, title: f('title').value, body: f('body').value, subjectId: f('subject').value, at: Date.now() }));
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', async (e) => {
       const act = e.target.closest('button') && e.target.closest('button').dataset.act;
       if (act === 'cancel') { setDraft(null); App.closeModal(); render(); }
-      if (act === 'del' && confirm('Bu not silinsin mi?')) { D().notes = D().notes.filter((x) => x.id !== n.id); Store.forget(n.id); done(); }
+      if (act === 'del' && await App.ask({ icon: '🗑️', tone: 'sil', title: 'Bu not silinsin mi?', yes: 'Sil' })) { D().notes = D().notes.filter((x) => x.id !== n.id); Store.forget(n.id); done(); }
       if (act === 'save') {
         const title = card.querySelector('[data-f="title"]').value.trim().slice(0, 80);
         const body = card.querySelector('[data-f="body"]').value.slice(0, 20000);
@@ -173,10 +173,10 @@ const NotesUI = (() => {
         ${isNew ? '<button class="btn soft" data-act="save-more">Kaydet + yeni</button>' : ''}
         <button class="btn primary" data-act="save">Kaydet</button></div>`);
     card.querySelector('[data-f="front"]').focus();
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', async (e) => {
       const act = e.target.closest('button') && e.target.closest('button').dataset.act;
       if (act === 'cancel') { App.closeModal(); render(); }
-      if (act === 'del' && confirm('Bu kart silinsin mi?')) { D().cards = D().cards.filter((x) => x.id !== c.id); Store.forget(c.id); App.save(); App.closeModal(); render(); }
+      if (act === 'del' && await App.ask({ icon: '🗑️', tone: 'sil', title: 'Bu kart silinsin mi?', yes: 'Sil' })) { D().cards = D().cards.filter((x) => x.id !== c.id); Store.forget(c.id); App.save(); App.closeModal(); render(); }
       if (act === 'save' || act === 'save-more') {
         const front = card.querySelector('[data-f="front"]').value.trim();
         const back = card.querySelector('[data-f="back"]').value.trim();

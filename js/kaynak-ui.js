@@ -90,12 +90,12 @@ const KaynakUI = (() => {
     let type = r.type;
     const sync = () => card.querySelectorAll('[data-show]').forEach((el) => el.classList.toggle('hidden', !el.dataset.show.split(' ').includes(type)));
     sync();
-    card.addEventListener('click', (e) => {
+    card.addEventListener('click', async (e) => {
       const tb = e.target.closest('[data-type]');
       if (tb) { type = tb.dataset.type; card.querySelectorAll('[data-type]').forEach((b) => b.classList.toggle('active', b === tb)); sync(); return; }
       const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
       if (act === 'cancel') App.closeModal();
-      if (act === 'del' && confirm('Bu kaynak silinsin mi?')) { D().refs = D().refs.filter((x) => x.id !== target.id); Store.forget(target.id); App.save(); App.closeModal(); render(); }
+      if (act === 'del' && await App.ask({ icon: '🗑️', tone: 'sil', title: 'Bu kaynak silinsin mi?', yes: 'Sil' })) { D().refs = D().refs.filter((x) => x.id !== target.id); Store.forget(target.id); App.save(); App.closeModal(); render(); }
       if (act !== 'save') return;
       const v = (f) => (card.querySelector(`[data-f="${f}"]`) || {}).value || '';
       const title = v('title').trim();

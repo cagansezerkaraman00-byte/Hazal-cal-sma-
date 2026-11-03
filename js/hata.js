@@ -206,7 +206,7 @@ const HataUI = (() => {
       const act = e.target.closest('[data-act]') && e.target.closest('[data-act]').dataset.act;
       if (act === 'cancel') App.closeModal();
       if (act === 'solve') { App.closeModal(); review([m]); }
-      if (act === 'del' && confirm('Bu soru hata defterinden silinsin mi? (Fotoğrafı Kütüphane’de kalır)')) {
+      if (act === 'del' && await App.ask({ icon: '🗑️', tone: 'sil', title: 'Bu soru silinsin mi?', text: 'Hata defterinden kalkar; fotoğrafı Kütüphane’de kalır.', yes: 'Sil' })) {
         D().mistakes = D().mistakes.filter((x) => x.id !== m.id); Store.forget(m.id);
         App.save(); App.closeModal(); render(); App.refreshHome();
       }
