@@ -146,10 +146,27 @@
 
   // Uygulama güncellemesi (Ayarlar'da kendi kartı): Luna yeni APK'yı indirir, Android'in "Güncelle" penceresini açar.
   // Yalnızca Çağan'ın onayladığı sürüm teklif edilir: depodaki apk/guncel.json (GitHub'daki her deneme derlemesi değil).
+  // Deneme kanalı (Çağan'ın telefonu): kartta sürüm yazısına 5 kez dokununca açılır; GitHub'daki en yeni derleme teklif edilir.
+  // Ayar yalnızca o cihazda durur (Luna verisine, yedeğe girmez); Hazal'ın tabletinde kapalı kalır.
   const Gn = P.LunaGuncelle;
   if (Gn && P.App && P.App.getInfo) {
     const KAYNAK = 'https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/apk/guncel.json';
-    const g = { kod: 0, surum: '', yeni: null, durum: 'bekle', yuzde: -1, izin: false, hata: '' };
+    const SON_DERLEME = 'https://api.github.com/repos/cagansezerkaraman00-byte/Hazal-cal-sma-/releases/latest';
+    const DENEME = 'luna-apk-deneme';
+    const deneme = () => { try { return localStorage.getItem(DENEME) === '1'; } catch (e) { return false; } };
+    const g = { kod: 0, surum: '', yeni: null, durum: 'bekle', yuzde: -1, izin: false, hata: '', bakildi: 0, haber: 0 };
+    let dokunus = [];
+    // GitHub'daki derleme → guncel.json biçimi (kod, sürüm, apk, yenilikler)
+    const derleme = (r) => {
+      const kod = +String(r.tag_name || '').replace(/^apk-/, '');
+      const a = (r.assets || []).find((x) => x.name === 'luna.apk' && x.state === 'uploaded' && x.size > 0);
+      if (!(kod > 0) || !a) return null;
+      const ust = String(r.body || '').split(/\n---\n/)[0];
+      return {
+        kod, surum: (String(r.name || '').match(/Luna APK ([\d.]+)/) || [])[1] || '', apk: a.browser_download_url, boyut: a.size,
+        yenilikler: ust.split('\n').filter((s) => /^- /.test(s)).map((s) => s.slice(2).trim()),
+      };
+    };
     let kart = null;
     const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     const toast = (...a) => { try { App.toast(...a); } catch (e) { /* yok say */ } };
@@ -166,7 +183,7 @@
       const y = g.yeni, mesgul = g.durum === 'bakiliyor' || g.durum === 'indiriliyor';
       const durum = g.durum === 'bakiliyor' ? 'Bakılıyor…' : g.durum === 'indiriliyor' ? 'İndiriliyor…' : y ? 'Yeni sürüm hazır' : g.durum === 'hata' ? 'Bakılamadı' : 'Güncel ✓';
       kart.innerHTML = `<h2>📲 Uygulama güncellemesi</h2>
-        <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna uygulaması</b><small>Sürüm ${esc(g.surum || '?')} · derleme ${esc(g.kod || '?')}</small></div>
+        <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna uygulaması</b><small data-ag="surum">Sürüm ${esc(g.surum || '?')} · derleme ${esc(g.kod || '?')}${deneme() ? ' · 🧪 deneme kanalı' : ''}</small></div>
           <span class="upd-state ${y ? 'new' : ''}">${durum}</span></div>
         ${y ? `<div class="upd-new">${Array.isArray(y.yenilikler) && y.yenilikler.length ? `<ul class="ag-liste">${y.yenilikler.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
           ${g.durum === 'indiriliyor'
@@ -179,14 +196,24 @@
     };
     const denetle = async (sessiz) => {
       if (g.durum === 'indiriliyor') return;
-      g.durum = 'bakiliyor'; g.hata = ''; ciz();
+      g.durum = 'bakiliyor'; g.hata = ''; g.bakildi = Date.now(); ciz();
       try {
-        const r = await fetch(KAYNAK + '?t=' + Date.now(), { cache: 'no-store' });
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const j = await r.json();
+        let j = null;
+        if (deneme()) {
+          try {
+            const r = await fetch(SON_DERLEME, { cache: 'no-store', headers: { Accept: 'application/vnd.github+json' } });
+            if (r.ok) j = derleme(await r.json());
+          } catch (e) { /* aşağıda onaylı sürüme bakılır */ }
+        }
+        if (!j) {
+          const r = await fetch(KAYNAK + '?t=' + Date.now(), { cache: 'no-store' });
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          j = await r.json();
+        }
         g.yeni = +j.kod > +g.kod && /^https:\/\//.test(j.apk || '') ? j : null;
         g.durum = 'tamam';
-        if (g.yeni && sessiz) toast('✨', 'Yeni Luna hazır', "Ayarlar → Uygulama güncellemesi'nden güncelleyebilirsin", 8000);
+        // aynı sürüm için tek haber (Luna'ya her dönüşte yeniden çıkmasın)
+        if (g.yeni && sessiz && g.haber !== +g.yeni.kod) { g.haber = +g.yeni.kod; toast('✨', 'Yeni Luna hazır', "Ayarlar → Uygulama güncellemesi'nden güncelleyebilirsin", 8000); }
       } catch (e) {
         g.durum = 'hata';
         if (!sessiz) g.hata = 'Bakamadım; internet bağlantını kontrol edip yeniden dene.';
@@ -208,7 +235,11 @@
     Gn.addListener('ilerleme', (e) => { g.yuzde = e && e.yuzde != null ? e.yuzde : -1; ciz(); });
     // izin ekranından dönünce: inen dosya yeniden indirilmeden kurulsun
     P.App.addListener('resume', () => {
-      if (!g.izin) return;
+      if (!g.izin) {
+        // Luna uzun süre arkadaysa dönüşte bir kez daha sessizce bakılır (deneme kanalında 10 dakikada bir, normalde 6 saatte bir)
+        if (g.kod && Date.now() - g.bakildi > (deneme() ? 10 * 60000 : 6 * 3600000)) denetle(true);
+        return;
+      }
       Gn.kur().then((r) => { g.izin = !(r && r.izin); ciz(); }).catch(() => { g.izin = false; ciz(); });
     });
     window.addEventListener('load', () => {
@@ -221,7 +252,19 @@
         eski.after(kart);
         kart.addEventListener('click', (e) => {
           const b = e.target.closest('[data-ag]');
-          if (b) { if (b.dataset.ag === 'kur') kur(); else denetle(false); }
+          if (!b) return;
+          if (b.dataset.ag === 'surum') {
+            // sürüm yazısına 3 saniye içinde 5 dokunuş: deneme kanalı açılır / kapanır
+            const simdi = Date.now();
+            dokunus = dokunus.filter((t) => simdi - t < 3000).concat(simdi);
+            if (dokunus.length < 5) return;
+            dokunus = [];
+            const ac = !deneme();
+            try { if (ac) localStorage.setItem(DENEME, '1'); else localStorage.removeItem(DENEME); } catch (err) { return; }
+            toast('🧪', ac ? 'Deneme kanalı açık' : 'Deneme kanalı kapalı', ac ? 'Her yeni derleme burada çıkar' : 'Yalnızca onaylı sürümler gelir');
+            g.haber = 0; denetle(false);
+          } else if (b.dataset.ag === 'kur') kur();
+          else denetle(false);
         });
       }
       P.App.getInfo().then((i) => { g.kod = +i.build || 0; g.surum = i.version || ''; }).catch(() => {}).then(() => {
