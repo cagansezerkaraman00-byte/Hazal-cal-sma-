@@ -16,26 +16,6 @@ on:
 permissions:
   contents: write # sonuçlar "emu-sonuc" ön sürümüne konur (en yeni derleme sayılmaz, telefonlara teklif edilmez)
 jobs:
-  # Spotify panelinde uygulamanın dönüş adresi kayıtlı mı: Spotify'ın giriş adresine üç dönüş adresiyle sorulur
-  # (PWA'nın çalışan adresi, uygulamanınki, bilerek kayıtsız bir adres). Giriş yapılmaz; yalnızca herkese açık uygulama kimliği kullanılır.
-  spotify-adres:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - name: Dönüş adresleri
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          C=ab1277a59c604e9599db046a820b9f5a
-          CH=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM
-          for R in 'https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/' 'com.hazal.luna://spotify-callback' 'com.hazal.luna://kayitsiz-adres'; do
-            E=$(node -e "console.log(encodeURIComponent(process.argv[1]))" "$R")
-            S=$(curl -s -o sp.html -w '%{http_code} → %{redirect_url}' "https://accounts.spotify.com/authorize?client_id=$C&response_type=code&redirect_uri=$E&code_challenge_method=S256&code_challenge=$CH&scope=streaming&state=x")
-            H=$(grep -o 'INVALID_CLIENT[^<"]*\|Invalid redirect URI[^<"]*' sp.html | head -1)
-            echo "$R : $S ${H:+· $H}" | tee -a spotify-adres.txt
-          done
-          gh release view emu-sonuc --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 && gh release upload emu-sonuc spotify-adres.txt --repo "$GITHUB_REPOSITORY" --clobber || true
-
   emu:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
