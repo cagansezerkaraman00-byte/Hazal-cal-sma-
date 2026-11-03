@@ -1,0 +1,4 @@
+<!-- İndirme sayfasında (indir/) "Bu sürümde" başlığı altında görünür. Her APK güncellemesinde "- " ile başlayan satırları yenile. -->
+- 🐾 Luna artık telefonda kendi uygulaması: kendi simgesi var, tarayıcı çubuğu yok.
+- 🪟 Mini pencere Luna'nın kendisi: sayaç köşede durur, tuşuyla durdurup başlatırsın.
+- 💾 Yedek al, telefonun paylaşım menüsüyle çalışır.

@@ -77,7 +77,11 @@ jobs:
         run: |
           TAG="apk-$LUNA_SURUM_KODU"
           echo "TAG=$TAG" >> "$GITHUB_ENV"
-          NOT="Luna $LUNA_SURUM · derleme $LUNA_SURUM_KODU · $(git log -1 --format=%h)
+          # indirme sayfası (indir/) "Bu sürümde" listesini buradan alır: apk/yenilikler.md'deki "- " satırları
+          NOT="$(cat apk/yenilikler.md)
+
+          ---
+          Luna $LUNA_SURUM · derleme $LUNA_SURUM_KODU · $(git log -1 --format=%h)
           luna.apk: kalıcı anahtarla imzalı; Hazal'ın tableti ve senin telefonun için.
           luna-deneme.apk: deneme anahtarıyla imzalı; kurma."
           gh release create "$TAG" cikti/*.apk --latest --target "$GITHUB_SHA" --title "Luna APK $LUNA_SURUM (derleme $LUNA_SURUM_KODU)" --notes "$NOT"
