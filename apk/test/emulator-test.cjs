@@ -8,6 +8,8 @@ fs.mkdirSync(out, { recursive: true });
 const rapor = [];
 const yaz = (s) => { console.log(s); rapor.push(s); };
 const bekle = (ms) => new Promise((r) => setTimeout(r, ms));
+// Luna'nın modülleri sayfanın genel kapsamında (const): window üzerinde değil, adıyla sorulur
+const HAZIR = 'typeof App !== "undefined" && typeof Timer !== "undefined" && typeof MiniTimer !== "undefined" && !!document.getElementById("btn-toggle")';
 
 (async () => {
   const [device] = await _android.devices();
@@ -21,11 +23,11 @@ const bekle = (ms) => new Promise((r) => setTimeout(r, ms));
   const page = await webview.page();
   page.on('console', (m) => { if (/Luna APK|Error|error/.test(m.text())) yaz('konsol: ' + m.text().slice(0, 300)); });
   page.on('pageerror', (e) => yaz('SAYFA HATASI: ' + e.message));
-  await page.waitForFunction(() => window.App && window.Timer && window.MiniTimer, null, { timeout: 90000 });
+  await page.waitForFunction(HAZIR, null, { timeout: 90000 });
   // ilk açılış kartları (şiir, mektup) denemeyi kapatmasın
   await page.evaluate(() => { ['luna-siir-okundu', 'luna-siir-gosterildi', 'luna-mektup-okundu'].forEach((k) => localStorage.setItem(k, '1')); });
   await page.reload();
-  await page.waitForFunction(() => window.App && window.Timer && window.MiniTimer, null, { timeout: 90000 });
+  await page.waitForFunction(HAZIR, null, { timeout: 90000 });
   await bekle(6000);
   for (let i = 0; i < 4; i++) { await page.evaluate(() => { try { App.closeModal(); } catch (e) {} }); await bekle(300); }
   await shot('01-acilis');
@@ -92,6 +94,15 @@ const bekle = (ms) => new Promise((r) => setTimeout(r, ms));
   await bekle(3000);
   yaz('dönünce: ' + JSON.stringify(await pip()));
   await shot('05-donus');
+  // 5) Spotify girişinden dönüş yolu: uygulama içi Chrome sekmesi açılır, sunucu hemen com.hazal.luna://spotify-callback'e yönlendirir
+  //    (Spotify izin sayfası atlandığında olan budur). Luna bu adresi alırsa Tanılama'ya "Spotify dönüşü geldi" yazar.
+  await page.evaluate(() => Capacitor.Plugins.Browser.open({ url: 'https://httpbin.org/redirect-to?url=' + encodeURIComponent('com.hazal.luna://spotify-callback?code=DENEME&state=emu') }).catch((e) => console.info('Luna APK: deneme sekmesi açılamadı ' + e.message)));
+  await bekle(9000);
+  await shot('06-spotify-donus-sekme');
+  yaz('ön plandaki: ' + String(await device.shell('dumpsys activity activities | grep -E "topResumedActivity|mResumedActivity" | head -3')).trim());
+  await device.shell('am start -n com.hazal.luna/.MainActivity');
+  await bekle(4000);
+  try { await page.waitForFunction(HAZIR, null, { timeout: 30000 }); } catch (e) { yaz('dönüşten sonra Luna hazır değil: ' + e.message); }
   // Tanılama günlüğü (Luna'nın kendi hata günlüğü)
   const gunluk = await page.evaluate(() => (window.ErrLog ? ErrLog.list() : []).map((x) => x.m));
   gunluk.forEach((m) => yaz('Tanılama: ' + m));

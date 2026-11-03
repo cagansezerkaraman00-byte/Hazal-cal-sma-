@@ -6,7 +6,7 @@ on:
     paths: ['.github/workflows/emulator.yml', 'apk/test/**']
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write # sonuçlar "emu-sonuc" ön sürümüne konur (en yeni derleme sayılmaz, telefonlara teklif edilmez)
 jobs:
   emu:
     runs-on: ubuntu-24.04
@@ -15,10 +15,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { ad: a35-swangle, api: 35, gpu: swangle_indirect, ek: '', cihaz: pixel_6 }
-          - { ad: a35-swiftshader-novulkan, api: 35, gpu: swiftshader_indirect, ek: '-feature -Vulkan', cihaz: pixel_6 }
-          - { ad: a34-swiftshader-novulkan, api: 34, gpu: swiftshader_indirect, ek: '-feature -Vulkan', cihaz: pixel_6 }
-          - { ad: a33-guest-tablet, api: 33, gpu: guest, ek: '-feature -Vulkan', cihaz: pixel_tablet }
+          # swangle_indirect: Luna'nın sahnesinde çökmeyen tek grafik ayarı (guest ve swiftshader çöküyor)
+          - { ad: telefon, api: 35, gpu: swangle_indirect, ek: '', cihaz: pixel_6 }
+          - { ad: tablet, api: 35, gpu: swangle_indirect, ek: '', cihaz: pixel_tablet }
     name: emu (${{ matrix.ad }})
     steps:
       - uses: actions/checkout@v4
@@ -62,6 +61,19 @@ jobs:
           node apk/test/emulator-test.cjs cikti || echo "deneme yarıda kaldı"
           pgrep -f qemu-system > /dev/null && echo "emülatör ayakta" || { echo "EMÜLATÖR ÇÖKTÜ"; tail -30 cikti/emulator.log; }
           grep -E "Luna APK|AndroidRuntime|FATAL|chromium.*(Uncaught|Error)" cikti/gunluk.txt | tail -60 || true
+      - name: Sonuçları ön sürüme koy
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view emu-sonuc --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 || \
+            gh release create emu-sonuc --repo "$GITHUB_REPOSITORY" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Emülatör denemesi (otomatik)" --notes "Android emülatöründe Luna denemesinin ekran görüntüleri ve raporu. Kurulacak bir sürüm değildir." || true
+          mkdir -p yukle
+          for f in cikti/*.png cikti/rapor.txt; do [ -s "$f" ] && cp "$f" "yukle/${{ matrix.ad }}-$(basename "$f")"; done
+          ls yukle
+          for i in 1 2 3; do gh release upload emu-sonuc yukle/* --repo "$GITHUB_REPOSITORY" --clobber && break; sleep 5; done
       - name: Sonuçlar
         if: always()
         uses: actions/upload-artifact@v4
