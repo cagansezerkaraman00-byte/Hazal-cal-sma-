@@ -11,6 +11,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(LunaPipPlugin.class);
+        registerPlugin(LunaGuncellePlugin.class);
         super.onCreate(savedInstanceState);
         // Spotify oynatıcısı kendi çerçevesinde (sdk.scdn.co) çalışır; çerezleri reddedilmesin
         if (bridge != null && bridge.getWebView() != null) {

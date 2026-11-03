@@ -7,6 +7,8 @@ name: Android APK
 
 on:
   push:
+    paths-ignore:
+      - 'apk/guncel.json' # Hazal'a giden sürümü seçmek yeni derleme gerektirmez
   workflow_dispatch:
 
 permissions:
@@ -85,8 +87,9 @@ jobs:
           luna.apk: kalıcı anahtarla imzalı; Hazal'ın tableti ve senin telefonun için.
           luna-deneme.apk: deneme anahtarıyla imzalı; kurma."
           gh release create "$TAG" cikti/*.apk --latest --target "$GITHUB_SHA" --title "Luna APK $LUNA_SURUM (derleme $LUNA_SURUM_KODU)" --notes "$NOT"
-          # eski derlemelerden son 3'ü kalsın
-          gh release list --limit 50 --json tagName --jq '.[].tagName' | grep -E '^apk-[0-9]+$' | tail -n +4 | xargs -r -I{} gh release delete {} --yes --cleanup-tag || true
+          # eski derlemelerden son 5'i kalsın; Hazal'a giden sürüm (apk/guncel.json) hiçbir zaman silinmez
+          KORU="apk-$(node -e "console.log(require('./apk/guncel.json').kod||0)")"
+          gh release list --limit 50 --json tagName --jq '.[].tagName' | grep -E '^apk-[0-9]+$' | grep -vx "$KORU" | tail -n +6 | xargs -r -I{} gh release delete {} --yes --cleanup-tag || true
 
       - name: Emülatöre izin (KVM)
         continue-on-error: true

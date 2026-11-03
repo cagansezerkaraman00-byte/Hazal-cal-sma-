@@ -110,6 +110,93 @@
   document.addEventListener('pause', pauseMusic); // Capacitor: uygulama arkaya geçti
   if (P.App) P.App.addListener('pause', pauseMusic);
 
+  // Uygulama güncellemesi (Ayarlar'da kendi kartı): Luna yeni APK'yı indirir, Android'in "Güncelle" penceresini açar.
+  // Yalnızca Çağan'ın onayladığı sürüm teklif edilir: depodaki apk/guncel.json (GitHub'daki her deneme derlemesi değil).
+  const Gn = P.LunaGuncelle;
+  if (Gn && P.App && P.App.getInfo) {
+    const KAYNAK = 'https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/apk/guncel.json';
+    const g = { kod: 0, surum: '', yeni: null, durum: 'bekle', yuzde: -1, izin: false, hata: '' };
+    let kart = null;
+    const esc = (t) => String(t == null ? '' : t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const toast = (...a) => { try { App.toast(...a); } catch (e) { /* yok say */ } };
+    const st = document.createElement('style');
+    st.textContent = `
+      #apk-update-card .ag-liste { margin: 8px 0 12px; padding-left: 20px; color: var(--muted); }
+      #apk-update-card .ag-liste li { margin: 3px 0; }
+      #apk-update-card .ag-cubuk { height: 10px; border-radius: 99px; background: var(--track); overflow: hidden; margin: 6px 0; }
+      #apk-update-card .ag-cubuk > div { height: 100%; border-radius: 99px; background: var(--accent-grad); transition: width .25s; }
+      #apk-update-card .ag-not { margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--lav-soft); color: var(--text); font-size: .9rem; }`;
+    document.head.appendChild(st);
+    const ciz = () => {
+      if (!kart) return;
+      const y = g.yeni, mesgul = g.durum === 'bakiliyor' || g.durum === 'indiriliyor';
+      const durum = g.durum === 'bakiliyor' ? 'Bakılıyor…' : g.durum === 'indiriliyor' ? 'İndiriliyor…' : y ? 'Yeni sürüm hazır' : g.durum === 'hata' ? 'Bakılamadı' : 'Güncel ✓';
+      kart.innerHTML = `<h2>📲 Uygulama güncellemesi</h2>
+        <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna uygulaması</b><small>Sürüm ${esc(g.surum || '?')} · derleme ${esc(g.kod || '?')}</small></div>
+          <span class="upd-state ${y ? 'new' : ''}">${durum}</span></div>
+        ${y ? `<div class="upd-new">${Array.isArray(y.yenilikler) && y.yenilikler.length ? `<ul class="ag-liste">${y.yenilikler.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+          ${g.durum === 'indiriliyor'
+            ? `<div class="ag-cubuk"><div style="width:${Math.max(3, g.yuzde)}%"></div></div><p class="muted small">Yeni Luna iniyor${g.yuzde >= 0 ? ' · %' + g.yuzde : '…'}</p>`
+            : `<button class="btn primary" type="button" data-ag="kur">Güncelle · sürüm ${esc(y.surum)}</button>`}</div>` : ''}
+        ${g.izin ? `<p class="ag-not">Android "Bu kaynaktan yüklemeye izin ver" ekranını açtı. İzni aç ve Luna'ya dön; kurulum kendiliğinden devam eder.</p>` : ''}
+        ${g.hata ? `<p class="ag-not">${esc(g.hata)}</p>` : ''}
+        <div class="row upd-acts"><button class="btn soft" type="button" data-ag="denetle" ${mesgul ? 'disabled' : ''}>Güncellemeleri denetle</button></div>
+        <p class="muted small">Güncelleme verilerine dokunmaz: yeni Luna eskisinin üstüne kurulur, çalışmaların, notların ve rozetlerin olduğu gibi kalır.</p>`;
+    };
+    const denetle = async (sessiz) => {
+      if (g.durum === 'indiriliyor') return;
+      g.durum = 'bakiliyor'; g.hata = ''; ciz();
+      try {
+        const r = await fetch(KAYNAK + '?t=' + Date.now(), { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const j = await r.json();
+        g.yeni = +j.kod > +g.kod && /^https:\/\//.test(j.apk || '') ? j : null;
+        g.durum = 'tamam';
+        if (g.yeni && sessiz) toast('✨', 'Yeni Luna hazır', "Ayarlar → Uygulama güncellemesi'nden güncelleyebilirsin", 8000);
+      } catch (e) {
+        g.durum = 'hata';
+        if (!sessiz) g.hata = 'Bakamadım; internet bağlantını kontrol edip yeniden dene.';
+      }
+      ciz();
+    };
+    const kur = async () => {
+      if (!g.yeni || g.durum === 'indiriliyor') return;
+      g.durum = 'indiriliyor'; g.yuzde = 0; g.izin = false; g.hata = ''; ciz();
+      try {
+        const r = await Gn.indirVeKur({ url: g.yeni.apk });
+        g.izin = !(r && r.izin);
+      } catch (e) {
+        g.hata = 'Yeni Luna inemedi; internet bağlantını kontrol edip yeniden dene.';
+        note('güncelleme inemedi: ' + ((e && e.message) || e));
+      }
+      g.durum = 'tamam'; ciz();
+    };
+    Gn.addListener('ilerleme', (e) => { g.yuzde = e && e.yuzde != null ? e.yuzde : -1; ciz(); });
+    // izin ekranından dönünce: inen dosya yeniden indirilmeden kurulsun
+    P.App.addListener('resume', () => {
+      if (!g.izin) return;
+      Gn.kur().then((r) => { g.izin = !(r && r.izin); ciz(); }).catch(() => { g.izin = false; ciz(); });
+    });
+    window.addEventListener('load', () => {
+      const eski = document.getElementById('update-card'); // tarayıcıdaki Luna'nın güncelleme kartı uygulamada işe yaramaz
+      if (eski) {
+        eski.style.display = 'none';
+        kart = document.createElement('div');
+        kart.className = 'card update-card';
+        kart.id = 'apk-update-card';
+        eski.after(kart);
+        kart.addEventListener('click', (e) => {
+          const b = e.target.closest('[data-ag]');
+          if (b) { if (b.dataset.ag === 'kur') kur(); else denetle(false); }
+        });
+      }
+      P.App.getInfo().then((i) => { g.kod = +i.build || 0; g.surum = i.version || ''; }).catch(() => {}).then(() => {
+        ciz();
+        setTimeout(() => denetle(true), 4000); // açılışta bir kez sessizce bak; yeni sürüm varsa küçük bir haber
+      });
+    });
+  }
+
   // Mini pencere: Android'in kendi "resim içinde resim" penceresi (Chrome'daki video penceresinin yerine).
   // Luna köşeye küçülür ve yalnızca sayacı gösterir; penceredeki tuş Luna'daki Başla / Duraklat ile aynı işi yapar.
   // Pencere açıkken Luna "arkada" sayılır: Chrome'daki mini pencereyle aynı kurallar (ses çıkmaz, Tam odak izinli çıkış sayar).

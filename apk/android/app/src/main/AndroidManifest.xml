@@ -47,4 +47,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Ayarlar → Uygulama güncellemesi: Luna yeni sürümünü kendisi kurabilsin -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 </manifest>

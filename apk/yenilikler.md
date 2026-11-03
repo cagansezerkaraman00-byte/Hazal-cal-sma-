@@ -2,3 +2,4 @@
 - 🐾 Luna artık telefonda kendi uygulaması: kendi simgesi var, tarayıcı çubuğu yok.
 - 🪟 Mini pencere Luna'nın kendisi: sayaç köşede durur, tuşuyla durdurup başlatırsın.
 - 💾 Yedek al, telefonun paylaşım menüsüyle çalışır.
+- 📲 Güncellemeler artık Luna'nın içinden: Ayarlar → Uygulama güncellemesi → Güncelle.
