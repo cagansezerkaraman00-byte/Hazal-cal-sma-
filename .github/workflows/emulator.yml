@@ -1,0 +1,73 @@
+# Luna'nın Android uygulamasını gerçek bir Android emülatöründe dener: açılış, mini pencere, Spotify'ın ihtiyaç duyduğu
+# korumalı müzik desteği. Son derlemenin deneme APK'sını (luna-deneme.apk) kullanır; ekran görüntüleri ve rapor "Artifacts"ta.
+name: Android emülatör denemesi
+on:
+  push:
+    paths: ['.github/workflows/emulator.yml', 'apk/test/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  emu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { ad: a35-swangle, api: 35, gpu: swangle_indirect, ek: '', cihaz: pixel_6 }
+          - { ad: a35-swiftshader-novulkan, api: 35, gpu: swiftshader_indirect, ek: '-feature -Vulkan', cihaz: pixel_6 }
+          - { ad: a34-swiftshader-novulkan, api: 34, gpu: swiftshader_indirect, ek: '-feature -Vulkan', cihaz: pixel_6 }
+          - { ad: a33-guest-tablet, api: 33, gpu: guest, ek: '-feature -Vulkan', cihaz: pixel_tablet }
+    name: emu (${{ matrix.ad }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Son derlemenin deneme APK'sı
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p cikti
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern luna-deneme.apk -D cikti
+          gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName | tee cikti/surum.txt
+      - name: Playwright (yalnızca Android bağlantısı; tarayıcı indirilmez)
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm i --no-save --no-audit --no-fund playwright@1.63.0
+      - name: Emülatör
+        run: |
+          SDK="$ANDROID_HOME"; export PATH="$SDK/platform-tools:$SDK/emulator:$PATH"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"; mkdir -p "$ANDROID_AVD_HOME"
+          IMG="system-images;android-${{ matrix.api }};google_apis;x86_64"
+          yes | timeout 600 "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "emulator" "platform-tools" "$IMG" > sdk.log 2>&1 || { tail -20 sdk.log; exit 1; }
+          echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd -n luna -k "$IMG" -d ${{ matrix.cihaz }}
+          nohup emulator -avd luna -no-window -no-audio -no-boot-anim -no-snapshot -gpu ${{ matrix.gpu }} ${{ matrix.ek }} -camera-back none > cikti/emulator.log 2>&1 &
+          timeout 300 adb wait-for-device
+          for i in $(seq 1 150); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 2; done
+          echo "açıldı: $(adb shell getprop sys.boot_completed)"
+          adb install -r cikti/luna-deneme.apk
+          adb shell settings put global window_animation_scale 0
+          (adb logcat -v time > cikti/gunluk.txt 2>&1 &)
+      - name: Deneme
+        timeout-minutes: 12
+        run: |
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
+          node apk/test/emulator-test.cjs cikti || echo "deneme yarıda kaldı"
+          pgrep -f qemu-system > /dev/null && echo "emülatör ayakta" || { echo "EMÜLATÖR ÇÖKTÜ"; tail -30 cikti/emulator.log; }
+          grep -E "Luna APK|AndroidRuntime|FATAL|chromium.*(Uncaught|Error)" cikti/gunluk.txt | tail -60 || true
+      - name: Sonuçlar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emu-${{ matrix.ad }}
+          path: |
+            cikti/*.png
+            cikti/*.txt
+            cikti/emulator.log

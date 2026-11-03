@@ -9,6 +9,8 @@ on:
   push:
     paths-ignore:
       - 'apk/guncel.json' # Hazal'a giden sürümü seçmek yeni derleme gerektirmez
+      - 'apk/test/**' # emülatör denemesi son derlemeyi kullanır (emulator.yml)
+      - '.github/workflows/emulator.yml'
   workflow_dispatch:
 
 permissions:
