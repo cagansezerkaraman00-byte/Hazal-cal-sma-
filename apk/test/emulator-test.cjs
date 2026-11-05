@@ -124,8 +124,48 @@ const HAZIR = 'typeof App !== "undefined" && typeof Timer !== "undefined" && typ
   await device.shell('am start -n com.hazal.luna/.MainActivity');
   await bekle(3000);
   try { await page.waitForFunction(HAZIR, null, { timeout: 30000 }); } catch (e) { yaz('dönüşten sonra Luna hazır değil: ' + e.message); }
+  // 6) Luna'nın kendi güncellemesi (web paketi), gerçek Android koduyla: bu derlemenin GitHub'daki paketi indirilir,
+  //    özetiyle doğrulanır, açılır, Luna ondan yeniden yüklenir ve açılınca onaylanır (LunaWebPlugin).
+  try {
+    const pk = await page.evaluate(() => fetch('native/paket.json', { cache: 'no-store' }).then((r) => r.json()));
+    yaz('paket: ' + JSON.stringify(pk));
+    const rel = await fetch('https://api.github.com/repos/' + (process.env.GITHUB_REPOSITORY || 'cagansezerkaraman00-byte/Hazal-cal-sma-') + '/releases/tags/apk-' + pk.kod, { headers: { Accept: 'application/vnd.github+json', ...(process.env.GH_TOKEN ? { Authorization: 'Bearer ' + process.env.GH_TOKEN } : {}) } }).then((r) => r.json());
+    const as = (rel.assets || []).find((a) => a.name === 'luna-web-' + pk.yerli + '.zip');
+    if (!as) throw new Error('sürüm sayfasında luna-web-' + pk.yerli + '.zip yok');
+    const sha = String(as.digest || '').replace(/^sha256:/, '');
+    const DENEME_KOD = 900000 + (pk.kod % 100000); // bu derlemenin aynısı, deneme numarasıyla
+    const t0 = Date.now();
+    const ind = await page.evaluate(([u, k, h]) => Capacitor.Plugins.LunaWeb.indir({ url: u, kod: k, sha256: h }).then((r) => 'tamam ' + r.yol, (e) => 'HATA ' + e.message), [as.browser_download_url, DENEME_KOD, sha]);
+    yaz(`web paketi indir (${Math.round((Date.now() - t0) / 1000)} sn, ${Math.round(as.size / 1e5) / 10} MB): ${ind}`);
+    const yanlis = await page.evaluate(([u]) => Capacitor.Plugins.LunaWeb.indir({ url: u, kod: 900001, sha256: '00'.repeat(32) }).then(() => 'KABUL ETTİ ✗', (e) => 'reddetti ✓ ' + e.message), [as.browser_download_url]);
+    yaz('yanlış özetli paket: ' + yanlis);
+    await page.evaluate((k) => Capacitor.Plugins.LunaWeb.uygula({ kod: k }), DENEME_KOD);
+    await bekle(4000);
+    await page.waitForFunction(HAZIR, null, { timeout: 60000 });
+    await bekle(4000); // açılışta 2,5 sn sonra onay
+    const bilgi = await page.evaluate(() => Capacitor.Plugins.LunaWeb.bilgi());
+    yaz('web paketiyle açıldı: ' + JSON.stringify(bilgi) + (String(bilgi.yol).endsWith('/' + DENEME_KOD) && !bilgi.bekleyen ? ' ✓ onaylandı' : ' ✗'));
+    await shot('07-web-paketiyle');
+    await bekle(25000); // 25 sn bekçisi onaylı pakette geri döndürmemeli
+    const bilgi2 = await page.evaluate(() => Capacitor.Plugins.LunaWeb.bilgi()).catch((e) => ({ hata: e.message }));
+    yaz('25 sn sonra: ' + JSON.stringify(bilgi2) + (String(bilgi2.yol).endsWith('/' + DENEME_KOD) ? ' ✓ yerinde' : ' ✗ geri döndü'));
+    // uygulama kapatılıp açılınca da indirilmiş paketle açılır
+    await device.shell('am force-stop com.hazal.luna');
+    await device.shell('am start -W -n com.hazal.luna/.MainActivity');
+    const wv2 = await device.webView({ pkg: 'com.hazal.luna' }, { timeout: 60000 });
+    const p2 = await wv2.page();
+    await p2.waitForFunction(HAZIR, null, { timeout: 60000 });
+    const bilgi3 = await p2.evaluate(() => Capacitor.Plugins.LunaWeb.bilgi());
+    yaz('kapatıp açınca: ' + JSON.stringify(bilgi3) + (String(bilgi3.yol).endsWith('/' + DENEME_KOD) ? ' ✓ indirilmiş paketle' : ' ✗'));
+    const veri = await p2.evaluate(() => !!localStorage.getItem('luna-siir-okundu'));
+    yaz('veriler yerinde: ' + (veri ? '✓' : '✗'));
+  } catch (e) { yaz('web paketi denemesi yarıda kaldı: ' + e.message); }
   // Tanılama günlüğü (Luna'nın kendi hata günlüğü)
-  const gunluk = await page.evaluate(() => (window.ErrLog ? ErrLog.list() : []).map((x) => x.m));
+  let gunluk = [];
+  try {
+    const sayfa = (await (await device.webView({ pkg: 'com.hazal.luna' }, { timeout: 20000 })).page());
+    gunluk = await sayfa.evaluate(() => (window.ErrLog ? ErrLog.list() : []).map((x) => x.m));
+  } catch (e) { yaz('Tanılama okunamadı: ' + e.message); }
   gunluk.forEach((m) => yaz('Tanılama: ' + m));
   fs.writeFileSync(path.join(out, 'rapor.txt'), rapor.join('\n') + '\n');
   await device.close();

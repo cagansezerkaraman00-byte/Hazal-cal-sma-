@@ -64,6 +64,16 @@ jobs:
           fi
           ls -la ../../cikti
 
+      # Luna'nın kendi güncellemesi (APK kurmadan): uygulamaya giren dosyaların paketi. Adındaki parmak izi Android
+      # tarafınınkidir; uygulama yalnızca kendi parmak iziyle aynı paketi indirip kurar (apk/scripts/web.cjs, LunaWebPlugin).
+      - name: Web paketi
+        run: |
+          YERLI=$(node -p "require('./apk/www/native/paket.json').yerli")
+          KOD=$(node -p "require('./apk/www/native/paket.json').kod")
+          [ "$KOD" = "$LUNA_SURUM_KODU" ] || { echo "paket.json derleme numarası tutmuyor: $KOD"; exit 1; }
+          (cd apk/www && zip -qrX "../../cikti/luna-web-$YERLI.zip" .)
+          ls -la cikti/luna-web-*.zip
+
       - name: İmzaları Android'in kendi aracıyla doğrula
         run: |
           AS="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
@@ -87,8 +97,9 @@ jobs:
           ---
           Luna $LUNA_SURUM · derleme $LUNA_SURUM_KODU · $(git log -1 --format=%h)
           luna.apk: kalıcı anahtarla imzalı; Hazal'ın tableti ve senin telefonun için.
+          luna-web-*.zip: Luna'nın kendi güncellemesi; uygulama kendisi indirir (APK kurulmaz).
           luna-deneme.apk: denetimli kopya, bilgisayardaki sanal telefon için (Chrome'da chrome://inspect ile incelenir); gerçek telefona kurma."
-          gh release create "$TAG" cikti/*.apk --latest --target "$GITHUB_SHA" --title "Luna APK $LUNA_SURUM (derleme $LUNA_SURUM_KODU)" --notes "$NOT"
+          gh release create "$TAG" cikti/*.apk cikti/luna-web-*.zip --latest --target "$GITHUB_SHA" --title "Luna APK $LUNA_SURUM (derleme $LUNA_SURUM_KODU)" --notes "$NOT"
           # eski derlemelerden son 5'i kalsın; Hazal'a giden sürüm (apk/guncel.json) hiçbir zaman silinmez
           KORU="apk-$(node -e "console.log(require('./apk/guncel.json').kod||0)")"
           gh release list --limit 50 --json tagName --jq '.[].tagName' | grep -E '^apk-[0-9]+$' | grep -vx "$KORU" | tail -n +6 | xargs -r -I{} gh release delete {} --yes --cleanup-tag || true

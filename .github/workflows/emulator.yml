@@ -73,7 +73,9 @@ jobs:
           adb shell settings put global window_animation_scale 0
           (adb logcat -v time > cikti/gunluk.txt 2>&1 &)
       - name: Deneme
-        timeout-minutes: 12
+        timeout-minutes: 14
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           export PATH="$ANDROID_HOME/platform-tools:$PATH"
           (node apk/test/donus-sunucu.cjs > cikti/donus-sunucu.txt 2>&1 &)

@@ -144,31 +144,43 @@
   document.addEventListener('pause', pauseMusic); // Capacitor: uygulama arkaya geçti
   if (P.App) P.App.addListener('pause', pauseMusic);
 
-  // Uygulama güncellemesi (Ayarlar'da kendi kartı): Luna yeni APK'yı indirir, Android'in "Güncelle" penceresini açar.
-  // Yalnızca Çağan'ın onayladığı sürüm teklif edilir: depodaki apk/guncel.json (GitHub'daki her deneme derlemesi değil).
-  // Deneme kanalı (Çağan'ın telefonu): kartta sürüm yazısına 5 kez dokununca açılır; GitHub'daki en yeni derleme teklif edilir.
-  // Ayar yalnızca o cihazda durur (Luna verisine, yedeğe girmez); Hazal'ın tabletinde kapalı kalır.
-  const Gn = P.LunaGuncelle;
+  // Güncellemeler — iki tür:
+  //  1) Luna'nın kendisi (ekranlar, yazılar, Spotify, mini pencere çizimi…): web paketi olarak KENDİLİĞİNDEN gelir.
+  //     Arka planda iner, doğrulanır; Luna kapalıyken ya da 3 dakikadır arkadayken (sayaç çalışmıyorsa) yeni haline geçer.
+  //     Açılınca "✨ Luna güncellendi" der. Link yok, düğme yok, kurulum ekranı yok; adres aynı kaldığı için veriler yerinde.
+  //  2) Android tarafı (Java, eklentiler, izinler) değiştiyse yeni APK gerekir: Ayarlar'da bir kez "Güncelle" (Android
+  //     Play Store dışındaki uygulamaların kendini sormadan kurmasına izin vermiyor).
+  // Hazal'a yalnızca Çağan'ın onayladığı sürüm gider (apk/guncel.json). Deneme kanalı (Çağan'ın telefonu: kartta sürüm
+  // yazısına 5 dokunuş) ve denetimli kopya GitHub'daki en yeni derlemeyi alır. Ayar yalnızca o cihazda durur.
+  const Gn = P.LunaGuncelle, Web = P.LunaWeb;
   if (Gn && P.App && P.App.getInfo) {
     const KAYNAK = 'https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/apk/guncel.json';
     const SON_DERLEME = 'https://api.github.com/repos/cagansezerkaraman00-byte/Hazal-cal-sma-/releases/latest';
-    const DENEME = 'luna-apk-deneme';
-    // Denetimli kopya (luna-deneme.apk: bilgisayardaki sanal telefonda Chrome'un chrome://inspect sayfasından incelenebilen sürüm):
-    // başka anahtarla imzalı olduğu için yalnızca kendi türüyle güncellenir; her zaman en yeni derlemeyi alır.
+    const DENEME = 'luna-apk-deneme', HAZIR = 'luna-web-hazir', SON = 'luna-web-son';
+    // Denetimli kopya (luna-deneme.apk: bilgisayardaki sanal telefonda chrome://inspect ile incelenen sürüm):
+    // başka anahtarla imzalı olduğu için APK'sı yalnızca kendi türüyle güncellenir; her zaman en yeni derlemeyi alır.
     const denetimli = !!cap.DEBUG;
     const APK_ADI = denetimli ? 'luna-deneme.apk' : 'luna.apk';
-    const deneme = () => { if (denetimli) return true; try { return localStorage.getItem(DENEME) === '1'; } catch (e) { return false; } };
-    const g = { kod: 0, surum: '', yeni: null, durum: 'bekle', yuzde: -1, izin: false, hata: '', bakildi: 0, haber: 0 };
+    const oku = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const yazK = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* yok say */ } };
+    const deneme = () => denetimli || oku(DENEME) === '1';
+    const g = {
+      kod: 0, surum: '', yeni: null, durum: 'bekle', yuzde: -1, izin: false, hata: '', bakildi: 0, haber: 0,
+      web: { kod: 0, surum: '', yerli: '', iniyor: false, hazir: null }, // çalışan Luna paketi ve inip bekleyen yenisi
+    };
+    try { g.web.hazir = JSON.parse(oku(HAZIR) || 'null'); } catch (e) { g.web.hazir = null; }
     let dokunus = [];
-    // GitHub'daki derleme → guncel.json biçimi (kod, sürüm, apk, yenilikler)
+    const notlar = (body) => String(body || '').split(/\n---\n/)[0].split('\n').filter((x) => /^- /.test(x)).map((x) => x.slice(2).trim());
+    // GitHub'daki derleme → aday: APK'sı ve (Android tarafı aynıysa) bu uygulamaya uyan web paketi
     const derleme = (r) => {
       const kod = +String(r.tag_name || '').replace(/^apk-/, '');
-      const a = (r.assets || []).find((x) => x.name === APK_ADI && x.state === 'uploaded' && x.size > 0);
-      if (!(kod > 0) || !a) return null;
-      const ust = String(r.body || '').split(/\n---\n/)[0];
+      const ok = (x) => x && x.state === 'uploaded' && x.size > 0;
+      const a = (r.assets || []).find((x) => x.name === APK_ADI && ok(x));
+      const w = g.web.yerli && (r.assets || []).find((x) => x.name === 'luna-web-' + g.web.yerli + '.zip' && ok(x));
+      if (!(kod > 0) || (!a && !w)) return null;
       return {
-        kod, surum: (String(r.name || '').match(/Luna APK ([\d.]+)/) || [])[1] || '', apk: a.browser_download_url, boyut: a.size,
-        yenilikler: ust.split('\n').filter((s) => /^- /.test(s)).map((s) => s.slice(2).trim()),
+        kod, surum: (String(r.name || '').match(/Luna APK ([\d.]+)/) || [])[1] || '', apk: a ? a.browser_download_url : '', yenilikler: notlar(r.body),
+        web: w ? { kod, url: w.browser_download_url, sha256: String(w.digest || '').replace(/^sha256:/, '') } : null,
       };
     };
     let kart = null;
@@ -182,40 +194,86 @@
       #apk-update-card .ag-cubuk > div { height: 100%; border-radius: 99px; background: var(--accent-grad); transition: width .25s; }
       #apk-update-card .ag-not { margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--lav-soft); color: var(--text); font-size: .9rem; }`;
     document.head.appendChild(st);
+    const liste = (n) => (Array.isArray(n) && n.length ? `<ul class="ag-liste">${n.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : '');
     const ciz = () => {
       if (!kart) return;
-      const y = g.yeni, mesgul = g.durum === 'bakiliyor' || g.durum === 'indiriliyor';
-      const durum = g.durum === 'bakiliyor' ? 'Bakılıyor…' : g.durum === 'indiriliyor' ? 'İndiriliyor…' : y ? 'Yeni sürüm hazır' : g.durum === 'hata' ? 'Bakılamadı' : 'Güncel ✓';
+      const y = g.yeni, h = g.web.hazir, mesgul = g.durum === 'bakiliyor' || g.durum === 'indiriliyor';
+      const durum = g.durum === 'bakiliyor' ? 'Bakılıyor…' : g.durum === 'indiriliyor' || g.web.iniyor ? 'İndiriliyor…'
+        : h ? 'Hazır ✨' : y ? 'Yeni sürüm hazır' : g.durum === 'hata' ? 'Bakılamadı' : 'Güncel ✓';
       kart.innerHTML = `<h2>📲 Uygulama güncellemesi</h2>
-        <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna uygulaması</b><small data-ag="surum">Sürüm ${esc(g.surum || '?')} · derleme ${esc(g.kod || '?')}${denetimli ? ' · 🔍 denetimli kopya' : deneme() ? ' · 🧪 deneme kanalı' : ''}</small></div>
-          <span class="upd-state ${y ? 'new' : ''}">${durum}</span></div>
-        ${y ? `<div class="upd-new">${Array.isArray(y.yenilikler) && y.yenilikler.length ? `<ul class="ag-liste">${y.yenilikler.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
+        <div class="upd-row"><img src="icons/icon-192.png" alt="" class="ub-icon"><div class="ub-text"><b>Luna uygulaması</b><small data-ag="surum">Sürüm ${esc(g.web.surum || g.surum || '?')} · derleme ${esc(g.web.kod || g.kod || '?')}${denetimli ? ' · 🔍 denetimli kopya' : deneme() ? ' · 🧪 deneme kanalı' : ''}</small></div>
+          <span class="upd-state ${h || y ? 'new' : ''}">${durum}</span></div>
+        ${h ? `<div class="upd-new">${liste(h.yenilikler)}<p class="muted small">Luna'nın yeni hali indi. Luna'yı kapatıp açınca ya da bir süre arkada kalınca kendiliğinden yenilenir.</p>
+          <button class="btn primary" type="button" data-ag="yenile">Şimdi yenile</button></div>` : ''}
+        ${!h && y ? `<div class="upd-new">${liste(y.yenilikler)}
           ${g.durum === 'indiriliyor'
             ? `<div class="ag-cubuk"><div style="width:${Math.max(3, g.yuzde)}%"></div></div><p class="muted small">Yeni Luna iniyor${g.yuzde >= 0 ? ' · %' + g.yuzde : '…'}</p>`
-            : `<button class="btn primary" type="button" data-ag="kur">Güncelle · sürüm ${esc(y.surum)}</button>`}</div>` : ''}
+            : `<p class="muted small">Bu güncelleme Android tarafında; Android bir kez kurulum onayı ister.</p><button class="btn primary" type="button" data-ag="kur">Güncelle · sürüm ${esc(y.surum)}</button>`}</div>` : ''}
         ${g.izin ? `<p class="ag-not">Android "Bu kaynaktan yüklemeye izin ver" ekranını açtı. İzni aç ve Luna'ya dön; kurulum kendiliğinden devam eder.</p>` : ''}
         ${g.hata ? `<p class="ag-not">${esc(g.hata)}</p>` : ''}
         <div class="row upd-acts"><button class="btn soft" type="button" data-ag="denetle" ${mesgul ? 'disabled' : ''}>Güncellemeleri denetle</button></div>
-        <p class="muted small">Güncelleme verilerine dokunmaz: yeni Luna eskisinin üstüne kurulur, çalışmaların, notların ve rozetlerin olduğu gibi kalır.</p>`;
+        <p class="muted small">Luna'nın kendi güncellemeleri kendiliğinden gelir. Hiçbiri verilerine dokunmaz: çalışmaların, notların ve rozetlerin olduğu gibi kalır.</p>`;
+    };
+
+    // inmiş yeni hale geçiş: yalnızca sayaç çalışmıyorken, mini pencere ve Spotify girişi açık değilken
+    const uygun = () => {
+      const h = g.web.hazir;
+      if (!h || !(+h.kod > +g.web.kod) || !Web) return false;
+      try { if (Timer.state().running) return false; } catch (e) { /* Luna henüz yüklenmedi: sayaç çalışmıyor sayılır */ }
+      if (document.documentElement.classList.contains('luna-pip')) return false;
+      if (oku('luna-sp-verifier')) return false;
+      return g.durum !== 'indiriliyor' && !g.izin;
+    };
+    const gec = (neden) => {
+      if (!uygun()) return false;
+      const h = g.web.hazir;
+      note('Luna ' + h.kod + ' derlemesine geçiyor (' + neden + ')');
+      yazK('luna-web-notlar', JSON.stringify(h.yenilikler || [])); // yeni hal açılınca "Luna güncellendi" haberinde
+      Web.uygula({ kod: +h.kod }).catch((e) => { // paket yoksa (yeni APK eskileri sildi) bir dahakine yeniden iner
+        note('yeni Luna açılamadı: ' + ((e && e.message) || e));
+        g.web.hazir = null; yazK(HAZIR, null); ciz();
+      });
+      return true;
+    };
+    const webIndir = async (aday) => {
+      if (!Web || g.web.iniyor) return;
+      if (g.web.hazir && +g.web.hazir.kod >= aday.kod) { gec('hazırdı'); return; }
+      g.web.iniyor = true; ciz();
+      try {
+        await Web.indir({ url: aday.web.url, kod: aday.kod, sha256: aday.web.sha256 || '' });
+        g.web.hazir = { kod: aday.kod, surum: aday.surum, yenilikler: aday.yenilikler || [] };
+        yazK(HAZIR, JSON.stringify(g.web.hazir));
+        note('Luna ' + aday.kod + ' indi; uygun anda geçilecek');
+        if (arkada) { clearTimeout(arka); arka = setTimeout(() => gec('3 dakikadır arkada'), 3 * 60000); } // arkadayken indiyse
+      } catch (e) {
+        if (!/bozuk/.test(String((e && e.message) || e))) note('Luna paketi inemedi: ' + ((e && e.message) || e));
+      }
+      g.web.iniyor = false; ciz();
     };
     const denetle = async (sessiz) => {
       if (g.durum === 'indiriliyor') return;
       g.durum = 'bakiliyor'; g.hata = ''; g.bakildi = Date.now(); ciz();
       try {
-        let j = null;
+        let aday = null;
         if (deneme()) {
           try {
             const r = await fetch(SON_DERLEME, { cache: 'no-store', headers: { Accept: 'application/vnd.github+json' } });
-            if (r.ok) j = derleme(await r.json());
+            if (r.ok) aday = derleme(await r.json());
           } catch (e) { /* aşağıda onaylı sürüme bakılır */ }
         }
-        if (!j && !denetimli) { // onaylı sürüm (guncel.json) kalıcı anahtarlıdır; denetimli kopyaya kurulamaz
+        if (!aday && !denetimli) { // onaylı sürüm (guncel.json) kalıcı anahtarlıdır; denetimli kopyaya kurulamaz
           const r = await fetch(KAYNAK + '?t=' + Date.now(), { cache: 'no-store' });
           if (!r.ok) throw new Error('HTTP ' + r.status);
-          j = await r.json();
+          const j = await r.json();
+          aday = { kod: +j.kod, surum: j.surum || '', apk: j.apk || '', yenilikler: j.yenilikler || [],
+            web: j.web && g.web.yerli && j.web.yerli === g.web.yerli && /^https:\/\//.test(j.web.url || '') ? { kod: +j.web.kod || +j.kod, url: j.web.url, sha256: j.web.sha256 || '' } : null };
+          if (aday.web) aday.kod = aday.web.kod;
         }
-        if (!j) throw new Error('derleme bulunamadı');
-        g.yeni = +j.kod > +g.kod && /^https:\/\//.test(j.apk || '') ? j : null;
+        if (!aday) throw new Error('derleme bulunamadı');
+        const simdiki = Math.max(+g.kod || 0, +g.web.kod || 0);
+        g.yeni = null;
+        if (aday.kod > simdiki && aday.web) webIndir(aday); // Luna'nın kendisi: kendiliğinden
+        else if (aday.kod > simdiki && /^https:\/\//.test(aday.apk || '')) g.yeni = aday; // Android tarafı: bir dokunuş
         g.durum = 'tamam';
         // aynı sürüm için tek haber (Luna'ya her dönüşte yeniden çıkmasın)
         if (g.yeni && sessiz && g.haber !== +g.yeni.kod) { g.haber = +g.yeni.kod; toast('✨', 'Yeni Luna hazır', "Ayarlar → Uygulama güncellemesi'nden güncelleyebilirsin", 8000); }
@@ -238,14 +296,26 @@
       g.durum = 'tamam'; ciz();
     };
     Gn.addListener('ilerleme', (e) => { g.yuzde = e && e.yuzde != null ? e.yuzde : -1; ciz(); });
+    // arkaya geçince: 3 dakika sonra hâlâ arkadaysa yeni hale geçilir (dosya seçme, paylaşma, Spotify girişi gibi kısa
+    // çıkışlarda geçilmez; Luna'ya dönülünce iptal olur)
+    let arka = 0, arkada = false;
+    P.App.addListener('pause', () => { arkada = true; clearTimeout(arka); if (g.web.hazir) arka = setTimeout(() => gec('3 dakikadır arkada'), 3 * 60000); });
     // izin ekranından dönünce: inen dosya yeniden indirilmeden kurulsun
     P.App.addListener('resume', () => {
+      arkada = false; clearTimeout(arka);
       if (!g.izin) {
         // Luna uzun süre arkadaysa dönüşte bir kez daha sessizce bakılır (deneme kanalında 10 dakikada bir, normalde 6 saatte bir)
         if (g.kod && Date.now() - g.bakildi > (deneme() ? 10 * 60000 : 6 * 3600000)) denetle(true);
         return;
       }
       Gn.kur().then((r) => { g.izin = !(r && r.izin); ciz(); }).catch(() => { g.izin = false; ciz(); });
+    });
+    // çalışan paket: derlemesi ve Android parmak izi (yeni Luna'ya geçilmişse onunki)
+    const paket = fetch('native/paket.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((p) => {
+      g.web.kod = +p.kod || 0; g.web.surum = p.surum || ''; g.web.yerli = p.yerli || '';
+      if (g.web.hazir && !(+g.web.hazir.kod > g.web.kod)) { g.web.hazir = null; yazK(HAZIR, null); } // zaten bu sürümdeyiz
+      // Luna kapalıyken inmiş yeni hal varsa açılışta hemen geçilir (Hazal daha bir şeye dokunmadan)
+      else if (g.web.hazir) gec('açılış');
     });
     window.addEventListener('load', () => {
       const eski = document.getElementById('update-card'); // tarayıcıdaki Luna'nın güncelleme kartı uygulamada işe yaramaz
@@ -265,16 +335,29 @@
             if (dokunus.length < 5) return;
             dokunus = [];
             const ac = !deneme();
-            try { if (ac) localStorage.setItem(DENEME, '1'); else localStorage.removeItem(DENEME); } catch (err) { return; }
+            if (ac) yazK(DENEME, '1'); else yazK(DENEME, null);
             toast('🧪', ac ? 'Deneme kanalı açık' : 'Deneme kanalı kapalı', ac ? 'Her yeni derleme burada çıkar' : 'Yalnızca onaylı sürümler gelir');
             g.haber = 0; denetle(false);
           } else if (b.dataset.ag === 'kur') kur();
-          else denetle(false);
+          else if (b.dataset.ag === 'yenile') { if (!gec('Şimdi yenile')) toast('⏳', 'Şimdi yenilenemiyor', 'Sayaç çalışırken Luna yenilenmez; ders bitince yenilenir.'); }
+          else if (b.dataset.ag === 'denetle') denetle(false);
         });
       }
-      P.App.getInfo().then((i) => { g.kod = +i.build || 0; g.surum = i.version || ''; }).catch(() => {}).then(() => {
+      Promise.all([P.App.getInfo().then((i) => { g.kod = +i.build || 0; g.surum = i.version || ''; }).catch(() => {}), paket]).then(() => {
+        if (!g.web.kod) g.web.kod = g.kod; // yerel derleme: paket numarası yok
+        // yeni Luna sorunsuz açıldı: onayla (yoksa uygulama 25 sn sonra eski haline döner) ve bir kez haber ver
+        const son = +oku(SON) || 0;
+        if (Web) setTimeout(() => {
+          if (typeof App === 'undefined' || !document.getElementById('btn-toggle')) return; // Luna açılamadı: onay yok, geri dönülür
+          Web.onayla().catch(() => {});
+          if (son && g.web.kod > son) {
+            let n = null; try { n = JSON.parse(oku('luna-web-notlar') || 'null'); } catch (e) { /* yok say */ }
+            toast('✨', 'Luna güncellendi', n && n[0] ? n[0] : 'Yenilikler: Ayarlar → Uygulama güncellemesi', 9000);
+          }
+          yazK(SON, String(g.web.kod));
+        }, 2500);
         ciz();
-        setTimeout(() => denetle(true), 4000); // açılışta bir kez sessizce bak; yeni sürüm varsa küçük bir haber
+        setTimeout(() => denetle(true), 4000); // açılışta bir kez sessizce bak
       });
     });
   }

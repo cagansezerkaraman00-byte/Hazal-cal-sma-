@@ -49,4 +49,23 @@ replaceOnce('js/spotify.js', "location.href = AUTH + '?' + q.toString();", "if (
 //    "Duraklatıldı · ⏯ ile devam" ipucu uygulamanın penceresinde de görünsün
 replaceOnce('js/mini-timer.js', "if(mode==='video'&&!s.running) {", "if((mode==='video'||window.LUNA_PIP)&&!s.running) {");
 
+// 5) Paket kimliği (Luna'nın kendi güncellemeleri APK kurmadan gelsin diye: native/luna-native.js, LunaWebPlugin):
+//    kod   = derleme numarası (yeni paket bundan büyükse teklif edilir)
+//    yerli = Android tarafının (Java, eklentiler, ayarlar) parmak izi. Bir web paketi yalnızca aynı parmak izli APK'ya
+//            kurulur; Android tarafı değiştiyse yeni APK gerekir (Ayarlar'da bir kez "Güncelle").
+{
+  const { execSync } = require('node:child_process');
+  const crypto = require('node:crypto');
+  let liste = '';
+  try {
+    liste = execSync('git ls-files -s -- android package-lock.json capacitor.config.json', { cwd: apk, encoding: 'utf8' })
+      .split('\n').filter((l) => l && !/assets\/public\//.test(l)).sort().join('\n');
+  } catch (e) { fail('git ile Android dosyaları listelenemedi: ' + e.message); }
+  if (!liste) fail('Android dosyaları bulunamadı');
+  const yerli = crypto.createHash('sha256').update(liste).digest('hex').slice(0, 12);
+  const paket = { kod: +process.env.LUNA_SURUM_KODU || 0, surum: process.env.LUNA_SURUM || '', yerli };
+  fs.writeFileSync(path.join(www, 'native', 'paket.json'), JSON.stringify(paket) + '\n');
+  console.log('paket: ' + JSON.stringify(paket));
+}
+
 console.log('APK web kopyası hazır: ' + www);

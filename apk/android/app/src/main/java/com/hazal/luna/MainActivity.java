@@ -12,6 +12,9 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(LunaPipPlugin.class);
         registerPlugin(LunaGuncellePlugin.class);
+        registerPlugin(LunaWebPlugin.class);
+        // indirilmiş Luna paketi: yeni APK'da bırakılır, onaysız kaldıysa son çalışana dönülür (Capacitor yolu okumadan önce)
+        LunaWebPlugin.baslangic(this);
         super.onCreate(savedInstanceState);
         // Spotify oynatıcısı kendi çerçevesinde (sdk.scdn.co) çalışır; çerezleri reddedilmesin
         if (bridge != null && bridge.getWebView() != null) {
