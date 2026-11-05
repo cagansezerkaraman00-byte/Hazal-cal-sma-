@@ -1,0 +1,109 @@
+# Luna'nın Android uygulamasını gerçek bir Android emülatöründe dener: açılış, mini pencere, Spotify'ın ihtiyaç duyduğu
+# korumalı müzik desteği, Spotify girişinden dönüş ve Luna'nın kendi güncellemesi. Her APK derlemesinden sonra apk.yml çağırır
+# (o derlemenin deneme APK'sı; deneme dosyaları değişince de yeni derleme yapılır); elle çalıştırılınca en yeni sürümünkini kullanır.
+# Ekran görüntüleri ve rapor "emu-sonuc" ön sürümünde.
+name: Android emülatör denemesi
+on:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      yapit:
+        description: Deneme APK'sının bulunduğu yapıt (aynı çalıştırmada derlenen)
+        type: string
+        default: ''
+permissions:
+  contents: write # sonuçlar "emu-sonuc" ön sürümüne konur (en yeni derleme sayılmaz, telefonlara teklif edilmez)
+jobs:
+  emu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # swangle_indirect: Luna'nın sahnesinde çökmeyen tek grafik ayarı (guest ve swiftshader çöküyor)
+          - { ad: telefon, api: 35, gpu: swangle_indirect, ek: '', cihaz: pixel_6 }
+          - { ad: tablet, api: 35, gpu: swangle_indirect, ek: '', cihaz: pixel_tablet }
+    name: emu (${{ matrix.ad }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Bu derlemenin deneme APK'sı
+        if: inputs.yapit != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.yapit }}
+          path: cikti
+      - name: En yeni sürümün deneme APK'sı
+        if: inputs.yapit == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p cikti
+          gh release download --repo "$GITHUB_REPOSITORY" --pattern luna-deneme.apk -D cikti
+          gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName | tee cikti/surum.txt
+      - name: Playwright (yalnızca Android bağlantısı; tarayıcı indirilmez)
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm i --no-save --no-audit --no-fund playwright@1.63.0
+      - name: Emülatör
+        run: |
+          SDK="$ANDROID_HOME"; export PATH="$SDK/platform-tools:$SDK/emulator:$PATH"
+          export ANDROID_AVD_HOME="$HOME/.android/avd"; mkdir -p "$ANDROID_AVD_HOME"
+          IMG="system-images;android-${{ matrix.api }};google_apis;x86_64"
+          # Google'ın sunucusu ara sıra bozuk dosya gönderiyor ("Error on ZipFile unknown archive"): üç kez denenir
+          for i in 1 2 3; do
+            yes | timeout 600 "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "emulator" "platform-tools" "$IMG" > sdk.log 2>&1 && break
+            echo "Android araçları inemedi (deneme $i):"; tail -5 sdk.log
+            [ "$i" = 3 ] && exit 1; sleep 15
+          done
+          echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd -n luna -k "$IMG" -d ${{ matrix.cihaz }}
+          nohup emulator -avd luna -no-window -no-audio -no-boot-anim -no-snapshot -gpu ${{ matrix.gpu }} ${{ matrix.ek }} -camera-back none > cikti/emulator.log 2>&1 &
+          timeout 300 adb wait-for-device
+          for i in $(seq 1 150); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = "1" ] && break; sleep 2; done
+          echo "açıldı: $(adb shell getprop sys.boot_completed)"
+          adb install -r cikti/luna-deneme.apk
+          # yeni kurulmuş Chrome'un "hoş geldin" ekranı atlansın (Spotify girişi uygulama içi Chrome sekmesinde açılır)
+          adb shell 'echo "_ --disable-fre --no-default-browser-check --no-first-run" > /data/local/tmp/chrome-command-line'
+          adb shell am set-debug-app --persistent com.android.chrome
+          adb shell settings put global window_animation_scale 0
+          (adb logcat -v time > cikti/gunluk.txt 2>&1 &)
+      - name: Deneme
+        timeout-minutes: 14
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
+          (node apk/test/donus-sunucu.cjs > cikti/donus-sunucu.txt 2>&1 &)
+          node apk/test/emulator-test.cjs cikti || echo "deneme yarıda kaldı"
+          pgrep -f qemu-system > /dev/null && echo "emülatör ayakta" || { echo "EMÜLATÖR ÇÖKTÜ"; tail -30 cikti/emulator.log; }
+          grep -E "Luna APK|AndroidRuntime|FATAL|chromium.*(Uncaught|Error)" cikti/gunluk.txt | tail -60 || true
+      - name: Sonuçları ön sürüme koy
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view emu-sonuc --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1 || \
+            gh release create emu-sonuc --repo "$GITHUB_REPOSITORY" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Emülatör denemesi (otomatik)" --notes "Android emülatöründe Luna denemesinin ekran görüntüleri ve raporu. Kurulacak bir sürüm değildir." || true
+          mkdir -p yukle
+          for f in cikti/*.png cikti/rapor.txt; do [ -s "$f" ] && cp "$f" "yukle/${{ matrix.ad }}-$(basename "$f")"; done
+          ls yukle
+          for i in 1 2 3; do gh release upload emu-sonuc yukle/* --repo "$GITHUB_REPOSITORY" --clobber && break; sleep 5; done
+      - name: Sonuçlar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emu-${{ matrix.ad }}
+          path: |
+            cikti/*.png
+            cikti/*.txt
+            cikti/emulator.log

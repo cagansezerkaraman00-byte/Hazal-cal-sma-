@@ -1,0 +1,117 @@
+# Luna'nın Android uygulamasını (APK) derler, imzasını doğrular, her derlemeyi kendi GitHub sürümüne koyar
+# (telefondan doğrudan indirilebilsin) ve Android emülatöründe dener (emulator.yml: telefon ve tablet).
+# Luna'nın kendi dosyalarına dokunmaz: apk/scripts/web.cjs onları uygulamanın içine kopyalar.
+# LUNA_IMZA_ANAHTARI (anahtar dosyası, base64) ve LUNA_IMZA_SIFRESI sırları tanımlıysa kalıcı anahtarla imzalı
+# luna.apk (Hazal'ın tableti için) de çıkar; yoksa yalnızca luna-deneme.apk çıkar. Anahtar depoya asla girmez.
+name: Android APK
+
+on:
+  push:
+    paths-ignore:
+      - 'apk/guncel.json' # Hazal'a giden sürümü seçmek yeni derleme gerektirmez
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Sürüm
+        run: |
+          V=$(node -e "const s=require('fs').readFileSync('js/surum.js','utf8');console.log(JSON.parse(s.match(/\/\*SURUMLER\*\/([\s\S]*?)\/\*SURUMLER\*\//)[1])[0].surum)")
+          echo "LUNA_SURUM=$V" >> "$GITHUB_ENV"
+          echo "LUNA_SURUM_KODU=$((1000 + ${{ github.run_number }}))" >> "$GITHUB_ENV"
+      - name: Luna'yı uygulamaya kopyala
+        working-directory: apk
+        run: |
+          npm ci --no-audit --no-fund
+          npm run sync
+      - name: Derle
+        working-directory: apk/android
+        env:
+          LUNA_IMZA_ANAHTARI: ${{ secrets.LUNA_IMZA_ANAHTARI }}
+          LUNA_IMZA_SIFRESI: ${{ secrets.LUNA_IMZA_SIFRESI }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+          mkdir -p ../../cikti
+          cp app/build/outputs/apk/debug/app-debug.apk ../../cikti/luna-deneme.apk
+          if [ -n "$LUNA_IMZA_ANAHTARI" ] && [ -n "$LUNA_IMZA_SIFRESI" ]; then
+            export LUNA_IMZA_DOSYASI="$RUNNER_TEMP/luna-imza.p12"
+            printf '%s' "$LUNA_IMZA_ANAHTARI" | base64 -d > "$LUNA_IMZA_DOSYASI"
+            ./gradlew --no-daemon assembleRelease
+            rm -f "$LUNA_IMZA_DOSYASI"
+            cp app/build/outputs/apk/release/app-release.apk ../../cikti/luna.apk
+          else
+            echo "İmza sırları yok: yalnızca deneme APK'sı çıktı"
+          fi
+          ls -la ../../cikti
+
+      # Luna'nın kendi güncellemesi (APK kurmadan): uygulamaya giren dosyaların paketi. Adındaki parmak izi Android
+      # tarafınınkidir; uygulama yalnızca kendi parmak iziyle aynı paketi indirip kurar (apk/scripts/web.cjs, LunaWebPlugin).
+      - name: Web paketi
+        run: |
+          YERLI=$(node -p "require('./apk/www/native/paket.json').yerli")
+          KOD=$(node -p "require('./apk/www/native/paket.json').kod")
+          [ "$KOD" = "$LUNA_SURUM_KODU" ] || { echo "paket.json derleme numarası tutmuyor: $KOD"; exit 1; }
+          (cd apk/www && zip -qrX "../../cikti/luna-web-$YERLI.zip" .)
+          ls -la cikti/luna-web-*.zip
+
+      - name: İmzaları Android'in kendi aracıyla doğrula
+        run: |
+          AS="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
+          for f in cikti/*.apk; do
+            echo "== $f"
+            "$AS" verify --verbose --print-certs "$f" > imza.txt 2>&1 || { cat imza.txt; echo "İMZA DOĞRULANAMADI: $f"; exit 1; }
+            grep -E "^Verified|Signer #1 certificate (DN|SHA-256)" imza.txt
+          done
+
+      # Her derleme kendi sürüm sayfasına konur; bağlantı indirme sırasında asla silinmez.
+      # Kalıcı bağlantı: https://github.com/<depo>/releases/latest/download/luna.apk (en yeni tamamlanmış derleme)
+      - name: Sürüm sayfasına koy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="apk-$LUNA_SURUM_KODU"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          # indirme sayfası (indir/) "Bu sürümde" listesini buradan alır: apk/yenilikler.md'deki "- " satırları
+          NOT="$(cat apk/yenilikler.md)
+
+          ---
+          Luna $LUNA_SURUM · derleme $LUNA_SURUM_KODU · $(git log -1 --format=%h)
+          luna.apk: kalıcı anahtarla imzalı; Hazal'ın tableti ve senin telefonun için.
+          luna-web-*.zip: Luna'nın kendi güncellemesi; uygulama kendisi indirir (APK kurulmaz).
+          luna-deneme.apk: denetimli kopya, bilgisayardaki sanal telefon için (Chrome'da chrome://inspect ile incelenir); gerçek telefona kurma."
+          gh release create "$TAG" cikti/*.apk cikti/luna-web-*.zip --latest --target "$GITHUB_SHA" --title "Luna APK $LUNA_SURUM (derleme $LUNA_SURUM_KODU)" --notes "$NOT"
+          # eski derlemelerden son 5'i kalsın; Hazal'a giden sürüm (apk/guncel.json) hiçbir zaman silinmez
+          KORU="apk-$(node -e "console.log(require('./apk/guncel.json').kod||0)")"
+          gh release list --limit 50 --json tagName --jq '.[].tagName' | grep -E '^apk-[0-9]+$' | grep -vx "$KORU" | tail -n +6 | xargs -r -I{} gh release delete {} --yes --cleanup-tag || true
+
+      - name: Yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: luna-apk
+          path: cikti/
+
+  # Her derleme Android emülatöründe (telefon ve tablet) denenir: açılış, mini pencere, Spotify (emulator.yml)
+  emulator:
+    needs: apk
+    uses: ./.github/workflows/emulator.yml
+    with:
+      yapit: luna-apk
