@@ -1,11 +1,9 @@
 # Luna'nın Android uygulamasını gerçek bir Android emülatöründe dener: açılış, mini pencere, Spotify'ın ihtiyaç duyduğu
-# korumalı müzik desteği ve Spotify girişinden dönüş. Her APK derlemesinden sonra apk.yml çağırır (o derlemenin deneme APK'sı);
-# deneme dosyaları değişince ya da elle çalıştırılınca en yeni sürümün deneme APK'sını kullanır.
+# korumalı müzik desteği, Spotify girişinden dönüş ve Luna'nın kendi güncellemesi. Her APK derlemesinden sonra apk.yml çağırır
+# (o derlemenin deneme APK'sı; deneme dosyaları değişince de yeni derleme yapılır); elle çalıştırılınca en yeni sürümünkini kullanır.
 # Ekran görüntüleri ve rapor "emu-sonuc" ön sürümünde.
 name: Android emülatör denemesi
 on:
-  push:
-    paths: ['.github/workflows/emulator.yml', 'apk/test/**']
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -60,7 +58,12 @@ jobs:
           SDK="$ANDROID_HOME"; export PATH="$SDK/platform-tools:$SDK/emulator:$PATH"
           export ANDROID_AVD_HOME="$HOME/.android/avd"; mkdir -p "$ANDROID_AVD_HOME"
           IMG="system-images;android-${{ matrix.api }};google_apis;x86_64"
-          yes | timeout 600 "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "emulator" "platform-tools" "$IMG" > sdk.log 2>&1 || { tail -20 sdk.log; exit 1; }
+          # Google'ın sunucusu ara sıra bozuk dosya gönderiyor ("Error on ZipFile unknown archive"): üç kez denenir
+          for i in 1 2 3; do
+            yes | timeout 600 "$SDK/cmdline-tools/latest/bin/sdkmanager" --install "emulator" "platform-tools" "$IMG" > sdk.log 2>&1 && break
+            echo "Android araçları inemedi (deneme $i):"; tail -5 sdk.log
+            [ "$i" = 3 ] && exit 1; sleep 15
+          done
           echo no | "$SDK/cmdline-tools/latest/bin/avdmanager" create avd -n luna -k "$IMG" -d ${{ matrix.cihaz }}
           nohup emulator -avd luna -no-window -no-audio -no-boot-anim -no-snapshot -gpu ${{ matrix.gpu }} ${{ matrix.ek }} -camera-back none > cikti/emulator.log 2>&1 &
           timeout 300 adb wait-for-device
