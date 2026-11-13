@@ -5,10 +5,9 @@
 # luna.apk (Hazal'ın tableti için) de çıkar; yoksa yalnızca luna-deneme.apk çıkar. Anahtar depoya asla girmez.
 name: Android APK
 
+# Uygulama (APK) askıda (Çağan, Kasım 2026): Luna siteden (PWA) geliştiriliyor; derleme yalnızca elle başlatılır
+# (Actions → Android APK → Run workflow). Yeniden her gönderimde derlensin istenirse push tetiklemesi geri eklenir.
 on:
-  push:
-    paths-ignore:
-      - 'apk/guncel.json' # Hazal'a giden sürümü seçmek yeni derleme gerektirmez
   workflow_dispatch:
 
 permissions:
