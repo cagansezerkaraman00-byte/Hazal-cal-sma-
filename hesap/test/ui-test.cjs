@@ -16,7 +16,7 @@ let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if 
   await page.goto(sunucu.adres + '?guncel');
   await page.waitForFunction(() => window.hesap && customElements.get('math-field'));
   await page.waitForTimeout(600);
-  const tus = async (...adlar) => { for (const a of adlar) { const t = page.locator('.hm-tus', { hasText: a }).filter({ hasText: new RegExp('^\\s*' + a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$') }).first(); if (!(await t.count())) { const t2 = page.locator(`.hm-tus[aria-label="${a}"]`).first(); await t2.click(); } else await t.click(); await page.waitForTimeout(40); } };
+  const tus = async (...adlar) => { if (await page.locator('.hm.tuslar-kapali').count()) { await page.click('.hm-tus-ac'); await page.waitForTimeout(80); } for (const a of adlar) { const t = page.locator('.hm-tus', { hasText: a }).filter({ hasText: new RegExp('^\\s*' + a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$') }).first(); if (!(await t.count())) { const t2 = page.locator(`.hm-tus[aria-label="${a}"]`).first(); await t2.click(); } else await t.click(); await page.waitForTimeout(40); } };
   const deger = () => page.evaluate(() => window.hesap.mf.value);
   const sonucYazi = () => page.evaluate(() => { const s = document.querySelector('.hm-sonuc'); return [...s.querySelectorAll('math-field')].map((m) => m.value).join(' | ') + ' || ' + s.innerText; });
   const temizle = () => tus('AC');

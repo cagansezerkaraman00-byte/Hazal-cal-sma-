@@ -30,8 +30,12 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Motor testleri
         run: node hesap/test/motor-test.cjs
-      - name: Arayüz testi (telefon ve tablet)
+      - name: Arayüz testi
         run: node hesap/test/ui-test.cjs cikti
+      - name: Telefon ve tablet düzeni (5 cihaz boyutu)
+        run: node hesap/test/cihaz-test.cjs cikti
+      - name: Tuş gecikmesi (4 kat yavaş işlemci)
+        run: node hesap/test/hiz-test.cjs | tee cikti/hiz.txt
       - name: Gerçek fotoğraf okuyucu
         timeout-minutes: 15
         run: node hesap/test/okuyucu-test.cjs cikti

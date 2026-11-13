@@ -67,7 +67,7 @@
 .hm-lejant span.kesik::before { background: repeating-linear-gradient(90deg, var(--r) 0 5px, transparent 5px 9px); }
 
 .hm-grafik { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--hm-cizgi); }
-.hm-grafik canvas { display: block; width: 100%; height: min(58vh, 340px); }
+.hm-grafik canvas { display: block; width: 100%; height: min(52vh, 340px); }
 .hm-grafik-tuslar { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 6px; }
 .hm-grafik-tuslar button { width: 36px; height: 36px; border: 1px solid var(--hm-cizgi); border-radius: 10px; background: var(--hm-kart); color: var(--hm-yazi); font-size: 18px; cursor: pointer; }
 .hm-iz { position: absolute; left: 8px; bottom: 6px; font-size: 12.5px; color: var(--hm-soluk); font-variant-numeric: tabular-nums; background: var(--hg-etiket-zemin); border-radius: 8px; padding: 0 6px; }
@@ -75,7 +75,8 @@
 
 .hm-tuslar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
 .hm-tus { min-width: 0; min-height: 46px; border: 0; border-radius: 12px; background: var(--hm-tus); color: var(--hm-tus-yazi); font: 600 18px system-ui, sans-serif; box-shadow: var(--hm-tus-golge); cursor: pointer; padding: 0 2px; display: grid; place-items: center; }
-.hm-tus:active { transform: translateY(1px); box-shadow: none; filter: brightness(.96); }
+.hm-tus:active, .hm-tus.basili { transform: translateY(1px); box-shadow: none; filter: brightness(.94); }
+.hm-tus { -webkit-tap-highlight-color: transparent; }
 .hm-tus.f { background: var(--hm-tus-f); font-size: 16px; }
 .hm-tus.x { font-style: italic; font-family: "Times New Roman", serif; font-size: 20px; }
 .hm-tus.i { background: var(--hm-tus-i); }
@@ -104,10 +105,57 @@
 .hm-cubuk { height: 8px; border-radius: 99px; background: var(--hm-cizgi); overflow: hidden; margin-top: 6px; }
 .hm-cubuk i { display: block; height: 100%; background: var(--hm-vurgu); border-radius: 99px; transition: width .2s; }
 
-/* geniş ekran (tablet yatay): tuşlar sağda */
-@media (min-width: 860px) {
-  .hm { grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); grid-template-rows: auto 1fr; }
+/* tuşları aç düğmesi: yalnızca tuşlar kapalıyken (telefonda Çöz'den sonra) */
+.hm-tus-ac { display: none; }
+.hm.tuslar-kapali .hm-tuslar { display: none; }
+.hm.tuslar-kapali .hm-tus-ac {
+  display: flex; align-items: center; gap: 6px; position: absolute; right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 5; border: 0; border-radius: 999px; padding: 12px 18px; background: var(--hm-vurgu); color: var(--hm-vurgu-yazi);
+  font: 700 15px system-ui, sans-serif; box-shadow: 0 6px 18px rgba(60, 40, 110, .3); cursor: pointer;
+}
+.hm.tuslar-kapali .hm-sonuc { padding-bottom: 64px; }
+
+/* küçük telefon (iPhone SE gibi): tuşlar biraz daha kısa */
+@media (max-height: 700px) and (orientation: portrait) {
+  .hm-tus { min-height: 40px; font-size: 17px; }
+  .hm-alan { font-size: 21px; min-height: 44px; }
+  .hm { gap: 8px; }
+}
+
+/* tablet dikey: tuşlar ortada, büyük; grafik daha yüksek */
+@media (min-width: 600px) and (max-width: 859px) and (orientation: portrait) {
+  .hm { font-size: 16px; }
+  .hm-tuslar { width: 100%; max-width: 660px; margin: 0 auto; gap: 8px; }
+  .hm-tus { min-height: 58px; font-size: 21px; border-radius: 14px; }
+  .hm-tus.f { font-size: 18px; } .hm-tus.k { font-size: 16px; } .hm-tus.kucuk { font-size: 15px; }
+  .hm-alan { font-size: 30px; min-height: 64px; }
+  .hm-grafik canvas { height: min(46vh, 480px); }
+  .hm-statik { font-size: 22px; } .hm-statik.buyuk { font-size: 36px; }
+  .hm-sonuc { width: 100%; max-width: 760px; margin: 0 auto; }
+  .hm-ust { width: 100%; max-width: 760px; margin: 0 auto; }
+}
+
+/* yan yana: tablet yatay, bilgisayar ve yatay tutulan telefon — tuşlar sağda, ekranın yüksekliğini kullanır */
+@media (min-width: 860px), (orientation: landscape) and (max-height: 540px) {
+  .hm { grid-template-columns: minmax(0, 1fr) minmax(300px, 420px); grid-template-rows: auto 1fr; }
   .hm-ust { grid-column: 1; }
   .hm-sonuc { grid-column: 1; grid-row: 2; }
   .hm-tuslar { grid-column: 2; grid-row: 1 / span 2; align-content: end; }
+  .hm-tus { min-height: clamp(34px, calc((100dvh - 110px) / 7), 76px); }
+  .hm-grafik canvas { height: min(60vh, 520px); }
+  .hm.tuslar-kapali .hm-tuslar { display: grid; } /* yan yanayken tuşlar hiç kapanmaz */
+  .hm.tuslar-kapali .hm-tus-ac { display: none; }
+}
+@media (orientation: landscape) and (max-height: 540px) {
+  .hm { gap: 6px; }
+  .hm-tuslar { gap: 4px; }
+  .hm-tus { font-size: 15px; border-radius: 10px; }
+  .hm-alan { font-size: 20px; min-height: 40px; padding: 2px 0; }
+  .hm-foto-btn { width: 44px; font-size: 20px; }
+  .hm-grafik canvas { height: min(70vh, 300px); }
+  .hm-onizleme { min-height: 0; }
+}
+@media (min-width: 1100px) {
+  .hm-tus { font-size: 20px; }
+  .hm-alan { font-size: 30px; }
 }

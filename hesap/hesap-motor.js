@@ -27,7 +27,11 @@
       .replace(new RegExp('\\\\([dt]?frac)\\s*(' + tekArg + ')\\s*(' + tekArg + ')', 'g'), '\\$1{$2}{$3}')
       .replace(new RegExp('\\\\([dt]?frac)\\s*(' + tekArg + ')\\s*\\{', 'g'), '\\$1{$2}{')
       .replace(new RegExp('\\\\([dt]?frac)\\s*(\\{[^{}]*\\})\\s*(' + tekArg + ')', 'g'), '\\$1$2{$3}')
-      .replace(new RegExp('\\\\sqrt\\s*(\\d)(?![\\d.])', 'g'), '\\sqrt{$1}');
+      .replace(new RegExp('\\\\sqrt\\s*(\\d)(?![\\d.])', 'g'), '\\sqrt{$1}')
+      // okuyucu d/dx'i süslü paranteze sarabiliyor: { \frac { d } { d x } } ( … )
+      .replace(/\{\s*(\\[dt]?frac\s*\{\s*d\s*\}\s*\{\s*d\s*[a-z]\s*\})\s*\}/g, '$1')
+      // kalın / eğik yazı biçimleri yalnızca görünüş: içerik olduğu gibi kalır
+      .replace(/\\(?:boldsymbol|mathbf|bm|mathit|mathnormal|pmb)\s*(?=\{)/g, '');
     s = s.replace(/[−–]/g, '-').replace(/·|×/g, '\\cdot ').replace(/÷/g, '\\div ').replace(/π/g, '\\pi ').replace(/√/g, '\\sqrt ')
       .replace(/\{,\}/g, '.').replace(/²/g, '^2').replace(/³/g, '^3')
       .replace(/\^\s*\{\s*\\circ\s*\}|\^\s*\\circ|\\degree|°/g, '\\derece ');
@@ -230,15 +234,16 @@
     const parca = s.split(/=(?![^{]*})/); // süslü parantez içindeki = değil
     if (parca.length >= 2) {
       const solL = parca[0].trim(), sagL = parca.slice(1).join('=').trim();
+      const solSik = solL.replace(/\\left|\\right|\s+|[{}]/g, ''); // "f ( x )", "{ f } ( x )", "f\left(x\right)" → "f(x)"
       // f(x) = …, y = …, g(x) = …
-      const fm = solL.match(/^([a-zA-Z])(?:\\left)?\(\s*([a-z])\s*(?:\\right)?\)$/);
-      if ((fm || /^y$/.test(solL)) && sagL) {
+      const fm = solSik.match(/^([a-zA-Z])\(([a-z])\)$/);
+      if ((fm || /^y$/.test(solSik)) && sagL) {
         const ifade = latexCevir(sagL);
         if (/TUREV\(/.test(ifade)) return { tur: 'turev', ifade: ifade.replace(/^TUREV\((.*)\)$/, '$1'), ad: fm ? fm[1] : 'y' };
         return { tur: 'fonksiyon', ifade, ad: fm ? fm[1] : 'y', degisken: fm ? fm[2] : 'x' };
       }
       // f'(x) = ? ya da y' = ? (türevi istenen)
-      if (/^[a-zA-Z]'(?:\\left)?\(/.test(solL) || /^y'$/.test(solL) || /\\prime/.test(solL)) {
+      if (/^[a-zA-Z]('|\^\\prime)\(/.test(solSik) || /^y('|\^\\prime)$/.test(solSik) || /\\prime/.test(solL)) {
         if (sagL && !/^\?*$/.test(sagL)) return { tur: 'turev', ifade: latexCevir(sagL) };
       }
       if (!sagL || /^\?+$/.test(sagL)) return anla(solL); // "3+4 = ?" → işlem

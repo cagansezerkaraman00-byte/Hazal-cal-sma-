@@ -42,9 +42,15 @@
       </div>
       <div class="hm-sonuc" aria-live="polite"></div>
       <div class="hm-tuslar" role="group" aria-label="Hesap makinesi tuşları"></div>
+      <button class="hm-tus-ac" type="button" aria-label="Tuşları aç">⌨ Tuşlar</button>
       <input class="hm-dosya" type="file" accept="image/*" capture="environment" hidden>`;
     const $ = (s) => kap.querySelector(s);
     const mf = $('.hm-alan'), sonuc = $('.hm-sonuc'), onizleme = $('.hm-onizleme'), tuslar = $('.hm-tuslar');
+    // dar dikey ekranda (telefon) Çöz'den sonra tuşlar kapanır, sonuç bütün ekranı kullanır; kutuya dokununca geri gelir
+    const dar = () => typeof matchMedia === 'function' && matchMedia('(max-width: 859px) and (orientation: portrait)').matches;
+    const tuslarAcik = (acik) => kap.classList.toggle('tuslar-kapali', !acik);
+    $('.hm-tus-ac').addEventListener('click', () => { tuslarAcik(true); mf.focus(); });
+    mf.addEventListener('pointerdown', () => tuslarAcik(true));
     mf.mathVirtualKeyboardPolicy = 'manual';
     mf.smartFence = true;
     mf.smartSuperscript = true;
@@ -65,27 +71,50 @@
       }).join('')).join('');
     }
     tuslariCiz();
-    tuslar.addEventListener('pointerdown', (e) => { if (e.target.closest('.hm-tus')) e.preventDefault(); }); // kutudan odak kaçmasın
-    tuslar.addEventListener('click', (e) => {
+    // Tuş dokunulduğu anda çalışır (parmağın kalkması beklenmez; telefonlar "click"i geciktirebiliyor).
+    // ⌫ basılı tutulursa art arda siler. Klavyeyle (Tab + Enter) basılan tuş "click" ile gelir.
+    let tekrar = 0, tekrarBasla = 0;
+    const birak = () => { clearTimeout(tekrarBasla); clearInterval(tekrar); tuslar.querySelectorAll('.basili').forEach((x) => x.classList.remove('basili')); };
+    tuslar.addEventListener('pointerdown', (e) => {
       const b = e.target.closest('.hm-tus');
       if (!b) return;
+      e.preventDefault(); // kutudan odak kaçmasın, sayfa kaymasın
+      if (e.button > 0) return;
+      birak();
+      b.classList.add('basili');
+      bas(b);
+      if (b.classList.contains('sil') && /deleteBackward/.test(b.dataset.e)) {
+        tekrarBasla = setTimeout(() => { tekrar = setInterval(() => bas(b), 70); }, 420);
+      }
+    });
+    for (const t of ['pointerup', 'pointercancel', 'pointerleave']) tuslar.addEventListener(t, birak);
+    tuslar.addEventListener('click', (e) => { const b = e.target.closest('.hm-tus'); if (b && e.detail === 0) bas(b); });
+    function bas(b) {
       const eylem = JSON.parse(b.dataset.e);
-      if (navigator.vibrate) try { navigator.vibrate(8); } catch (err) { /* yok */ }
+      if (navigator.vibrate) try { navigator.vibrate(6); } catch (err) { /* yok */ }
       if (eylem === 'coz') return coz();
-      if (eylem === 'temizle') { mf.value = ''; onizleme.textContent = ''; mf.focus(); return; }
+      if (eylem === 'temizle') { mf.value = ''; onizleme.textContent = ''; odakla(); return; }
       if (eylem === 'katman') { durum.katman = durum.katman === 'temel' ? 'diger' : 'temel'; tuslariCiz(); return; }
       if (eylem === 'aci') { durum.derece = !durum.derece; tuslariCiz(); canliOnizleme(); return; }
       if (eylem === 'ans') { if (durum.ans) ekle(durum.ans); return; }
-      if (eylem.komut) { mf.executeCommand(eylem.komut); mf.focus(); canliOnizleme(); return; }
+      if (eylem.komut) { odakla(); mf.executeCommand(eylem.komut); onizlemeSonra(); return; }
       if (eylem.ekle) ekle(eylem.ekle);
-    });
-    function ekle(latex) {
-      mf.focus();
-      mf.executeCommand(['insert', latex, { selectionMode: 'placeholder', format: 'latex', mode: 'math', focus: true }]);
-      if (durum.katman === 'diger') { durum.katman = 'temel'; tuslariCiz(); }
-      canliOnizleme();
     }
-    mf.addEventListener('input', canliOnizleme);
+    const odakla = () => { if (document.activeElement !== mf) mf.focus(); };
+    function ekle(latex) {
+      odakla();
+      mf.executeCommand(['insert', latex, { selectionMode: 'placeholder', format: 'latex', mode: 'math' }]);
+      if (durum.katman === 'diger') { durum.katman = 'temel'; tuslariCiz(); }
+      onizlemeSonra();
+    }
+    // canlı önizleme ekran güncellendikten sonra hesaplanır: tuşa basış hiç beklemez
+    let onizlemeBekliyor = false;
+    const onizlemeSonra = () => {
+      if (onizlemeBekliyor) return;
+      onizlemeBekliyor = true;
+      requestAnimationFrame(() => setTimeout(() => { onizlemeBekliyor = false; canliOnizleme(); }, 0));
+    };
+    mf.addEventListener('input', onizlemeSonra);
     mf.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); coz(); } });
 
     // yazarken sonucu küçükçe göster (yalnızca işlemlerde)
@@ -114,6 +143,7 @@
       else if (r.tur === 'turev') turevGoster(r);
       else if (r.tur === 'denklem') denklemGoster(r);
       sonuc.scrollTop = 0;
+      if (dar() && r.tur !== 'islem') tuslarAcik(false); // işlemde yeni işlem yazılır; grafik, türev ve denklemde sonuca yer aç
       if (ayar.cozuldu) ayar.cozuldu(r);
     }
     const hataMetni = (e) => {
@@ -210,7 +240,9 @@
           <p class="hm-deger-sonuc"></p>
         </div>`;
       const yer = sonuc.querySelector('.hm-grafik-yer');
-      let g = grafikKur(yer, [{ f, renk: RENK(1) }, { f: df, renk: RENK(2) }], [], [], []);
+      let odak = [];
+      try { const a = M().analiz(r.ifade); odak = [...a.kokler.map((x) => ({ x, y: 0 })), ...a.tepeler.map((t) => ({ x: t.x, y: t.y }))]; } catch (e) { /* sığdırma için yalnızca */ }
+      let g = grafikKur(yer, [{ f, renk: RENK(1) }, { f: df, renk: RENK(2) }], [], [], odak);
       const giris = sonuc.querySelector('.hm-deger input'), cikis = sonuc.querySelector('.hm-deger-sonuc');
       const teget = () => {
         try {

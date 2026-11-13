@@ -86,5 +86,33 @@ for (const l of ['\\frac{d}{dx}\\left(x^{3}\\right)', "f'(x)=x^{3}", "y'=x^{3}",
   const r5 = M.coz('3+4=?');
   ok(r5.tur === 'islem' && r5.islem.deger === 7, '3+4=? işlem');
 }
+// 5) gerçek okuyucunun (Texo) çıktıları: GitHub'daki okuyucu denemesinden birebir
+const okunan = [
+  ['{ \\frac { 3 } { 4 } } + { \\frac { 1 } { 2 } }', 'islem', 1.25],
+  ['2 ^ { 5 } - { \\sqrt { 1 6 } }', 'islem', 28],
+  ['\\mathbf { 3 } \\cdot ( 4 + 5 ) - 6', 'islem', 21],
+  ['\\log _ { 2 } \\mathbf { 3 2 } + \\ln e', 'islem', 6],
+  ['\\sin 3 0 ^ { \\circ } + \\cos 6 0 ^ { \\circ }', 'islem', 1],
+  ['{ \\boldsymbol { x } } ^ { 2 } - 5 { \\boldsymbol { x } } + { \\boldsymbol { 6 } } = 0', 'denklem', [2, 3]],
+  ['3 x - 7 = 1 1', 'denklem', [6]],
+  ['f ( x ) = x ^ { 2 } - 4 x + 3', 'fonksiyon', [1, 3]],
+  ['{ \\frac { d } { d x } } \\left ( x ^ { 3 } + 2 x ^ { 2 } \\right )', 'turev', 7],
+  ['f ( x ) = { \\frac { 2 x + 1 } { x - 3 } }', 'fonksiyon', [-0.5]],
+  ['1 2 + 7 \\times 3', 'islem', 33],
+  ['\\frac { 5 } { 8 } - \\frac { 1 } { 4 }', 'islem', 0.375],
+  ['f ( x ) = 3 x ^ { 2 } + 2 x', 'fonksiyon', [-2 / 3, 0]],
+  ['2 ^ { 3 } + 4 ^ { 2 }', 'islem', 24],
+];
+for (const [l, tur, bek] of okunan) {
+  try {
+    const r = M.coz(l, { derece: true });
+    let iyi = r.tur === tur;
+    if (iyi && tur === 'islem') iyi = yakin(r.islem.deger, bek);
+    if (iyi && tur === 'denklem') iyi = r.denklem.kokler.length === bek.length && bek.every((k, i) => yakin(r.denklem.kokler[i], k));
+    if (iyi && tur === 'fonksiyon') iyi = r.analiz.kokler.length === bek.length && bek.every((k, i) => yakin(r.analiz.kokler[i], k, 1e-6));
+    if (iyi && tur === 'turev') iyi = yakin(M.derle(r.turev.ifade)(1), bek);
+    ok(iyi, 'okuyucu çıktısı: ' + l + ' → ' + r.tur + ' ' + JSON.stringify(r.islem ? r.islem.deger : r.denklem ? r.denklem.kokler : r.analiz ? r.analiz.kokler : r.turev && r.turev.ifade));
+  } catch (e) { ok(false, 'okuyucu çıktısı: ' + l + ': ' + e.message); }
+}
 console.log(`\n${gecen} geçti, ${hata} hata`);
 process.exit(hata ? 1 : 0);
