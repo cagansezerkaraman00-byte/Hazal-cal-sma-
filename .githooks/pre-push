@@ -1,0 +1,12 @@
+#!/bin/sh
+# Luna: göndermeden önce yayın denetimi. Bu kopyada bir kez etkinleştir:  git config core.hooksPath .githooks
+# (GitHub web arayüzünden yapılan yüklemelerde bu kanca çalışmaz; o zaman Actions'taki "Yayın denetimi" uyarır.)
+set -e
+cd "$(git rev-parse --show-toplevel)"
+node scripts/build-release.cjs            # ?v=, data-surum ve release-manifest.json'u yeniler; bütünlük testi geçmezse durur
+if ! git diff --quiet HEAD -- index.html release-manifest.json; then
+  echo "index.html ya da release-manifest.json gönderilecek hâlden farklı: build-release'in değiştirdiklerini (ve kod değişikliklerini) commit'le, sonra gönder." >&2
+  exit 1
+fi
+for t in tests/*.cjs; do node "$t"; done
+NODE_PATH="${NODE_PATH:-$(npm root -g 2>/dev/null)}" node scripts/smoke.cjs   # Playwright yoksa kendini atlar

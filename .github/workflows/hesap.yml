@@ -1,0 +1,52 @@
+# Luna'nın hesap makinesi (hesap/): motor testleri, telefon boyutunda arayüz testi ve gerçek fotoğraf okuyucu denemesi.
+# Okuyucu (Texo, cihazda çalışan açık kaynak model) burada internetten iner ve YKS tarzı örnekleri okur; rapor ve
+# örnek resimler "hesap-deneme" ön sürümüne konur (kurulacak bir sürüm değildir, en yeni sürüm sayılmaz).
+name: Hesap makinesi denemesi
+
+on:
+  push:
+    paths: ['hesap/**', '.github/workflows/hesap.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hesap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hesap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Araçlar
+        run: |
+          npm install --no-save --no-package-lock mathjs@15.2.0 playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Motor testleri
+        run: node hesap/test/motor-test.cjs
+      - name: Arayüz testi
+        run: node hesap/test/ui-test.cjs cikti
+      - name: Telefon ve tablet düzeni (5 cihaz boyutu)
+        run: node hesap/test/cihaz-test.cjs cikti
+      - name: Tuş gecikmesi (4 kat yavaş işlemci)
+        run: node hesap/test/hiz-test.cjs | tee cikti/hiz.txt
+      - name: Gerçek fotoğraf okuyucu
+        timeout-minutes: 15
+        run: node hesap/test/okuyucu-test.cjs cikti
+      - name: Sonuçları ön sürüme koy
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view hesap-deneme > /dev/null 2>&1 || \
+            gh release create hesap-deneme --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Hesap makinesi denemesi (otomatik)" --notes "Hesap makinesi testlerinin ekran görüntüleri ve fotoğraf okuyucu raporu. Kurulacak bir sürüm değildir." || true
+          ls cikti
+          for i in 1 2 3; do gh release upload hesap-deneme cikti/* --clobber && break; sleep 5; done

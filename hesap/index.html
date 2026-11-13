@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#f7f5fb">
+<title>Luna · Hesap makinesi (deneme)</title>
+<!--
+  Luna'nın hesap makinesi, Luna'ya eklenmeden önceki deneme sayfası. Luna'ya bağlı değildir; Hazal görmez.
+  Telefonda Luna kuruluysa servis çalışanı bu adresi Luna'ya çevirir: adres ?guncel ile açılmalı
+  (https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/hesap/?guncel).
+  Açık kaynak kütüphaneler (sabit sürüm): math.js 15.2.0 (Apache-2.0), MathLive 0.108.3 (MIT),
+  Transformers.js 3.7.6 (Apache-2.0) ve fotoğraf okuyucu Texo / alephpi/FormulaNet (AGPL-3.0, cihazda çalışır).
+-->
+<link rel="stylesheet" href="hesap.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #f7f5fb; }
+  #hesap { box-sizing: border-box; height: 100vh; height: 100dvh; padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathlive@0.108.3/mathlive.min.js"></script>
+<script src="hesap-motor.js"></script>
+<script src="hesap-grafik.js"></script>
+<script src="hesap-ui.js"></script>
+</head>
+<body>
+<div id="hesap"></div>
+<script>
+  MathfieldElement.soundsDirectory = null;
+  MathfieldElement.fontsDirectory = 'https://cdn.jsdelivr.net/npm/mathlive@0.108.3/fonts'; // yanında bulamıyor (adres sonunda / yok)
+  window.hesap = HesapUI.baslat(document.getElementById('hesap'), {
+    okuyucu: {
+      isci: 'hesap-okuyucu.js',
+      kutuphane: 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6/dist/transformers.min.js',
+      model: 'alephpi/FormulaNet',
+    },
+  });
+</script>
+</body>
+</html>

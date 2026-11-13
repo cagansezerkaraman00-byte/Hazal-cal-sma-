@@ -1,0 +1,25 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const src=fs.readFileSync(path.join(__dirname,'../js/timer.js'),'utf8');
+let now=Date.now(),tick,done=[];
+class Clock extends Date { static now(){return now;} }
+const Store={data:{settings:{focus:25,short:5,long:15},subjects:[{id:'math'}],stats:{},timer:null},save(){}};
+const U={clamp:(v,a,b)=>Math.max(a,Math.min(b,v))};
+const load=()=>new Function('Store','U','Date','setInterval',src+';return Timer;')(Store,U,Clock,f=>{tick=f;});
+let t=load();t.init({onFocusDone:s=>done.push(s)});
+assert.equal(t.state().subjectId,'','unassigned countdown starts as General');
+assert.equal(t.state().total,1500,'legacy minute setting is retained');
+for(const parts of [[0,0,0],[24,0,0],[0,60,0],[0,0,60],[-1,0,0],[1.5,0,0],['bad',0,1]])assert.equal(t.setCountdownTime(...parts),false);
+assert.equal(t.setCountdownTime(1,2,3),true);assert.equal(t.state().total,3723);
+t.toggle();now+=10000;
+assert.equal(t.setCountdownTime(0,0,5),false,'running duration cannot change');
+t=load();t.init({onFocusDone:s=>done.push(s)});assert.equal(t.state().remaining,3713);
+t.toggle();now+=50000;tick();assert.equal(t.state().remaining,3713,'pause is stable');
+t.toggle();now+=3713000;tick();tick();assert.equal(done.length,1);assert.equal(done[0].seconds,3723);assert.equal(done[0].endReason,'elapsed');
+t.reset();assert.equal(t.state().total,3723,'custom seconds persist on reset');
+assert.equal(t.setCountdownTime(23,59,59),true);assert.equal(t.state().total,86399);
+t.setKind('countdown','tyt');assert.equal(t.setCountdownTime(0,0,1),false);assert.equal(t.state().total,9900);
+t.setKind('countdown');assert.equal(t.setCountdownTime(0,0,2),true);t.toggle();now+=2000;tick();tick();
+assert.equal(done.length,2);assert.equal(done[1].minutes,2/60,'seconds do not invent one minute of study');
+assert.equal(t.state().total,2);
+t.setKind('countdown');assert.equal(t.setCountdownMinutes(35),true);assert.equal(t.state().total,2100,'legacy minute setter remains compatible');
+console.log('H/M/S countdown: legacy settings, validation, exact expiry, reload, pause, once-only finish, sub-minute credit and exam protection passed');
