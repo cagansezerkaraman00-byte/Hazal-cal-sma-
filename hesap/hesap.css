@@ -63,6 +63,20 @@
 .hm-yol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .hm-yol .hm-statik { font-size: 17px; }
 .hm-kokler { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.hm-statik.kucuk { font-size: 15px; }
+.hm-statik.orta { font-size: 22px; }
+/* işaret tablosu (eşitsizlik) */
+.hm-tablo-kap { overflow-x: auto; max-width: 100%; }
+.hm-tablo { border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+.hm-tablo th, .hm-tablo td { padding: 6px 8px; text-align: center; white-space: nowrap; border-bottom: 1px solid var(--hm-cizgi); }
+.hm-tablo tr:last-child th, .hm-tablo tr:last-child td { border-bottom: 0; }
+.hm-tablo th { color: var(--hm-soluk); font-weight: 600; border-right: 1.5px solid var(--hm-cizgi); text-align: left; }
+.hm-tablo td.nokta, .hm-tablo td.nokta-isaret { border-left: 1px dashed var(--hm-cizgi); border-right: 1px dashed var(--hm-cizgi); }
+.hm-tablo td.uc { color: var(--hm-soluk); }
+.hm-tablo .isaret { min-width: 44px; font-weight: 700; font-size: 18px; }
+.hm-tablo .isaret.arti { color: var(--hm-egri-3); }
+.hm-tablo .isaret.eksi { color: var(--hm-egri-2); }
+.hm-tablo .isaret.yok, .hm-tablo .nokta-isaret { color: var(--hm-soluk); }
 .hm-lejant { display: flex; gap: 14px; font-size: 13px; color: var(--hm-soluk); }
 .hm-lejant span::before { content: ""; display: inline-block; width: 18px; height: 3px; border-radius: 2px; background: var(--r); vertical-align: middle; margin-right: 6px; }
 .hm-lejant span.kesik::before { background: repeating-linear-gradient(90deg, var(--r) 0 5px, transparent 5px 9px); }

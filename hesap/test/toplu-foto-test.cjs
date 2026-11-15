@@ -4,19 +4,23 @@
 // Gerçek okuyucu (Texo) resmi okur, Luna'nın motoru çözer, cevap bağımsız yoldan denetlenir.
 // İnternet gerekir (model ~76 MB). SAHTE=1 ile okuyucu yerine resmin LaTeX'i verilir (yalnızca deneme düzeneğini sınar).
 // node hesap/test/toplu-foto-test.cjs [çıktı klasörü] [kategori başına adet]
+// URETICI=yks ile öbür YKS konuları (eşitsizlik, mutlak değer, üstel-log, trigonometri, Σ, kombinasyon, sistem, üslü-köklü, karmaşık)
 const { chromium } = require('playwright');
 const fs = require('node:fs'), path = require('node:path');
 const { sun, cdnYerel } = require('./sunucu.cjs');
 const M = require('../hesap-motor.js');
-const { uret, denetle } = require('./soru-uretici.cjs');
+const yks = process.env.URETICI === 'yks';
+const { uret, denetle } = require(yks ? './yks-uretici.cjs' : './soru-uretici.cjs');
+const ek = yks ? '-yks' : '';
 const out = process.argv[2] || path.join(__dirname, 'ekran');
 const adet = +(process.argv[3] || 100);
 const sahte = process.env.SAHTE === '1';
-fs.mkdirSync(path.join(out, 'okunamayan'), { recursive: true });
+fs.mkdirSync(path.join(out, 'okunamayan' + ek), { recursive: true });
 const BICIMLER = ['baski', 'foto'];
 
 (async () => {
-  const sorular = uret(2026, adet);
+  const sorular = uret(yks ? 2027 : 2026, adet);
+  const kategoriler = [...new Set(sorular.map((s) => s.kategori))];
   const sunucu = await sun();
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 1100, height: 900 } });
@@ -62,18 +66,18 @@ const BICIMLER = ['baski', 'foto'];
       k[s.seviye][1]++; if (d.tamam) k[s.seviye][0]++;
       else {
         (hatalar[anahtar] = hatalar[anahtar] || []).push(`#${s.no} ${s.kategori}/${s.seviye} [${bicim}]  soru: ${s.latex}  okunan: ${latex}  →  ${d.aciklama}`);
-        if ((kayitli[anahtar] = (kayitli[anahtar] || 0) + 1) <= 6) fs.writeFileSync(path.join(out, 'okunamayan', `${s.kategori}-${s.no}-${bicim}.${bicim === 'foto' ? 'jpg' : 'png'}`), resim);
+        if ((kayitli[anahtar] = (kayitli[anahtar] || 0) + 1) <= 6) fs.writeFileSync(path.join(out, 'okunamayan' + ek, `${s.kategori.replace(/\s+/g, '-')}-${s.no}-${bicim}.${bicim === 'foto' ? 'jpg' : 'png'}`), resim);
       }
     }
   }
   const satirlar = [];
   for (const bicim of BICIMLER) {
-    satirlar.push(`\n${bicim === 'baski' ? 'TEMİZ BASKI' : 'TELEFON FOTOĞRAFI GİBİ'}\nkategori     kolay     orta      zor       toplam`);
+    satirlar.push(`\n${bicim === 'baski' ? 'TEMİZ BASKI' : 'TELEFON FOTOĞRAFI GİBİ'}\nkategori       kolay     orta      zor       toplam`);
     let d = 0, n = 0;
-    for (const kat of ['türev', 'denklem', 'fonksiyon', 'limit', 'integral']) {
+    for (const kat of kategoriler) {
       const v = tablo[kat + '|' + bicim]; if (!v) continue;
       const dd = v.kolay[0] + v.orta[0] + v.zor[0], nn = v.kolay[1] + v.orta[1] + v.zor[1]; d += dd; n += nn;
-      satirlar.push(kat.padEnd(12) + ' ' + ['kolay', 'orta', 'zor'].map((sv) => `${v[sv][0]}/${v[sv][1]}`.padEnd(9)).join(' ') + ' ' + `${dd}/${nn}`);
+      satirlar.push(kat.padEnd(14) + ' ' + ['kolay', 'orta', 'zor'].map((sv) => `${v[sv][0]}/${v[sv][1]}`.padEnd(9)).join(' ') + ' ' + `${dd}/${nn}`);
     }
     satirlar.push(`toplam ${d}/${n} (%${(100 * d / n).toFixed(1)})`);
   }
@@ -81,6 +85,6 @@ const BICIMLER = ['baski', 'foto'];
   if (sayfaHatasi.length) satirlar.push('sayfa hataları: ' + sayfaHatasi.slice(0, 5).join(' | '));
   for (const [anahtar, liste] of Object.entries(hatalar)) satirlar.push(`\nÇözülemeyenler: ${anahtar.replace('|', ' · ')} (${liste.length}; ilk 12)`, ...liste.slice(0, 12).map((h) => '  ' + h));
   console.log(satirlar.join('\n'));
-  fs.writeFileSync(path.join(out, 'toplu-foto-rapor.txt'), satirlar.join('\n') + '\n');
+  fs.writeFileSync(path.join(out, 'toplu-foto-rapor' + ek + '.txt'), satirlar.join('\n') + '\n');
   await b.close(); sunucu.kapat();
 })().catch((e) => { console.error(e); process.exit(1); });

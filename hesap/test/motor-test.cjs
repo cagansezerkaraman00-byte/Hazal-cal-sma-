@@ -140,5 +140,41 @@ for (const [l, tur, bek] of okunan) {
     ok(iyi, 'okuyucu çıktısı: ' + l + ' → ' + r.tur + ' ' + JSON.stringify(r.islem ? r.islem.deger : r.denklem ? r.denklem.kokler : r.analiz ? r.analiz.kokler : r.limit ? r.limit.deger : r.belirli ? r.belirli.deger : r.turev && r.turev.ifade));
   } catch (e) { ok(false, 'okuyucu çıktısı: ' + l + ': ' + e.message); }
 }
+// ---------------------------------------------------------------- YKS konuları: yazım ve biçim (doğruluk toplu testlerde)
+const tx = (r) => JSON.stringify(r);
+const esit = (l) => M.coz(l).esitsizlik;
+ok(esit('x^2-5x+6<0').tex === '\\left(2,\\ 3\\right)', 'x² − 5x + 6 < 0 → (2, 3): ' + esit('x^2-5x+6<0').tex);
+ok(esit('x^2-2x-1<0').tex === '\\left(1-\\sqrt{2},\\ 1+\\sqrt{2}\\right)', 'kesin kökler: ' + esit('x^2-2x-1<0').tex);
+ok(esit('\\frac{1}{x^2}>0').tex === '\\mathbb{R}-\\left\\{0\\right\\}', '1/x² > 0 → ℝ − {0}: ' + esit('\\frac{1}{x^2}>0').tex);
+ok(esit('e^{-x}>0').tex === '\\mathbb{R}', 'e^(−x) > 0 → ℝ (çok küçük ama sıfır değil): ' + esit('e^{-x}>0').tex);
+ok(esit('(x-2)^2\\le0').tex === '\\left\\{2\\right\\}', '(x − 2)² ≤ 0 → {2}');
+ok(esit('x^2+1<0').tex === '\\varnothing', 'x² + 1 < 0 → ∅');
+ok(tx(esit('\\frac{x-1}{x+2}\\geq0').tablo.noktalar.map((n) => n.isaret)) === '["∄","0"]', 'işaret tablosunda ∄ ve 0');
+ok(esit('3 < 5').karsilastirma && esit('3 < 5').dogru && !esit('3 > 5').dogru, 'sayı karşılaştırma');
+ok(esit('x \\leqslant 3').tex === '\\left(-\\infty,\\ 3\\right]' && esit('x<=3').tex === esit('x\\le3').tex, '\\leqslant ve <= yazımları');
+ok(M.coz('\\left\\{ \\begin{array} { l } { x > 2 } \\\\ { x \\leq 5 } \\end{array} \\right.').esitsizlik.tex === '\\left(2,\\ 5\\right]', 'eşitsizlik sistemi');
+const d = (l) => M.coz(l).denklem;
+ok(tx(d('x^2-2x-1=0').kokTex.map((k) => k.tex)) === '["1-\\\\sqrt{2}","1+\\\\sqrt{2}"]', 'Δ kökleri kesin: ' + tx(d('x^2-2x-1=0').kokTex));
+ok(d('x^3-6x^2+11x-6=0').carpanlar === '\\left(x-1\\right)\\left(x-2\\right)\\left(x-3\\right)', 'çarpanlara ayırma: ' + d('x^3-6x^2+11x-6=0').carpanlar);
+ok(d('\\sin^2x+\\cos^2x=1').yol === 'ozdeslik', 'özdeşlik');
+ok(d('|x-1|+|x+2|=3').kumeTex === '\\left[-2,\\ 1\\right]', 'aralık çözüm: ' + d('|x-1|+|x+2|=3').kumeTex);
+ok(tx(d('|x-3|=0').kokler) === '[3]', 'dokunan kök |x − 3| = 0');
+ok(d('\\sin x=0').aileler.length === 1 && yakin(d('\\sin x=0').aileler[0].adim, Math.PI), 'sin x = 0 → x = kπ');
+ok(d('\\cos x = -\\frac{1}{2}').ikiPi.length === 2, 'cos x = −1/2 → iki kök (periyodik test noktası tuzağı)');
+ok(M.coz('\\sum_{k=1}^{n}k^2').toplamN.tex === '\\frac{n\\left(n+1\\right)\\left(2n+1\\right)}{6}', 'Σk² kapalı biçim: ' + M.coz('\\sum_{k=1}^{n}k^2').toplamN.tex);
+ok(M.coz('\\sum _ { k = 1 } ^ { 1 0 } ( 2 k + 1 )').islem.deger === 120, 'Σ okuyucu yazımı');
+ok(M.coz('\\sum_{i=1}^{3}i').islem.deger === 6, 'Σ değişkeni i (sanal birim değil)');
+ok(M.coz('\\binom52').islem.deger === 10 && M.coz('{ 5 \\choose 2 }').islem.deger === 10 && M.coz('\\left( \\begin{array} { c } { 5 } \\\\ { 2 } \\end{array} \\right)').islem.deger === 10, 'kombinasyon yazımları');
+ok(M.coz('C ( 6 , 3 )').islem.deger === 20 && M.coz('P\\left(5,2\\right)').islem.deger === 20, 'C(n, r) ve P(n, r)');
+ok(M.coz('\\mathrm { E B O B } ( 1 2 , 1 8 )').islem.deger === 6 && M.coz('\\operatorname{EKOK}\\left(4,6,10\\right)').islem.deger === 60 && M.coz('\\gcd(8,12)').islem.deger === 4, 'EBOB / EKOK');
+ok(M.coz('\\log_2 8').islem.deger === 3, '\\log_2 8: taban 2, sayı 8 (28 değil)');
+ok(M.coz('(2+3i)(1-i)').islem.metin === '5 + i' && M.coz('\\sqrt{-4}').islem.metin === '2i', 'karmaşık: ' + M.coz('(2+3i)(1-i)').islem.metin);
+ok(M.coz('\\sqrt[3]{54}').islem.tam.tex === '3\\sqrt[3]{2}', 'küp kök tam biçim');
+const sis = (l) => M.coz(l).sistem;
+ok(tx(sis('\\begin{cases}2x+3y=12\\\\x-y=1\\end{cases}').cozumler) === '[[3,2]]', 'doğrusal sistem');
+ok(sis('\\begin{cases}2x+3y=12\\\\x-y=1\\end{cases}').adimlar[1].kural === '2. denklem 3 ile çarpılır, denklemler taraf tarafa toplanır (y\'ler sadeleşir)', 'yok etme cümlesi: ' + sis('\\begin{cases}2x+3y=12\\\\x-y=1\\end{cases}').adimlar[1].kural);
+ok(sis('\\begin{cases}x^2+y^2=25\\\\x-y=1\\end{cases}').egriler[0] === null, 'çember doğrusal sanılmıyor (örtük çizilir)');
+ok(sis('\\begin{cases}x+y=2\\\\x+y=3\\end{cases}').tur === 'yok' && sis('\\begin{cases}x+y=2\\\\2x+2y=4\\end{cases}').tur === 'sonsuz', 'çözümsüz ve sonsuz çözümlü sistem');
+
 console.log(`\n${gecen} geçti, ${hata} hata`);
 process.exit(hata ? 1 : 0);

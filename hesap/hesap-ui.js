@@ -12,8 +12,7 @@
   const sayi = (x) => M().sayiMetin(x).replace(/^-/, '−');
 
   // Tuş takımı: [etiket (HTML), eylem]. Eylem: { ekle: LaTeX } | { komut } | özel ad
-  const TUSLAR = {
-    temel: [
+  const TEMEL = [
       [['◀', { komut: 'moveToPreviousChar' }, 'k'], ['▶', { komut: 'moveToNextChar' }, 'k'], ['DEG', 'aci', 'k aci'], ['ANS', 'ans', 'k'], ['⇄', 'katman', 'k'], ['⌫', { komut: 'deleteBackward' }, 'k sil']],
       [['sin', { ekle: '\\sin\\left(#0\\right)' }, 'f'], ['cos', { ekle: '\\cos\\left(#0\\right)' }, 'f'], ['tan', { ekle: '\\tan\\left(#0\\right)' }, 'f'], ['ln', { ekle: '\\ln\\left(#0\\right)' }, 'f'], ['log', { ekle: '\\log\\left(#0\\right)' }, 'f'], ['π', { ekle: '\\pi' }, 'f']],
       [['x', { ekle: 'x' }, 'f x'], ['x<sup>n</sup>', { ekle: '#@^{#?}', ad: 'üs' }, 'f'], ['x²', { ekle: '#@^{2}' }, 'f'], ['√', { ekle: '\\sqrt{#0}' }, 'f'], ['<span class="hm-kesir"><i>a</i><i>b</i></span>', { ekle: '\\frac{#@}{#?}', ad: 'kesir' }, 'f'], ['e', { ekle: 'e' }, 'f']],
@@ -21,11 +20,17 @@
       [['4', { ekle: '4' }], ['5', { ekle: '5' }], ['6', { ekle: '6' }], ['×', { ekle: '\\times ' }, 'i'], ['|x|', { ekle: '\\left|#0\\right|' }, 'i'], ['n!', { ekle: '!' }, 'i']],
       [['1', { ekle: '1' }], ['2', { ekle: '2' }], ['3', { ekle: '3' }], ['−', { ekle: '-' }, 'i'], ['=', { ekle: '=' }, 'i'], ['AC', 'temizle', 'i sil']],
       [['0', { ekle: '0' }], [',', { ekle: '{,}' }], ['f(x)=', { ekle: 'f(x)=' }, 'i kucuk'], ['+', { ekle: '+' }, 'i'], ['Çöz', 'coz', 'coz g2']],
-    ],
+  ];
+  const TUSLAR = {
+    temel: TEMEL,
     diger: [
       [['◀', { komut: 'moveToPreviousChar' }, 'k'], ['▶', { komut: 'moveToNextChar' }, 'k'], ['DEG', 'aci', 'k aci'], ['ANS', 'ans', 'k'], ['⇄', 'katman', 'k etkin'], ['⌫', { komut: 'deleteBackward' }, 'k sil']],
       [['sin⁻¹', { ekle: '\\arcsin\\left(#0\\right)' }, 'f kucuk'], ['cos⁻¹', { ekle: '\\arccos\\left(#0\\right)' }, 'f kucuk'], ['tan⁻¹', { ekle: '\\arctan\\left(#0\\right)' }, 'f kucuk'], ['cot', { ekle: '\\cot\\left(#0\\right)' }, 'f'], ['log<sub>a</sub>', { ekle: '\\log_{#?}\\left(#?\\right)' }, 'f'], ['<sup>n</sup>√', { ekle: '\\sqrt[#?]{#?}' }, 'f']],
       [['d/dx', { ekle: '\\frac{d}{dx}\\left(#0\\right)', ad: 'türev' }, 'f kucuk'], ['lim', { ekle: '\\lim_{x\\to#?}#?', ad: 'limit' }, 'f'], ['∫', { ekle: '\\int#?\\,dx', ad: 'integral' }, 'f'], ['∫<sub>a</sub><sup>b</sup>', { ekle: '\\int_{#?}^{#?}#?\\,dx', ad: 'belirli integral' }, 'f'], ['∞', { ekle: '\\infty', ad: 'sonsuz' }, 'f'], ['%', { ekle: '\\%' }, 'f']],
+      [['&lt;', { ekle: '<', ad: 'küçüktür' }, 'i'], ['≤', { ekle: '\\le ', ad: 'küçük eşit' }, 'i'], ['&gt;', { ekle: '>', ad: 'büyüktür' }, 'i'], ['≥', { ekle: '\\ge ', ad: 'büyük eşit' }, 'i'], ['y', { ekle: 'y' }, 'f x'], ['k', { ekle: 'k' }, 'f x']],
+      [['Σ', { ekle: '\\sum_{k=#?}^{#?}#?', ad: 'toplam sembolü' }, 'f'], ['C(n,r)', { ekle: '\\binom{#?}{#?}', ad: 'kombinasyon' }, 'f kucuk'], ['P(n,r)', { ekle: 'P\\left(#?,#?\\right)', ad: 'permütasyon' }, 'f kucuk'], ['i', { ekle: 'i', ad: 'sanal birim i' }, 'f x'], ['EBOB', { ekle: '\\operatorname{EBOB}\\left(#?,#?\\right)' }, 'f kucuk'], ['EKOK', { ekle: '\\operatorname{EKOK}\\left(#?,#?\\right)' }, 'f kucuk']],
+      TEMEL[5],
+      [['0', { ekle: '0' }], [',', { ekle: '{,}' }], ['{ sistem', { ekle: '\\begin{cases}#?\\\\#?\\end{cases}', ad: 'denklem sistemi' }, 'i kucuk'], ['+', { ekle: '+' }, 'i'], ['Çöz', 'coz', 'coz g2']],
     ],
   };
 
@@ -62,9 +67,7 @@
 
     // ------------------------------------------------ tuş takımı
     function tuslariCiz() {
-      const satirlar = TUSLAR[durum.katman];
-      const tamSatirlar = durum.katman === 'diger' ? [...satirlar, ...TUSLAR.temel.slice(3)] : satirlar;
-      tuslar.innerHTML = tamSatirlar.map((s) => s.map(([etiket, eylem, sinif]) => {
+      tuslar.innerHTML = TUSLAR[durum.katman].map((s) => s.map(([etiket, eylem, sinif]) => {
         const i = JSON.stringify(eylem).replace(/"/g, '&quot;');
         const lbl = eylem === 'aci' ? (durum.derece ? 'DEG' : 'RAD') : etiket;
         return `<button type="button" class="hm-tus ${sinif || 's'}" data-e="${i}" aria-label="${esc(eylem && eylem.ad ? eylem.ad : lbl.replace(/<[^>]+>/g, ''))}"><span>${lbl}</span></button>`;
@@ -123,8 +126,11 @@
       if (!l.trim()) { onizleme.textContent = ''; return; }
       try {
         const a = M().anla(l);
-        if (a.tur === 'islem') { const r = M().islem(a.ifade, { derece: durum.derece }); onizleme.textContent = isFinite(r.deger) || !isNaN(r.deger) ? '= ' + (r.tam ? r.tam.metin.replace('-', '−') + '  ≈ ' : '') + sayi(r.deger) : ''; }
-        else onizleme.textContent = { fonksiyon: '📈 Çöz: grafiği ve kökleri', turev: "📐 Çöz: türevi adım adım", denklem: '🔎 Çöz: denklemin kökleri', limit: '➡️ Çöz: limiti adım adım', integral: '∫ Çöz: integrali adım adım' }[a.tur] || '';
+        if (a.tur === 'islem') {
+          const r = M().islem(a.ifade, { derece: durum.derece });
+          onizleme.textContent = r.karmasik ? '= ' + r.metin : isFinite(r.deger) || !isNaN(r.deger) ? '= ' + (r.tam ? r.tam.metin.replace('-', '−') + '  ≈ ' : '') + sayi(r.deger) : '';
+        } else onizleme.textContent = { fonksiyon: '📈 Çöz: grafiği ve kökleri', turev: "📐 Çöz: türevi adım adım", denklem: '🔎 Çöz: denklemin kökleri', limit: '➡️ Çöz: limiti adım adım', integral: '∫ Çöz: integrali adım adım',
+          esitsizlik: '📏 Çöz: çözüm kümesi ve işaret tablosu', sistem: '🔗 Çöz: ortak çözüm', toplamN: 'Σ Çöz: toplamın kapalı biçimi' }[a.tur] || '';
       } catch (e) { onizleme.textContent = ''; }
     }
 
@@ -144,6 +150,9 @@
       else if (r.tur === 'denklem') denklemGoster(r);
       else if (r.tur === 'limit') limitGoster(r);
       else if (r.tur === 'integral') integralGoster(r);
+      else if (r.tur === 'esitsizlik') esitsizlikGoster(r, l);
+      else if (r.tur === 'sistem') sistemGoster(r, l);
+      else if (r.tur === 'toplamN') toplamNGoster(r, l);
       sonuc.scrollTop = 0;
       if (dar() && r.tur !== 'islem') tuslarAcik(false); // işlemde yeni işlem yazılır; grafik, türev ve denklemde sonuca yer aç
       if (ayar.cozuldu) ayar.cozuldu(r);
@@ -152,6 +161,7 @@
       const m = String((e && e.message) || e);
       if (/eksik|beklenmeyen|fazladan/.test(m)) return 'İşlemde eksik ya da fazla bir parça var gibi. Parantezleri ve boş kutucukları kontrol et.';
       if (/tanınmayan/.test(m)) return 'Tanımadığım bir işaret var: ' + m.split(':').pop() + '. Tuşlardan yazmayı dene.';
+      if (/tek bilinmeyen|bilinmeyen yok|en fazla|kapalı biçim|Σ|iki bilinmeyen/.test(m)) return m.charAt(0).toUpperCase() + m.slice(1) + '.';
       return 'Hesaplanamadı (' + m + ').';
     };
 
@@ -165,6 +175,8 @@
         <div class="hm-kart hm-islem">
           <div class="hm-esittir">${kutu('=' + anaTex, 'buyuk')}</div>
           ${s.tam && isFinite(s.deger) ? `<div class="hm-yaklasik">≈ ${esc(sayi(s.deger))}</div>` : ''}
+          ${s.karmasik ? '<div class="hm-mini">Karmaşık sayı (i² = −1)</div>' : ''}
+          ${s.adimlar ? adimListe(s.adimlar) : ''}
           ${/sin|cos|tan|cot/.test(r.ifade) ? `<div class="hm-mini">${durum.derece ? 'Açılar derece cinsinden' : 'Açılar radyan cinsinden'} · DEG/RAD tuşuyla değiştir</div>` : ''}
         </div>
         ${durum.gecmis.length > 1 ? `<div class="hm-gecmis"><h4>Son işlemler</h4>${durum.gecmis.slice(1).map((g, k) => `<button type="button" class="hm-gecmis-satir" data-g="${k + 1}">${kutu(g.l)}<span>${kutu('=' + g.tex)}</span></button>`).join('')}</div>` : ''}`;
@@ -254,6 +266,7 @@
           <div class="hm-baslik">${kutu(ad + '=' + r.fonksiyonTex)}</div>
           <div class="hm-grafik-yer"></div>
           <ul class="hm-bilgi">
+            ${a.carpanlar ? `<li><b>Çarpanlarına ayrılmış hâli</b> ${kutu(ad + '=' + a.carpanlar)}</li>` : ''}
             <li><b>Kökleri</b> ${a.kokler.length ? a.kokler.slice(0, 8).map((x) => 'x = ' + esc(sayi(x))).join(' · ') + (a.kokler.length > 8 ? ' …' : '') : 'gösterilen aralıkta yok'}</li>
             ${a.tepeler.length ? `<li><b>Tepe noktaları</b> ${a.tepeler.slice(0, 6).map((t) => esc(nokta(t.x, t.y)) + ' <small>' + t.tur + '</small>').join(' · ')}</li>` : ''}
             <li><b>y eksenini kestiği yer</b> ${a.yKesen === null ? 'tanımsız (x = 0 tanım kümesinde değil)' : esc('(0 ; ' + sayi(a.yKesen) + ')')}</li>
@@ -312,10 +325,18 @@
       giris.addEventListener('keydown', (e) => { if (e.key === 'Enter') teget(); });
     }
 
+    const sayiYaz = (v, ipucu) => { for (const p of ipucu || []) if (Math.abs(p.x - v) < 1e-9 * Math.max(1, Math.abs(v))) return p.tex; return M().sayiYaz(v); };
+    const piKat = (adim) => { // k·adım: 2kπ, kπ, kπ/2
+      const k = M().kesirBul(adim / Math.PI, 24);
+      if (!k) return sayiTex(adim) + 'k';
+      return k.q === 1 ? (k.p === 1 ? '' : k.p) + 'k\\pi' : '\\frac{' + (k.p === 1 ? '' : k.p) + 'k\\pi}{' + k.q + '}';
+    };
+    const derece = (v) => { const d = v * 180 / Math.PI; return Math.abs(d - Math.round(d)) < 1e-7 ? String(Math.round(d)) : sayiTex(d); };
     function denklemGoster(r) {
       const d = r.denklem, x = r.degisken || 'x';
-      const kokler = d.kokler.map((k) => { const tam = M().tamBicim(k); return { k, tex: (tam ? tam.tex : sayiTex(k)) }; });
-      let yol = '';
+      const f = M().derle(r.ifade, x);
+      const baslik = `<div class="hm-baslik">${kutu(M().tex(r.sol) + '=' + M().tex(r.sag))}</div>`;
+      let yol = '', govde = '', noktalar = [], odak = [];
       if (d.yol === 'delta') {
         const { a, b, c, delta } = d;
         yol = `<ol class="hm-yol">
@@ -325,18 +346,121 @@
           ${delta >= 0 ? `<li>${kutu('x_{1,2}=\\frac{-b\\mp\\sqrt{\\Delta}}{2a}')}</li>` : ''}
         </ol>`;
       } else if (d.yol === 'dogrusal') yol = '<p class="hm-mini">Birinci dereceden denklem: x yalnız bırakıldı.</p>';
-      else yol = '<p class="hm-mini">Kökler sayısal olarak (−100 ile 100 arasında) bulundu.</p>';
+      else if (d.yol === 'carpan') yol = `<ol class="hm-yol"><li>Çarpanlarına ayrılır: ${kutu(d.carpanlar + '=0')}</li><li>Çarpımın sıfır olması için çarpanlardan biri sıfır olmalı:</li></ol>`;
+      else if (d.yol === 'ozdeslik') yol = '';
+      else if (d.yol === 'trig') yol = `<p class="hm-mini">Trigonometrik denklem: bir periyottaki (${esc(M().tamBicim(d.periyot) ? M().tamBicim(d.periyot).metin : sayi(d.periyot))}) kökler bulunur, sonra periyot eklenerek bütün kökler yazılır.</p>`;
+      else yol = '<p class="hm-mini">Kökler sayısal olarak bulundu.</p>';
+
+      if (d.yol === 'ozdeslik') {
+        govde = '<p class="hm-buyuk-yazi">Her x için doğru</p><p class="hm-mini">Bu bir özdeşlik: iki taraf her zaman eşit. Çözüm kümesi tanımlı olduğu bütün gerçek sayılar.</p>';
+      } else if (d.yol === 'trig') {
+        if (!d.kokler.length) govde = '<p><b>Gerçek sayılarda çözümü yok.</b></p>';
+        else {
+          const aile = d.aileler.map((a) => kutu(x + '=' + (Math.abs(a.r) < 1e-12 ? '' : sayiYaz(a.r) + '+') + piKat(a.adim), 'buyuk vurgu')).join('');
+          govde = `<div class="hm-kokler">${aile}</div><p class="hm-mini">k ∈ ℤ (k herhangi bir tam sayı) · Derece: ${d.aileler.map((a) => esc(derece(a.r).replace('{,}', ',')) + '° + k·' + esc(derece(a.adim).replace('{,}', ',')) + '°').join(' ; ')}</p>
+            <p class="hm-mini"><b>[0, 2π) aralığındaki kökler:</b> ${d.ikiPi.map((v) => esc(M().tamBicim(v) ? M().tamBicim(v).metin : sayi(v)) + ' (' + esc(derece(v).replace('{,}', ',')) + '°)').join(' · ')}</p>`;
+        }
+        noktalar = d.ikiPi.map((v) => ({ x: v, y: 0, renk: RENK(3), etiket: M().tamBicim(v) ? M().tamBicim(v).metin : sayi(v) }));
+        odak = [{ x: 0, y: 0 }, { x: 2 * Math.PI, y: 0 }];
+      } else {
+        const ipucu = d.kokTex || [];
+        const gos = d.kokler.slice(0, 10);
+        govde = `<div class="hm-kokler">${gos.length ? gos.map((k, n) => kutu((d.kokler.length > 1 ? x + '_{' + (n + 1) + '}' : x) + '=' + sayiYaz(k, ipucu), 'buyuk vurgu')).join('') : d.araliklar && d.araliklar.length ? '' : '<p><b>Gerçek sayılarda çözümü yok.</b></p>'}</div>
+          ${d.kokler.length > 10 ? `<p class="hm-mini">… toplam ${d.kokler.length} kök (ilk 10'u gösterildi)</p>` : ''}
+          ${d.kumeTex ? `<p class="hm-mini">Çözüm kümesi:</p>${kutu('\\text{Ç.K.}=' + d.kumeTex, 'vurgu')}` : d.kokler.length ? `<p class="hm-mini">Çözüm kümesi: {${d.kokler.slice(0, 10).map((k) => esc(sayi(k))).join(' ; ')}}</p>` : ''}`;
+        noktalar = gos.map((k) => ({ x: k, y: 0, renk: RENK(3), etiket: x + ' = ' + sayi(k) }));
+        odak = noktalar.map((n) => ({ x: n.x, y: 0 }));
+      }
       sonuc.innerHTML = `
         <div class="hm-kart">
-          <div class="hm-baslik">${kutu(M().tex(r.sol) + '=' + M().tex(r.sag))}</div>
+          ${baslik}
           ${yol}
-          <div class="hm-kokler">${kokler.length ? kokler.map((k, n) => kutu((kokler.length > 1 ? x + '_{' + (n + 1) + '}' : x) + '=' + k.tex, 'buyuk vurgu')).join('') : '<p><b>Gerçek sayılarda çözümü yok.</b></p>'}</div>
-          ${kokler.length ? `<p class="hm-mini">Çözüm kümesi: {${kokler.map((k) => esc(sayi(k.k))).join(' ; ')}}</p>` : ''}
+          ${govde}
           <div class="hm-grafik-yer"></div>
           <p class="hm-mini">Grafik: sol taraf − sağ taraf. Köklerde x eksenini keser.</p>
         </div>`;
-      const f = M().derle(r.ifade);
-      grafikKur(sonuc.querySelector('.hm-grafik-yer'), [{ f, renk: RENK(1) }], d.kokler.map((k) => ({ x: k, y: 0, renk: RENK(3), etiket: x + ' = ' + sayi(k) })), [], d.kokler.map((k) => ({ x: k, y: 0 })));
+      const g = grafikKur(sonuc.querySelector('.hm-grafik-yer'), [{ f, renk: RENK(1) }], noktalar, [], odak);
+      if (d.araliklar && d.araliklar.length) g.ayarla({ araliklar: d.araliklar.map((a) => ({ ...a, renk: RENK(3) })) });
+    }
+
+    // eşitsizlik: çözüm kümesi, işaret tablosu, grafikte aralıklar
+    function esitsizlikGoster(r, l) {
+      const E = r.esitsizlik;
+      if (E.karsilastirma) {
+        sonuc.innerHTML = `<div class="hm-kart"><div class="hm-baslik">${kutu(l)}</div><p class="hm-buyuk-yazi">${E.dogru ? 'Doğru ✓' : 'Yanlış ✗'}</p></div>`;
+        return;
+      }
+      const x = r.degisken;
+      const T = E.tablo;
+      let tablo = '';
+      if (T) {
+        const hucre = (icerik, sinif) => `<td class="${sinif || ''}">${icerik}</td>`;
+        let ust = hucre('−∞', 'uc'), alt = hucre('');
+        T.isaretler.forEach((isr, i) => {
+          ust += hucre(''); alt += hucre(isr === '+' ? '+' : isr === '−' ? '−' : isr, 'isaret ' + (isr === '+' ? 'arti' : isr === '−' ? 'eksi' : 'yok'));
+          if (i < T.noktalar.length) { ust += hucre(kutu(T.noktalar[i].tex, 'kucuk'), 'nokta'); alt += hucre(T.noktalar[i].isaret, 'nokta-isaret'); }
+        });
+        ust += hucre('+∞', 'uc'); alt += hucre('');
+        tablo = `<div class="hm-tablo-kap"><table class="hm-tablo" aria-label="İşaret tablosu"><tr><th>${esc(x)}</th>${ust}</tr><tr><th>f(${esc(x)})</th>${alt}</tr></table></div>
+          <p class="hm-mini">f(${esc(x)}) = sol taraf − sağ taraf. 0: kök, ∄: tanımsız.</p>
+          ${T.carpanlar ? `<div class="hm-mini">Çarpanlarına ayrılmış hâli:</div>${kutu('f(' + x + ')=' + T.carpanlar.tex)}` : ''}`;
+      }
+      sonuc.innerHTML = `
+        <div class="hm-kart">
+          <div class="hm-baslik">${kutu(l)}</div>
+          <div class="hm-esittir">${kutu('\\text{Ç.K.}=' + E.tex, (E.tex.length > 46 ? 'orta' : 'buyuk') + ' vurgu')}</div>
+          ${tablo}
+          <div class="hm-grafik-yer"></div>
+          <p class="hm-mini">Grafikte koyu bant: eşitsizliği sağlayan ${esc(x)} değerleri (dolu yuvarlak: dahil, boş yuvarlak: dahil değil).</p>
+        </div>`;
+      // her zincirin sabit olmayan parçaları eğri, sabit olanları kesikli doğru
+      const egriler = [], dogrular = [];
+      let renkNo = 1;
+      for (const z of (M().anla(l).zincirler || [])) for (const p of z.parcalar) {
+        const fp = M().derle(p, x);
+        if (M().degiskenler(p).length) { if (renkNo <= 3) egriler.push({ f: fp, renk: RENK(renkNo++) }); }
+        else { const c = fp(0); if (isFinite(c) && c !== 0) dogrular.push({ f: () => c, renk: RENK(2), kesikli: true }); }
+      }
+      const sinir = E.sinirlar.filter((s) => Math.abs(s.x) < 1e5).map((s) => ({ x: s.x, y: 0 }));
+      const g = grafikKur(sonuc.querySelector('.hm-grafik-yer'), egriler, [], dogrular, sinir.length ? sinir : [{ x: -3, y: 0 }, { x: 3, y: 0 }]);
+      g.ayarla({ araliklar: E.parcalar.map((p) => ({ ...p, renk: RENK(3) })) });
+    }
+
+    // denklem sistemi
+    function sistemGoster(r, l) {
+      const S = r.sistem, v = S.degiskenler;
+      const ikili = (c) => '\\left(' + c.map((t) => sayiYaz(t)).join(',\\ ') + '\\right)';
+      let cozum;
+      if (S.tur === 'tek') cozum = S.cozumler.map((c) => kutu(c.map((t, i) => v[i] + '=' + sayiYaz(t)).join(',\\ '), 'buyuk vurgu')).join('') + kutu('\\text{Ç.K.}=\\left\\{' + S.cozumler.map(ikili).join(',\\ ') + '\\right\\}');
+      else if (S.tur === 'sonsuz') cozum = '<p class="hm-buyuk-yazi">Sonsuz çözüm var</p><p class="hm-mini">Denklemler birbirinin katı: aynı doğruyu (düzlemi) belirtiyorlar.</p>';
+      else cozum = '<p class="hm-buyuk-yazi">Çözüm yok</p><p class="hm-mini">' + (S.dogrusal ? 'Denklemler çelişiyor: doğrular paralel, kesişmiyorlar.' : 'Ortak çözüm bulunamadı.') + '</p>';
+      sonuc.innerHTML = `
+        <div class="hm-kart">
+          <div class="hm-baslik">${kutu(l)}</div>
+          <div class="hm-kokler">${cozum}</div>
+          ${S.adimlar ? adimListe(S.adimlar) : ''}
+          ${v.length === 2 ? '<div class="hm-grafik-yer"></div><p class="hm-mini">Her denklemin grafiği; ortak çözümler kesişim noktalarıdır.</p>' : ''}
+        </div>`;
+      const yer = sonuc.querySelector('.hm-grafik-yer');
+      if (!yer) return;
+      const egriler = S.egriler.map((e, i) => (e ? { f: M().derle(e, v[0]), renk: RENK(i + 1) } : null)).filter(Boolean);
+      const kapali = S.ifadeler.map((e, i) => (S.egriler[i] ? null : { F: M().derle2(e, v[0], v[1]), renk: RENK(i + 1) })).filter(Boolean);
+      const noktalar = S.cozumler.map((c) => ({ x: c[0], y: c[1], renk: RENK(3), etiket: '(' + sayi(c[0]) + ' ; ' + sayi(c[1]) + ')' }));
+      const g = grafikKur(yer, egriler, noktalar, [], noktalar.length ? noktalar : [{ x: -4, y: 0 }, { x: 4, y: 0 }]);
+      if (kapali.length) g.ayarla({ kapali });
+    }
+
+    // Σ'nın n'ye bağlı kapalı biçimi
+    function toplamNGoster(r, l) {
+      const T = r.toplamN, n = r.degisken;
+      sonuc.innerHTML = `
+        <div class="hm-kart">
+          <div class="hm-baslik">${kutu(r.fonksiyonTex)}</div>
+          <div class="hm-esittir">${kutu('=' + T.tex, 'buyuk vurgu')}</div>
+          ${T.acik !== T.tex ? `<p class="hm-mini">Açılmış hâli:</p>${kutu('=' + T.acik)}` : ''}
+          <ul class="hm-bilgi"><li><b>İlk değerler</b> ${T.ornek.map((o) => esc(n + ' = ' + o.n + ' → ' + sayi(o.deger))).join(' · ')}</li></ul>
+          <p class="hm-mini">Kapalı biçim ilk değerlerden bulunan polinomdur; ${esc(n)}'nin her değeri için toplamla aynı sonucu verir.</p>
+        </div>`;
     }
 
     // ------------------------------------------------ fotoğraf

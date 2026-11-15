@@ -17,7 +17,7 @@
       this.c = tuval; this.g = tuval.getContext('2d');
       this.ayar = ayar;
       this.pencere = { x0: -10, x1: 10, y0: -7, y1: 7 };
-      this.egriler = []; this.noktalar = []; this.dogrular = []; this.alanlar = []; this.iz = null;
+      this.egriler = []; this.noktalar = []; this.dogrular = []; this.alanlar = []; this.araliklar = []; this.kapali = []; this.iz = null;
       this.parmaklar = new Map(); this.son = 0;
       this._bagla();
       this._boyut();
@@ -42,8 +42,10 @@
     gy(py) { const p = this.pencere; return p.y1 - py / this.h * (p.y1 - p.y0); }
 
     /** egriler: [{ f(x), renk, ad }]; noktalar: [{ x, y, etiket, renk }]; dogrular: [{ f, renk, kesikli }] */
-    ayarla({ egriler, noktalar, dogrular, alanlar } = {}) {
+    ayarla({ egriler, noktalar, dogrular, alanlar, araliklar, kapali } = {}) {
       if (egriler) this.egriler = egriler;
+      if (kapali) this.kapali = kapali;
+      if (araliklar) this.araliklar = araliklar;
       if (alanlar) this.alanlar = alanlar;
       if (noktalar) this.noktalar = noktalar;
       if (dogrular) this.dogrular = dogrular;
@@ -105,9 +107,12 @@
       for (let y = Math.ceil(p.y0 / ay) * ay; y <= p.y1; y += ay) if (Math.abs(y) > ay / 2) g.fillText(etiket(y, ay), X0 < 30 ? lx + 8 : lx, this.py(y) + 4);
       // taralı alanlar (belirli integral): eğri ile x ekseni arası
       for (const a of this.alanlar) this._alan(a);
+      // eşitsizliğin çözüm aralıkları: x ekseni üstünde kalın bant, uçlarda dolu (dahil) ya da boş (dahil değil) yuvarlak
+      for (const a of this.araliklar) this._aralik(a);
       // doğrular (teğet gibi) ve eğriler
       for (const d of this.dogrular) this._egri(d.f, d.renk || eksen, 1.6, d.kesikli);
       for (const e of this.egriler) this._egri(e.f, e.renk, 2.6);
+      for (const k of this.kapali) this._kapali(k);
       // noktalar
       g.font = '600 12px system-ui, sans-serif';
       for (const n of this.noktalar) this._nokta(n);
@@ -137,6 +142,42 @@
       g.lineTo(this.px(b), Y0); g.closePath(); g.fill();
       g.globalAlpha = 0.7; g.strokeStyle = renk; g.lineWidth = 1.2; g.setLineDash([4, 4]);
       g.beginPath(); for (const x of [a, b]) { g.moveTo(this.px(x), Y0); g.lineTo(this.px(x), this.py(f(x))); } g.stroke();
+      g.restore();
+    }
+    // F(x, y) = 0 eğrisi (x² + y² = 25 gibi): ekran ızgarasında yürüyen kareler
+    _kapali({ F, renk }) {
+      const g = this.g, h = 4, nx = Math.ceil(this.w / h), ny = Math.ceil(this.h / h);
+      const deger = new Float64Array((nx + 1) * (ny + 1));
+      for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) deger[j * (nx + 1) + i] = F(this.gx(i * h), this.gy(j * h));
+      g.save(); g.strokeStyle = renk; g.lineWidth = 2.6; g.lineCap = 'round'; g.beginPath();
+      const ara = (p, q, a, b) => p + (q - p) * (a / (a - b));
+      for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+        const a = deger[j * (nx + 1) + i], b = deger[j * (nx + 1) + i + 1], c = deger[(j + 1) * (nx + 1) + i + 1], d = deger[(j + 1) * (nx + 1) + i];
+        if (!(isFinite(a) && isFinite(b) && isFinite(c) && isFinite(d))) continue;
+        const x0 = i * h, y0 = j * h, nk = [];
+        if ((a < 0) !== (b < 0)) nk.push([ara(x0, x0 + h, a, b), y0]);
+        if ((b < 0) !== (c < 0)) nk.push([x0 + h, ara(y0, y0 + h, b, c)]);
+        if ((d < 0) !== (c < 0)) nk.push([ara(x0, x0 + h, d, c), y0 + h]);
+        if ((a < 0) !== (d < 0)) nk.push([x0, ara(y0, y0 + h, a, d)]);
+        for (let k = 0; k + 1 < nk.length; k += 2) { g.moveTo(nk[k][0], nk[k][1]); g.lineTo(nk[k + 1][0], nk[k + 1][1]); }
+      }
+      g.stroke(); g.restore();
+    }
+    _aralik({ a, b, aDahil, bDahil, renk }) {
+      const g = this.g, Y = Math.min(this.h - 6, Math.max(6, this.py(0)));
+      const x0 = isFinite(a) ? this.px(a) : -10, x1 = isFinite(b) ? this.px(b) : this.w + 10;
+      if (x1 < -10 || x0 > this.w + 10) return;
+      g.save();
+      if (a !== b) {
+        g.strokeStyle = renk; g.lineWidth = 7; g.globalAlpha = 0.5; g.lineCap = 'butt';
+        g.beginPath(); g.moveTo(Math.max(-10, x0), Y); g.lineTo(Math.min(this.w + 10, x1), Y); g.stroke();
+      }
+      g.globalAlpha = 1; g.lineWidth = 2.4;
+      for (const [v, dahil] of [[a, aDahil], [b, bDahil]]) {
+        if (!isFinite(v)) continue;
+        g.fillStyle = dahil ? renk : this.renk('--hg-zemin', '#fff'); g.strokeStyle = renk;
+        g.beginPath(); g.arc(this.px(v), Y, 5.5, 0, Math.PI * 2); g.fill(); g.stroke();
+      }
       g.restore();
     }
     _nokta(n) {

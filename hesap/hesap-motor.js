@@ -6,9 +6,28 @@
    - analiz: köklerin, tepe noktalarının ve y eksenini kestiği yerin sayısal olarak bulunması
    math.js (Apache-2.0) kullanır: tarayıcıda genel `math`, Node'da require('mathjs'). */
 (function (kok) {
-  const math = kok.math || (typeof require === 'function' ? require('mathjs') : null);
-  if (!math) throw new Error('math.js bulunamadı');
-  const kesirli = math.create(math.all, { number: 'Fraction' });
+  const mathAna = kok.math || (typeof require === 'function' ? require('mathjs') : null);
+  if (!mathAna) throw new Error('math.js bulunamadı');
+  const math = mathAna.create(mathAna.all); // kendi kopyamız: Σ gibi eklediğimiz işlevler sayfadaki math'ı değiştirmez
+  const kesirli = mathAna.create(mathAna.all, { number: 'Fraction' });
+  // Σ ve ∏: gövde her k için ayrı hesaplanır (math.js'e "ham argümanlı" işlev olarak eklenir: TOPLAM(gövde, k, alt, üst))
+  function aralikta(topla) {
+    const f = function (args, m, kapsam) {
+      const [govde, d, a, b] = args;
+      if (!d || !d.isSymbolNode) throw new Error('Σ değişkeni yok');
+      const alt = +a.compile().evaluate(kapsam), ust = +b.compile().evaluate(kapsam);
+      if (!Number.isInteger(alt) || !Number.isInteger(ust)) throw new Error('Σ sınırları tam sayı olmalı');
+      if (ust - alt > 200000) throw new Error('çok fazla terim');
+      const c = govde.compile(), ic = new Map();
+      for (const ad of kapsam.keys()) ic.set(ad, kapsam.get(ad));
+      let s = topla ? 0 : 1;
+      for (let k = alt; k <= ust; k++) { ic.set(d.name, k); const v = c.evaluate(ic); s = topla ? math.add(s, v) : math.multiply(s, v); }
+      return s;
+    };
+    f.rawArgs = true;
+    return f;
+  }
+  try { math.import({ TOPLAM: aralikta(true), CARPIM: aralikta(false) }, { override: true }); } catch (e) { /* zaten ekli */ }
 
   // ---------------------------------------------------------------- LaTeX → math.js
   const FONK = {
@@ -41,14 +60,29 @@
     // LaTeX'te \frac13 = \frac{1}{3} (MathLive tek haneli kesirleri böyle kısaltır): tek karakterli argümanları süslü paranteze al
     const tekArg = '(?:\\d|[A-Za-z])';
     s = String(s)
-      .replace(new RegExp('\\\\([dt]?frac)\\s*(' + tekArg + ')\\s*(' + tekArg + ')', 'g'), '\\$1{$2}{$3}')
-      .replace(new RegExp('\\\\([dt]?frac)\\s*(' + tekArg + ')\\s*\\{', 'g'), '\\$1{$2}{')
-      .replace(new RegExp('\\\\([dt]?frac)\\s*(\\{[^{}]*\\})\\s*(' + tekArg + ')', 'g'), '\\$1$2{$3}')
+      .replace(new RegExp('\\\\([dt]?(?:frac|binom))\\s*(' + tekArg + ')\\s*(' + tekArg + ')', 'g'), '\\$1{$2}{$3}')
+      .replace(new RegExp('\\\\([dt]?(?:frac|binom))\\s*(' + tekArg + ')\\s*\\{', 'g'), '\\$1{$2}{')
+      .replace(new RegExp('\\\\([dt]?(?:frac|binom))\\s*(\\{[^{}]*\\})\\s*(' + tekArg + ')', 'g'), '\\$1$2{$3}')
       .replace(new RegExp('\\\\sqrt\\s*(\\d)(?![\\d.])', 'g'), '\\sqrt{$1}')
       // okuyucu d/dx'i süslü paranteze sarabiliyor: { \frac { d } { d x } } ( … )
       .replace(/\{\s*(\\[dt]?frac\s*\{\s*d\s*\}\s*\{\s*d\s*[a-z]\s*\})\s*\}/g, '$1')
       // kalın / eğik yazı biçimleri yalnızca görünüş: içerik olduğu gibi kalır
       .replace(/\\(?:boldsymbol|mathbf|bm|mathit|mathnormal|pmb)\s*(?=\{)/g, '');
+    s = s
+      .replace(/([_^])\s*(\d)/g, '$1{$2}') // süslüsüz alt/üst simge tek rakamdır: \log_2 8 → taban 2, sayı 8
+      .replace(/\\imaginaryI(?![A-Za-z])/g, ' i ')
+      .replace(/\\[dt]binom/g, '\\binom')
+      .replace(/\{\s*([^{}]*?)\s*\\choose\s*([^{}]*?)\s*\}/g, '\\binom{$1}{$2}')
+      .replace(/^\s*([^{}\\]+?)\s*\\choose\s*([^{}\\]+?)\s*$/, '\\binom{$1}{$2}') // dış süslü parantezi önceden soyulmuş
+      // (5 alt alta 2) kombinasyon yazımı
+      .replace(/\\left\s*\(\s*\\begin\s*\{\s*(?:array|matrix)\s*\}(?:\s*\{[^{}]*\})?\s*\{?\s*([^{}\\]+?)\s*\}?\s*\\\\\s*\{?\s*([^{}\\]+?)\s*\}?\s*\\end\s*\{\s*(?:array|matrix)\s*\}\s*\\right\s*\)/g, '\\binom{$1}{$2}')
+      .replace(/\\begin\s*\{\s*pmatrix\s*\}\s*\{?\s*([^{}\\]+?)\s*\}?\s*\\\\\s*\{?\s*([^{}\\]+?)\s*\}?\s*\\end\s*\{\s*pmatrix\s*\}/g, '\\binom{$1}{$2}')
+      // C(5, 2) kombinasyon, P(5, 2) permütasyon
+      .replace(/(^|[^A-Za-z\\])(?:\\(?:mathrm|operatorname|text|textrm|rm)\s*\{\s*)?([CP])\s*\}?\s*(?:\\left)?\s*\(\s*(\d[\d\s]*)\s*,\s*(\d[\d\s]*)\s*(?:\\right)?\s*\)/g,
+        (m, on, h, n, r) => on + (h === 'C' ? '\\binom' : '\\perm') + '{' + n.replace(/\s+/g, '') + '}{' + r.replace(/\s+/g, '') + '}')
+      // EBOB(12, 18), EKOK(4, 6, 10) (eski adları OBEB, OKEK; gcd, lcm)
+      .replace(/(?:\\(?:mathrm|operatorname|text|textrm|rm)\s*\{\s*)?(E\s*B\s*O\s*B|O\s*B\s*E\s*B|E\s*K\s*O\s*K|O\s*K\s*E\s*K|\\gcd|g\s*c\s*d|l\s*c\s*m)\s*\}?\s*(?:\\left)?\s*\(\s*((?:\d[\d\s]*)(?:(?:\{,\}|,|;)\s*\d[\d\s]*)+)\s*(?:\\right)?\s*\)/g,
+        (m, ad, ic) => '\\' + (/K|l/.test(ad) ? 'ekok' : 'ebob') + ic.split(/\{,\}|,|;/).map((x) => '{' + x.replace(/\s+/g, '') + '}').join(''));
     s = s.replace(/[−–]/g, '-').replace(/·|×/g, '\\cdot ').replace(/÷/g, '\\div ').replace(/π/g, '\\pi ').replace(/√/g, '\\sqrt ')
       .replace(/\{,\}/g, '.').replace(/²/g, '^2').replace(/³/g, '^3')
       .replace(/\^\s*\{\s*\\circ\s*\}|\^\s*\\circ|\\degree|°/g, '\\derece ');
@@ -215,6 +249,27 @@
         if (c === 'infty') return 'Infinity';
         if (c === 'cdot' || c === 'times') return atom(tek);
         if (c === 'lvert' || c === 'vert') { mutlakDerinlik++; const e = toplam(); mutlakDerinlik--; if (bak() && bak().k === 'cmd' && /vert/.test(bak().v)) i++; else bekle('|'); return 'abs(' + e + ')'; }
+        if (c === 'binom' || c === 'perm') { const n = grup(), r = grup(); return (c === 'binom' ? 'combinations(' : 'permutations(') + n + ', ' + r + ')'; }
+        if (c === 'ebob' || c === 'ekok') { const l = []; while (v(bak()) === '{') l.push(grup()); return (c === 'ebob' ? 'gcd(' : 'lcm(') + l.join(', ') + ')'; }
+        if (c === 'sum' || c === 'prod') { // Σ_{k=1}^{10} gövde
+          let d = null, alt = null, ust = null;
+          for (let k = 0; k < 2; k++) {
+            if (v(bak()) === '_') {
+              i++;
+              const sarili = bekle('{');
+              const dt = al();
+              if (!dt || dt.k !== 'harf') throw new Error('Σ değişkeni yok');
+              d = dt.v;
+              if (!bekle('=')) throw new Error('Σ alt sınırı yok');
+              alt = sarili ? toplam() : atom(true);
+              if (sarili) bekle('}');
+            } else if (v(bak()) === '^') { i++; ust = v(bak()) === '{' ? grup() : atom(true); }
+          }
+          if (d === null || ust === null) throw new Error('Σ sınırları eksik');
+          const eksi = bekle('-');
+          const govde = carpim();
+          return (c === 'sum' ? 'TOPLAM(' : 'CARPIM(') + (eksi ? '-(' + govde + ')' : govde) + ', ' + d + ', ' + alt + ', ' + ust + ')';
+        }
         if (FONK[c]) {
           let tab = null, us = null;
           if (c === 'log' && v(bak()) === '_') { i++; tab = grup(); }
@@ -296,7 +351,16 @@
     if (lim) return { tur: 'limit', ifade: latexCevir(lim.govde), degisken: lim.degisken, nokta: lim.nokta, yon: lim.yon };
     const int = integralAyikla(s);
     if (int) return { tur: 'integral', ifade: latexCevir(int.govde), degisken: int.degisken, alt: int.alt, ust: int.ust };
-    s = s.replace(/\\(?:neq|leq|geq|le|ge|lt|gt)\b.*$/, ''); // eşitsizlikler: şimdilik sol tarafı
+    const sis = sistemAyikla(s);
+    if (sis) return sis;
+    const [ip, io] = iliskiBol(s);
+    if (io.length) {
+      if (ip.some((p) => !p)) throw new Error('eksik ifade');
+      const zincir = { parcalar: ip.map(latexCevir), isaretler: io };
+      const vars = degiskenler(zincir.parcalar.map((p) => '(' + p + ')').join('+'));
+      if (vars.length > 1) throw new Error('eşitsizlikte tek bilinmeyen olmalı');
+      return { tur: 'esitsizlik', zincirler: [zincir], degisken: vars[0] || null };
+    }
     const parca = s.split(/=(?![^{]*})/); // süslü parantez içindeki = değil
     if (parca.length >= 2) {
       const solL = parca[0].trim(), sagL = parca.slice(1).join('=').trim();
@@ -322,16 +386,24 @@
     const tm = ifade.match(/^TUREV\((.*)\)$/);
     if (tm) return { tur: 'turev', ifade: tm[1] };
     if (/TUREV\(/.test(ifade)) return { tur: 'turev', ifade: ifade.replace(/TUREV\(([^()]*(?:\([^()]*\)[^()]*)*)\)/, '$1') };
-    if (degiskenler(ifade).includes('x')) return { tur: 'fonksiyon', ifade, ad: 'f', degisken: 'x' };
+    const dv = degiskenler(ifade);
+    if (dv.includes('x')) return { tur: 'fonksiyon', ifade, ad: 'f', degisken: 'x' };
+    if (dv.length === 1 && /TOPLAM\(/.test(ifade)) return { tur: 'toplamN', ifade, degisken: dv[0] };
     return { tur: 'islem', ifade };
   }
   function degiskenler(ifade) {
     const set = new Set();
-    try {
-      math.parse(ifade).traverse((n, yol, ust) => {
-        if (n.isSymbolNode && !(ust && ust.isFunctionNode && ust.fn === n) && !['pi', 'e', 'Infinity', 'i', 'DEGISARET'].includes(n.name)) set.add(n.name);
-      });
-    } catch (e) { /* çözülemeyen ifade */ }
+    const gez = (n, bagli) => {
+      if (n.isFunctionNode) {
+        if ((n.fn.name === 'TOPLAM' || n.fn.name === 'CARPIM') && n.args[1] && n.args[1].isSymbolNode) {
+          gez(n.args[0], new Set([...bagli, n.args[1].name])); gez(n.args[2], bagli); gez(n.args[3], bagli);
+        } else n.args.forEach((a) => gez(a, bagli));
+        return;
+      }
+      if (n.isSymbolNode) { if (!bagli.has(n.name) && !['pi', 'e', 'Infinity', 'i', 'DEGISARET'].includes(n.name)) set.add(n.name); return; }
+      n.forEach((c) => gez(c, bagli));
+    };
+    try { gez(math.parse(ifade), new Set()); } catch (e) { /* çözülemeyen ifade */ }
     return [...set].sort((a, b) => (a === 'x' ? -1 : b === 'x' ? 1 : a.localeCompare(b)));
   }
 
@@ -374,6 +446,13 @@
         return { tex: isaret + (k2.q === 1 ? ust : '\\frac{' + ust + '}{' + k2.q + '}'), metin: isaret + (Math.abs(k2.p) === 1 ? '' : Math.abs(k2.p)) + '√' + r + (k2.q === 1 ? '' : '/' + k2.q) };
       }
     }
+    for (const r of [2, 3, 4, 5, 6, 7, 9, 10]) { // 3∛2 gibi
+      const k2 = kesirBul(x / Math.cbrt(r), 30);
+      if (k2 && Math.abs(k2.p) < 100) {
+        const ust = (Math.abs(k2.p) === 1 ? '' : Math.abs(k2.p)) + '\\sqrt[3]{' + r + '}', isaret = k2.p < 0 ? '-' : '';
+        return { tex: isaret + (k2.q === 1 ? ust : '\\frac{' + ust + '}{' + k2.q + '}'), metin: isaret + (Math.abs(k2.p) === 1 ? '' : Math.abs(k2.p)) + '∛' + r + (k2.q === 1 ? '' : '/' + k2.q) };
+      }
+    }
     const k3 = kesirBul(x / Math.PI, 24);
     if (k3 && Math.abs(k3.p) < 100) {
       const ust = (Math.abs(k3.p) === 1 ? '' : Math.abs(k3.p)) + '\\pi', isaret = k3.p < 0 ? '-' : '';
@@ -392,7 +471,8 @@
     let deger;
     try { deger = node.evaluate(trigKapsam(ayar.derece)); } catch (e) { throw new Error('hesaplanamadı: ' + e.message); }
     if (math.isComplex && math.isComplex(deger)) {
-      if (Math.abs(deger.im) < 1e-12) deger = deger.re; else return { deger: NaN, metin: 'gerçek sayı değil', tex: '\\text{gerçek sayı değil}' };
+      if (Math.abs(deger.im) < 1e-12) deger = deger.re;
+      else { const k = karmasikBicim(deger.re, deger.im); return { deger: NaN, karmasik: { re: deger.re, im: deger.im }, metin: k.metin, tam: k, tex: k.tex }; }
     }
     if (typeof deger !== 'number') deger = +deger;
     let kesir = null;
@@ -404,7 +484,36 @@
       } catch (e) { /* kesirle hesaplanamadı */ }
     }
     const tam = kesir || tamBicim(deger);
-    return { deger, metin: sayiMetin(deger), tam, tex: node.toTex({ parenthesis: 'auto', implicit: 'hide' }) };
+    return { deger, metin: sayiMetin(deger), tam, tex: node.toTex({ parenthesis: 'auto', implicit: 'hide' }), adimlar: toplamAdimlari(node, deger, ayar) };
+  }
+  // Σ ya da ∏ ise terimleri göster: 3 + 5 + 7 + ⋯ + 21 = 120
+  function toplamAdimlari(node, deger, ayar) {
+    const kok = node.isParenthesisNode ? node.content : node;
+    if (!kok.isFunctionNode || (kok.fn.name !== 'TOPLAM' && kok.fn.name !== 'CARPIM')) return null;
+    try {
+      const [g, d, a, b] = kok.args, alt = +a.evaluate(), ust = +b.evaluate(), c = g.compile(), topla = kok.fn.name === 'TOPLAM';
+      const terim = (k) => { const v = c.evaluate({ ...trigKapsam(ayar.derece), [d.name]: k }); const t = tamBicimE(+v); const s = t ? t.tex : sayiTex(+v); return +v < 0 ? '\\left(' + s + '\\right)' : s; };
+      const say = ust - alt + 1;
+      const ks = say <= 0 ? [] : say <= 6 ? Array.from({ length: say }, (_, j) => alt + j) : [alt, alt + 1, alt + 2, null, ust];
+      const t = tamBicimE(deger), sonTex = t ? t.tex : sayiTex(deger);
+      return [{
+        kural: d.name + ' = ' + alt + ', ' + (alt + 1) + ', …, ' + ust + ' için ' + Math.max(0, say) + ' terim ' + (topla ? 'toplanır' : 'çarpılır'),
+        tex: (ks.length ? ks.map((k) => (k === null ? '\\cdots' : terim(k))).join(topla ? '+' : '\\cdot ') : (topla ? '0' : '1')) + '=' + sonTex,
+      }];
+    } catch (e) { return null; }
+  }
+  // a + bi yazımı
+  function karmasikBicim(re, im) {
+    const parca = (v) => tamBicim(v) || { tex: sayiTex(v), metin: sayiMetin(v) };
+    re = yuvarla(re); im = yuvarla(im);
+    let tex = '', metin = '';
+    if (re !== 0) { const p = parca(re); tex = p.tex; metin = p.metin; }
+    if (im !== 0) {
+      const p = parca(Math.abs(im)), bir = Math.abs(im) === 1, isaret = im < 0 ? '-' : re !== 0 ? '+' : '';
+      tex += isaret + (bir ? '' : p.tex + (/sqrt|frac|pi/.test(p.tex) ? '\\,' : '')) + 'i';
+      metin += (im < 0 ? '−' : re !== 0 ? ' + ' : '') + (bir ? '' : p.metin) + 'i';
+    }
+    return tex ? { tex, metin } : { tex: '0', metin: '0' };
   }
 
   // ---------------------------------------------------------------- türev (adım adım)
@@ -412,6 +521,16 @@
   const N = (n) => new math.ConstantNode(n);
   const sade = (n) => { try { return math.simplify(n); } catch (e) { return n; } };
   function guzel(n, o) {
+    if (n.isFunctionNode) {
+      const ad = n.fn.name, a = n.args.map((k) => k.toTex(o));
+      if ((ad === 'TOPLAM' || ad === 'CARPIM') && n.args.length === 4) {
+        const g = n.args[0], sar = g.isOperatorNode && (g.fn === 'add' || g.fn === 'subtract');
+        return (ad === 'TOPLAM' ? '\\sum' : '\\prod') + '_{' + n.args[1].name + '=' + a[2] + '}^{' + a[3] + '}' + (sar ? '\\left(' + a[0] + '\\right)' : a[0]);
+      }
+      if (ad === 'combinations' && a.length === 2) return '\\binom{' + a[0] + '}{' + a[1] + '}';
+      if (ad === 'permutations' && a.length === 2) return 'P\\left(' + a[0] + ',' + a[1] + '\\right)';
+      if (ad === 'gcd' || ad === 'lcm') return '\\operatorname{' + (ad === 'gcd' ? 'EBOB' : 'EKOK') + '}\\left(' + a.join(',') + '\\right)';
+    }
     if (n.isOperatorNode && n.fn === 'multiply' && n.args.length === 2) {
       const ac = (k) => (k.isParenthesisNode ? ac(k.content) : k);
       const a = ac(n.args[0]), b = ac(n.args[1]), ta = a.toTex(o), tb = b.toTex(o);
@@ -430,7 +549,7 @@
       if (b.isOperatorNode && b.fn === 'unaryMinus' && b.args[0].isConstantNode && !a.isConstantNode && !(a.isOperatorNode && (a.fn === 'add' || a.fn === 'subtract' || a.fn === 'divide'))) return '-' + b.args[0].toTex(o) + ta; // x³·(−640) → −640x³
       const sayiBasliyor = /^[\d.{]*\d/.test(tb.replace(/^\{+/, '')) || b.isConstantNode || (b.isOperatorNode && b.fn === 'unaryMinus');
       const solSayi = a.isConstantNode || (a.isOperatorNode && a.fn === 'unaryMinus' && a.args[0].isConstantNode);
-      const sagHarf = b.isSymbolNode || b.isFunctionNode || (b.isOperatorNode && b.fn === 'pow' && (b.args[0].isSymbolNode || b.args[0].isFunctionNode)) || b.isParenthesisNode;
+      const sagHarf = b.isSymbolNode || b.isFunctionNode || (b.isOperatorNode && b.fn === 'pow' && (ac(b.args[0]).isSymbolNode || ac(b.args[0]).isFunctionNode)) || b.isParenthesisNode;
       if (!sayiBasliyor && (solSayi || a.isSymbolNode || (a.isOperatorNode && (a.fn === 'pow' || a.fn === 'multiply'))) && sagHarf) {
         const sol = a.isOperatorNode && a.fn === 'add' ? '\\left(' + ta + '\\right)' : ta;
         return sol + (/[a-zA-Z}]$/.test(sol) && /^[a-zA-Z]/.test(tb) ? '\\,' : '') + tb;
@@ -521,6 +640,10 @@
   }
 
   // ---------------------------------------------------------------- fonksiyon analizi
+  function derle2(ifade, x, y) { // iki değişkenli (denklem sistemlerinin örtük eğrileri)
+    const c = math.compile(ifade);
+    return (u, v) => { try { const r = c.evaluate({ [x]: u, [y]: v, DEGISARET: DERECE }); return typeof r === 'number' ? r : NaN; } catch (e) { return NaN; } };
+  }
   function derle(ifade, x = 'x') {
     const c = math.compile(ifade);
     return (v) => { try { const r = c.evaluate({ [x]: v, DEGISARET: DERECE }); const n = typeof r === 'number' ? r : (r && r.re !== undefined && Math.abs(r.im) < 1e-12 ? r.re : NaN); return n; } catch (e) { return NaN; } };
@@ -529,9 +652,29 @@
     for (let k = 0; k < 80; k++) { const m = (a + b) / 2, fm = f(m); if (!isFinite(fm)) return null; if ((fm < 0) === (fa < 0)) { a = m; fa = fm; } else b = m; if (b - a < 1e-12) break; }
     return (a + b) / 2;
   }
+  // |f|'nin [a, b]'deki en küçük değeri sıfırsa orası köktür (altın oran araması)
+  function dokunanKok(f, a, b) {
+    const g = (t) => Math.abs(f(t)), r = (Math.sqrt(5) - 1) / 2;
+    let c = b - r * (b - a), d = a + r * (b - a), gc = g(c), gd = g(d);
+    for (let k = 0; k < 90 && b - a > 1e-15 * Math.max(1, Math.abs(a)); k++) {
+      if (gc < gd) { b = d; d = c; gd = gc; c = b - r * (b - a); gc = g(c); } else { a = c; c = d; gc = gd; d = a + r * (b - a); gd = g(d); }
+    }
+    const m = (a + b) / 2, s = guzelSayi(m, 1e-6), fs = g(s);
+    if (fs < 1e-9) return s;
+    return g(m) < 1e-9 ? m : null;
+  }
+  // 1,9999999998 → 2; 0,52359877 → π/6 (yalnızca çok yakınsa)
+  function guzelSayi(p, tol = 1e-9) {
+    if (!isFinite(p)) return p;
+    const olcek = Math.max(1, Math.min(Math.abs(p), 100)), yakin = (c) => Math.abs(c - p) <= tol * olcek; // büyük sayılarda göreli değil: 1000003,4 → 1000003 olmasın
+    for (let q = 1; q <= 60; q++) { const c = Math.round(p * q) / q; if (yakin(c)) return c === 0 ? 0 : c; }
+    for (let q = 1; q <= 12; q++) { const c = Math.round(p * q / Math.PI) * Math.PI / q; if (yakin(c)) return c; }
+    for (const r of [2, 3, 5, 6, 7]) for (let q = 1; q <= 12; q++) { const c = Math.round(p * q / Math.sqrt(r)) * Math.sqrt(r) / q; if (yakin(c)) return c; }
+    return p;
+  }
   const temizle = (liste, tol) => liste.sort((p, q) => p - q).filter((v, k, d) => !k || Math.abs(v - d[k - 1]) > tol);
   function kokler(f, a, b, n = 2000) {
-    const out = []; let x0 = a, y0 = f(a);
+    const out = []; let x0 = a, y0 = f(a), xm = NaN, ym = NaN;
     for (let k = 1; k <= n; k++) {
       const x1 = a + (b - a) * k / n, y1 = f(x1);
       if (isFinite(y0) && isFinite(y1)) {
@@ -539,9 +682,12 @@
         else if ((y0 < 0) !== (y1 < 0)) {
           const r = ikiyeBol(f, x0, x1, y0);
           if (r !== null && Math.abs(f(r)) < 1e-6 * Math.max(1, Math.abs(y0), Math.abs(y1))) out.push(r); // atlama (1/x) değil
+        } else if (isFinite(ym) && ym !== 0 && (ym < 0) === (y0 < 0) && Math.abs(y0) <= Math.abs(ym) && Math.abs(y0) < Math.abs(y1)) {
+          const r = dokunanKok(f, xm, x1); // (x − 2)², |x − 3|: işaret değişmeden sıfıra değer
+          if (r !== null) out.push(r);
         }
       }
-      x0 = x1; y0 = y1;
+      xm = x0; ym = y0; x0 = x1; y0 = y1;
     }
     return temizle(out.map((r) => (Math.abs(r) < 1e-10 ? 0 : r)), (b - a) / n);
   }
@@ -602,16 +748,27 @@
   }
   // denklem: f(x) = 0 köklerinin hepsi; 2. dereceye kadar kesin yol (Δ)
   function denklem(ifade, x = 'x') {
-    let polinom = polinomAc(ifade, x);
-    if (polinom && polinom.length > 3) polinom = null;
+    const f = derle(ifade, x);
+    // her x için doğru (özdeşlik): sin²x + cos²x = 1
+    if ([-7.3, -2.1, -0.4, 0.7, 1.9, 3.6, 8.2].every((t) => { const v = f(t); return isFinite(v) && Math.abs(v) < 1e-10; })) return { yol: 'ozdeslik', kokler: [] };
+    const polinom = polinomAc(ifade, x);
     if (polinom && polinom.length === 3 && polinom[2] !== 0) {
       const [c, b, a] = polinom, D = b * b - 4 * a * c;
       const kokS = D < 0 ? [] : D === 0 ? [-b / (2 * a)] : [(-b - Math.sqrt(D)) / (2 * a), (-b + Math.sqrt(D)) / (2 * a)].sort((p, q) => p - q);
-      return { yol: 'delta', a, b, c, delta: D, kokler: kokS };
+      const kesin = kokluKokler(a, b, c);
+      return { yol: 'delta', a, b, c, delta: D, kokler: kesin ? kesin.map((k) => k.x) : kokS, kokTex: kesin || [] };
     }
-    if (polinom && polinom.length === 2 && polinom[1] !== 0) return { yol: 'dogrusal', kokler: [-polinom[0] / polinom[1]] };
-    const f = derle(ifade, x);
-    return { yol: 'sayisal', kokler: kokler(f, -100, 100, 20000) };
+    if (polinom && polinom.length === 2 && polinom[1] !== 0) return { yol: 'dogrusal', kokler: [guzelSayi(-polinom[0] / polinom[1])] };
+    if (/\b(?:sin|cos|tan|cot|sec|csc)\(/.test(ifade)) { const t = trigDenklem(ifade, f, x); if (t) return t; }
+    const c = kumeCoz([{ ifade, f, op: '=' }], x);
+    const sonuc = { yol: 'sayisal', kokler: c.parcalar.filter((p) => p.a === p.b).map((p) => p.a), araliklar: c.parcalar.filter((p) => p.a !== p.b) };
+    if (polinom && polinom.length > 3) { // 3. ve daha yüksek derece: çarpanlara ayırma
+      const ayr = carpanlarinaAyir(polinom, x);
+      if (ayr) { sonuc.yol = 'carpan'; sonuc.carpanlar = ayr.tex; }
+    }
+    sonuc.kokTex = sonuc.kokler.map((k) => ({ x: k, tex: sayiYaz()(k) }));
+    if (sonuc.araliklar.length) sonuc.kumeTex = kumeTex(c.parcalar, sayiYaz());
+    return sonuc;
   }
 
   // ---------------------------------------------------------------- limit
@@ -968,14 +1125,503 @@
     return { deger: sayisal, tam: tamBicimE(sayisal), adimlar, sayisal: true };
   }
 
+  // ================================================================ YKS konuları
+  const tamSayiEbob = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a; };
+  function kesirTex(v) {
+    const y = yuvarla(v);
+    if (Number.isInteger(y)) return String(y);
+    const k = kesirBul(y, 10000);
+    return k ? (k.p < 0 ? '-' : '') + '\\frac{' + Math.abs(k.p) + '}{' + k.q + '}' : sayiTex(y);
+  }
+  // [a0, a1, …] → \frac{1}{3}n^{3}+\frac{1}{2}n^{2}+… (katsayılar kesirle)
+  function polinomTex(k, x) {
+    let s = '';
+    for (let i = k.length - 1; i >= 0; i--) {
+      const a = yuvarla(k[i]);
+      if (!a) continue;
+      const t = kesirTex(Math.abs(a)), us = i === 0 ? '' : i === 1 ? x : x + '^{' + i + '}';
+      s += (a < 0 ? '-' : s ? '+' : '') + (i && t === '1' ? '' : t) + us;
+    }
+    return s || '0';
+  }
+  // ax² + bx + c = 0'ın kökleri kesin yazımla (p ± q√n): [{ x, tex }], küçükten büyüğe; katsayılar kesirli değilse null
+  function kokluKokler(a, b, c) {
+    const k = [a, b, c].map((v) => kesirBul(v, 10000));
+    if (k.some((v) => !v)) return null;
+    const ekok = k.reduce((l, v) => l / tamSayiEbob(l, v.q) * v.q, 1);
+    let [A, B, C] = k.map((v) => v.p * (ekok / v.q));
+    if (A < 0) { A = -A; B = -B; C = -C; }
+    const D = B * B - 4 * A * C;
+    if (!Number.isSafeInteger(D) || A === 0) return null;
+    if (D < 0) return [];
+    let m = 1, n = D;
+    for (let t = 2; t * t <= n; t++) while (n % (t * t) === 0) { n /= t * t; m *= t; }
+    if (D === 0) return [{ x: -B / (2 * A), tex: kesirTex(-B / (2 * A)) }];
+    if (n === 1) return [(-B - m) / (2 * A), (-B + m) / (2 * A)].map((x) => ({ x, tex: kesirTex(x) }));
+    const g = tamSayiEbob(tamSayiEbob(B, m), 2 * A), P = -B / g, M = m / g, Q = 2 * A / g;
+    const kokT = (M === 1 ? '' : M) + '\\sqrt{' + n + '}';
+    const yaz = (s) => {
+      if (P === 0) return (s < 0 ? '-' : '') + (Q === 1 ? kokT : '\\frac{' + kokT + '}{' + Q + '}');
+      const pay = P + (s < 0 ? '-' : '+') + kokT;
+      return Q === 1 ? pay : '\\frac{' + pay + '}{' + Q + '}';
+    };
+    return [{ x: (P - M * Math.sqrt(n)) / Q, tex: yaz(-1) }, { x: (P + M * Math.sqrt(n)) / Q, tex: yaz(1) }];
+  }
+  // Polinomu rasyonel köklerinden çarpanlarına ayırır: 2x³ − 2x → 2x(x − 1)(x + 1). k: [a0, a1, …]
+  function carpanlarinaAyir(k, x = 'x') {
+    const n = k.length - 1;
+    if (n < 2 || n > 8) return null;
+    const kk = k.map((v) => kesirBul(v, 10000));
+    if (kk.some((v) => !v)) return null;
+    const ekok = kk.reduce((l, v) => l / tamSayiEbob(l, v.q) * v.q, 1);
+    let p = kk.map((v) => v.p * (ekok / v.q));
+    if (!p.every(Number.isSafeInteger)) return null;
+    const g0 = p.reduce((g, v) => tamSayiEbob(g, v), 0);
+    p = p.map((v) => v / g0);
+    let isaret = 1;
+    if (p[p.length - 1] < 0) { p = p.map((v) => -v); isaret = -1; }
+    const gs = tamSayiEbob(g0, ekok), cPay = isaret * g0 / gs, cPayda = ekok / gs;
+    const carpanlar = [];
+    const ekle = (pp, q) => { const c = carpanlar.find((f) => f.p === pp && f.q === q && !f.kalan); if (c) c.kat++; else carpanlar.push({ p: pp, q, kat: 1 }); };
+    while (p.length > 1 && p[0] === 0) { p.shift(); ekle(0, 1); }
+    const bolenler = (v) => { v = Math.abs(v); const o = []; for (let d = 1; d <= v && d <= 20000; d++) if (v % d === 0) o.push(d); return o; };
+    const deger = (pl, r) => pl.reduce((s, a, i) => s + a * Math.pow(r, i), 0);
+    let ilerle = true;
+    while (p.length > 2 && ilerle) {
+      ilerle = false;
+      for (const q of bolenler(p[p.length - 1])) {
+        for (const pp of bolenler(p[0])) {
+          if (tamSayiEbob(pp, q) !== 1) continue;
+          for (const s of [1, -1]) {
+            const r = s * pp / q, olcek = p.reduce((t, a, i) => t + Math.abs(a * Math.pow(r, i)), 0);
+            if (Math.abs(deger(p, r)) > 1e-9 * Math.max(1, olcek)) continue;
+            const [bolum] = polinomBol(p, [-s * pp, q]);
+            p = bolum.map((v) => Math.round(v));
+            ekle(s * pp, q); ilerle = true; break;
+          }
+          if (ilerle) break;
+        }
+        if (ilerle) break;
+      }
+    }
+    if (p.length === 2) { ekle(-p[0], p[1]); p = [1]; }
+    const sayi = carpanlar.reduce((t, f) => t + f.kat, 0) + (p.length > 1 ? 1 : 0);
+    if (sayi < 2 && !(sayi === 1 && (cPay !== 1 || cPayda !== 1) && p.length === 1)) return null;
+    const fTex = (f) => {
+      if (f.p === 0) return x + (f.kat > 1 ? '^{' + f.kat + '}' : '');
+      const ic = (f.q === 1 ? '' : f.q) + x + (f.p > 0 ? '-' + f.p : '+' + -f.p);
+      return '\\left(' + ic + '\\right)' + (f.kat > 1 ? '^{' + f.kat + '}' : '');
+    };
+    let govde = carpanlar.slice().sort((a, b) => (a.p === 0 ? -1 : b.p === 0 ? 1 : a.p / a.q - b.p / b.q)).map(fTex).join('');
+    if (p.length > 1) govde += '\\left(' + tex(polinomDugum(p, x)) + '\\right)';
+    const mutlak = Math.abs(cPay), on = cPay < 0 ? '-' : '';
+    const texS = cPayda === 1 ? on + (mutlak === 1 ? '' : mutlak) + govde : on + '\\frac{' + (mutlak === 1 ? '' : mutlak) + govde + '}{' + cPayda + '}';
+    return { tex: texS, kokler: carpanlar.map((f) => f.p / f.q) };
+  }
+
+  // ---------------------------------------------------------------- kümeler: eşitsizlik ve sayısal denklem
+  const sifirMi = (v) => Math.abs(v) < 1e-9;
+  // "sıfır" terimlerin büyüklüğüne göre: e^{−x} çok küçük ama sıfır değil; |x−1| + |x+2| − 3 ise [−2, 1]'de gerçekten sıfır
+  const sifirGibi = (v, s) => Math.abs(v) <= 1e-11 * s;
+  const KARSILASTIR = {
+    '<': (v, s) => v < 0 && !sifirGibi(v, s), '≤': (v, s) => v < 0 || sifirGibi(v, s), '>': (v, s) => v > 0 && !sifirGibi(v, s), '≥': (v, s) => v > 0 || sifirGibi(v, s),
+    '≠': (v, s) => !sifirGibi(v, s), '=': (v, s) => sifirGibi(v, s),
+  };
+  // toplanan terimlerin mutlak değerleri toplamı (sıfırın ölçeği)
+  function olcekFn(ifade, x) {
+    const terimler = [];
+    const ayir = (n) => {
+      if (n.isParenthesisNode) return ayir(n.content);
+      if (n.isOperatorNode && (n.fn === 'add' || n.fn === 'subtract')) { n.args.forEach(ayir); return; }
+      if (n.isOperatorNode && n.fn === 'unaryMinus') { ayir(n.args[0]); return; }
+      terimler.push(n.toString());
+    };
+    try { ayir(math.parse(ifade)); } catch (e) { return () => 1; }
+    const fs = terimler.map((t) => derle(t, x));
+    return (t) => { let s = 0; for (const g of fs) { const v = Math.abs(g(t)); if (isFinite(v)) s += v; } return s; };
+  }
+  let IZGARA = null, IC_IZGARA = null;
+  // −100…100 arası 0,01 aralıkla (tam sayılara ve yarımlara tam denk gelir), dışı seyrek. Salınan (sin, cos…) ifadelerde dışı taranmaz:
+  // seyrek noktalar köklerin yalnızca bir kısmına denk gelir.
+  function izgara(ifade) {
+    if (!IZGARA) {
+      IC_IZGARA = []; for (let k = -10000; k <= 10000; k++) IC_IZGARA.push(k / 100);
+      const dis = []; for (let v = 106; v < 2e6; v *= 1.08) dis.push(Math.round(v));
+      IZGARA = [...dis.slice().reverse().map((v) => -v), ...IC_IZGARA, ...dis];
+    }
+    return /\b(?:sin|cos|tan|cot|sec|csc)\(/.test(ifade || '') ? IC_IZGARA : IZGARA;
+  }
+  const sinif = (v, s) => (!isFinite(v) ? 'U' : sifirGibi(v, s) ? '0' : v > 0 ? '+' : '-');
+  function gecisBul(cls, a, b) {
+    const ca = cls(a);
+    for (let k = 0; k < 200; k++) { const m = (a + b) / 2; if (m <= a || m >= b) break; if (cls(m) === ca) a = m; else b = m; }
+    return [a, b];
+  }
+  function paydalar(ifade, x) {
+    const out = [];
+    try {
+      math.parse(ifade).traverse((n) => {
+        if (n.isOperatorNode && n.fn === 'divide' && !sabitMi(n.args[1], x)) out.push(n.args[1].toString());
+        if (n.isOperatorNode && n.fn === 'pow' && !sabitMi(n.args[0], x) && sabitMi(n.args[1], x) && sabitDeger(n.args[1]) < 0) out.push(n.args[0].toString());
+      });
+    } catch (e) { /* yok */ }
+    return out;
+  }
+  // f'nin işaretinin, sıfır olmasının ya da tanımlılığının değişebileceği bütün noktalar: [{ x, tur: 'kok' | 'kutup' | 'sinir' }]
+  function kritikNoktalar(ifade, f, x, S, xs0) {
+    const cls = (t) => sinif(f(t), S(t));
+    let xs = xs0 || izgara(ifade), ys = xs.map(f);
+    if (!xs0) { // uzak noktalarda taşma (e^{800} = ∞) ve alttan taşma (e^{−800} = 0) sayının kendisi değil: o noktalar atlanır
+      const tut = xs.map((t, k) => Math.abs(t) <= 100 || !(ys[k] === 0 || ys[k] === Infinity || ys[k] === -Infinity));
+      xs = xs.filter((_, k) => tut[k]); ys = ys.filter((_, k) => tut[k]);
+    }
+    const cs = ys.map((v, k) => sinif(v, S(xs[k]))), out = [];
+    for (let k = 1; k < xs.length; k++) {
+      const c0 = cs[k - 1], c1 = cs[k];
+      if (c0 !== c1) {
+        if (c1 === '0') { out.push({ x: xs[k], tur: 'kok' }); continue; }
+        if (c0 === '0') { out.push({ x: xs[k - 1], tur: 'kok' }); continue; }
+        const [a, b] = gecisBul(cls, xs[k - 1], xs[k]);
+        const fa = f(a), fb = f(b);
+        if ((c0 === '+' || c0 === '-') && (c1 === '+' || c1 === '-')) {
+          const kucuk = Math.min(Math.abs(fa), Math.abs(fb)) < 1e-6 * Math.max(1, Math.abs(ys[k - 1]), Math.abs(ys[k]));
+          out.push({ x: guzelSayi(Math.abs(fa) <= Math.abs(fb) ? a : b), tur: kucuk ? 'kok' : 'kutup' });
+        } else out.push({ x: guzelSayi(c0 === 'U' ? b : a), tur: 'sinir' });
+        continue;
+      }
+      if (k >= 2 && (c1 === '+' || c1 === '-') && cs[k - 2] === c1 && Math.abs(ys[k - 1]) <= Math.abs(ys[k - 2]) && Math.abs(ys[k - 1]) < Math.abs(ys[k])) {
+        const r = dokunanKok(f, xs[k - 2], xs[k]);
+        if (r !== null) out.push({ x: r, tur: 'kok' });
+      }
+    }
+    const [pa, pb] = [xs[0], xs[xs.length - 1]].map((v) => Math.max(-100, Math.min(100, v)));
+    for (const p of paydalar(ifade, x)) { const g = derle(p, x); for (const r of kokler(g, pa, pb, 4000)) out.push({ x: guzelSayi(r), tur: 'kutup' }); }
+    out.sort((p, q) => p.x - q.x);
+    const tek = [];
+    for (const n of out) {
+      const son = tek[tek.length - 1];
+      if (son && Math.abs(son.x - n.x) <= 1e-9 * Math.max(1, Math.abs(n.x))) { if (n.tur === 'kok') son.tur = 'kok'; if (n.tur === 'kutup' && son.tur !== 'kok') son.tur = 'kutup'; continue; }
+      tek.push({ ...n });
+    }
+    return tek;
+  }
+  // koşulların hepsini sağlayan x'ler: aralıklar ve tek noktalar
+  function kumeCoz(kosullar, x, xs) {
+    let B = [];
+    for (const k of kosullar) { k.S = k.S || olcekFn(k.ifade, x); for (const n of kritikNoktalar(k.ifade, k.f, x, k.S, xs)) B.push({ ...n, kosul: k }); }
+    B.sort((p, q) => p.x - q.x);
+    const S = [];
+    for (const n of B) { const son = S[S.length - 1]; if (son && Math.abs(son.x - n.x) <= 1e-9 * Math.max(1, Math.abs(n.x))) { son.kokOlan.add(n.kosul); continue; } S.push({ x: n.x, kokOlan: new Set(n.tur === 'kok' ? [n.kosul] : []) }); }
+    const noktadaSagla = (n) => kosullar.every((k) => { const v = k.f(n.x); if (!isFinite(v)) return false; return KARSILASTIR[k.op](n.kokOlan.has(k) ? 0 : v, k.S(n.x)); });
+    const icteSagla = (t) => kosullar.every((k) => { const v = k.f(t); return isFinite(v) && KARSILASTIR[k.op](v, k.S(t)); });
+    const test = (a, b) => (!isFinite(a) && !isFinite(b) ? 0.5 : !isFinite(a) ? b - Math.max(1, Math.abs(b)) : !isFinite(b) ? a + Math.max(1, Math.abs(a)) : (a + b) / 2);
+    // aralık içinde birkaç nokta: oranlar birbirinin katı değil (periyodik ifadelerde hepsi birden köke denk gelmesin)
+    const testler = (a, b) => (!isFinite(a) && !isFinite(b) ? [0.5, -1.7, 3.3] : !isFinite(a) ? [1.137, 2.618, 7.389].map((k) => b - k * Math.max(1, Math.abs(b))) : !isFinite(b) ? [1.137, 2.618, 7.389].map((k) => a + k * Math.max(1, Math.abs(a))) : [0.5, 0.31, 0.73].map((k) => a + (b - a) * k));
+    const dizi = [];
+    for (let i = 0; i <= S.length; i++) {
+      const a = i === 0 ? -Infinity : S[i - 1].x, b = i === S.length ? Infinity : S[i].x;
+      dizi.push({ a, b, ok: testler(a, b).every(icteSagla), t: test(a, b) });
+      if (i < S.length) dizi.push({ a: S[i].x, b: S[i].x, nokta: true, ok: noktadaSagla(S[i]) });
+    }
+    const parcalar = [];
+    let cur = null;
+    for (const s of dizi) {
+      if (s.ok) { if (!cur) cur = { a: s.a, aDahil: !!s.nokta }; cur.b = s.b; cur.bDahil = !!s.nokta; } else if (cur) { parcalar.push(cur); cur = null; }
+    }
+    if (cur) parcalar.push(cur);
+    return { parcalar, sinirlar: S.map((n) => n.x), dizi, kokler: new Set(S.filter((n) => n.kokOlan.size).map((n) => n.x)) };
+  }
+  function kumeTex(parcalar, texBul) {
+    if (!parcalar.length) return '\\varnothing';
+    const n = parcalar.length, ilk = parcalar[0], son = parcalar[n - 1];
+    if (n === 1 && ilk.a === -Infinity && ilk.b === Infinity) return '\\mathbb{R}';
+    const tekler = parcalar.every((p) => p.a === p.b);
+    const ayrac = parcalar.some((p) => /\{,\}/.test(texBul(p.a) + texBul(p.b))) ? ';\\ ' : ',\\ ';
+    if (tekler) return '\\left\\{' + parcalar.map((p) => texBul(p.a)).join(ayrac) + '\\right\\}';
+    if (n > 1 && ilk.a === -Infinity && son.b === Infinity && parcalar.every((p, i) => p.a !== p.b && (i === 0 || (parcalar[i - 1].b === p.a && !parcalar[i - 1].bDahil && !p.aDahil)))) {
+      return '\\mathbb{R}-\\left\\{' + parcalar.slice(1).map((p) => texBul(p.a)).join(ayrac) + '\\right\\}';
+    }
+    return parcalar.map((p) => (p.a === p.b ? '\\left\\{' + texBul(p.a) + '\\right\\}'
+      : (p.aDahil ? '\\left[' : '\\left(') + (p.a === -Infinity ? '-\\infty' : texBul(p.a)) + ayrac + (p.b === Infinity ? '\\infty' : texBul(p.b)) + (p.bDahil ? '\\right]' : '\\right)'))).join('\\cup ');
+  }
+  // sayıyı en güzel yazımıyla: önce bilinen kesin kökler (1 + √2), sonra 2/3, √3, π/6, e…
+  const sayiYaz = (ipuclari) => (v) => {
+    if (!isFinite(v)) return v > 0 ? '\\infty' : '-\\infty';
+    for (const p of ipuclari || []) if (Math.abs(p.x - v) < 1e-9 * Math.max(1, Math.abs(v))) return p.tex;
+    const t = tamBicimE(v);
+    return t ? t.tex : sayiTex(v);
+  };
+  // koşulun polinom olduğu durumlarda kesin kökler (ipucu)
+  function kesinIpuclari(ifade, x) {
+    const k = polinomAc(ifade, x);
+    if (!k) return [];
+    if (k.length === 3 && k[2] !== 0) return kokluKokler(k[2], k[1], k[0]) || [];
+    return [];
+  }
+  const ILISKI_KOMUT = { leqslant: '≤', geqslant: '≥', leq: '≤', geq: '≥', le: '≤', ge: '≥', neq: '≠', ne: '≠', lt: '<', gt: '>' };
+  // en dıştaki <, ≤, >, ≥, ≠ işaretlerinden böl → [parçalar, işaretler]
+  function iliskiBol(s) {
+    const parcalar = [], isaretler = [];
+    let d = 0, bas = 0;
+    for (let i = 0; i < s.length; i++) {
+      const c = s[i];
+      if (c === '\\') {
+        const m = s.slice(i).match(/^\\([A-Za-z]+)/);
+        if (m && d === 0 && ILISKI_KOMUT[m[1]]) { parcalar.push(s.slice(bas, i)); isaretler.push(ILISKI_KOMUT[m[1]]); i += m[0].length - 1; bas = i + 1; continue; }
+        i += m ? m[0].length - 1 : 1;
+        continue;
+      }
+      if (c === '{') d++;
+      else if (c === '}') d--;
+      else if (d === 0 && '<>≤≥≠⩽⩾'.includes(c)) {
+        let op = { '⩽': '≤', '⩾': '≥' }[c] || c;
+        parcalar.push(s.slice(bas, i));
+        if ((c === '<' || c === '>') && s[i + 1] === '=') { op = c === '<' ? '≤' : '≥'; i++; }
+        isaretler.push(op); bas = i + 1;
+      }
+    }
+    parcalar.push(s.slice(bas));
+    return [parcalar.map((p) => p.trim()), isaretler];
+  }
+  // zincirler: [{ parcalar: [math.js…], isaretler: ['<', '≤'…] }] — hepsi birlikte sağlanmalı (−3 < 2x + 1 ≤ 5; eşitsizlik sistemi)
+  function esitsizlik(zincirler, x) {
+    const kosullar = [];
+    for (const z of zincirler) z.isaretler.forEach((op, j) => { const ifade = '(' + z.parcalar[j] + ') - (' + z.parcalar[j + 1] + ')'; kosullar.push({ ifade, op, f: derle(ifade, x || 'x') }); });
+    if (!x) return { karsilastirma: true, dogru: kosullar.every((k) => KARSILASTIR[k.op](k.f(0), olcekFn(k.ifade, 'x')(0))) };
+    const c = kumeCoz(kosullar, x);
+    const ipuclari = kosullar.flatMap((k) => kesinIpuclari(k.ifade, x));
+    const yaz = sayiYaz(ipuclari);
+    const sonuc = { parcalar: c.parcalar, tex: kumeTex(c.parcalar, yaz), sinirlar: c.sinirlar.map((v) => ({ x: v, tex: yaz(v) })), kosullar: kosullar.map((k) => ({ ifade: k.ifade, op: k.op })) };
+    if (kosullar.length === 1) { // işaret tablosu
+      const k = kosullar[0];
+      const noktalar = c.dizi.filter((s) => s.nokta).map((s) => { const v = k.f(s.a); return { x: s.a, tex: yaz(s.a), isaret: !isFinite(v) ? '∄' : sifirGibi(v, k.S(s.a)) || c.kokler.has(s.a) ? '0' : v > 0 ? '+' : '−' }; });
+      const isaretler = c.dizi.filter((s) => !s.nokta).map((s) => { const v = k.f(s.t); return !isFinite(v) ? '∄' : v > 0 ? '+' : v < 0 ? '−' : '0'; });
+      const kp = polinomAc(k.ifade, x);
+      sonuc.tablo = { noktalar, isaretler, carpanlar: kp && kp.length > 2 ? carpanlarinaAyir(kp, x) : null };
+    }
+    return sonuc;
+  }
+
+  // ---------------------------------------------------------------- trigonometrik denklem: bir periyottaki kökler + genel çözüm
+  function periyotBul(f) {
+    const xs = [0.31, 1.73, -2.27, 3.91, 5.13, -0.83, 2.61, 4.4];
+    const ayni = (a, b) => (!isFinite(a) && !isFinite(b)) || (isFinite(a) && isFinite(b) && Math.abs(a - b) < 1e-9 * Math.max(1, Math.abs(a)));
+    const adaylar = [];
+    for (let n = 12; n >= 1; n--) adaylar.push(2 * Math.PI / n);
+    for (let m = 2; m <= 6; m++) adaylar.push(2 * Math.PI * m);
+    for (const T of adaylar) if (xs.every((t) => ayni(f(t), f(t + T)) && ayni(f(t), f(t - 2 * T)))) return T;
+    return null;
+  }
+  function trigDenklem(ifade, f, x) {
+    const T = periyotBul(f);
+    if (!T) return null;
+    const pencere = Array.from({ length: 12001 }, (_, i) => -T * 0.01 + i * T * 1.02 / 12000);
+    const c = kumeCoz([{ ifade, f, op: '=' }], x, pencere);
+    const ici = c.parcalar.filter((p) => p.a >= pencere[0] && p.b <= pencere[pencere.length - 1]);
+    if (ici.some((p) => p.a !== p.b)) return null;
+    const ham = [];
+    for (const p of ici) { let r = p.a - Math.floor(p.a / T) * T; r = guzelSayi(r, 1e-8); if (Math.abs(r - T) < 1e-8) r = 0; ham.push(r); }
+    const kok = temizle(ham, 1e-7);
+    // eşit aralıklı kökler tek aile: x = r + k·(T/m)
+    let aileler = kok.map((r) => ({ r, adim: T }));
+    const m = kok.length;
+    if (m === 2 && Math.abs(kok[1] - kok[0] - T / 2) < 1e-7) aileler = [{ r: kok[0], adim: T / 2 }]; // sin x = 0 → x = kπ
+    const ikiPi = [];
+    for (const a of aileler) for (let t = a.r; t < 2 * Math.PI - 1e-9; t += a.adim) ikiPi.push(guzelSayi(t, 1e-8));
+    ikiPi.sort((p, q) => p - q);
+    return { yol: 'trig', periyot: T, kokler: kok, aileler, ikiPi };
+  }
+
+  // ---------------------------------------------------------------- denklem sistemi
+  const soy = (r) => { r = r.trim(); while (/^\{/.test(r) && grupSonu(r, 0) === r.length - 1) r = r.slice(1, -1).trim(); return r; };
+  function sistemAyikla(s) {
+    let ic = null;
+    const m = s.match(/\\begin\s*\{\s*(cases|array|aligned|align\*?|gathered|matrix|split|eqnarray\*?|rcases)\s*\}/);
+    if (m) {
+      const son = s.indexOf('\\end', m.index + m[0].length);
+      ic = s.slice(m.index + m[0].length, son < 0 ? s.length : son);
+      if (m[1] === 'array') ic = ic.replace(/^\s*\{[^{}]*\}/, '');
+    } else if (/\\\\/.test(s)) ic = s.replace(/^\s*\\left\s*\\\{/, '').replace(/\\right\s*\.\s*$/, '');
+    if (ic === null) return null;
+    const satirlar = ic.split(/\\\\(?:\s*\[[^\]]*\])?/).map((r) => soy(r.replace(/&/g, ' ').replace(/\\(?:quad|qquad)/g, ' '))).filter((r) => r.replace(/[{}\s]/g, ''));
+    if (satirlar.length < 2) return null;
+    const iliskili = satirlar.map((r) => iliskiBol(r));
+    if (iliskili.every(([, io]) => io.length)) { // eşitsizlik sistemi
+      const zincirler = iliskili.map(([ip, io]) => ({ parcalar: ip.map(latexCevir), isaretler: io }));
+      const vars = degiskenler(zincirler.flatMap((z) => z.parcalar).map((p) => '(' + p + ')').join('+'));
+      if (vars.length > 1) throw new Error('eşitsizlikte tek bilinmeyen olmalı');
+      return { tur: 'esitsizlik', zincirler, degisken: vars[0] || null };
+    }
+    if (!satirlar.every((r) => /=/.test(r)) || iliskili.some(([, io]) => io.length)) return null;
+    const denklemler = satirlar.map((r) => { const j = r.indexOf('='); return { sol: latexCevir(r.slice(0, j)), sag: latexCevir(r.slice(j + 1)) }; });
+    return { tur: 'sistem', denklemler };
+  }
+  // Ax = c (satır işlemleriyle; tek çözüm, sonsuz çözüm ya da çözümsüz)
+  function gaussCoz(A, c) {
+    const m = A.length, n = A[0].length, M = A.map((r, i) => [...r, c[i]]);
+    const pivotlar = [];
+    let satir = 0;
+    for (let sut = 0; sut < n && satir < m; sut++) {
+      let en = satir;
+      for (let i = satir + 1; i < m; i++) if (Math.abs(M[i][sut]) > Math.abs(M[en][sut])) en = i;
+      if (Math.abs(M[en][sut]) < 1e-10) continue;
+      [M[satir], M[en]] = [M[en], M[satir]];
+      const p = M[satir][sut];
+      for (let j = sut; j <= n; j++) M[satir][j] /= p;
+      for (let i = 0; i < m; i++) if (i !== satir) { const k = M[i][sut]; if (k) for (let j = sut; j <= n; j++) M[i][j] -= k * M[satir][j]; }
+      pivotlar.push(sut); satir++;
+    }
+    for (let i = satir; i < m; i++) if (Math.abs(M[i][n]) > 1e-9) return { tur: 'yok' };
+    if (pivotlar.length < n) return { tur: 'sonsuz' };
+    const v = new Array(n).fill(0);
+    pivotlar.forEach((sut, i) => { v[sut] = guzelSayi(M[i][n]); });
+    return { tur: 'tek', cozum: v };
+  }
+  const lineerTex = (a, vars, c) => {
+    let s = '';
+    a.forEach((k, i) => {
+      if (sifirMi(k)) return;
+      const t = kesirTex(Math.abs(k)), kat = t === '1' ? '' : t;
+      s += (k < 0 ? '-' : s ? '+' : '') + kat + vars[i];
+    });
+    return (s || '0') + '=' + kesirTex(c);
+  };
+  function yokEtmeAdimlari(d, vars, cozum) {
+    const [[a1, b1], c1] = [d[0].a, d[0].c], [[a2, b2], c2] = [d[1].a, d[1].c];
+    const [X, Y] = vars, adim = [];
+    adim.push({ kural: 'Denklemler düzenlenir', tex: lineerTex([a1, b1], vars, c1) + '\\qquad ' + lineerTex([a2, b2], vars, c2) });
+    if (Math.abs(b1) < 1e-12 || Math.abs(b2) < 1e-12) {
+      const j = Math.abs(b1) < 1e-12 ? 0 : 1, [a, c] = j ? [a2, c2] : [a1, c1];
+      adim.push({ kural: (j + 1) + '. denklemde yalnızca ' + X + ' var', tex: lineerTex([a, 0], vars, c) + '\\ \\Rightarrow\\ ' + X + '=' + kesirTex(cozum[0]) });
+    } else {
+      let k1 = b2, k2 = b1;
+      if (Number.isInteger(k1) && Number.isInteger(k2)) { const g = tamSayiEbob(k1, k2); k1 /= g; k2 /= g; } else { k2 /= k1; k1 = 1; }
+      if (k1 < 0) { k1 = -k1; k2 = -k2; }
+      const carp = [k1 !== 1 ? '1. denklem ' + sayiMetin(k1) : null, Math.abs(k2) !== 1 ? '2. denklem ' + sayiMetin(Math.abs(k2)) : null].filter(Boolean);
+      const kural = (carp.length ? carp.join(', ') + ' ile çarpılır, d' : 'D') + 'enklemler taraf tarafa ' + (k2 < 0 ? 'toplanır' : 'çıkarılır') + ' (' + Y + "'ler sadeleşir)";
+      const A = k1 * a1 - k2 * a2, C = k1 * c1 - k2 * c2;
+      adim.push({ kural, tex: lineerTex([A, 0], vars, C) + '\\ \\Rightarrow\\ ' + X + '=' + kesirTex(cozum[0]) });
+    }
+    const j = Math.abs(b1) > 1e-12 ? 0 : 1, [a, b, c] = j ? [a2, b2, c2] : [a1, b1, c1];
+    const xT = kesirTex(cozum[0]), xY = cozum[0] < 0 ? '\\left(' + xT + '\\right)' : xT;
+    adim.push({ kural: X + ' = ' + xT.replace(/\\frac\{(\d+)\}\{(\d+)\}/, '$1/$2') + ', ' + (j + 1) + '. denklemde yerine konur', tex: (sifirMi(a) ? '' : (kesirTex(a) === '1' ? '' : kesirTex(a) === '-1' ? '-' : kesirTex(a) + '\\cdot ') + xY) + (b < 0 ? '-' : sifirMi(a) ? '' : '+') + (kesirTex(Math.abs(b)) === '1' ? '' : kesirTex(Math.abs(b))) + Y + '=' + kesirTex(c) + '\\ \\Rightarrow\\ ' + Y + '=' + kesirTex(cozum[1]) });
+    return adim;
+  }
+  function sistem(denklemler) {
+    const ifadeler = denklemler.map((d) => '(' + d.sol + ') - (' + d.sag + ')');
+    const vars = degiskenler(ifadeler.map((e) => '(' + e + ')').join('+'));
+    const n = vars.length, m = ifadeler.length;
+    if (!n) throw new Error('bilinmeyen yok');
+    if (n > 4) throw new Error('en fazla 4 bilinmeyen');
+    const derl = ifadeler.map((e) => math.compile(e));
+    const F = (j, v) => { const sc = { DEGISARET: DERECE }; vars.forEach((ad, i) => { sc[ad] = v[i]; }); try { const r = derl[j].evaluate(sc); return typeof r === 'number' ? r : NaN; } catch (e) { return NaN; } };
+    const sifir = vars.map(() => 0);
+    const dog = ifadeler.map((_, j) => { const c0 = F(j, sifir); return { a: vars.map((_, i) => { const e = sifir.slice(); e[i] = 1; return F(j, e) - c0; }), c: -c0 }; });
+    const ornek = [[1.3, -0.7, 2.1, 0.4], [-2.5, 0.4, 1.7, -1.1], [0.9, 3.3, -1.2, 2.6]];
+    const dogrusal = dog.every((d, j) => isFinite(d.c) && d.a.every(isFinite) && ornek.every((t) => {
+      const v = vars.map((_, i) => t[i]), bek = d.a.reduce((s, ai, i) => s + ai * v[i], 0) - d.c;
+      return Math.abs(F(j, v) - bek) < 1e-9 * Math.max(1, Math.abs(bek));
+    }));
+    const sonuc = { degiskenler: vars, dogrusal, ifadeler };
+    // grafik için: y'yi (2. bilinmeyen) doğrusal olarak yalnız bırakabildiğimiz denklemler
+    if (n === 2) sonuc.egriler = ifadeler.map((e, j) => {
+      const b = [0.7, -1.9, 3.1].map((t) => F(j, [t, 1]) - F(j, [t, 0]));
+      if (!b.every((v) => isFinite(v) && Math.abs(v - b[0]) < 1e-9 * Math.max(1, Math.abs(v))) || sifirMi(b[0])) return null;
+      if (![0.7, -1.9].every((t) => Math.abs(F(j, [t, 2]) - F(j, [t, 0]) - 2 * b[0]) < 1e-9 * Math.max(1, Math.abs(b[0])))) return null;
+      return '-(' + math.parse(e).transform((k) => (k.isSymbolNode && k.name === vars[1] ? N(0) : k)).toString() + ') / (' + b[0] + ')';
+    });
+    if (dogrusal) {
+      const r = gaussCoz(dog.map((d) => d.a), dog.map((d) => d.c));
+      Object.assign(sonuc, r, { cozumler: r.tur === 'tek' ? [r.cozum] : [] });
+      if (n === 2 && m === 2 && r.tur === 'tek') sonuc.adimlar = yokEtmeAdimlari(dog, vars, r.cozum);
+      return sonuc;
+    }
+    if (n !== 2 || m !== 2) throw new Error('doğrusal olmayan sistemde iki bilinmeyen, iki denklem olmalı');
+    // bir denklemde bir bilinmeyen doğrusal ise yalnız bırakılır, öbüründe yerine konur
+    for (let j = 0; j < 2; j++) for (let i = 1; i >= 0; i--) {
+      const diger = 1 - i, ad = vars[i], ad2 = vars[diger];
+      const b = [0.7, -1.9, 3.1].map((t) => { const v1 = [0, 0], v0 = [0, 0]; v1[i] = 1; v1[diger] = t; v0[diger] = t; return F(j, v1) - F(j, v0); });
+      if (!b.every((v) => isFinite(v) && Math.abs(v - b[0]) < 1e-9 * Math.max(1, Math.abs(v))) || sifirMi(b[0])) continue;
+      const iki = [0.7, -1.9].every((t) => { const v2 = [0, 0], v0 = [0, 0]; v2[i] = 2; v2[diger] = t; v0[diger] = t; return Math.abs(F(j, v2) - F(j, v0) - 2 * b[0]) < 1e-9 * Math.max(1, Math.abs(b[0])); });
+      if (!iki) continue;
+      const yalniz = '-(' + math.parse(ifadeler[j]).transform((k) => (k.isSymbolNode && k.name === ad ? N(0) : k)).toString() + ') / (' + b[0] + ')';
+      const yerine = math.parse(ifadeler[1 - j]).transform((k) => (k.isSymbolNode && k.name === ad ? new math.ParenthesisNode(math.parse(yalniz)) : k)).toString();
+      let dd;
+      try { dd = denklem(yerine, ad2); } catch (e) { continue; }
+      const g = derle(yalniz, ad2), cozumler = [];
+      for (const r of dd.kokler) {
+        const v = [0, 0]; v[diger] = r; v[i] = guzelSayi(g(r));
+        if (isFinite(v[i]) && sifirMi(F(0, v)) && sifirMi(F(1, v))) cozumler.push(v);
+      }
+      cozumler.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+      const ytex = tex(sade(math.parse(yalniz)));
+      let pk = polinomAc(yerine, ad2);
+      if (pk && pk[pk.length - 1] < 0) pk = pk.map((v) => -v);
+      const yerTex = pk && pk.length > 1 ? polinomTex(pk, ad2) : tex(sade(math.parse(yerine)));
+      sonuc.adimlar = [
+        { kural: (j + 1) + '. denklemden ' + ad + ' yalnız bırakılır', tex: ad + '=' + ytex },
+        { kural: (2 - j) + '. denklemde yerine konur, tek bilinmeyenli denklem çözülür', tex: yerTex + '=0\\ \\Rightarrow\\ ' + (dd.kokler.length ? dd.kokler.map((r) => ad2 + '=' + sayiYaz(dd.kokTex)(r)).join(',\\ ') : '\\text{gerçek kök yok}') },
+      ];
+      return Object.assign(sonuc, { tur: cozumler.length ? 'tek' : 'yok', cozumler });
+    }
+    // Newton yöntemi (ızgaradan başlatılarak)
+    const cozumler = [];
+    for (let s0 = -10; s0 <= 10; s0 += 2.5) for (let s1 = -10; s1 <= 10; s1 += 2.5) {
+      let v = [s0 + 0.1, s1 - 0.07];
+      for (let it = 0; it < 60; it++) {
+        const f0 = F(0, v), f1 = F(1, v), h = 1e-7;
+        const J = [[(F(0, [v[0] + h, v[1]]) - f0) / h, (F(0, [v[0], v[1] + h]) - f0) / h], [(F(1, [v[0] + h, v[1]]) - f1) / h, (F(1, [v[0], v[1] + h]) - f1) / h]];
+        const det = J[0][0] * J[1][1] - J[0][1] * J[1][0];
+        if (!isFinite(det) || Math.abs(det) < 1e-14) break;
+        const d0 = (f0 * J[1][1] - f1 * J[0][1]) / det, d1 = (J[0][0] * f1 - J[1][0] * f0) / det;
+        v = [v[0] - d0, v[1] - d1];
+        if (Math.abs(d0) + Math.abs(d1) < 1e-13) break;
+      }
+      v = v.map((t) => guzelSayi(t, 1e-8));
+      if (v.every(isFinite) && Math.abs(F(0, v)) < 1e-8 && Math.abs(F(1, v)) < 1e-8 && !cozumler.some((c) => Math.abs(c[0] - v[0]) + Math.abs(c[1] - v[1]) < 1e-6)) cozumler.push(v);
+    }
+    cozumler.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+    sonuc.adimlar = [{ kural: 'Ortak çözümler sayısal olarak (Newton yöntemiyle) bulundu', tex: cozumler.length ? cozumler.map((c) => '\\left(' + c.map((t) => sayiYaz()(t)).join(',\\ ') + '\\right)').join(',\\ ') : '\\varnothing' }];
+    return Object.assign(sonuc, { tur: cozumler.length ? 'tek' : 'yok', cozumler });
+  }
+
+  // ---------------------------------------------------------------- Σ'nın n'ye bağlı kapalı biçimi: Σ_{k=1}^{n} k² = n(n+1)(2n+1)/6
+  function toplamKapali(ifade, n) {
+    const node = math.parse(ifade);
+    let alt = 1;
+    node.traverse((k) => { if (k.isFunctionNode && k.fn.name === 'TOPLAM') { const v = sabitDeger(k.args[2]); if (Number.isInteger(v)) alt = v; } });
+    const c = math.compile(ifade), S = (m) => { try { const v = c.evaluate({ [n]: m }); return typeof v === 'number' ? v : NaN; } catch (e) { return NaN; } };
+    const xs = Array.from({ length: 12 }, (_, i) => alt + i), ys = xs.map(S);
+    if (!ys.every(isFinite)) return null;
+    for (let d = 0; d <= 8; d++) {
+      // d. dereceden polinom: ilk d+1 noktadan (Gauss), kalan noktalarla doğrula
+      const A = xs.slice(0, d + 1).map((t) => Array.from({ length: d + 1 }, (_, i) => Math.pow(t, i)));
+      const r = gaussCoz(A, ys.slice(0, d + 1));
+      if (r.tur !== 'tek') continue;
+      const k = r.cozum.map((v) => { const q = kesirBul(v, 1000); return q ? q.p / q.q : v; });
+      if (!xs.every((t, i) => Math.abs(k.reduce((s, a, j) => s + a * Math.pow(t, j), 0) - ys[i]) < 1e-6 * Math.max(1, Math.abs(ys[i])))) continue;
+      while (k.length > 1 && k[k.length - 1] === 0) k.pop();
+      const ayr = carpanlarinaAyir(k, n);
+      return { katsayilar: k, tex: ayr ? ayr.tex : polinomTex(k, n), acik: polinomTex(k, n), alt, ornek: xs.slice(0, 5).map((t, i) => ({ n: t, deger: ys[i] })) };
+    }
+    return null;
+  }
+
   // ---------------------------------------------------------------- hepsi bir arada
   function coz(latex, ayar = {}) {
     const a = anla(latex);
     const s = { ...a, sayi: sayiMetin, tamBicim };
     if (a.tur === 'islem') s.islem = islem(a.ifade, ayar);
     else if (a.tur === 'turev') { s.turev = turev(a.ifade); s.fonksiyonTex = tex(math.parse(a.ifade)); }
-    else if (a.tur === 'fonksiyon') { s.fonksiyonTex = tex(math.parse(a.ifade)); s.analiz = analiz(a.ifade); }
+    else if (a.tur === 'fonksiyon') {
+      s.fonksiyonTex = tex(math.parse(a.ifade)); s.analiz = analiz(a.ifade);
+      const k = polinomAc(a.ifade, 'x');
+      if (k && k.length > 2) { const ayr = carpanlarinaAyir(k, 'x'); if (ayr) s.analiz.carpanlar = ayr.tex; }
+    }
     else if (a.tur === 'denklem') s.denklem = denklem(a.ifade, a.degisken);
+    else if (a.tur === 'esitsizlik') s.esitsizlik = esitsizlik(a.zincirler, a.degisken);
+    else if (a.tur === 'sistem') s.sistem = sistem(a.denklemler);
+    else if (a.tur === 'toplamN') { s.toplamN = toplamKapali(a.ifade, a.degisken); if (!s.toplamN) throw new Error('Bu toplamın kapalı biçimini bulamadım'); s.fonksiyonTex = tex(math.parse(a.ifade)); }
     else if (a.tur === 'limit') { s.fonksiyonTex = tex(math.parse(a.ifade)); s.limit = limit(a.ifade, a.degisken, a.nokta, a.yon); }
     else if (a.tur === 'integral') {
       s.fonksiyonTex = tex(math.parse(a.ifade));
@@ -985,7 +1631,10 @@
     return s;
   }
 
-  const HesapMotor = { latexCevir, anla, islem, turev, analiz, denklem, limit, integral, belirliIntegral, alan, coz, derle, kokler, sayiMetin, tamBicim, kesirBul, tamBicimE, degiskenler, tex: (s) => tex(math.parse(s)) };
+  const HesapMotor = {
+    latexCevir, anla, islem, turev, analiz, denklem, limit, integral, belirliIntegral, alan, coz, derle, kokler, sayiMetin, tamBicim, kesirBul, tamBicimE, degiskenler,
+    esitsizlik, sistem, toplamKapali, derle2, carpanlarinaAyir, kokluKokler, guzelSayi, sayiYaz: (v) => sayiYaz()(v), tex: (s) => tex(math.parse(s)),
+  };
   if (typeof module !== 'undefined' && module.exports) module.exports = HesapMotor;
   kok.HesapMotor = HesapMotor;
 })(typeof window !== 'undefined' ? window : globalThis);
