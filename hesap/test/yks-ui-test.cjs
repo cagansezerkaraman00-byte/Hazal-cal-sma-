@@ -3,7 +3,7 @@
 // node hesap/test/yks-ui-test.cjs [ekran klasörü]   (yerelde: YEREL_NM=<node_modules> ile CDN'e çıkmadan)
 const { chromium } = require('playwright');
 const fs = require('node:fs'), path = require('node:path');
-const { sun, cdnYerel } = require('./sunucu.cjs');
+const { sun, cdnYerel, tusci } = require('./sunucu.cjs');
 const out = process.argv[2] || path.join(__dirname, 'ekran-yks');
 fs.mkdirSync(out, { recursive: true });
 let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) hata++; };
@@ -17,14 +17,7 @@ let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if 
   await page.goto(sunucu.adres + '?guncel');
   await page.waitForFunction(() => window.hesap && customElements.get('math-field'));
   await page.waitForTimeout(600);
-  const tus = async (...adlar) => {
-    if (await page.locator('.hm.tuslar-kapali').count()) { await page.click('.hm-tus-ac'); await page.waitForTimeout(80); }
-    for (const a of adlar) {
-      const t = page.locator('.hm-tus').filter({ hasText: new RegExp('^\\s*' + a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$') }).first();
-      if (await t.count()) await t.click(); else await page.locator(`.hm-tus[aria-label="${a}"]`).first().click();
-      await page.waitForTimeout(40);
-    }
-  };
+  const tus = tusci(page);
   const deger = () => page.evaluate(() => window.hesap.mf.value);
   const sonucYazi = () => page.evaluate(() => { const s = document.querySelector('.hm-sonuc'); return [...s.querySelectorAll('math-field')].map((m) => m.value).join(' | ') + ' || ' + s.innerText; });
   const coz = async (latex, ad) => {
@@ -79,7 +72,7 @@ let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if 
   ok(/5\\sqrt\{3\}/.test(y), '√12 + √27 = 5√3');
   // tuş katmanı ekran görüntüsü
   await page.click('.hm-tus-ac').catch(() => {});
-  await tus('AC', '⇄');
+  await tus('AC'); await page.click('.hm-sekme[data-sekme="analiz"]'); await page.waitForTimeout(150);
   await page.screenshot({ path: path.join(out, 'yks-0-tuslar.png') });
   const tasma = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
   ok(!tasma, 'sayfa yana taşmıyor');

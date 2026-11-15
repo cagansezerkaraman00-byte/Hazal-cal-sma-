@@ -10,48 +10,86 @@
     return m.replace(/−/g, '-').replace(/,/g, '{,}').replace(/ × 10\^(-?\d+)/, '\\times10^{$1}').replace('∞', '\\infty');
   };
   const sayi = (x) => M().sayiMetin(x).replace(/^-/, '−');
+  const sayiGuzel = (x) => { const t = M().tamBicim(x); return t ? t.metin.replace(/^-/, '−') : sayi(x); }; // −√3, π/6, 2/3
+  // geçmiş bu cihazda saklanır (yalnızca kolaylık; okunamazsa boş başlar)
+  const GECMIS_ANAHTARI = 'luna-hesap-gecmis';
+  const gecmisOku = () => { try { const g = JSON.parse(localStorage.getItem(GECMIS_ANAHTARI) || '[]'); return Array.isArray(g) ? g.filter((x) => x && typeof x.l === 'string' && typeof x.tex === 'string').slice(0, 30) : []; } catch (e) { return []; } };
 
-  // Tuş takımı: [etiket (HTML), eylem]. Eylem: { ekle: LaTeX } | { komut } | özel ad
-  const TEMEL = [
-      [['◀', { komut: 'moveToPreviousChar' }, 'k'], ['▶', { komut: 'moveToNextChar' }, 'k'], ['DEG', 'aci', 'k aci'], ['ANS', 'ans', 'k'], ['⇄', 'katman', 'k'], ['⌫', { komut: 'deleteBackward' }, 'k sil']],
-      [['sin', { ekle: '\\sin\\left(#0\\right)' }, 'f'], ['cos', { ekle: '\\cos\\left(#0\\right)' }, 'f'], ['tan', { ekle: '\\tan\\left(#0\\right)' }, 'f'], ['ln', { ekle: '\\ln\\left(#0\\right)' }, 'f'], ['log', { ekle: '\\log\\left(#0\\right)' }, 'f'], ['π', { ekle: '\\pi' }, 'f']],
-      [['x', { ekle: 'x' }, 'f x'], ['x<sup>n</sup>', { ekle: '#@^{#?}', ad: 'üs' }, 'f'], ['x²', { ekle: '#@^{2}' }, 'f'], ['√', { ekle: '\\sqrt{#0}' }, 'f'], ['<span class="hm-kesir"><i>a</i><i>b</i></span>', { ekle: '\\frac{#@}{#?}', ad: 'kesir' }, 'f'], ['e', { ekle: 'e' }, 'f']],
-      [['7', { ekle: '7' }], ['8', { ekle: '8' }], ['9', { ekle: '9' }], ['÷', { ekle: '\\div ' }, 'i'], ['(', { ekle: '(' }, 'i'], [')', { ekle: ')' }, 'i']],
-      [['4', { ekle: '4' }], ['5', { ekle: '5' }], ['6', { ekle: '6' }], ['×', { ekle: '\\times ' }, 'i'], ['|x|', { ekle: '\\left|#0\\right|' }, 'i'], ['n!', { ekle: '!' }, 'i']],
-      [['1', { ekle: '1' }], ['2', { ekle: '2' }], ['3', { ekle: '3' }], ['−', { ekle: '-' }, 'i'], ['=', { ekle: '=' }, 'i'], ['AC', 'temizle', 'i sil']],
-      [['0', { ekle: '0' }], [',', { ekle: '{,}' }], ['f(x)=', { ekle: 'f(x)=' }, 'i kucuk'], ['+', { ekle: '+' }, 'i'], ['Çöz', 'coz', 'coz g2']],
+  // Tuşlar: [etiket (HTML), eylem, sınıf, erişilebilir ad]. Eylem: { ekle: LaTeX } | { komut } | özel ad
+  // Üstte sekmeye göre değişen 5×3 işlev tuşu, altta hep duran 4×5 sayı tuşu.
+  const SEKMELER = {
+    bilimsel: { ad: 'Bilimsel', tuslar: [
+      ['sin', { ekle: '\\sin\\left(#0\\right)' }], ['cos', { ekle: '\\cos\\left(#0\\right)' }], ['tan', { ekle: '\\tan\\left(#0\\right)' }], ['(', { ekle: '(' }], [')', { ekle: ')' }],
+      ['log', { ekle: '\\log\\left(#0\\right)' }], ['ln', { ekle: '\\ln\\left(#0\\right)' }], ['√', { ekle: '\\sqrt{#0}' }], ['x²', { ekle: '#@^{2}' }], ['x<sup>y</sup>', { ekle: '#@^{#?}' }, '', 'üs'],
+      ['π', { ekle: '\\pi' }], ['e', { ekle: 'e' }], ['n!', { ekle: '!' }], ['1/x', { ekle: '\\frac{1}{#@}' }, '', 'çarpmaya göre ters'], ['%', { ekle: '\\%' }],
+    ] },
+    cebir: { ad: 'Cebir', tuslar: [
+      ['x', { ekle: 'x' }, 'x'], ['y', { ekle: 'y' }, 'x'], ['=', { ekle: '=' }, '', 'eşittir işareti'], ['&lt;', { ekle: '<' }, '', 'küçüktür'], ['&gt;', { ekle: '>' }, '', 'büyüktür'],
+      ['≤', { ekle: '\\le ' }, '', 'küçük eşit'], ['≥', { ekle: '\\ge ' }, '', 'büyük eşit'], ['|x|', { ekle: '\\left|#0\\right|' }, '', 'mutlak değer'], ['<span class="hm-kesir"><i>a</i><i>b</i></span>', { ekle: '\\frac{#@}{#?}' }, '', 'kesir'], ['<sup>n</sup>√', { ekle: '\\sqrt[#?]{#?}' }, '', 'n. dereceden kök'],
+      ['f(x)=', { ekle: 'f(x)=' }, 'kucuk'], ['k', { ekle: 'k' }, 'x'], ['i', { ekle: 'i' }, 'x', 'sanal birim i'], ['ANS', 'ans', 'kucuk', 'son sonuç'], ['cot', { ekle: '\\cot\\left(#0\\right)' }],
+    ] },
+    analiz: { ad: 'Analiz', tuslar: [
+      ['d/dx', { ekle: '\\frac{d}{dx}\\left(#0\\right)' }, 'kucuk', 'türev'], ['lim', { ekle: '\\lim_{x\\to#?}#?' }, '', 'limit'], ['∫', { ekle: '\\int#?\\,dx' }, '', 'integral'], ['∫<sub>a</sub><sup>b</sup>', { ekle: '\\int_{#?}^{#?}#?\\,dx' }, '', 'belirli integral'], ['∞', { ekle: '\\infty' }, '', 'sonsuz'],
+      ['Σ', { ekle: '\\sum_{k=#?}^{#?}#?' }, '', 'toplam sembolü'], ['C(n,r)', { ekle: '\\binom{#?}{#?}' }, 'kucuk', 'kombinasyon'], ['P(n,r)', { ekle: 'P\\left(#?,#?\\right)' }, 'kucuk', 'permütasyon'], ['EBOB', { ekle: '\\operatorname{EBOB}\\left(#?,#?\\right)' }, 'kucuk'], ['EKOK', { ekle: '\\operatorname{EKOK}\\left(#?,#?\\right)' }, 'kucuk'],
+      ['sin⁻¹', { ekle: '\\arcsin\\left(#0\\right)' }, 'kucuk'], ['cos⁻¹', { ekle: '\\arccos\\left(#0\\right)' }, 'kucuk'], ['tan⁻¹', { ekle: '\\arctan\\left(#0\\right)' }, 'kucuk'], ['log<sub>a</sub>', { ekle: '\\log_{#?}\\left(#?\\right)' }], ['{ ⋮', { ekle: '\\begin{cases}#?\\\\#?\\end{cases}' }, 'kucuk', 'denklem sistemi'],
+    ] },
+    gecmis: { ad: 'Geçmiş' },
+  };
+  const SAYI_TUSLARI = [
+    ['AC', 'temizle', 'pembe', 'hepsini sil'], ['<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-10L3 12z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="m11 9.5 5 5m0-5-5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>', { komut: 'deleteBackward' }, 'pembe sil', 'sil'], ['±', { ekle: '\\left(-#0\\right)' }, 'pembe', 'eksi sayı'], ['÷', { ekle: '\\div ' }, 'seftali'],
+    ['7', { ekle: '7' }, 'sayi'], ['8', { ekle: '8' }, 'sayi'], ['9', { ekle: '9' }, 'sayi'], ['×', { ekle: '\\times ' }, 'islem'],
+    ['4', { ekle: '4' }, 'sayi'], ['5', { ekle: '5' }, 'sayi'], ['6', { ekle: '6' }, 'sayi'], ['−', { ekle: '-' }, 'islem'],
+    ['1', { ekle: '1' }, 'sayi'], ['2', { ekle: '2' }, 'sayi'], ['3', { ekle: '3' }, 'sayi'], ['+', { ekle: '+' }, 'islem'],
+    ['0', { ekle: '0' }, 'sayi'], [',', { ekle: '{,}' }, 'sayi', 'virgül'], ['=', 'coz', 'esit', 'Çöz'],
   ];
-  const TUSLAR = {
-    temel: TEMEL,
-    diger: [
-      [['◀', { komut: 'moveToPreviousChar' }, 'k'], ['▶', { komut: 'moveToNextChar' }, 'k'], ['DEG', 'aci', 'k aci'], ['ANS', 'ans', 'k'], ['⇄', 'katman', 'k etkin'], ['⌫', { komut: 'deleteBackward' }, 'k sil']],
-      [['sin⁻¹', { ekle: '\\arcsin\\left(#0\\right)' }, 'f kucuk'], ['cos⁻¹', { ekle: '\\arccos\\left(#0\\right)' }, 'f kucuk'], ['tan⁻¹', { ekle: '\\arctan\\left(#0\\right)' }, 'f kucuk'], ['cot', { ekle: '\\cot\\left(#0\\right)' }, 'f'], ['log<sub>a</sub>', { ekle: '\\log_{#?}\\left(#?\\right)' }, 'f'], ['<sup>n</sup>√', { ekle: '\\sqrt[#?]{#?}' }, 'f']],
-      [['d/dx', { ekle: '\\frac{d}{dx}\\left(#0\\right)', ad: 'türev' }, 'f kucuk'], ['lim', { ekle: '\\lim_{x\\to#?}#?', ad: 'limit' }, 'f'], ['∫', { ekle: '\\int#?\\,dx', ad: 'integral' }, 'f'], ['∫<sub>a</sub><sup>b</sup>', { ekle: '\\int_{#?}^{#?}#?\\,dx', ad: 'belirli integral' }, 'f'], ['∞', { ekle: '\\infty', ad: 'sonsuz' }, 'f'], ['%', { ekle: '\\%' }, 'f']],
-      [['&lt;', { ekle: '<', ad: 'küçüktür' }, 'i'], ['≤', { ekle: '\\le ', ad: 'küçük eşit' }, 'i'], ['&gt;', { ekle: '>', ad: 'büyüktür' }, 'i'], ['≥', { ekle: '\\ge ', ad: 'büyük eşit' }, 'i'], ['y', { ekle: 'y' }, 'f x'], ['k', { ekle: 'k' }, 'f x']],
-      [['Σ', { ekle: '\\sum_{k=#?}^{#?}#?', ad: 'toplam sembolü' }, 'f'], ['C(n,r)', { ekle: '\\binom{#?}{#?}', ad: 'kombinasyon' }, 'f kucuk'], ['P(n,r)', { ekle: 'P\\left(#?,#?\\right)', ad: 'permütasyon' }, 'f kucuk'], ['i', { ekle: 'i', ad: 'sanal birim i' }, 'f x'], ['EBOB', { ekle: '\\operatorname{EBOB}\\left(#?,#?\\right)' }, 'f kucuk'], ['EKOK', { ekle: '\\operatorname{EKOK}\\left(#?,#?\\right)' }, 'f kucuk']],
-      TEMEL[5],
-      [['0', { ekle: '0' }], [',', { ekle: '{,}' }], ['{ sistem', { ekle: '\\begin{cases}#?\\\\#?\\end{cases}', ad: 'denklem sistemi' }, 'i kucuk'], ['+', { ekle: '+' }, 'i'], ['Çöz', 'coz', 'coz g2']],
-    ],
+  const IKON = {
+    ay: '<svg class="hm-ay" viewBox="0 0 64 64" aria-hidden="true"><defs><radialGradient id="hm-ay-r" cx="40%" cy="38%" r="70%"><stop offset="0" stop-color="#fff6ea"/><stop offset=".55" stop-color="#ffd9e8"/><stop offset="1" stop-color="#f3a9cf"/></radialGradient></defs><path d="M38 6a26 26 0 1 0 20 39A21 21 0 0 1 38 6z" fill="url(#hm-ay-r)"/><path d="M52 10l1.6 4.4L58 16l-4.4 1.6L52 22l-1.6-4.4L46 16l4.4-1.6z" fill="#ffd67a"/></svg>',
+    foto: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.7l1.3-2h5l1.3 2h1.7A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><circle cx="12" cy="12.5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>',
+    gecmis: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 4.5v3.8h3.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8v4.3l2.8 1.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    cicek: '<svg viewBox="0 0 60 90" aria-hidden="true"><path d="M30 88C30 70 26 58 18 46M30 70c8-6 16-6 22-2" fill="none" stroke="#5a8a6a" stroke-width="2.4" stroke-linecap="round"/><ellipse cx="44" cy="64" rx="7" ry="3.4" transform="rotate(-20 44 64)" fill="#6fa47e"/><g transform="translate(18 34)"><g fill="#c7a6ff">' +
+      [0, 72, 144, 216, 288].map((a) => `<ellipse rx="6.5" ry="10" cy="-9" transform="rotate(${a})"/>`).join('') + '</g><circle r="4.6" fill="#ffe08a"/></g></svg>',
   };
 
   function baslat(kap, ayar = {}) {
-    const durum = { derece: ayar.derece !== false, katman: 'temel', ans: null, gecmis: [], okuyucu: null, okumaNo: 0 };
+    const durum = { derece: ayar.derece !== false, sekme: 'bilimsel', ans: null, gecmis: gecmisOku(), okuyucu: null, okumaNo: 0 };
     kap.classList.add('hm');
     kap.innerHTML = `
-      <div class="hm-ust">
-        <div class="hm-giris">
-          <math-field class="hm-alan" aria-label="İşlem" placeholder="\\text{Yaz ya da 📷}"></math-field>
-          <button class="hm-foto-btn" type="button" aria-label="Fotoğraftan oku" title="Fotoğraftan oku">📷</button>
+      <div class="hm-gok" aria-hidden="true"><div class="hm-yildizlar"></div><i class="hm-kayan"></i>
+        <span class="hm-cicek c1">${IKON.cicek}</span><span class="hm-cicek c2">${IKON.cicek}</span><span class="hm-cicek c3">${IKON.cicek}</span><span class="hm-cicek c4">${IKON.cicek}</span></div>
+      <header class="hm-ust">
+        <div class="hm-logo">${IKON.ay}<div class="hm-ad"><b>Luna</b><span>Ay Işığı</span></div></div>
+        <div class="hm-ust-tuslar">
+          <button class="hm-aci-btn" type="button"></button>
+          <button class="hm-yuvarlak hm-foto-btn" type="button" aria-label="Fotoğraftan oku" title="Fotoğraftan oku">${IKON.foto}</button>
+          <button class="hm-yuvarlak hm-gecmis-btn" type="button" aria-label="Geçmiş" title="Geçmiş">${IKON.gecmis}</button>
         </div>
-        <div class="hm-onizleme" aria-live="polite"></div>
+      </header>
+      <div class="hm-ekran">
+        <i class="hm-parilti p1"></i><i class="hm-parilti p2"></i>
+        <math-field class="hm-alan" aria-label="İşlem" placeholder="\\text{Yaz ya da fotoğrafını çek}"></math-field>
+        <div class="hm-ekran-alt">
+          <div class="hm-imlec"><button type="button" data-komut="moveToPreviousChar" aria-label="İmleci sola al">‹</button><button type="button" data-komut="moveToNextChar" aria-label="İmleci sağa al">›</button></div>
+          <div class="hm-onizleme" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="hm-govde">
+        <div class="hm-sekmeler" role="tablist" aria-label="Tuş takımı">${Object.entries(SEKMELER).map(([k, s]) => `<button type="button" role="tab" class="hm-sekme" data-sekme="${k}">${s.ad}</button>`).join('')}</div>
+        <div class="hm-tuslar" role="group" aria-label="Hesap makinesi tuşları"></div>
       </div>
       <div class="hm-sonuc" aria-live="polite"></div>
-      <div class="hm-tuslar" role="group" aria-label="Hesap makinesi tuşları"></div>
       <button class="hm-tus-ac" type="button" aria-label="Tuşları aç">⌨ Tuşlar</button>
-      <input class="hm-dosya" type="file" accept="image/*" capture="environment" hidden>`;
+      <footer class="hm-alt"><span aria-hidden="true">🌸</span> Hazal’ın küçük dünyası <span aria-hidden="true">🌸</span></footer>
+      <input class="hm-dosya" type="file" accept="image/*" hidden>`;
     const $ = (s) => kap.querySelector(s);
-    const mf = $('.hm-alan'), sonuc = $('.hm-sonuc'), onizleme = $('.hm-onizleme'), tuslar = $('.hm-tuslar');
-    // dar dikey ekranda (telefon) Çöz'den sonra tuşlar kapanır, sonuç bütün ekranı kullanır; kutuya dokununca geri gelir
+    const kutu = (latex, sinif = '') => `<math-field read-only class="hm-statik ${sinif}">${esc(latex)}</math-field>`;
+    const mf = $('.hm-alan'), sonuc = $('.hm-sonuc'), onizleme = $('.hm-onizleme'), tuslar = $('.hm-tuslar'), ekran = $('.hm-ekran');
+    // gökyüzü: yıldızlar (bir kez, rastgele ama sabit yerlerde)
+    const yildiz = $('.hm-yildizlar');
+    let tohum = 7;
+    const r = () => { tohum = (tohum * 16807) % 2147483647; return tohum / 2147483647; };
+    yildiz.innerHTML = Array.from({ length: 46 }, (_, i) => `<i style="left:${(r() * 100).toFixed(1)}%;top:${(r() * 100).toFixed(1)}%;--b:${(1 + r() * 2.2).toFixed(1)}px;--g:${(r() * 6).toFixed(1)}s;${i % 7 === 0 ? '--p:1;' : ''}"></i>`).join('');
+    if (kok.HesapKediler) kok.HesapKediler.yerlestir(ekran);
+    // dar dikey ekranda (telefon) çözümden sonra sonuç tuşların yerini alır; "⌨ Tuşlar" ya da kutuya dokunmak geri getirir
     const dar = () => typeof matchMedia === 'function' && matchMedia('(max-width: 859px) and (orientation: portrait)').matches;
     const tuslarAcik = (acik) => kap.classList.toggle('tuslar-kapali', !acik);
     $('.hm-tus-ac').addEventListener('click', () => { tuslarAcik(true); mf.focus(); });
@@ -65,15 +103,39 @@
     const klavyesiz = () => { const ta = mf.shadowRoot && mf.shadowRoot.querySelector('textarea'); if (ta) { ta.setAttribute('inputmode', 'none'); ta.setAttribute('virtualkeyboardpolicy', 'manual'); } };
     klavyesiz(); setTimeout(klavyesiz, 300);
 
+    // ------------------------------------------------ üst düğmeler
+    const aciBtn = $('.hm-aci-btn');
+    const aciYaz = () => { aciBtn.textContent = durum.derece ? 'DEG' : 'RAD'; aciBtn.setAttribute('aria-label', 'Açı birimi: ' + (durum.derece ? 'derece' : 'radyan') + ' (değiştir)'); };
+    aciYaz();
+    aciBtn.addEventListener('click', () => { durum.derece = !durum.derece; aciYaz(); canliOnizleme(); });
+    $('.hm-gecmis-btn').addEventListener('click', () => { tuslarAcik(true); sekmeSec(durum.sekme === 'gecmis' ? 'bilimsel' : 'gecmis'); });
+    ekran.querySelectorAll('[data-komut]').forEach((b) => b.addEventListener('pointerdown', (e) => { e.preventDefault(); odakla(); mf.executeCommand(b.dataset.komut); onizlemeSonra(); }));
+
     // ------------------------------------------------ tuş takımı
-    function tuslariCiz() {
-      tuslar.innerHTML = TUSLAR[durum.katman].map((s) => s.map(([etiket, eylem, sinif]) => {
-        const i = JSON.stringify(eylem).replace(/"/g, '&quot;');
-        const lbl = eylem === 'aci' ? (durum.derece ? 'DEG' : 'RAD') : etiket;
-        return `<button type="button" class="hm-tus ${sinif || 's'}" data-e="${i}" aria-label="${esc(eylem && eylem.ad ? eylem.ad : lbl.replace(/<[^>]+>/g, ''))}"><span>${lbl}</span></button>`;
-      }).join('')).join('');
+    const tusHtml = ([etiket, eylem, sinif, ad], ek = '') => `<button type="button" class="hm-tus ${sinif || ''} ${ek}" data-e="${JSON.stringify(eylem).replace(/"/g, '&quot;')}" aria-label="${esc(ad || etiket.replace(/<[^>]+>/g, ''))}"><span>${etiket}</span></button>`;
+    function islevCiz() {
+      const yer = tuslar.querySelector('.hm-islevler');
+      if (durum.sekme === 'gecmis') {
+        yer.className = 'hm-islevler gecmis';
+        yer.innerHTML = durum.gecmis.length
+          ? durum.gecmis.map((g, k) => `<button type="button" class="hm-gecmis-satir" data-g="${k}">${kutu(g.l, 'kucuk')}<span>${kutu(g.tex, 'kucuk')}</span></button>`).join('')
+          : '<p class="hm-bos">Henüz bir şey çözmedin. Çözdüklerin burada kalır; dokununca geri gelir.</p>';
+        yer.querySelectorAll('.hm-gecmis-satir').forEach((b) => b.addEventListener('click', () => { mf.value = durum.gecmis[+b.dataset.g].l; sekmeSec('bilimsel'); coz(); }));
+        return;
+      }
+      yer.className = 'hm-islevler';
+      yer.innerHTML = SEKMELER[durum.sekme].tuslar.map((t, i) => tusHtml(t, 'fn s' + (i % 5))).join('');
     }
-    tuslariCiz();
+    function sekmeSec(ad) {
+      durum.sekme = ad;
+      kap.querySelectorAll('.hm-sekme').forEach((b) => { const s = b.dataset.sekme === ad; b.classList.toggle('etkin', s); b.setAttribute('aria-selected', s); });
+      islevCiz();
+    }
+    tuslar.innerHTML = '<div class="hm-islevler"></div>' + SAYI_TUSLARI.map((t) => tusHtml(t)).join('');
+    kap.querySelector('.hm-sekmeler').addEventListener('click', (e) => { const b = e.target.closest('.hm-sekme'); if (b) sekmeSec(b.dataset.sekme); });
+    sekmeSec('bilimsel');
+    // geniş ekranda sonucun yeri baştan görünür: ne yapılabileceğini söyler
+    sonuc.innerHTML = '<div class="hm-kart hm-hosgeldin"><b>✨ Yaz ya da fotoğrafını çek</b><p class="hm-mini">İşlem, denklem, eşitsizlik, fonksiyon, türev, limit, integral, Σ, denklem sistemi… Sonuç, grafik ve adım adım çözüm burada görünür.</p></div>';
     // Tuş dokunulduğu anda çalışır (parmağın kalkması beklenmez; telefonlar "click"i geciktirebiliyor).
     // ⌫ basılı tutulursa art arda siler. Klavyeyle (Tab + Enter) basılan tuş "click" ile gelir.
     let tekrar = 0, tekrarBasla = 0;
@@ -96,9 +158,7 @@
       const eylem = JSON.parse(b.dataset.e);
       if (navigator.vibrate) try { navigator.vibrate(6); } catch (err) { /* yok */ }
       if (eylem === 'coz') return coz();
-      if (eylem === 'temizle') { mf.value = ''; onizleme.textContent = ''; odakla(); return; }
-      if (eylem === 'katman') { durum.katman = durum.katman === 'temel' ? 'diger' : 'temel'; tuslariCiz(); return; }
-      if (eylem === 'aci') { durum.derece = !durum.derece; tuslariCiz(); canliOnizleme(); return; }
+      if (eylem === 'temizle') { mf.value = ''; canliOnizleme(); odakla(); return; }
       if (eylem === 'ans') { if (durum.ans) ekle(durum.ans); return; }
       if (eylem.komut) { odakla(); mf.executeCommand(eylem.komut); onizlemeSonra(); return; }
       if (eylem.ekle) ekle(eylem.ekle);
@@ -107,7 +167,6 @@
     function ekle(latex) {
       odakla();
       mf.executeCommand(['insert', latex, { selectionMode: 'placeholder', format: 'latex', mode: 'math' }]);
-      if (durum.katman === 'diger') { durum.katman = 'temel'; tuslariCiz(); }
       onizlemeSonra();
     }
     // canlı önizleme ekran güncellendikten sonra hesaplanır: tuşa basış hiç beklemez
@@ -120,28 +179,63 @@
     mf.addEventListener('input', onizlemeSonra);
     mf.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); coz(); } });
 
-    // yazarken sonucu küçükçe göster (yalnızca işlemlerde)
+    // Ekranın sağ altı: yazarken sonucun önizlemesi (sade yazı, hızlı), çözünce kesin sonuç (matematik yazısı)
+    const IPUCU = { fonksiyon: '📈 grafiği ve kökleri', turev: '📐 türevi adım adım', denklem: '🔎 denklemin kökleri', limit: '➡️ limiti adım adım', integral: '∫ integrali adım adım',
+      esitsizlik: '📏 çözüm kümesi', sistem: '🔗 ortak çözüm', toplamN: 'Σ kapalı biçim' };
     function canliOnizleme() {
       const l = mf.value;
+      onizleme.className = 'hm-onizleme';
       if (!l.trim()) { onizleme.textContent = ''; return; }
       try {
         const a = M().anla(l);
         if (a.tur === 'islem') {
-          const r = M().islem(a.ifade, { derece: durum.derece });
-          onizleme.textContent = r.karmasik ? '= ' + r.metin : isFinite(r.deger) || !isNaN(r.deger) ? '= ' + (r.tam ? r.tam.metin.replace('-', '−') + '  ≈ ' : '') + sayi(r.deger) : '';
-        } else onizleme.textContent = { fonksiyon: '📈 Çöz: grafiği ve kökleri', turev: "📐 Çöz: türevi adım adım", denklem: '🔎 Çöz: denklemin kökleri', limit: '➡️ Çöz: limiti adım adım', integral: '∫ Çöz: integrali adım adım',
-          esitsizlik: '📏 Çöz: çözüm kümesi ve işaret tablosu', sistem: '🔗 Çöz: ortak çözüm', toplamN: 'Σ Çöz: toplamın kapalı biçimi' }[a.tur] || '';
+          const s = M().islem(a.ifade, { derece: durum.derece });
+          const yazi = s.karmasik ? s.metin : isFinite(s.deger) || !isNaN(s.deger) ? (s.tam ? s.tam.metin.replace('-', '−') : sayi(s.deger)) : '';
+          onizleme.textContent = yazi;
+          onizleme.classList.add(yazi.length > 12 ? 'orta' : 'buyuk');
+        } else { onizleme.textContent = IPUCU[a.tur] ? '= ' + IPUCU[a.tur] : ''; onizleme.classList.add('ipucu'); }
       } catch (e) { onizleme.textContent = ''; }
+    }
+    function ekranSonuc(tex, yaklasik) {
+      const yalin = /^-?[\d{},.]+$/.test(tex); // düz sayı: Luna'nın yazısıyla, büyük
+      const uzun = tex.replace(/\\[a-zA-Z]+|[{}]/g, '').length;
+      const boy = yalin ? (uzun > 12 ? 'orta' : 'buyuk') : uzun > 14 ? 'kucuk' : uzun > 7 || /\\frac|\\sqrt|\^|_/.test(tex) ? 'orta' : 'buyuk';
+      onizleme.className = 'hm-onizleme kesin ' + boy;
+      onizleme.innerHTML = (yaklasik ? `<span class="hm-yaklasik">≈ ${esc(yaklasik)}</span>` : '') +
+        (yalin ? `<span class="hm-sayi-sonuc">${esc(tex.replace(/\{,\}/g, ',').replace(/^-/, '−'))}</span>` : `<math-field read-only class="hm-statik">${esc(tex)}</math-field>`);
+    }
+    // ekrandaki kısa cevap
+    function ozet(r) {
+      const sy = (v) => M().sayiYaz(v);
+      try {
+        if (r.tur === 'fonksiyon') return r.analiz.kokler.length ? r.analiz.kokler.slice(0, 3).map((x, i) => 'x_{' + (i + 1) + '}=' + sy(x)).join(',\\ ') : '\\text{📈 grafik}';
+        if (r.tur === 'turev') return (r.ad && r.ad !== 'y' ? r.ad : 'f') + "'(x)=" + r.turev.tex;
+        if (r.tur === 'denklem') {
+          const d = r.denklem, x = r.degisken || 'x';
+          if (d.yol === 'ozdeslik') return '\\text{Her }' + x + '\\text{ için doğru}';
+          if (d.yol === 'trig') return d.kokler.length ? d.aileler.map((a) => x + '=' + (Math.abs(a.r) < 1e-12 ? '' : sy(a.r) + '+') + piKat(a.adim)).join(',\\ ') : '\\text{Çözüm yok}';
+          if (d.kumeTex) return '\\text{Ç.K.}=' + d.kumeTex;
+          if (!d.kokler.length) return '\\text{Çözüm yok}';
+          return d.kokler.slice(0, 3).map((k, n) => (d.kokler.length > 1 ? x + '_{' + (n + 1) + '}' : x) + '=' + sayiYaz(k, d.kokTex)).join(',\\ ') + (d.kokler.length > 3 ? ',\\ \\dots' : '');
+        }
+        if (r.tur === 'esitsizlik') return r.esitsizlik.karsilastirma ? '\\text{' + (r.esitsizlik.dogru ? 'Doğru' : 'Yanlış') + '}' : '\\text{Ç.K.}=' + r.esitsizlik.tex;
+        if (r.tur === 'sistem') { const S = r.sistem; return S.tur === 'tek' ? S.cozumler.slice(0, 2).map((c) => '\\left(' + c.map((t) => sy(t)).join(',') + '\\right)').join(',\\ ') : '\\text{' + (S.tur === 'sonsuz' ? 'Sonsuz çözüm' : 'Çözüm yok') + '}'; }
+        if (r.tur === 'limit') return r.limit.yok ? '\\text{Limit yok}' : limTex(r.limit.deger);
+        if (r.tur === 'integral') return r.belirli ? (r.belirli.tam ? r.belirli.tam.tex : sayiTex(r.belirli.deger)) : r.integral.tex;
+        if (r.tur === 'toplamN') return r.toplamN.tex;
+      } catch (e) { /* özet yok */ }
+      return '';
     }
 
     // ------------------------------------------------ çözüm ve gösterim
-    const kutu = (latex, sinif = '') => `<math-field read-only class="hm-statik ${sinif}">${esc(latex)}</math-field>`;
     function coz() {
       const l = mf.value.trim();
-      if (!l) { sonuc.innerHTML = `<p class="hm-not">Önce bir işlem yaz ya da 📷 ile fotoğrafını çek.</p>`; return; }
+      if (!l) { sonuc.innerHTML = `<p class="hm-not">Önce bir işlem yaz ya da 📷 ile fotoğrafını çek.</p>`; if (dar()) tuslarAcik(false); return; }
       let r;
       try { r = M().coz(l, { derece: durum.derece }); } catch (e) {
+        onizleme.className = 'hm-onizleme ipucu hata'; onizleme.textContent = 'Bunu çözemedim';
         sonuc.innerHTML = `<div class="hm-kart hm-hata"><b>Bunu çözemedim</b><p>${esc(hataMetni(e))}</p></div>`;
+        if (dar()) tuslarAcik(false);
         return;
       }
       if (r.tur === 'islem') islemGoster(l, r);
@@ -153,8 +247,14 @@
       else if (r.tur === 'esitsizlik') esitsizlikGoster(r, l);
       else if (r.tur === 'sistem') sistemGoster(r, l);
       else if (r.tur === 'toplamN') toplamNGoster(r, l);
+      if (r.tur !== 'islem') {
+        const o = ozet(r);
+        if (o) ekranSonuc(o);
+        gecmiseEkle(l, o);
+      }
       sonuc.scrollTop = 0;
-      if (dar() && r.tur !== 'islem') tuslarAcik(false); // işlemde yeni işlem yazılır; grafik, türev ve denklemde sonuca yer aç
+      // işlemde sonuç ekranda, tuşlar kalır (adım adım varsa sonuç bölümü açılır); öbürlerinde grafik ve adımlara yer açılır
+      if (dar() && (r.tur !== 'islem' || (r.islem && r.islem.adimlar))) tuslarAcik(false);
       if (ayar.cozuldu) ayar.cozuldu(r);
     }
     const hataMetni = (e) => {
@@ -164,23 +264,28 @@
       if (/tek bilinmeyen|bilinmeyen yok|en fazla|kapalı biçim|Σ|iki bilinmeyen/.test(m)) return m.charAt(0).toUpperCase() + m.slice(1) + '.';
       return 'Hesaplanamadı (' + m + ').';
     };
+    function gecmiseEkle(l, tex) {
+      if (!tex) return;
+      durum.gecmis = [{ l, tex }, ...durum.gecmis.filter((g) => g.l !== l)].slice(0, 30);
+      try { localStorage.setItem(GECMIS_ANAHTARI, JSON.stringify(durum.gecmis)); } catch (e) { /* saklanamadı */ }
+      if (durum.sekme === 'gecmis') islevCiz();
+    }
 
     function islemGoster(l, r) {
       const s = r.islem;
       const anaTex = s.tam ? s.tam.tex : sayiTex(s.deger);
-      durum.ans = s.tam ? s.tam.tex : sayiTex(s.deger);
-      durum.gecmis.unshift({ l, tex: anaTex });
-      durum.gecmis = durum.gecmis.slice(0, 8);
+      durum.ans = anaTex;
+      ekranSonuc(anaTex, s.tam && isFinite(s.deger) ? sayi(s.deger) : '');
+      gecmiseEkle(l, anaTex);
       sonuc.innerHTML = `
         <div class="hm-kart hm-islem">
-          <div class="hm-esittir">${kutu('=' + anaTex, 'buyuk')}</div>
+          <div class="hm-baslik">${kutu(l)}</div>
+          <div class="hm-esittir">${kutu('=' + anaTex, 'buyuk vurgu')}</div>
           ${s.tam && isFinite(s.deger) ? `<div class="hm-yaklasik">≈ ${esc(sayi(s.deger))}</div>` : ''}
           ${s.karmasik ? '<div class="hm-mini">Karmaşık sayı (i² = −1)</div>' : ''}
           ${s.adimlar ? adimListe(s.adimlar) : ''}
-          ${/sin|cos|tan|cot/.test(r.ifade) ? `<div class="hm-mini">${durum.derece ? 'Açılar derece cinsinden' : 'Açılar radyan cinsinden'} · DEG/RAD tuşuyla değiştir</div>` : ''}
-        </div>
-        ${durum.gecmis.length > 1 ? `<div class="hm-gecmis"><h4>Son işlemler</h4>${durum.gecmis.slice(1).map((g, k) => `<button type="button" class="hm-gecmis-satir" data-g="${k + 1}">${kutu(g.l)}<span>${kutu('=' + g.tex)}</span></button>`).join('')}</div>` : ''}`;
-      sonuc.querySelectorAll('.hm-gecmis-satir').forEach((b) => b.addEventListener('click', () => { mf.value = durum.gecmis[+b.dataset.g].l; canliOnizleme(); mf.focus(); }));
+          ${/sin|cos|tan|cot/.test(r.ifade) ? `<div class="hm-mini">${durum.derece ? 'Açılar derece cinsinden' : 'Açılar radyan cinsinden'} · üstteki DEG/RAD düğmesiyle değiştir</div>` : ''}
+        </div>`;
     }
 
     const RENK = (n) => getComputedStyle(kap).getPropertyValue('--hm-egri-' + n).trim() || ['#7b5cd6', '#e0558a', '#2f9e7e'][n - 1];
@@ -257,7 +362,7 @@
       const a = r.analiz, ad = r.ad && r.ad !== 'y' ? r.ad + '(x)' : 'y';
       const f = M().derle(r.ifade);
       const noktalar = [
-        ...a.kokler.map((x) => ({ x, y: 0, renk: RENK(3), etiket: 'x = ' + sayi(x) })),
+        ...a.kokler.map((x) => ({ x, y: 0, renk: RENK(3), etiket: 'x = ' + sayiGuzel(x) })),
         ...a.tepeler.map((t) => ({ x: t.x, y: t.y, renk: RENK(2), etiket: nokta(t.x, t.y) })),
       ];
       if (a.yKesen !== null && !a.kokler.some((x) => Math.abs(x) < 1e-9)) noktalar.push({ x: 0, y: a.yKesen, renk: RENK(1), etiket: '(0 ; ' + sayi(a.yKesen) + ')' });
@@ -267,7 +372,7 @@
           <div class="hm-grafik-yer"></div>
           <ul class="hm-bilgi">
             ${a.carpanlar ? `<li><b>Çarpanlarına ayrılmış hâli</b> ${kutu(ad + '=' + a.carpanlar)}</li>` : ''}
-            <li><b>Kökleri</b> ${a.kokler.length ? a.kokler.slice(0, 8).map((x) => 'x = ' + esc(sayi(x))).join(' · ') + (a.kokler.length > 8 ? ' …' : '') : 'gösterilen aralıkta yok'}</li>
+            <li><b>Kökleri</b> ${a.kokler.length ? a.kokler.slice(0, 8).map((x) => 'x = ' + esc(sayiGuzel(x))).join(' · ') + (a.kokler.length > 8 ? ' …' : '') : 'gösterilen aralıkta yok'}</li>
             ${a.tepeler.length ? `<li><b>Tepe noktaları</b> ${a.tepeler.slice(0, 6).map((t) => esc(nokta(t.x, t.y)) + ' <small>' + t.tur + '</small>').join(' · ')}</li>` : ''}
             <li><b>y eksenini kestiği yer</b> ${a.yKesen === null ? 'tanımsız (x = 0 tanım kümesinde değil)' : esc('(0 ; ' + sayi(a.yKesen) + ')')}</li>
           </ul>
@@ -521,7 +626,7 @@
           canliOnizleme();
           coz();
           const not = document.createElement('p'); not.className = 'hm-not hm-okundu';
-          not.innerHTML = '📷 Fotoğraftan okundu. Yanlış okuduysam yukarıda düzelt ve <b>Çöz</b>\'e bas.';
+          not.innerHTML = '📷 Fotoğraftan okundu. Yanlış okuduysam yukarıda düzelt ve <b>=</b> tuşuna bas.';
           sonuc.prepend(not);
         } catch (err) {
           tusOku.disabled = false;

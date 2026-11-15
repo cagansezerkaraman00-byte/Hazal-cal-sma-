@@ -31,6 +31,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Motor testleri
         run: node hesap/test/motor-test.cjs
+      - name: Ekrandaki kediler Luna'nın çizimleriyle aynı
+        run: node hesap/test/kedi-test.cjs
       - name: 500 rastgele soru (türev, denklem, fonksiyon, limit, integral × kolay/orta/zor)
         run: node hesap/test/toplu-test.cjs | tee cikti/toplu-rapor.txt
       - name: 900 rastgele YKS sorusu (eşitsizlik, mutlak değer, üstel-log, trigonometri, Σ, kombinasyon, sistem, üslü-köklü, karmaşık)

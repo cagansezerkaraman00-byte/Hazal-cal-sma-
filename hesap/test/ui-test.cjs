@@ -3,7 +3,7 @@
 // node hesap/test/ui-test.cjs [ekran klasörü]   (yerelde: YEREL_NM=<node_modules> ile CDN'e çıkmadan)
 const { chromium } = require('playwright');
 const fs = require('node:fs'), path = require('node:path');
-const { sun, cdnYerel } = require('./sunucu.cjs');
+const { sun, cdnYerel, tusci } = require('./sunucu.cjs');
 const out = process.argv[2] || path.join(__dirname, 'ekran');
 fs.mkdirSync(out, { recursive: true });
 let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) hata++; };
@@ -16,7 +16,7 @@ let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if 
   await page.goto(sunucu.adres + '?guncel');
   await page.waitForFunction(() => window.hesap && customElements.get('math-field'));
   await page.waitForTimeout(600);
-  const tus = async (...adlar) => { if (await page.locator('.hm.tuslar-kapali').count()) { await page.click('.hm-tus-ac'); await page.waitForTimeout(80); } for (const a of adlar) { const t = page.locator('.hm-tus', { hasText: a }).filter({ hasText: new RegExp('^\\s*' + a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$') }).first(); if (!(await t.count())) { const t2 = page.locator(`.hm-tus[aria-label="${a}"]`).first(); await t2.click(); } else await t.click(); await page.waitForTimeout(40); } };
+  const tus = tusci(page);
   const deger = () => page.evaluate(() => window.hesap.mf.value);
   const sonucYazi = () => page.evaluate(() => { const s = document.querySelector('.hm-sonuc'); return [...s.querySelectorAll('math-field')].map((m) => m.value).join(' | ') + ' || ' + s.innerText; });
   const temizle = () => tus('AC');
@@ -67,7 +67,7 @@ let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if 
   await page.screenshot({ path: path.join(out, '4-turev.png'), fullPage: false });
   await page.locator('.hm-sonuc').evaluate((e) => { e.scrollTop = 0; });
   // 7) denklem x²−5x+6=0
-  await temizle(); await tus('x', 'x²', '−', '5', 'x', '+', '6', '=', '0'); await tus('Çöz');
+  await temizle(); await tus('x', 'x²', '−', '5', 'x', '+', '6', 'eşittir işareti', '0'); await tus('Çöz');
   const dy = await sonucYazi();
   ok(/x_\{?1\}?=2/.test(dy.replace(/\s/g, '')) && /x_\{?2\}?=3/.test(dy.replace(/\s/g, '')) && /Δ > 0/.test(dy), 'x²−5x+6=0 → 2 ve 3, Δ adımı: ' + dy.replace(/\s+/g, ' ').slice(0, 160));
   await page.screenshot({ path: path.join(out, '5-denklem.png') });

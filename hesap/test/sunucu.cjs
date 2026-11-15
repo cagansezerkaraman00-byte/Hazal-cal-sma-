@@ -21,4 +21,26 @@ async function cdnYerel(ctx) {
     rt.fulfill({ status: 200, headers: { 'content-type': tur[path.extname(f)] || 'application/octet-stream', 'access-control-allow-origin': '*' }, body: fs.readFileSync(f) });
   });
 }
-module.exports = { sun, cdnYerel };
+// Tuşlara adıyla bas (görünen yazısı ya da erişilebilir adı). Tuş o an açık sekmede yoksa sekmeler sırayla denenir.
+// '◀' / '▶' ekrandaki imleç düğmeleridir; '⇄' eski katman tuşudur, yok sayılır. '=' yazı tuşudur (Çöz tuşu "Çöz" adıyla).
+function tusci(page) {
+  return async (...adlar) => {
+    if (await page.locator('.hm.tuslar-kapali').count()) { await page.click('.hm-tus-ac'); await page.waitForTimeout(80); }
+    for (const a of adlar) {
+      if (a === '⇄') continue;
+      if (a === '▶' || a === '◀') { await page.click(`.hm-imlec [data-komut="${a === '▶' ? 'moveToNextChar' : 'moveToPreviousChar'}"]`); await page.waitForTimeout(40); continue; }
+      const kac = a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      let el = null;
+      for (const sekme of [null, 'bilimsel', 'cebir', 'analiz']) {
+        if (sekme) await page.click(`.hm-sekme[data-sekme="${sekme}"]`);
+        const t = page.locator('.hm-tus:not(.esit)').filter({ hasText: new RegExp('^\\s*' + kac + '\\s*$') });
+        if (await t.count()) { el = t.first(); break; }
+        const t2 = page.locator(`.hm-tus[aria-label="${a}"]`);
+        if (await t2.count()) { el = t2.first(); break; }
+      }
+      if (!el) throw new Error('tuş yok: ' + a);
+      await el.click(); await page.waitForTimeout(40);
+    }
+  };
+}
+module.exports = { sun, cdnYerel, tusci };
