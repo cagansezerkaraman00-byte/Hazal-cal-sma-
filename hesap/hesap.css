@@ -12,6 +12,8 @@
   --hg-zemin: #221846; --hg-izgara: rgba(255, 255, 255, .07); --hg-eksen: #a99bd6; --hg-yazi: #c3b6e8; --hg-etiket-zemin: rgba(28, 18, 60, .92); --hg-etiket-yazi: #ffffff; --hg-nokta: #ffffff;
   --hm-radius: 20px;
   --hm-yazi-tipi: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* ekran piksel yazıyla (Luna'nın saatindeki yazı); tuşlar Nunito'da kalır */
+  --hm-piksel-yazi: 'Jersey 10', 'Press Start 2P', monospace; --hm-piksel-buyuk: 'Press Start 2P', 'Jersey 10', monospace;
   position: relative; isolation: isolate; overflow: hidden; box-sizing: border-box; height: 100%; min-height: 0; min-width: 0;
   display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto;
   grid-template-areas: "ust" "ekran" "govde" "alt"; gap: 14px;
@@ -67,7 +69,8 @@
 .hm-parilti.p1 { left: 10px; top: -10px; font-size: 18px; }
 .hm-parilti.p2 { right: 4px; bottom: -11px; font-size: 20px; }
 .hm-alan {
-  width: 100%; min-width: 0; max-width: 100%; overflow: hidden; font-size: 26px; border: 0; background: transparent; color: #fff; outline: none; min-height: 46px; padding: 2px 0;
+  width: 100%; min-width: 0; max-width: 100%; overflow: hidden; font-size: 32px; border: 0; background: transparent; color: #fff; outline: none; min-height: 46px; padding: 2px 0;
+  -webkit-font-smoothing: none; font-synthesis: none;
   --caret-color: #ffffff; --selection-background-color: rgba(255, 255, 255, .26); --contains-highlight-background-color: transparent; --placeholder-color: rgba(255, 255, 255, .72);
   --smart-fence-color: rgba(255, 255, 255, .6); --primary-color: #ffffff;
 }
@@ -76,18 +79,20 @@
 .hm-imlec { display: flex; gap: 6px; flex: none; }
 .hm-imlec button { width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .38); background: rgba(255, 255, 255, .16); color: #fff; font: 900 22px/1 var(--hm-yazi-tipi); padding: 0 0 3px; cursor: pointer; }
 .hm-imlec button:active { background: rgba(255, 255, 255, .3); }
-.hm-onizleme { flex: 1; min-width: 0; height: 60px; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; overflow-x: auto; overflow-y: hidden; text-align: right; color: rgba(255, 255, 255, .7); font-weight: 900; font-variant-numeric: tabular-nums; white-space: nowrap; scrollbar-width: none; }
+.hm-onizleme { flex: 1; min-width: 0; min-height: 60px; max-height: 120px; display: flex; flex-direction: row; justify-content: flex-end; align-items: flex-end; gap: 10px; overflow-x: auto; overflow-y: hidden; text-align: right; color: rgba(255, 255, 255, .7);
+  font-family: var(--hm-piksel-buyuk); font-weight: 400; font-synthesis: none; -webkit-font-smoothing: none; white-space: nowrap; scrollbar-width: none; }
 .hm-onizleme::-webkit-scrollbar { display: none; }
-.hm-onizleme.buyuk { font-size: 56px; line-height: 1; }
-.hm-onizleme.orta { font-size: 32px; line-height: 1.1; }
-.hm-onizleme.ipucu { font-size: 15px; font-weight: 800; color: rgba(255, 255, 255, .85); white-space: normal; text-align: right; }
+.hm-onizleme.buyuk { font-size: 48px; line-height: 1; }
+.hm-onizleme.orta { font-size: 22px; line-height: 1.2; }
+.hm-onizleme.ipucu { font-family: var(--hm-piksel-yazi); font-size: 22px; line-height: 1; color: rgba(255, 255, 255, .88); white-space: normal; text-align: right; }
 .hm-onizleme .hm-sayi-sonuc { display: block; }
 .hm-onizleme.hata { color: #ffd0e4; }
 .hm-onizleme.kesin { color: #fff; text-shadow: 0 0 18px rgba(255, 255, 255, .5); animation: hm-belir .28s ease-out; }
-.hm-onizleme.kesin .hm-statik { color: #fff; font-size: 44px; pointer-events: none; }
-.hm-onizleme.kesin.orta .hm-statik { font-size: 28px; }
-.hm-onizleme.kesin.kucuk .hm-statik { font-size: 19px; }
-.hm-onizleme .hm-yaklasik { display: block; font-size: 14px; font-weight: 800; color: rgba(255, 255, 255, .78); text-shadow: none; }
+.hm-onizleme.kesin .hm-statik { color: #fff; font-size: 50px; pointer-events: none; }
+.hm-onizleme.kesin.orta .hm-statik { font-size: 36px; }
+.hm-onizleme.kesin.kucuk .hm-statik { font-size: 26px; }
+.hm-onizleme .hm-yaklasik { display: block; flex: none; font-family: var(--hm-piksel-yazi); font-size: 20px; line-height: 1; color: rgba(255, 255, 255, .8); text-shadow: none; margin-bottom: 6px; }
+.hm-onizleme .hm-statik { flex: none; }
 @keyframes hm-belir { from { opacity: .3; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 /* uyuyan kediler (Luna'nın piksel çizimleri) ekranın üst kenarında */
@@ -235,10 +240,10 @@
   .hm-ad b { font-size: 26px; } .hm-ad span { font-size: 14px; }
   .hm-aci-btn, .hm-yuvarlak { height: 36px; } .hm-yuvarlak { width: 36px; } .hm-aci-btn { padding: 0 12px; font-size: 13.5px; }
   .hm-ekran { min-height: 108px; padding: 10px 14px 8px; margin-top: 12px; border-radius: 22px; }
-  .hm-alan { font-size: 22px; min-height: 36px; }
+  .hm-alan { font-size: 27px; min-height: 36px; }
   .hm-ekran-alt { min-height: 44px; }
-  .hm-onizleme { height: 50px; }
-  .hm-onizleme.buyuk { font-size: 44px; } .hm-onizleme.kesin .hm-statik { font-size: 36px; }
+  .hm-onizleme { min-height: 48px; }
+  .hm-onizleme.buyuk { font-size: 40px; } .hm-onizleme.kesin .hm-statik { font-size: 40px; } .hm-onizleme.kesin.orta .hm-statik { font-size: 30px; }
   .hm-imlec button { width: 32px; height: 32px; font-size: 20px; }
   .hm-sekme { height: 32px; font-size: 14px; }
   .hm-sekmeler { padding-bottom: 6px; }
@@ -256,9 +261,9 @@
   .hm-ust, .hm-ekran, .hm-govde, .hm-sonuc { width: 100%; max-width: 680px; justify-self: center; }
   .hm-kediler { --o: 2px; }
   .hm-ekran { min-height: 170px; }
-  .hm-onizleme { height: 76px; }
-  .hm-alan { font-size: 32px; min-height: 56px; }
-  .hm-onizleme.buyuk { font-size: 68px; } .hm-onizleme.kesin .hm-statik { font-size: 54px; }
+  .hm-onizleme { min-height: 76px; max-height: 150px; }
+  .hm-alan { font-size: 40px; min-height: 56px; }
+  .hm-onizleme.buyuk { font-size: 64px; } .hm-onizleme.orta { font-size: 32px; } .hm-onizleme.kesin .hm-statik { font-size: 64px; } .hm-onizleme.kesin.orta .hm-statik { font-size: 44px; } .hm-onizleme.ipucu { font-size: 28px; }
   .hm-tus { font-size: 32px; border-radius: 20px; } .hm-tus.fn { font-size: 25px; } .hm-tus.sayi { font-size: 36px; } .hm-tus.kucuk { font-size: 18px; }
   .hm-sekme { height: 42px; font-size: 17px; }
   .hm-grafik canvas { height: min(46vh, 480px); }
@@ -284,11 +289,11 @@
   .hm-ay { width: 34px; height: 34px; } .hm-ad b { font-size: 22px; } .hm-ad span { font-size: 12px; }
   .hm-aci-btn, .hm-yuvarlak { height: 32px; } .hm-yuvarlak { width: 32px; } .hm-yuvarlak svg { width: 18px; height: 18px; } .hm-aci-btn { font-size: 13px; padding: 0 10px; }
   .hm-kediler { --o: 1px; }
-  .hm-onizleme { height: 38px; }
+  .hm-onizleme { min-height: 38px; max-height: 70px; }
   .hm-ekran { min-height: 0; padding: 8px 12px 6px; margin-top: 12px; border-radius: 18px; }
-  .hm-alan { font-size: 20px; min-height: 30px; }
+  .hm-alan { font-size: 24px; min-height: 30px; }
   .hm-ekran-alt { min-height: 34px; }
-  .hm-onizleme.buyuk { font-size: 32px; } .hm-onizleme.kesin .hm-statik { font-size: 26px; }
+  .hm-onizleme.buyuk { font-size: 24px; } .hm-onizleme.orta { font-size: 16px; } .hm-onizleme.kesin .hm-statik { font-size: 30px; } .hm-onizleme.kesin.orta .hm-statik, .hm-onizleme.kesin.kucuk .hm-statik { font-size: 22px; } .hm-onizleme.ipucu { font-size: 18px; }
   .hm-imlec button { width: 28px; height: 28px; font-size: 18px; }
   .hm-sekme { height: 28px; font-size: 13px; } .hm-sekmeler { padding-bottom: 4px; } .hm-govde { gap: 6px; }
   .hm-tuslar { gap: 5px; }
@@ -300,7 +305,7 @@
   .hm-cicek { display: none; }
 }
 @media (min-width: 1100px) {
-  .hm-alan { font-size: 30px; }
+  .hm-alan { font-size: 38px; }
   .hm-cicek { width: 70px; }
 }
 @media (prefers-reduced-motion: reduce) {

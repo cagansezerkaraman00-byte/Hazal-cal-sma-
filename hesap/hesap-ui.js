@@ -11,6 +11,19 @@
   };
   const sayi = (x) => M().sayiMetin(x).replace(/^-/, '−');
   const sayiGuzel = (x) => { const t = M().tamBicim(x); return t ? t.metin.replace(/^-/, '−') : sayi(x); }; // −√3, π/6, 2/3
+  // Ekrandaki matematik piksel yazıyla: MathLive'ın harf ve rakam sınıflarının yazı tipi (gölge ağacının içinde) değiştirilir.
+  // Parantezler, kök işareti ve kesir çizgisi MathLive'ın kendi çizimiyle kalır; yazı tipi ekranın --hm-piksel-yazi değişkeninden gelir.
+  const PIKSEL_CSS = '.ML__cmr, .ML__mathit, .ML__mathbf, .ML__mathbfit, .ML__text, .ML__placeholder { font-family: var(--hm-piksel-yazi), KaTeX_Main, monospace !important; font-style: normal !important; font-weight: var(--hm-piksel-kalinlik, 400) !important; }';
+  let pikselSayfa = null;
+  function pikselYap(alan) {
+    const k = alan && alan.shadowRoot;
+    if (!k || k.__piksel) return;
+    try {
+      if (!pikselSayfa) { pikselSayfa = new CSSStyleSheet(); pikselSayfa.replaceSync(PIKSEL_CSS); }
+      k.adoptedStyleSheets = [...k.adoptedStyleSheets, pikselSayfa];
+    } catch (e) { const st = document.createElement('style'); st.textContent = PIKSEL_CSS; k.appendChild(st); }
+    k.__piksel = true;
+  }
   // geçmiş bu cihazda saklanır (yalnızca kolaylık; okunamazsa boş başlar)
   const GECMIS_ANAHTARI = 'luna-hesap-gecmis';
   const gecmisOku = () => { try { const g = JSON.parse(localStorage.getItem(GECMIS_ANAHTARI) || '[]'); return Array.isArray(g) ? g.filter((x) => x && typeof x.l === 'string' && typeof x.tex === 'string').slice(0, 30) : []; } catch (e) { return []; } };
@@ -102,6 +115,8 @@
     // telefonun kendi klavyesi açılmasın: tuşlar bizim
     const klavyesiz = () => { const ta = mf.shadowRoot && mf.shadowRoot.querySelector('textarea'); if (ta) { ta.setAttribute('inputmode', 'none'); ta.setAttribute('virtualkeyboardpolicy', 'manual'); } };
     klavyesiz(); setTimeout(klavyesiz, 300);
+    pikselYap(mf); setTimeout(() => pikselYap(mf), 300);
+    mf.addEventListener('mount', () => pikselYap(mf));
 
     // ------------------------------------------------ üst düğmeler
     const aciBtn = $('.hm-aci-btn');
@@ -203,6 +218,7 @@
       onizleme.className = 'hm-onizleme kesin ' + boy;
       onizleme.innerHTML = (yaklasik ? `<span class="hm-yaklasik">≈ ${esc(yaklasik)}</span>` : '') +
         (yalin ? `<span class="hm-sayi-sonuc">${esc(tex.replace(/\{,\}/g, ',').replace(/^-/, '−'))}</span>` : `<math-field read-only class="hm-statik">${esc(tex)}</math-field>`);
+      pikselYap(onizleme.querySelector('math-field'));
     }
     // ekrandaki kısa cevap
     function ozet(r) {
