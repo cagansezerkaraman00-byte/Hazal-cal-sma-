@@ -176,5 +176,15 @@ ok(sis('\\begin{cases}2x+3y=12\\\\x-y=1\\end{cases}').adimlar[1].kural === '2. d
 ok(sis('\\begin{cases}x^2+y^2=25\\\\x-y=1\\end{cases}').egriler[0] === null, 'çember doğrusal sanılmıyor (örtük çizilir)');
 ok(sis('\\begin{cases}x+y=2\\\\x+y=3\\end{cases}').tur === 'yok' && sis('\\begin{cases}x+y=2\\\\2x+2y=4\\end{cases}').tur === 'sonsuz', 'çözümsüz ve sonsuz çözümlü sistem');
 
+// YKS resim denemesinden okuyucu yazımları
+const iD = (l, d) => M.coz(l, { derece: false }).islem.deger;
+ok(yakin(iD('\\tan { 1 3 5 } ^ { \\circ }'), -1), 'tan {135}° (derece süslü argümandan sonra): ' + iD('\\tan { 1 3 5 } ^ { \\circ }'));
+ok(yakin(iD('\\cos { 1 2 0 } ^ { \\circ }'), -0.5), 'cos {120}°');
+ok(yakin(iD('\\mathrm { ~ t a n ~ 0 ^ { \\circ } }'), 0), '\\mathrm{ tan 0° } sarmalayıcısı');
+ok(iD('\\mathrm { E B O B ( 1 8, 2 7 ) }') === 9, '\\mathrm{ EBOB(18, 27) } sarmalayıcısı');
+ok(yakin(iD('9 _ { 2 } ^ { \\frac { 3 } { 2 } }'), 27), 'sayının alt simgesi yok sayılır: 9_{2}^{3/2} = 27');
+ok(tx(M.coz('2 \\sin ^ { 2 } x - 0. 5 = 0').denklem.ikiPi.map((v) => +v.toFixed(6))) === tx([Math.PI / 6, 5 * Math.PI / 6, 7 * Math.PI / 6, 11 * Math.PI / 6].map((v) => +v.toFixed(6))), '"0. 5" = 0,5 ondalık');
+ok(!!M.coz('\\int x^2 \\mathrm{d}x').integral && M.coz('\\operatorname{EBOB}\\left(12,18\\right)').islem.deger === 6, '\\mathrm{d}x ve \\operatorname{EBOB} adları bozulmuyor');
+
 console.log(`\n${gecen} geçti, ${hata} hata`);
 process.exit(hata ? 1 : 0);

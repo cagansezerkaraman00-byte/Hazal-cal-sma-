@@ -68,7 +68,11 @@
       .replace(/\{\s*(\\[dt]?frac\s*\{\s*d\s*\}\s*\{\s*d\s*[a-z]\s*\})\s*\}/g, '$1')
       // kalın / eğik yazı biçimleri yalnızca görünüş: içerik olduğu gibi kalır
       .replace(/\\(?:boldsymbol|mathbf|bm|mathit|mathnormal|pmb)\s*(?=\{)/g, '');
-    s = s
+    // okuyucu bütün işlemi \mathrm{ … } içine alabiliyor (\mathrm { ~ t a n ~ 0 ^ { \circ } }, \mathrm { E B O B ( 1 8, 2 7 ) }):
+    // içinde ad değil işlem varsa sarmalayıcı kaldırılır; \mathrm{d}, \operatorname{EBOB} gibi adlar olduğu gibi kalır
+    const sarmalayiciAc = (t) => t.replace(/\\(?:mathrm|operatorname|text|textrm|rm)\s*\{([^{}]*[^A-Za-z\s{}][^{}]*)\}/g, ' $1 ');
+    s = sarmalayiciAc(s)
+      .replace(/(\d)\s*_\s*\{[^{}]*\}/g, '$1') // sayının alt simgesi anlamsız (okuyucu gürültüsü: 9_{2}^{3/2})
       .replace(/([_^])\s*(\d)/g, '$1{$2}') // süslüsüz alt/üst simge tek rakamdır: \log_2 8 → taban 2, sayı 8
       .replace(/\\imaginaryI(?![A-Za-z])/g, ' i ')
       .replace(/\\[dt]binom/g, '\\binom')
@@ -86,6 +90,7 @@
     s = s.replace(/[−–]/g, '-').replace(/·|×/g, '\\cdot ').replace(/÷/g, '\\div ').replace(/π/g, '\\pi ').replace(/√/g, '\\sqrt ')
       .replace(/\{,\}/g, '.').replace(/²/g, '^2').replace(/³/g, '^3')
       .replace(/\^\s*\{\s*\\circ\s*\}|\^\s*\\circ|\\degree|°/g, '\\derece ');
+    s = sarmalayiciAc(s);
     for (let i = 0; i < s.length;) {
       const c = s[i];
       if (/\s/.test(c)) { i++; continue; }
@@ -103,7 +108,7 @@
         for (;;) {
           while (j < s.length && /[0-9.]/.test(s[j])) sayi += s[j++];
           let k = j; while (k < s.length && /\s/.test(s[k])) k++;
-          if (k > j && /[0-9]/.test(s[k] || '') && /[0-9]$/.test(sayi)) { j = k; continue; }
+          if (k > j && /[0-9]/.test(s[k] || '') && (/[0-9]$/.test(sayi) || /^[0-9]+\.$/.test(sayi))) { j = k; continue; } // "1 6" = 16, "0. 5" = 0,5
           break;
         }
         // "3,5" ondalık (Türkçe): virgülden sonra rakam ve öncesi sayı ise
@@ -201,8 +206,9 @@
       return s;
     }
     function fonksiyonArg() { // sin x, sin 2x, sin(x+1), sin^2 x
-      if (v(bak()) === '(' || v(bak()) === '[') { const ac = al().v; const e = toplam(); bekle(ac === '(' ? ')' : ']'); return e; }
-      if (v(bak()) === '{') return grup();
+      const derece = (e) => { if (bak() && bak().k === 'cmd' && bak().v === 'derece') { i++; return '(' + e + ') * DEGISARET'; } return e; }; // \tan {135}^{\circ}
+      if (v(bak()) === '(' || v(bak()) === '[') { const ac = al().v; const e = toplam(); bekle(ac === '(' ? ')' : ']'); return derece(e); }
+      if (v(bak()) === '{') return derece(grup());
       // parantezsiz: sayı/harf dizisi (bir sonraki fonksiyona ya da işlemciye kadar)
       let s = kuvvetBasit();
       while (bak() && (bak().k === 'sayi' || bak().k === 'harf' || (bak().k === 'cmd' && bak().v === 'pi'))) s += ' * ' + kuvvetBasit();
