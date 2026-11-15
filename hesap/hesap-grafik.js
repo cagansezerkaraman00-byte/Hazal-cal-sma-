@@ -17,7 +17,7 @@
       this.c = tuval; this.g = tuval.getContext('2d');
       this.ayar = ayar;
       this.pencere = { x0: -10, x1: 10, y0: -7, y1: 7 };
-      this.egriler = []; this.noktalar = []; this.dogrular = []; this.iz = null;
+      this.egriler = []; this.noktalar = []; this.dogrular = []; this.alanlar = []; this.iz = null;
       this.parmaklar = new Map(); this.son = 0;
       this._bagla();
       this._boyut();
@@ -42,18 +42,21 @@
     gy(py) { const p = this.pencere; return p.y1 - py / this.h * (p.y1 - p.y0); }
 
     /** egriler: [{ f(x), renk, ad }]; noktalar: [{ x, y, etiket, renk }]; dogrular: [{ f, renk, kesikli }] */
-    ayarla({ egriler, noktalar, dogrular } = {}) {
+    ayarla({ egriler, noktalar, dogrular, alanlar } = {}) {
       if (egriler) this.egriler = egriler;
+      if (alanlar) this.alanlar = alanlar;
       if (noktalar) this.noktalar = noktalar;
       if (dogrular) this.dogrular = dogrular;
       this.iz = null;
       this.ciz();
     }
     // eğrilerin önemli kısmını (kökler, tepeler) gösterecek pencere
-    sigdir(odak = []) {
+    sigdir(odak = [], secenek = {}) {
+      if (!Array.isArray(odak)) { secenek = odak || {}; odak = []; }
       let xs = odak.map((n) => n.x).filter(isFinite);
       let x0 = -10, x1 = 10;
-      if (xs.length) { const a = Math.min(...xs), b = Math.max(...xs), pay = Math.max(2, (b - a) * 0.35); x0 = Math.min(-2, a - pay); x1 = Math.max(2, b + pay); }
+      const dar = !!secenek.dar; // belirli integral: aralığa yakın sığdır, taralı alan büyük görünsün
+      if (xs.length) { const a = Math.min(...xs), b = Math.max(...xs), pay = dar ? Math.max(0.5, (b - a) * 0.25) : Math.max(2, (b - a) * 0.35); x0 = dar ? a - pay : Math.min(-2, a - pay); x1 = dar ? b + pay : Math.max(2, b + pay); }
       const ys = [];
       for (const e of this.egriler) for (let i = 0; i <= 400; i++) { const y = e.f(x0 + (x1 - x0) * i / 400); if (isFinite(y)) ys.push(y); }
       for (const n of odak) if (isFinite(n.y)) ys.push(n.y);
@@ -100,6 +103,8 @@
       for (let x = Math.ceil(p.x0 / ax) * ax; x <= p.x1; x += ax) if (Math.abs(x) > ax / 2) g.fillText(etiket(x, ax), this.px(x), ly);
       g.textAlign = X0 < 30 ? 'left' : 'right';
       for (let y = Math.ceil(p.y0 / ay) * ay; y <= p.y1; y += ay) if (Math.abs(y) > ay / 2) g.fillText(etiket(y, ay), X0 < 30 ? lx + 8 : lx, this.py(y) + 4);
+      // taralı alanlar (belirli integral): eğri ile x ekseni arası
+      for (const a of this.alanlar) this._alan(a);
       // doğrular (teğet gibi) ve eğriler
       for (const d of this.dogrular) this._egri(d.f, d.renk || eksen, 1.6, d.kesikli);
       for (const e of this.egriler) this._egri(e.f, e.renk, 2.6);
@@ -123,12 +128,23 @@
       }
       g.stroke(); g.setLineDash([]);
     }
+    _alan({ f, a, b, renk }) {
+      const g = this.g, adet = 240, Y0 = this.py(0);
+      g.save();
+      g.globalAlpha = 0.22; g.fillStyle = renk;
+      g.beginPath(); g.moveTo(this.px(a), Y0);
+      for (let i = 0; i <= adet; i++) { const x = a + (b - a) * i / adet, y = f(x); g.lineTo(this.px(x), isFinite(y) ? Math.max(-1e4, Math.min(1e4, this.py(y))) : Y0); }
+      g.lineTo(this.px(b), Y0); g.closePath(); g.fill();
+      g.globalAlpha = 0.7; g.strokeStyle = renk; g.lineWidth = 1.2; g.setLineDash([4, 4]);
+      g.beginPath(); for (const x of [a, b]) { g.moveTo(this.px(x), Y0); g.lineTo(this.px(x), this.py(f(x))); } g.stroke();
+      g.restore();
+    }
     _nokta(n) {
       const g = this.g, X = this.px(n.x), Y = this.py(n.y);
       if (X < -20 || X > this.w + 20 || Y < -20 || Y > this.h + 20) return;
-      g.fillStyle = n.renk || this.renk('--hg-nokta', '#333');
-      g.beginPath(); g.arc(X, Y, n.iz ? 5.5 : 4.5, 0, Math.PI * 2); g.fill();
-      g.strokeStyle = this.renk('--hg-zemin', '#fff'); g.lineWidth = 2; g.stroke();
+      g.fillStyle = n.bos ? this.renk('--hg-zemin', '#fff') : (n.renk || this.renk('--hg-nokta', '#333'));
+      g.beginPath(); g.arc(X, Y, n.iz ? 5.5 : n.bos ? 5 : 4.5, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = n.bos ? (n.renk || '#333') : this.renk('--hg-zemin', '#fff'); g.lineWidth = n.bos ? 2.4 : 2; g.stroke();
       const t = n.etiket || `(${(+n.x.toFixed(3)).toString().replace('.', ',')} ; ${(+n.y.toFixed(3)).toString().replace('.', ',')})`;
       g.font = '600 12px system-ui, sans-serif';
       const tw = g.measureText(t).width, sag = X + tw + 16 > this.w, bx = sag ? X - tw - 14 : X + 9, by = Y - 26 < 2 ? Y + 8 : Y - 26;

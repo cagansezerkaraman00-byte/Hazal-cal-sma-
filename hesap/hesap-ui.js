@@ -24,8 +24,8 @@
     ],
     diger: [
       [['◀', { komut: 'moveToPreviousChar' }, 'k'], ['▶', { komut: 'moveToNextChar' }, 'k'], ['DEG', 'aci', 'k aci'], ['ANS', 'ans', 'k'], ['⇄', 'katman', 'k etkin'], ['⌫', { komut: 'deleteBackward' }, 'k sil']],
-      [['sin⁻¹', { ekle: '\\arcsin\\left(#0\\right)' }, 'f kucuk'], ['cos⁻¹', { ekle: '\\arccos\\left(#0\\right)' }, 'f kucuk'], ['tan⁻¹', { ekle: '\\arctan\\left(#0\\right)' }, 'f kucuk'], ['cot', { ekle: '\\cot\\left(#0\\right)' }, 'f'], ['log<sub>a</sub>', { ekle: '\\log_{#?}\\left(#?\\right)' }, 'f'], ['°', { ekle: '^{\\circ}' }, 'f']],
-      [['d/dx', { ekle: '\\frac{d}{dx}\\left(#0\\right)' }, 'f kucuk'], ['y=', { ekle: 'y=' }, 'f'], ['e<sup>x</sup>', { ekle: 'e^{#?}' }, 'f'], ['<sup>n</sup>√', { ekle: '\\sqrt[#?]{#?}' }, 'f'], ['10<sup>x</sup>', { ekle: '10^{#?}' }, 'f'], ['%', { ekle: '\\%' }, 'f']],
+      [['sin⁻¹', { ekle: '\\arcsin\\left(#0\\right)' }, 'f kucuk'], ['cos⁻¹', { ekle: '\\arccos\\left(#0\\right)' }, 'f kucuk'], ['tan⁻¹', { ekle: '\\arctan\\left(#0\\right)' }, 'f kucuk'], ['cot', { ekle: '\\cot\\left(#0\\right)' }, 'f'], ['log<sub>a</sub>', { ekle: '\\log_{#?}\\left(#?\\right)' }, 'f'], ['<sup>n</sup>√', { ekle: '\\sqrt[#?]{#?}' }, 'f']],
+      [['d/dx', { ekle: '\\frac{d}{dx}\\left(#0\\right)', ad: 'türev' }, 'f kucuk'], ['lim', { ekle: '\\lim_{x\\to#?}#?', ad: 'limit' }, 'f'], ['∫', { ekle: '\\int#?\\,dx', ad: 'integral' }, 'f'], ['∫<sub>a</sub><sup>b</sup>', { ekle: '\\int_{#?}^{#?}#?\\,dx', ad: 'belirli integral' }, 'f'], ['∞', { ekle: '\\infty', ad: 'sonsuz' }, 'f'], ['%', { ekle: '\\%' }, 'f']],
     ],
   };
 
@@ -124,7 +124,7 @@
       try {
         const a = M().anla(l);
         if (a.tur === 'islem') { const r = M().islem(a.ifade, { derece: durum.derece }); onizleme.textContent = isFinite(r.deger) || !isNaN(r.deger) ? '= ' + (r.tam ? r.tam.metin.replace('-', '−') + '  ≈ ' : '') + sayi(r.deger) : ''; }
-        else onizleme.textContent = { fonksiyon: '📈 Çöz: grafiği ve kökleri', turev: "📐 Çöz: türevi adım adım", denklem: '🔎 Çöz: denklemin kökleri' }[a.tur] || '';
+        else onizleme.textContent = { fonksiyon: '📈 Çöz: grafiği ve kökleri', turev: "📐 Çöz: türevi adım adım", denklem: '🔎 Çöz: denklemin kökleri', limit: '➡️ Çöz: limiti adım adım', integral: '∫ Çöz: integrali adım adım' }[a.tur] || '';
       } catch (e) { onizleme.textContent = ''; }
     }
 
@@ -142,6 +142,8 @@
       else if (r.tur === 'fonksiyon') fonksiyonGoster(r);
       else if (r.tur === 'turev') turevGoster(r);
       else if (r.tur === 'denklem') denklemGoster(r);
+      else if (r.tur === 'limit') limitGoster(r);
+      else if (r.tur === 'integral') integralGoster(r);
       sonuc.scrollTop = 0;
       if (dar() && r.tur !== 'islem') tuslarAcik(false); // işlemde yeni işlem yazılır; grafik, türev ve denklemde sonuca yer aç
       if (ayar.cozuldu) ayar.cozuldu(r);
@@ -170,18 +172,71 @@
     }
 
     const RENK = (n) => getComputedStyle(kap).getPropertyValue('--hm-egri-' + n).trim() || ['#7b5cd6', '#e0558a', '#2f9e7e'][n - 1];
-    function grafikKur(yer, egriler, noktalar, dogrular, odak) {
+    const adimListe = (adimlar) => `<details class="hm-adimlar" open><summary>Adım adım</summary><ol>${adimlar.map((a) => `<li><span class="hm-kural">${esc(a.kural)}</span>${kutu(a.tex)}</li>`).join('')}</ol></details>`;
+    const limTex = (v) => (!isFinite(v) ? (v > 0 ? '\\infty' : '-\\infty') : (M().tamBicimE(v) ? M().tamBicimE(v).tex : sayiTex(v)));
+    function limitGoster(r) {
+      const L = r.limit, a = r.nokta, f = M().derle(r.ifade, r.degisken);
+      const aTex = !isFinite(a) ? (a > 0 ? '\\infty' : '-\\infty') : (M().tamBicimE(a) ? M().tamBicimE(a).tex : sayiTex(a));
+      const bas = '\\lim_{' + (r.degisken || 'x') + '\\to ' + aTex + (r.yon > 0 ? '^{+}' : r.yon < 0 ? '^{-}' : '') + '}' + r.fonksiyonTex;
+      sonuc.innerHTML = `
+        <div class="hm-kart">
+          <div class="hm-baslik">${kutu(bas)}</div>
+          <div class="hm-esittir">${L.yok ? '<p class="hm-buyuk-yazi">Limit yoktur</p>' : kutu('=' + limTex(L.deger), 'buyuk vurgu')}</div>
+          ${L.yok ? `<p class="hm-mini">Sağdan ${esc(isFinite(L.sag) ? sayi(L.sag) : (L.sag > 0 ? '∞' : '−∞'))}, soldan ${esc(isFinite(L.sol) ? sayi(L.sol) : (L.sol > 0 ? '∞' : '−∞'))}: iki yandan farklı değerlere gidiyor.</p>` : (L.tam && isFinite(L.deger) && !Number.isInteger(L.deger) ? `<div class="hm-yaklasik">≈ ${esc(sayi(L.deger))}</div>` : '')}
+          ${adimListe(L.adimlar)}
+          <div class="hm-grafik-yer"></div>
+          <p class="hm-mini">${isFinite(a) ? 'Grafikte x = ' + esc(sayi(a)) + ' noktasına iki yandan yaklaşıldığında değerin nereye gittiği görülür.' : 'x büyüdükçe grafiğin yaklaştığı değer.'}</p>
+        </div>`;
+      const noktalar = isFinite(a) && isFinite(L.deger) ? [{ x: a, y: L.deger, renk: RENK(2), bos: true, etiket: 'limit ' + sayi(L.deger) }] : [];
+      const odak = isFinite(a) ? [{ x: a - 3, y: f(a - 3) }, { x: a + 3, y: f(a + 3) }, ...noktalar] : [{ x: 0, y: f(0.5) }, { x: 12, y: f(12) }];
+      const dogrular = isFinite(L.deger) && !isFinite(a) ? [{ f: () => L.deger, renk: RENK(2), kesikli: true }] : [];
+      grafikKur(sonuc.querySelector('.hm-grafik-yer'), [{ f, renk: RENK(1) }], noktalar, dogrular, odak);
+    }
+    function integralGoster(r) {
+      const f = M().derle(r.ifade, r.degisken);
+      if (r.belirli) {
+        const B = r.belirli, a = r.alt, b = r.ust;
+        const deg = B.tam ? B.tam.tex : sayiTex(B.deger);
+        let alan = null;
+        try { alan = M().alan(r.ifade, a, b, r.degisken); } catch (e) { /* alan hesaplanamadı */ }
+        sonuc.innerHTML = `
+          <div class="hm-kart">
+            <div class="hm-baslik">${kutu('\\int_{' + sayiTex(a) + '}^{' + sayiTex(b) + '}' + r.fonksiyonTex + '\\,d' + (r.degisken || 'x'))}</div>
+            <div class="hm-esittir">${kutu('=' + deg, 'buyuk vurgu')}</div>
+            ${B.tam && !Number.isInteger(B.deger) ? `<div class="hm-yaklasik">≈ ${esc(sayi(B.deger))}</div>` : ''}
+            ${adimListe(B.adimlar)}
+            <div class="hm-grafik-yer"></div>
+            ${alan !== null && Math.abs(alan - Math.abs(B.deger)) > 1e-9 ? `<p class="hm-mini">Eğri ile x ekseni arasındaki toplam alan ≈ <b>${esc(sayi(alan))}</b> (x ekseninin altında kalan kısım integralde eksi sayılır).</p>` : '<p class="hm-mini">Taralı bölge: eğri ile x ekseni arasında kalan alan.</p>'}
+          </div>`;
+        const ornek = Array.from({ length: 9 }, (_, i) => a + (b - a) * i / 8).map((x) => ({ x, y: f(x) }));
+        const g = grafikKur(sonuc.querySelector('.hm-grafik-yer'), [{ f, renk: RENK(1) }], [], [], [...ornek, { x: a, y: 0 }], { dar: true });
+        g.ayarla({ alanlar: [{ f, a, b, renk: RENK(1) }] });
+        return;
+      }
+      const I = r.integral, F = M().derle(I.ifade, r.degisken);
+      sonuc.innerHTML = `
+        <div class="hm-kart">
+          <div class="hm-baslik">${kutu('\\int ' + r.fonksiyonTex + '\\,d' + (r.degisken || 'x'))}</div>
+          <div class="hm-esittir">${kutu('=' + I.tex, 'buyuk vurgu')}</div>
+          ${adimListe(I.adimlar)}
+          <div class="hm-lejant"><span style="--r:var(--hm-egri-1)">f(x)</span><span style="--r:var(--hm-egri-2)">F(x) (C = 0)</span></div>
+          <div class="hm-grafik-yer"></div>
+          <p class="hm-mini">C sabittir: F(x) + C'nin her biri aynı f(x)'in integralidir (grafikte yukarı-aşağı kaydırılmış hâlleri).</p>
+        </div>`;
+      grafikKur(sonuc.querySelector('.hm-grafik-yer'), [{ f, renk: RENK(1) }, { f: F, renk: RENK(2) }], [], [], [{ x: -3, y: f(-3) }, { x: 3, y: f(3) }]);
+    }
+    function grafikKur(yer, egriler, noktalar, dogrular, odak, secenek) {
       yer.innerHTML = `<div class="hm-grafik"><canvas aria-label="Grafik"></canvas><div class="hm-grafik-tuslar"><button type="button" data-z="0.7" aria-label="Yakınlaştır">＋</button><button type="button" data-z="1.43" aria-label="Uzaklaştır">－</button><button type="button" data-z="0" aria-label="Sığdır">⤢</button></div><div class="hm-iz"></div></div>`;
       const izYer = yer.querySelector('.hm-iz');
       const tuval = yer.querySelector('canvas');
       const g = new kok.HesapGrafik(tuval, {
         izlendi: (n) => { izYer.textContent = n ? `x = ${sayi(n.x)}   y = ${sayi(n.y)}` : ''; },
-        ciftDokunus: () => g.sigdir(odak),
+        ciftDokunus: () => g.sigdir(odak, secenek),
       });
       g.ayarla({ egriler, noktalar, dogrular });
       tuval._grafik = g;
-      requestAnimationFrame(() => { g._boyut(); g.sigdir(odak); });
-      yer.querySelectorAll('[data-z]').forEach((b) => b.addEventListener('click', () => { const z = +b.dataset.z; if (z) g.yakinlastir(z); else g.sigdir(odak); }));
+      requestAnimationFrame(() => { g._boyut(); g.sigdir(odak, secenek); });
+      yer.querySelectorAll('[data-z]').forEach((b) => b.addEventListener('click', () => { const z = +b.dataset.z; if (z) g.yakinlastir(z); else g.sigdir(odak, secenek); }));
       return g;
     }
     const nokta = (x, y) => `(${sayi(x)} ; ${sayi(y)})`;

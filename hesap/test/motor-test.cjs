@@ -86,6 +86,11 @@ for (const l of ['\\frac{d}{dx}\\left(x^{3}\\right)', "f'(x)=x^{3}", "y'=x^{3}",
   const r5 = M.coz('3+4=?');
   ok(r5.tur === 'islem' && r5.islem.deger === 7, '3+4=? işlem');
 }
+// yazım: eksi sayıyla çarpım çıkarma gibi görünmemeli
+for (const [e, istenmeyen, beklenen] of [['x^3*(-640)', /x\}\^\{3\}-640/, /-640\{ ?x\}\^\{3\}/], ['x^3*-640/3', /\}\^\{3\}\\cdot-/, /-640/], ['(x+1)*(-2)', /x\+1\\right\)-2|1-2/, /-2|\\cdot\\left\(-2/]]) {
+  const t = M.tex(e);
+  ok(!istenmeyen.test(t) && beklenen.test(t), 'yazım ' + e + ' → ' + t);
+}
 // 5) gerçek okuyucunun (Texo) çıktıları: GitHub'daki okuyucu denemesinden birebir
 const okunan = [
   ['{ \\frac { 3 } { 4 } } + { \\frac { 1 } { 2 } }', 'islem', 1.25],

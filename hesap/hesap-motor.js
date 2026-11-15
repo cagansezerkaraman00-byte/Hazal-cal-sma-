@@ -228,8 +228,48 @@
 
   // ---------------------------------------------------------------- ne yazıldı?
   // Dönüş: { tur: 'islem'|'fonksiyon'|'turev'|'denklem', ifade (math.js), ad?, sol?, sag? }
+  // süslü parantez eşi
+  function grupSonu(s, i) { let d = 0; for (let j = i; j < s.length; j++) { if (s[j] === '\\') { j++; continue; } if (s[j] === '{') d++; else if (s[j] === '}' && --d === 0) return j; } return -1; }
+  function grupOku(s, i) { // i'deki {…} ya da tek işaret; [içerik, sonraki konum]
+    while (s[i] === ' ') i++;
+    if (s[i] === '{') { const j = grupSonu(s, i); return [s.slice(i + 1, j), j + 1]; }
+    if (s[i] === '\\') { const m = s.slice(i).match(/^\\[A-Za-z]+/); return [m[0], i + m[0].length]; }
+    if (s[i] === '-' || s[i] === '+') { const [g, j] = grupOku(s, i + 1); return [s[i] + g, j]; }
+    return [s[i], i + 1];
+  }
+  function limitAyikla(s) {
+    const m = s.match(/^\\lim(?:\\limits)?\s*_\s*/);
+    if (!m) return null;
+    const [alt, i] = grupOku(s, m[0].length);
+    const ok = alt.split(/\\to|\\rightarrow|\\longrightarrow|→/);
+    if (ok.length !== 2) return null;
+    const degisken = ok[0].replace(/[\s{}]/g, '') || 'x';
+    let hedef = ok[1].trim(), yon = 0;
+    const ym = hedef.match(/\^\s*\{?\s*([+-])\s*\}?\s*$/);
+    if (ym) { yon = ym[1] === '+' ? 1 : -1; hedef = hedef.slice(0, ym.index); }
+    return { degisken, nokta: sayiDegeri(hedef), yon, govde: s.slice(i).trim() };
+  }
+  function integralAyikla(s) {
+    const m = s.match(/^\\int(?:\\limits)?\s*/);
+    if (!m) return null;
+    let i = m[0].length, alt = null, ust = null;
+    for (let k = 0; k < 2; k++) {
+      while (s[i] === ' ') i++;
+      if (s[i] === '_') [alt, i] = grupOku(s, i + 1);
+      else if (s[i] === '^') [ust, i] = grupOku(s, i + 1);
+    }
+    let govde = s.slice(i);
+    const dm = govde.match(/(?:\\[,;!: ]|\s)*(?:\\mathrm\s*\{\s*d\s*\}|\\operatorname\s*\{\s*d\s*\}|\\differentialD|\\mathrm\s*d|d)\s*\{?\s*([a-z])\s*\}?\s*$/);
+    if (!dm) return null;
+    govde = govde.slice(0, dm.index).trim().replace(/^\\left\s*\(([\s\S]*)\\right\s*\)$/, '$1');
+    return { degisken: dm[1], alt: alt === null ? null : sayiDegeri(alt), ust: ust === null ? null : sayiDegeri(ust), govde };
+  }
   function anla(latex) {
     let s = String(latex || '').trim().replace(/\\(?:,|;|!|quad)/g, ' ');
+    const lim = limitAyikla(s);
+    if (lim) return { tur: 'limit', ifade: latexCevir(lim.govde), degisken: lim.degisken, nokta: lim.nokta, yon: lim.yon };
+    const int = integralAyikla(s);
+    if (int) return { tur: 'integral', ifade: latexCevir(int.govde), degisken: int.degisken, alt: int.alt, ust: int.ust };
     s = s.replace(/\\(?:neq|leq|geq|le|ge|lt|gt)\b.*$/, ''); // eşitsizlikler: şimdilik sol tarafı
     const parca = s.split(/=(?![^{]*})/); // süslü parantez içindeki = değil
     if (parca.length >= 2) {
@@ -347,7 +387,21 @@
   const sade = (n) => { try { return math.simplify(n); } catch (e) { return n; } };
   function guzel(n, o) {
     if (n.isOperatorNode && n.fn === 'multiply' && n.args.length === 2) {
-      const [a, b] = n.args, ta = a.toTex(o), tb = b.toTex(o);
+      const ac = (k) => (k.isParenthesisNode ? ac(k.content) : k);
+      const a = ac(n.args[0]), b = ac(n.args[1]), ta = a.toTex(o), tb = b.toTex(o);
+      // eksi sayıyla çarpım hiçbir zaman yan yana yazılmaz (x³·(−640) "x³−640" gibi çıkarma sanılmasın)
+      const eksiSayi = (k) => (k.isConstantNode && typeof k.value === 'number' && k.value < 0) || (k.isOperatorNode && k.fn === 'unaryMinus' && ac(k.args[0]).isConstantNode);
+      const toplamMi = (k) => k.isOperatorNode && (k.fn === 'add' || k.fn === 'subtract');
+      if (eksiSayi(b) && !eksiSayi(a) && !a.isConstantNode && !(a.isOperatorNode && (toplamMi(a) || a.fn === 'divide'))) {
+        const mutlak = b.isConstantNode ? String(-b.value) : ac(b.args[0]).toTex(o);
+        return '-' + (mutlak === '1' ? '' : mutlak) + ta;
+      }
+      if (/^-/.test(tb)) return (toplamMi(a) ? '\\left(' + ta + '\\right)' : ta) + '\\cdot\\left(' + tb + '\\right)';
+      const eksiBir = (k) => (k.isConstantNode && k.value === -1) || (k.isOperatorNode && k.fn === 'unaryMinus' && k.args[0].isConstantNode && k.args[0].value === 1);
+      if (eksiBir(b)) return '-' + (a.isOperatorNode && (a.fn === 'add' || a.fn === 'subtract') ? '\\left(' + ta + '\\right)' : ta);
+      if (eksiBir(a)) return '-' + (b.isOperatorNode && (b.fn === 'add' || b.fn === 'subtract') ? '\\left(' + tb + '\\right)' : tb);
+      if (b.isConstantNode && !a.isConstantNode && !(a.isOperatorNode && (a.fn === 'add' || a.fn === 'subtract' || a.fn === 'divide'))) return tb + (/^[0-9.]+$/.test(tb) && /^[0-9]/.test(ta) ? '\\cdot ' : '') + ta;
+      if (b.isOperatorNode && b.fn === 'unaryMinus' && b.args[0].isConstantNode && !a.isConstantNode && !(a.isOperatorNode && (a.fn === 'add' || a.fn === 'subtract' || a.fn === 'divide'))) return '-' + b.args[0].toTex(o) + ta; // x³·(−640) → −640x³
       const sayiBasliyor = /^[\d.{]*\d/.test(tb.replace(/^\{+/, '')) || b.isConstantNode || (b.isOperatorNode && b.fn === 'unaryMinus');
       const solSayi = a.isConstantNode || (a.isOperatorNode && a.fn === 'unaryMinus' && a.args[0].isConstantNode);
       const sagHarf = b.isSymbolNode || b.isFunctionNode || (b.isOperatorNode && b.fn === 'pow' && (b.args[0].isSymbolNode || b.args[0].isFunctionNode)) || b.isParenthesisNode;
@@ -484,13 +538,46 @@
     const y0 = f(0);
     return { kokler: k, tepeler: tepeler.filter((t) => t.tur !== 'dönüm'), yKesen: isFinite(y0) ? y0 : null, turev: tt };
   }
+  // x'e göre polinomsa katsayılar [a0, a1, …] (en yüksek derecedeki sıfırlar atılır); değilse null.
+  // math.rationalize kullanılmaz: üs büyüdükçe katlanarak yavaşlıyor ((x−4)⁵ 20 saniyeden uzun sürdü).
+  function polinomAc(dugum, x = 'x') {
+    const topla = (p, q) => { const o = new Array(Math.max(p.length, q.length)).fill(0); p.forEach((v, i) => { o[i] += v; }); q.forEach((v, i) => { o[i] += v; }); return o; };
+    const carp = (p, q) => { const o = new Array(p.length + q.length - 1).fill(0); p.forEach((u, i) => q.forEach((v, j) => { o[i + j] += u * v; })); return o; };
+    const ac = (n) => {
+      if (n.isParenthesisNode) return ac(n.content);
+      if (n.isConstantNode) return typeof n.value === 'number' ? [n.value] : null;
+      if (n.isSymbolNode) return n.name === x ? [0, 1] : n.name === 'pi' ? [Math.PI] : n.name === 'e' ? [Math.E] : null;
+      if (n.isFunctionNode) { if (!n.filter((c) => c.isSymbolNode && c.name === x).length) { const v = sabitDeger(n); return isFinite(v) ? [v] : null; } return null; }
+      if (!n.isOperatorNode) return null;
+      const a = n.args[0] && ac(n.args[0]);
+      if (!a) return null;
+      if (n.fn === 'unaryMinus') return a.map((v) => -v);
+      if (n.fn === 'unaryPlus') return a;
+      const b = ac(n.args[1]);
+      if (!b) return null;
+      if (n.fn === 'add') return topla(a, b);
+      if (n.fn === 'subtract') return topla(a, b.map((v) => -v));
+      if (n.fn === 'multiply') return carp(a, b);
+      if (n.fn === 'divide') return b.length === 1 && b[0] !== 0 ? a.map((v) => v / b[0]) : null;
+      if (n.fn === 'pow') {
+        if (b.length !== 1 || !Number.isInteger(b[0]) || b[0] < 0 || b[0] * (a.length - 1) > 40) return null;
+        let o = [1];
+        for (let k = 0; k < b[0]; k++) o = carp(o, a);
+        return o;
+      }
+      return null;
+    };
+    try {
+      const k = ac(typeof dugum === 'string' ? math.parse(dugum) : dugum);
+      if (!k) return null;
+      while (k.length > 1 && Math.abs(k[k.length - 1]) < 1e-12) k.pop();
+      return k.map((v) => (Math.abs(v) < 1e-12 ? 0 : v));
+    } catch (e) { return null; }
+  }
   // denklem: f(x) = 0 köklerinin hepsi; 2. dereceye kadar kesin yol (Δ)
   function denklem(ifade, x = 'x') {
-    let polinom = null;
-    try {
-      const r = math.rationalize(ifade, {}, true);
-      if (r.variables && r.variables.length === 1 && r.coefficients && r.coefficients.length <= 3 && r.denominator === null) polinom = r.coefficients.map(Number);
-    } catch (e) { /* polinom değil */ }
+    let polinom = polinomAc(ifade, x);
+    if (polinom && polinom.length > 3) polinom = null;
     if (polinom && polinom.length === 3 && polinom[2] !== 0) {
       const [c, b, a] = polinom, D = b * b - 4 * a * c;
       const kokS = D < 0 ? [] : D === 0 ? [-b / (2 * a)] : [(-b - Math.sqrt(D)) / (2 * a), (-b + Math.sqrt(D)) / (2 * a)].sort((p, q) => p - q);
@@ -501,6 +588,360 @@
     return { yol: 'sayisal', kokler: kokler(f, -100, 100, 20000) };
   }
 
+  // ---------------------------------------------------------------- limit
+  const sembol = (ad) => new math.SymbolNode(ad);
+  function sayiDegeri(latexParca) { // limitin gittiği nokta, integral sınırları: 2, -1, \frac{\pi}{2}, \infty
+    const t = String(latexParca).replace(/\s+/g, '');
+    if (/^\+?\\infty$/.test(t) || t === '∞' || t === '+∞') return Infinity;
+    if (/^-\\infty$/.test(t) || t === '-∞') return -Infinity;
+    return islem(latexCevir(latexParca), { derece: false }).deger;
+  }
+  // limit: önce yerine koyma; 0/0 ya da ∞/∞ belirsizliğinde L'Hôpital; sonsuzda pay/payda derecesi; kalan durumlarda sayısal
+  function limit(ifade, x = 'x', a = 0, yon = 0) {
+    const adimlar = [];
+    const f = derle(ifade, x);
+    const nTex = tex(math.parse(ifade));
+    const aTex = !isFinite(a) ? (a > 0 ? '\\infty' : '-\\infty') : (tamBicim(a) ? tamBicim(a).tex : sayiTex(a));
+    const sonuc = (deger, ek = {}) => ({ deger, tam: isFinite(deger) ? tamBicimE(deger) : null, adimlar, ...ek });
+    // 1) sonsuzda polinom bölümü: derece karşılaştırması
+    if (!isFinite(a)) {
+      try {
+        let kok = math.parse(ifade);
+        while (kok.isParenthesisNode) kok = kok.content;
+        const bolum = kok.isOperatorNode && kok.fn === 'divide';
+        const pay = polinomAc(bolum ? kok.args[0] : kok, x), payda = bolum ? polinomAc(kok.args[1], x) : [1];
+        if (pay && payda && (pay.length > 1 || payda.length > 1)) {
+          const dp = pay.length - 1, dq = payda.length - 1, ap = pay[dp], aq = payda[dq];
+          let deger;
+          if (dp < dq) deger = 0;
+          else if (dp === dq) deger = ap / aq;
+          else deger = Math.sign(ap / aq) * (a > 0 || (dp - dq) % 2 === 0 ? 1 : -1) * Infinity;
+          adimlar.push({ kural: 'Sonsuzda limit: pay ve paydanın en büyük dereceli terimlerine bakılır (pay ' + dp + '. derece, payda ' + dq + '. derece)', tex: '\\lim_{' + x + '\\to ' + aTex + '}' + nTex + '=' + (isFinite(deger) ? (tamBicimE(deger) ? tamBicimE(deger).tex : sayiTex(deger)) : (deger > 0 ? '\\infty' : '-\\infty')) });
+          return sonuc(deger);
+        }
+      } catch (e) { /* polinom bölümü değil */ }
+    }
+    // 2) yerine koyma (sürekli noktada)
+    if (isFinite(a) && yon === 0) {
+      const v = f(a);
+      if (isFinite(v) && Math.abs(f(a + 1e-7) - v) < 1e-4 * Math.max(1, Math.abs(v)) && Math.abs(f(a - 1e-7) - v) < 1e-4 * Math.max(1, Math.abs(v))) {
+        adimlar.push({ kural: 'Yerine koyma: fonksiyon bu noktada tanımlı ve sürekli', tex: '\\lim_{' + x + '\\to ' + aTex + '}' + nTex + '=' + (tamBicimE(v) ? tamBicimE(v).tex : sayiTex(v)) });
+        return sonuc(v);
+      }
+    }
+    // 3) 0/0 belirsizliği: L'Hôpital (pay ve paydanın türevi)
+    let n = math.parse(ifade);
+    while (n.isParenthesisNode) n = n.content;
+    if (isFinite(a) && n.isOperatorNode && n.fn === 'divide') {
+      let pay = n.args[0], payda = n.args[1];
+      for (let k = 0; k < 4; k++) {
+        const pv = derle(pay.toString(), x)(a), qv = derle(payda.toString(), x)(a);
+        if (Math.abs(pv) < 1e-10 && Math.abs(qv) < 1e-10) {
+          const p2 = math.parse(turev(pay.toString(), x).ifade), q2 = math.parse(turev(payda.toString(), x).ifade);
+          adimlar.push({ kural: (k ? 'Hâlâ ' : '') + "0/0 belirsizliği: L'Hôpital kuralı — pay ve paydanın ayrı ayrı türevi alınır", tex: '\\lim_{' + x + '\\to ' + aTex + '}\\frac{' + tex(pay) + '}{' + tex(payda) + '}=\\lim_{' + x + '\\to ' + aTex + '}\\frac{' + tex(p2) + '}{' + tex(q2) + '}' });
+          pay = p2; payda = q2; continue;
+        }
+        if (k > 0 && isFinite(pv) && isFinite(qv) && Math.abs(qv) > 1e-10) {
+          const v = pv / qv;
+          adimlar.push({ kural: 'Belirsizlik kalktı: yerine koyma', tex: '=\\frac{' + sayiTex(pv) + '}{' + sayiTex(qv) + '}=' + (tamBicimE(v) ? tamBicimE(v).tex : sayiTex(v)) });
+          if (yon === 0 || true) return sonuc(v);
+        }
+        break;
+      }
+    }
+    // 4) sayısal: noktaya iki yandan yaklaşılır (Richardson ile hızlandırılır); sonsuzda x = 1/t
+    const g = isFinite(a) ? f : (t) => f(1 / t);
+    const nokta = isFinite(a) ? a : 0;
+    const taraf = (s) => {
+      const d = (h) => g(nokta + s * h);
+      const h0 = isFinite(a) ? 1e-3 : 1e-4;
+      const v1 = d(h0), v2 = d(h0 / 2), v3 = d(h0 / 4);
+      // sonsuza gidiş: h her 100 kat küçüldüğünde değer de belirgin büyüyor ve işareti aynı kalıyor
+      const dizi = [1e-2, 1e-4, 1e-6, 1e-8].map(d);
+      if (dizi.every(isFinite) || !isFinite(dizi[3])) {
+        const buyuyor = dizi.slice(1).every((v, k) => !isFinite(v) || (Math.abs(v) > Math.abs(dizi[k]) * 5 && Math.sign(v) === Math.sign(dizi[0])));
+        if (buyuyor && (Math.abs(dizi[3]) > 1e6 || !isFinite(dizi[3]))) return Math.sign(dizi[2] || dizi[3]) * Infinity;
+      }
+      const R1 = 2 * v2 - v1, R2 = 2 * v3 - v2, L = (4 * R2 - R1) / 3;
+      return Math.abs(L) < 1e-9 ? 0 : L;
+    };
+    const sag = (yon >= 0 || !isFinite(a)) ? taraf(isFinite(a) ? 1 : (a > 0 ? 1 : -1)) : null;
+    const sol = (yon <= 0 && isFinite(a)) ? taraf(-1) : null;
+    const yakinMi = (p, q) => p === q || Math.abs(p - q) < 1e-5 * Math.max(1, Math.abs(p), Math.abs(q));
+    if (sag !== null && sol !== null && !yakinMi(sag, sol)) {
+      adimlar.push({ kural: 'Sağdan ve soldan limitler farklı: limit yoktur', tex: '\\lim_{' + x + '\\to ' + aTex + '^{+}}=' + limTex(sag) + ',\\quad\\lim_{' + x + '\\to ' + aTex + '^{-}}=' + limTex(sol) });
+      return sonuc(NaN, { yok: true, sag, sol });
+    }
+    const v = sag !== null ? sag : sol;
+    adimlar.push({ kural: (isFinite(a) ? 'Sağdan ve soldan yaklaşıldı' : 'x büyüdükçe değerlere bakıldı') + ' (sayısal yaklaşım)', tex: '\\lim_{' + x + '\\to ' + aTex + (yon > 0 ? '^{+}' : yon < 0 ? '^{-}' : '') + '}' + nTex + '=' + limTex(v) });
+    return sonuc(v);
+  }
+  const limTex = (v) => (!isFinite(v) ? (v > 0 ? '\\infty' : '-\\infty') : (tamBicimE(v) ? tamBicimE(v).tex : sayiTex(v)));
+  function sayiTex(x) { return sayiMetin(x).replace(/−/g, '-').replace(/,/g, '{,}').replace(/ × 10\^(-?\d+)/, '\\times10^{$1}'); }
+  // tam biçim, e (Euler sayısı) katlarıyla birlikte
+  function tamBicimE(x) {
+    if (!isFinite(x)) return null;
+    if (Number.isInteger(yuvarla(x))) return { tex: String(yuvarla(x)), metin: String(yuvarla(x)) };
+    const t = tamBicim(x);
+    if (t) return t;
+    for (const [ad, deger] of [['e', Math.E], ['e^{2}', Math.E * Math.E], ['\\ln 2', Math.LN2], ['\\ln 3', Math.log(3)], ['\\sqrt{e}', Math.sqrt(Math.E)]]) {
+      const k = kesirBul(x / deger, 24);
+      if (k && Math.abs(k.p) < 50) {
+        const isaret = k.p < 0 ? '-' : '', ust = (Math.abs(k.p) === 1 ? '' : Math.abs(k.p)) + ad;
+        return { tex: isaret + (k.q === 1 ? ust : '\\frac{' + ust + '}{' + k.q + '}'), metin: isaret + ust + (k.q === 1 ? '' : '/' + k.q) };
+      }
+      const k2 = kesirBul(x * deger, 24); // 1/e gibi
+      if (ad === 'e' && k2 && Math.abs(k2.p) < 50) return { tex: (k2.p < 0 ? '-' : '') + '\\frac{' + Math.abs(k2.p) + '}{' + (k2.q === 1 ? '' : k2.q) + 'e}', metin: k2.p + '/' + (k2.q === 1 ? '' : k2.q) + 'e' };
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------- integral
+  const sayiN = (v) => (v < 0 ? op('-', 'unaryMinus', [N(-v)]) : N(v));
+  const polinomKatsayi = (u, x) => polinomAc(u, x); // u x'e göre polinomsa katsayılar [a0, a1, …]
+  function polinomDugum(k, x) { // [a0, a1, …] → a_n x^n + … + a0
+    let n = null;
+    for (let i = k.length - 1; i >= 0; i--) {
+      const a = yuvarla(k[i]); if (!a) continue;
+      const kuvvet = i === 0 ? null : i === 1 ? sembol(x) : op('^', 'pow', [sembol(x), N(i)]);
+      const terim = kuvvet ? (Math.abs(a) === 1 ? kuvvet : op('*', 'multiply', [N(Math.abs(a)), kuvvet])) : N(Math.abs(a));
+      n = n === null ? (a < 0 ? op('-', 'unaryMinus', [terim]) : terim) : op(a < 0 ? '-' : '+', a < 0 ? 'subtract' : 'add', [n, terim]);
+    }
+    return n || N(0);
+  }
+  function polinomBol(p, q) { // katsayılar küçükten büyüğe; [bölüm, kalan]
+    const r = p.slice(), d = q.length - 1, out = new Array(Math.max(1, p.length - d)).fill(0);
+    for (let i = p.length - 1; i >= d; i--) { const c = r[i] / q[d]; out[i - d] = c; for (let j = 0; j <= d; j++) r[i - d + j] -= c * q[j]; }
+    return [out, r.slice(0, d)];
+  }
+  const lineerMi = (u, x) => { const k = polinomKatsayi(u, x); return k && k.length === 2 && k[1] !== 0 ? { a: k[1], b: k[0] } : null; };
+  const sabitDeger = (n) => { try { return n.evaluate({}); } catch (e) { return NaN; } };
+  function integral(ifade, x = 'x') {
+    const adimlar = [];
+    const kayit = (kural, n, sonuc) => adimlar.push({ kural, tex: '\\int ' + tex(n) + '\\,d' + x + '=' + tex(sade(sonuc)) });
+    const X = sembol(x);
+    function I(n, derin = 0) {
+      if (derin > 12) throw new Error('çok derin');
+      if (n.isParenthesisNode) return I(n.content, derin);
+      if (sabitMi(n, x)) { const s = op('*', 'multiply', [paren(n), X]); kayit('Sabitin integrali: ∫c dx = c·x', n, s); return s; }
+      if (n.isSymbolNode) { const s = op('/', 'divide', [op('^', 'pow', [X, N(2)]), N(2)]); kayit('Kuvvet kuralı: ∫xⁿ dx = xⁿ⁺¹/(n+1)', n, s); return s; }
+      // çarpım ya da bölümde önce değişken değiştirme dene: ∫x(x²+1)³ = (x²+1)⁴/8 (açmaktan kısa, YKS'nin beklediği)
+      if (n.isOperatorNode && (n.fn === 'multiply' || n.fn === 'divide') && !sabitMi(n.args[0], x) && !sabitMi(n.args[1], x)) {
+        const d0 = degisken(n, derin);
+        if (d0) return d0;
+      }
+      // polinom (çarpım ve üsler açılır): terim terim
+      const pk = polinomKatsayi(n, x);
+      const dogrusalKuvvet = n.isOperatorNode && n.fn === 'pow' && sabitMi(n.args[1], x) && lineerMi(n.args[0].isParenthesisNode ? n.args[0].content : n.args[0], x); // (x−4)⁵: açmadan kuvvet kuralı
+      if (pk && pk.length > 1 && !dogrusalKuvvet && !(n.isOperatorNode && (n.fn === 'add' || n.fn === 'subtract'))) {
+        const acik = polinomDugum(pk, x);
+        if (acik.toString() !== n.toString()) { adimlar.push({ kural: 'Polinom açılır, sonra terim terim integral alınır', tex: tex(n) + '=' + tex(acik) }); return I(acik, derin + 1); }
+      }
+      if (n.isOperatorNode) {
+        const [a, b] = n.args;
+        switch (n.fn) {
+          case 'unaryMinus': return op('-', 'unaryMinus', [paren(I(a, derin + 1))]);
+          case 'unaryPlus': return I(a, derin + 1);
+          case 'add': case 'subtract': { const s = op(n.op, n.fn, [I(a, derin + 1), I(b, derin + 1)]); kayit('Toplamın integrali: terimlerin integrali ayrı ayrı alınır', n, s); return s; }
+          case 'multiply': {
+            if (sabitMi(a, x)) { const s = op('*', 'multiply', [a, paren(I(b, derin + 1))]); kayit('Sabit çarpan integralin dışına çıkar', n, s); return s; }
+            if (sabitMi(b, x)) { const s = op('*', 'multiply', [b, paren(I(a, derin + 1))]); kayit('Sabit çarpan integralin dışına çıkar', n, s); return s; }
+            const d1 = degisken(n, derin); if (d1) return d1;
+            const k1 = kismi(n, a, b, derin) || kismi(n, b, a, derin); if (k1) return k1;
+            break;
+          }
+          case 'divide': {
+            if (sabitMi(b, x)) { const s = op('/', 'divide', [paren(I(a, derin + 1)), b]); kayit('Sabit payda integralin dışına çıkar', n, s); return s; }
+            const d1 = degisken(n, derin); if (d1) return d1;
+            if (sabitMi(a, x)) {
+              const c = a, u = b.isParenthesisNode ? b.content : b;
+              const L = lineerMi(u, x);
+              if (L) { const s = op('*', 'multiply', [c, op('/', 'divide', [fn('log', [fn('abs', [u])]), N(L.a)])]); kayit('∫ 1/(ax+b) dx = ln|ax+b| / a', n, s); return s; }
+              if (u.isOperatorNode && u.fn === 'pow' && sabitMi(u.args[1], x)) return I(op('*', 'multiply', [c, op('^', 'pow', [u.args[0], op('-', 'unaryMinus', [u.args[1]])])]), derin + 1);
+              if (u.isFunctionNode && u.fn.name === 'sqrt') return I(op('*', 'multiply', [c, op('^', 'pow', [u.args[0], N(-0.5)])]), derin + 1);
+              const pk2 = polinomKatsayi(u, x);
+              if (pk2 && pk2.length === 3 && pk2[1] === 0 && pk2[0] > 0 && pk2[2] > 0) { // c/(p x² + q) → arctan
+                const p = pk2[2], q = pk2[0], s = op('*', 'multiply', [op('/', 'divide', [c, fn('sqrt', [N(p * q)])]), fn('atan', [op('*', 'multiply', [fn('sqrt', [N(p / q)]), X])])]);
+                kayit('∫ 1/(1+x²) dx = arctan x', n, s); return s;
+              }
+              if (u.isFunctionNode && u.fn.name === 'cos' && false) break;
+            }
+            const pp = polinomKatsayi(a, x), pq = polinomKatsayi(b, x);
+            if (pp && pq && pq.length >= 2 && pp.length >= pq.length) { // polinom bölmesi: bölüm + kalan/bölen
+              const [bolum, kalan] = polinomBol(pp, pq);
+              const kalanVar = kalan.some((c) => Math.abs(c) > 1e-12);
+              const tekTerim = pq.slice(0, -1).every((c) => c === 0); // bölen c·xᵏ: her terim ayrı bölünür
+              let yeni;
+              if (tekTerim) {
+                const k = pq.length - 1, c = pq[k];
+                const terimler = pp.map((ai, i) => [ai / c, i - k]).filter(([ai]) => Math.abs(ai) > 1e-12);
+                yeni = terimler.map(([ai, us]) => op('*', 'multiply', [N(ai), us === 0 ? N(1) : op('^', 'pow', [X, N(us)])])).reduce((t, u) => op('+', 'add', [t, u]));
+              } else {
+                yeni = polinomDugum(bolum, x);
+                if (kalanVar) yeni = op('+', 'add', [yeni, op('/', 'divide', [polinomDugum(kalan, x), paren(polinomDugum(pq, x))])]);
+              }
+              adimlar.push({ kural: tekTerim ? 'Her terim paydaya ayrı ayrı bölünür' : 'Polinom bölmesi: bölüm + kalan / bölen', tex: tex(n) + '=' + tex(sade(yeni)) });
+              return I(sade(yeni), derin + 1);
+            }
+            break;
+          }
+          case 'pow': {
+            const taban = a.isParenthesisNode ? a.content : a, us = b.isParenthesisNode ? b.content : b;
+            if (sabitMi(us, x)) {
+              const L = taban.isSymbolNode && taban.name === x ? { a: 1, b: 0 } : lineerMi(taban, x);
+              const nv = sabitDeger(us);
+              if (L) {
+                if (Math.abs(nv + 1) < 1e-12) { const s = op('/', 'divide', [fn('log', [fn('abs', [taban])]), N(L.a)]); kayit(L.a === 1 && L.b === 0 ? '∫ 1/x dx = ln|x|' : '∫ 1/(ax+b) dx = ln|ax+b| / a', n, s); return s; }
+                const yeniUs = sade(op('+', 'add', [us, N(1)]));
+                const s = op('/', 'divide', [op('^', 'pow', [paren(taban), yeniUs]), op('*', 'multiply', [N(L.a), paren(yeniUs)])]);
+                kayit(L.a === 1 && L.b === 0 ? 'Kuvvet kuralı: ∫xⁿ dx = xⁿ⁺¹/(n+1)' : 'Kuvvet kuralı (doğrusal iç fonksiyon): ∫(ax+b)ⁿ dx = (ax+b)ⁿ⁺¹ / (a(n+1))', n, s); return s;
+              }
+              // sin²x, cos²x: yarım açı
+              if (nv === 2 && taban.isFunctionNode && (taban.fn.name === 'sin' || taban.fn.name === 'cos') && lineerMi(taban.args[0], x)) {
+                const u = taban.args[0], iki = op('*', 'multiply', [N(2), paren(u)]);
+                const yeni = op('/', 'divide', [op(taban.fn.name === 'sin' ? '-' : '+', taban.fn.name === 'sin' ? 'subtract' : 'add', [N(1), fn('cos', [iki])]), N(2)]);
+                adimlar.push({ kural: taban.fn.name === 'sin' ? 'Yarım açı: sin²u = (1 − cos 2u)/2' : 'Yarım açı: cos²u = (1 + cos 2u)/2', tex: tex(n) + '=' + tex(yeni) });
+                return I(yeni, derin + 1);
+              }
+            }
+            if (sabitMi(taban, x)) {
+              const L = lineerMi(us, x);
+              if (L) {
+                const e = taban.isSymbolNode && taban.name === 'e';
+                const s = e ? op('/', 'divide', [n, N(L.a)]) : op('/', 'divide', [n, op('*', 'multiply', [N(L.a), fn('log', [taban])])]);
+                kayit(e ? '∫ eᵃˣ⁺ᵇ dx = eᵃˣ⁺ᵇ / a' : '∫ cᵃˣ dx = cᵃˣ / (a·ln c)', n, s); return s;
+              }
+            }
+            const d1 = degisken(n, derin); if (d1) return d1;
+            break;
+          }
+        }
+      }
+      if (n.isFunctionNode) {
+        const ad = n.fn.name, u = n.args[0], L = u && (u.isSymbolNode && u.name === x ? { a: 1, b: 0 } : lineerMi(u, x));
+        if (L) {
+          const bol = (d) => (L.a === 1 ? d : op('/', 'divide', [d, N(L.a)]));
+          const tablo = {
+            sin: () => [op('-', 'unaryMinus', [bol(fn('cos', [u]))]), '∫ sin u du = −cos u'],
+            cos: () => [bol(fn('sin', [u])), '∫ cos u du = sin u'],
+            exp: () => [bol(fn('exp', [u])), '∫ eᵘ du = eᵘ'],
+            tan: () => [op('-', 'unaryMinus', [bol(fn('log', [fn('abs', [fn('cos', [u])])]))]), '∫ tan u du = −ln|cos u|'],
+            cot: () => [bol(fn('log', [fn('abs', [fn('sin', [u])])])), '∫ cot u du = ln|sin u|'],
+            sqrt: () => [op('/', 'divide', [op('*', 'multiply', [N(2), op('^', 'pow', [paren(u), op('/', 'divide', [N(3), N(2)])])]), N(3 * L.a)]), '∫ √u du = (2/3)·u^{3/2}'],
+            log: () => n.args[1] ? null : [op('/', 'divide', [op('-', 'subtract', [op('*', 'multiply', [paren(u), fn('log', [u])]), paren(u)]), N(L.a)]), "∫ ln u du = u·ln u − u (kısmi integral)"],
+          };
+          const t = tablo[ad] && tablo[ad]();
+          if (t) { kayit(L.a === 1 && L.b === 0 ? t[1] : t[1] + ' (doğrusal iç fonksiyon: a\'ya bölünür)', n, t[0]); return t[0]; }
+        }
+        if (ad === 'sqrt') return I(op('^', 'pow', [paren(u), N(0.5)]), derin + 1);
+        if (ad === 'nthRoot') return I(op('^', 'pow', [paren(u), op('/', 'divide', [N(1), n.args[1] || N(2)])]), derin + 1);
+        const d1 = degisken(n, derin); if (d1) return d1;
+      }
+      throw new Error('Bu integrali henüz adım adım çözemiyorum');
+    }
+    // değişken değiştirme: integrand = k · h(g(x)) · g'(x) ise ∫ = k · H(g(x))
+    function degisken(n, derin) {
+      const adaylar = [];
+      n.traverse((c) => {
+        if (c === n || sabitMi(c, x) || c.isSymbolNode) return;
+        if (c.isFunctionNode && c.args[0] && !lineerMi(c.args[0], x) && !(c.args[0].isSymbolNode)) adaylar.push(c.args[0].isParenthesisNode ? c.args[0].content : c.args[0]);
+        if (c.isOperatorNode && c.fn === 'pow' && !sabitMi(c.args[0], x) && sabitMi(c.args[1], x) && !lineerMi(c.args[0], x)) adaylar.push(c.args[0].isParenthesisNode ? c.args[0].content : c.args[0]);
+        if (c.isOperatorNode && c.fn === 'pow' && sabitMi(c.args[0], x) && !lineerMi(c.args[1], x)) adaylar.push(c.args[1].isParenthesisNode ? c.args[1].content : c.args[1]);
+        if (c.isFunctionNode && c.args[0] && !c.args[0].isSymbolNode && !lineerMi(c.args[0], x)) adaylar.push(c);
+      });
+      if (n.isOperatorNode && n.fn === 'divide' && !sabitMi(n.args[1], x)) adaylar.push(n.args[1].isParenthesisNode ? n.args[1].content : n.args[1]);
+      if (n.isOperatorNode && n.fn === 'divide') { const pd = n.args[1].isParenthesisNode ? n.args[1].content : n.args[1]; if (pd.isOperatorNode && pd.fn === 'pow') adaylar.push(pd.args[0].isParenthesisNode ? pd.args[0].content : pd.args[0]); if (pd.isFunctionNode) adaylar.push(pd.args[0]); }
+      n.traverse((c) => { if (c.isFunctionNode && ['sin', 'cos', 'log', 'exp', 'sqrt'].includes(c.fn.name) && c !== n) adaylar.push(c); });
+      const fx = derle(n.toString(), x);
+      const noktalar = [0.37, 0.83, 1.21, 1.67, 2.3];
+      for (const g of adaylar) {
+        let dg;
+        try { dg = math.parse(turev(g.toString(), x).ifade); } catch (e) { continue; }
+        const dgf = derle(dg.toString(), x), gf = derle(g.toString(), x);
+        // n = h(g) · g' → h(u) = n / g' ; u yerine koyunca x kalmamalı: h(u) değerleri g'ye göre tutarlı mı
+        const U = sembol('u');
+        const hIfade = math.simplify(op('/', 'divide', [paren(n), paren(dg)]));
+        // h(u): hIfade içinde g'yi u ile değiştir
+        const gStr = math.simplify(g).toString();
+        const hU = hIfade.transform((c) => (c.isNode && !c.isSymbolNode && math.simplify(c).toString() === gStr ? U : c));
+        if (!sabitMi(hU, x)) {
+          // g = x'in kuvveti gibi durumlar: x yerine u'dan çözülebilir mi? (yalnızca h(u) sabit ya da u'nun fonksiyonu olmalı)
+          // sayısal denetim: n(x) / g'(x) değeri yalnızca g(x)'e bağlı mı (aynı g değerinde aynı mı) — basit tutulur
+          continue;
+        }
+        // doğrulama: h(g(x))·g'(x) = n(x)
+        const hf = (v) => { try { return math.evaluate(hU.toString(), { u: v }); } catch (e) { return NaN; } };
+        if (!noktalar.every((t) => { const a = fx(t), b = hf(gf(t)) * dgf(t); return isFinite(a) && isFinite(b) && Math.abs(a - b) < 1e-7 * Math.max(1, Math.abs(a)); })) continue;
+        let H;
+        try { H = integral(hU.toString(), 'u'); } catch (e) { continue; }
+        const sonucU = math.parse(H.ifade);
+        const s = sonucU.transform((c) => (c.isSymbolNode && c.name === 'u' ? paren(g) : c));
+        adimlar.push({ kural: 'Değişken değiştirme: u = ' + g.toString().replace(/\*/g, '·') + ', du = (' + dg.toString().replace(/\*/g, '·') + ') dx', tex: '\\int ' + tex(n) + '\\,d' + x + '=\\int ' + tex(hU) + '\\,du=' + tex(sonucU) });
+        return s;
+      }
+      return null;
+    }
+    // kısmi integral: ∫u dv = u·v − ∫v du (u: polinom ya da ln; dv: üstel, sin, cos ya da polinom)
+    function kismi(n, u, dv, derin) {
+      const uPolinom = polinomKatsayi(u, x), uLn = u.isFunctionNode && u.fn.name === 'log' && !u.args[1];
+      const dvPolinom = polinomKatsayi(dv, x);
+      if (!(uPolinom && uPolinom.length > 1) && !uLn) return null;
+      if (uLn && !dvPolinom) return null;
+      if (uPolinom && !(dv.isFunctionNode && ['sin', 'cos', 'exp'].includes(dv.fn.name) && lineerMi(dv.args[0], x)) && !(dv.isOperatorNode && dv.fn === 'pow' && sabitMi(dv.args[0], x) && lineerMi(dv.args[1], x))) return null;
+      let v;
+      try { v = math.parse(integral(dv.toString(), x).ifade); } catch (e) { return null; }
+      const du = math.parse(turev(u.toString(), x).ifade);
+      const kalan = math.simplify(op('*', 'multiply', [paren(v), paren(du)]));
+      let ikinci;
+      try { ikinci = I(kalan, derin + 1); } catch (e) { return null; }
+      const s = op('-', 'subtract', [op('*', 'multiply', [paren(u), paren(v)]), paren(ikinci)]);
+      adimlar.push({ kural: "Kısmi integral: ∫u dv = u·v − ∫v du  (u = " + u.toString().replace(/\*/g, '·') + ', dv = ' + dv.toString().replace(/\*/g, '·') + ' dx)', tex: '\\int ' + tex(n) + '\\,d' + x + '=' + tex(sade(s)) });
+      return s;
+    }
+    const n = math.parse(ifade);
+    const F = sade(I(n));
+    // doğrulama: F'(x) = f(x) (birkaç noktada)
+    const f = derle(ifade, x);
+    let dF;
+    try { dF = derle(turev(F.toString(), x).ifade, x); } catch (e) { dF = null; }
+    const dogru = dF && [0.31, 0.77, 1.43, 2.11, 2.9, -0.6].filter((t) => isFinite(f(t))).every((t) => Math.abs(dF(t) - f(t)) < 1e-6 * Math.max(1, Math.abs(f(t))));
+    if (!dogru) throw new Error('Bu integrali adım adım çözemiyorum');
+    return { ifade: F.toString(), tex: tex(F) + '+C', adimlar: adimlar.slice(-14), girdiTex: tex(n) };
+  }
+  // belirli integral: önce F(b) − F(a), olmazsa sayısal (uyarlamalı Simpson)
+  // uyarlamalı Simpson: hata payı göreli ve her bölmede ikiye ayrılır; derinlik sınırlı (büyük değerlerde donmasın)
+  function simpson(f, a, b, gorece = 1e-11) {
+    const c = (a + b) / 2, fa = f(a), fb = f(b), fc = f(c);
+    const S = (b - a) / 6 * (fa + 4 * fc + fb);
+    let olcek = Math.max(1, Math.abs(S));
+    for (let i = 1; i < 16; i++) { const v = f(a + (b - a) * i / 16); if (isFinite(v)) olcek = Math.max(olcek, Math.abs(v) * Math.abs(b - a)); }
+    const ic = (a0, b0, fa0, fb0, fm0, S0, eps, d) => {
+      const m = (a0 + b0) / 2, l = (a0 + m) / 2, r = (m + b0) / 2, fl = f(l), fr = f(r);
+      const Sl = (m - a0) / 6 * (fa0 + 4 * fl + fm0), Sr = (b0 - m) / 6 * (fm0 + 4 * fr + fb0);
+      if (d >= 18 || Math.abs(Sl + Sr - S0) < 15 * eps) return Sl + Sr + (Sl + Sr - S0) / 15;
+      return ic(a0, m, fa0, fm0, fl, Sl, eps / 2, d + 1) + ic(m, b0, fm0, fb0, fr, Sr, eps / 2, d + 1);
+    };
+    return ic(a, b, fa, fb, fc, S, gorece * olcek, 0);
+  }
+  // eğri ile x ekseni arasındaki toplam alan (x ekseninin altı da artı sayılır)
+  function alan(ifade, a, b, x = 'x') { const f = derle(ifade, x); return Math.abs(simpson((t) => Math.abs(f(t)), a, b)); }
+  function belirliIntegral(ifade, a, b, x = 'x') {
+    const f = derle(ifade, x);
+    const sayisal = simpson(f, a, b);
+    let bel = null, adimlar = [];
+    try {
+      bel = integral(ifade, x);
+      adimlar = bel.adimlar;
+      const F = derle(bel.ifade, x), deger = F(b) - F(a);
+      if (isFinite(deger) && Math.abs(deger - sayisal) < 1e-6 * Math.max(1, Math.abs(deger))) {
+        adimlar.push({ kural: 'Belirli integral: üst sınırdaki değerden alt sınırdaki değer çıkarılır', tex: '\\left[' + bel.tex.replace(/\+C$/, '') + '\\right]_{' + sayiTex(a) + '}^{' + sayiTex(b) + '}=' + (tamBicimE(deger) ? tamBicimE(deger).tex : sayiTex(deger)) });
+        return { deger, tam: tamBicimE(deger), adimlar, belirsiz: bel };
+      }
+    } catch (e) { /* sayısal */ }
+    adimlar.push({ kural: 'Belirli integral sayısal olarak hesaplandı (Simpson yöntemi)', tex: '\\int_{' + sayiTex(a) + '}^{' + sayiTex(b) + '}' + tex(math.parse(ifade)) + '\\,d' + x + '\\approx ' + sayiTex(sayisal) });
+    return { deger: sayisal, tam: tamBicimE(sayisal), adimlar, sayisal: true };
+  }
+
   // ---------------------------------------------------------------- hepsi bir arada
   function coz(latex, ayar = {}) {
     const a = anla(latex);
@@ -509,10 +950,16 @@
     else if (a.tur === 'turev') { s.turev = turev(a.ifade); s.fonksiyonTex = tex(math.parse(a.ifade)); }
     else if (a.tur === 'fonksiyon') { s.fonksiyonTex = tex(math.parse(a.ifade)); s.analiz = analiz(a.ifade); }
     else if (a.tur === 'denklem') s.denklem = denklem(a.ifade, a.degisken);
+    else if (a.tur === 'limit') { s.fonksiyonTex = tex(math.parse(a.ifade)); s.limit = limit(a.ifade, a.degisken, a.nokta, a.yon); }
+    else if (a.tur === 'integral') {
+      s.fonksiyonTex = tex(math.parse(a.ifade));
+      if (a.alt !== null && a.ust !== null) s.belirli = belirliIntegral(a.ifade, a.alt, a.ust, a.degisken);
+      else s.integral = integral(a.ifade, a.degisken);
+    }
     return s;
   }
 
-  const HesapMotor = { latexCevir, anla, islem, turev, analiz, denklem, coz, derle, kokler, sayiMetin, tamBicim, kesirBul, degiskenler, tex: (s) => tex(math.parse(s)) };
+  const HesapMotor = { latexCevir, anla, islem, turev, analiz, denklem, limit, integral, belirliIntegral, alan, coz, derle, kokler, sayiMetin, tamBicim, kesirBul, tamBicimE, degiskenler, tex: (s) => tex(math.parse(s)) };
   if (typeof module !== 'undefined' && module.exports) module.exports = HesapMotor;
   kok.HesapMotor = HesapMotor;
 })(typeof window !== 'undefined' ? window : globalThis);

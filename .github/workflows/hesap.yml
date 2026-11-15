@@ -18,7 +18,7 @@ concurrency:
 jobs:
   hesap:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,10 +26,13 @@ jobs:
           node-version: 22
       - name: Araçlar
         run: |
+          mkdir -p cikti
           npm install --no-save --no-package-lock mathjs@15.2.0 playwright@1.56.1
           npx playwright install --with-deps chromium
       - name: Motor testleri
         run: node hesap/test/motor-test.cjs
+      - name: 500 rastgele soru (türev, denklem, fonksiyon, limit, integral × kolay/orta/zor)
+        run: node hesap/test/toplu-test.cjs | tee cikti/toplu-rapor.txt
       - name: Arayüz testi
         run: node hesap/test/ui-test.cjs cikti
       - name: Telefon ve tablet düzeni (5 cihaz boyutu)
@@ -39,6 +42,9 @@ jobs:
       - name: Gerçek fotoğraf okuyucu
         timeout-minutes: 15
         run: node hesap/test/okuyucu-test.cjs cikti
+      - name: Aynı 500 sorunun resimleri gerçek okuyucuyla (temiz baskı ve telefon fotoğrafı gibi)
+        timeout-minutes: 40
+        run: node hesap/test/toplu-foto-test.cjs cikti
       - name: Sonuçları ön sürüme koy
         if: always()
         continue-on-error: true
@@ -49,4 +55,5 @@ jobs:
             gh release create hesap-deneme --prerelease --latest=false --target "$GITHUB_SHA" \
               --title "Hesap makinesi denemesi (otomatik)" --notes "Hesap makinesi testlerinin ekran görüntüleri ve fotoğraf okuyucu raporu. Kurulacak bir sürüm değildir." || true
           ls cikti
-          for i in 1 2 3; do gh release upload hesap-deneme cikti/* --clobber && break; sleep 5; done
+          for i in 1 2 3; do gh release upload hesap-deneme $(find cikti -maxdepth 1 -type f) --clobber && break; sleep 5; done
+          if [ -d cikti/okunamayan ] && [ -n "$(ls cikti/okunamayan)" ]; then (cd cikti/okunamayan && zip -q ../okunamayan.zip *) && gh release upload hesap-deneme cikti/okunamayan.zip --clobber; fi

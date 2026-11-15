@@ -84,10 +84,29 @@ let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if 
   const fo = await sonucYazi();
   ok(/Fotoğraftan okundu/.test(fo) && /3x\^\{?2\}?-3/.test(fo.replace(/[\s{}]/g, '').replace(/x\^2/g, 'x^2')), 'fotoğraf → d/dx(x³−3x) = 3x²−3: ' + fo.replace(/\s+/g, ' ').slice(0, 160));
   await page.screenshot({ path: path.join(out, '7-foto.png') });
-  // 9) tablet yatay düzen
+  // 9) integral tuşlarla: ⇄ ∫ x² → x³/3 + C
+  await temizle(); await tus('⇄', 'integral', 'x', 'x²'); console.log('  kutu: ' + await deger()); await tus('Çöz');
+  await page.waitForTimeout(300);
+  const iy = await sonucYazi();
+  ok(/\\frac\{\{?x\}?\^\{?3\}?\}\{3\}\+C/.test(iy.replace(/\s/g, '')) && /Kuvvet kuralı/.test(iy), '∫x² dx = x³/3 + C: ' + iy.replace(/\s+/g, ' ').slice(0, 160));
+  // 10) limit (L'Hôpital) ve belirli integral (taralı alan)
+  await page.evaluate(() => { window.hesap.mf.value = '\\lim_{x\\to2}\\frac{x^{2}-4}{x-2}'; window.hesap.coz(); });
+  await page.waitForTimeout(400);
+  const ly = await sonucYazi();
+  ok(/=4/.test(ly.replace(/\s/g, '')) && /L'Hôpital/.test(ly), "limit (x²−4)/(x−2), x→2 = 4, L'Hôpital adımı: " + ly.replace(/\s+/g, ' ').slice(0, 160));
+  await page.screenshot({ path: path.join(out, '8-limit.png') });
+  await page.evaluate(() => { window.hesap.mf.value = '\\int_{0}^{2}x^{2}\\,dx'; window.hesap.coz(); });
+  await page.waitForTimeout(400);
+  const by = await sonucYazi();
+  ok(/\\frac\{8\}\{3\}/.test(by) && /üst sınırdaki/.test(by), 'belirli integral ∫₀² x² dx = 8/3: ' + by.replace(/\s+/g, ' ').slice(0, 160));
+  await page.screenshot({ path: path.join(out, '9-integral.png') });
+  await page.evaluate(() => { window.hesap.mf.value = '\\lim_{x\\to0}\\frac{\\left|x\\right|}{x}'; window.hesap.coz(); });
+  await page.waitForTimeout(300);
+  ok(/Limit yoktur/.test(await sonucYazi()), '|x|/x, x→0: limit yok');
+  // 11) tablet yatay düzen
   await page.setViewportSize({ width: 1180, height: 820 });
   await page.waitForTimeout(400);
-  await page.screenshot({ path: path.join(out, '8-tablet.png') });
+  await page.screenshot({ path: path.join(out, '10-tablet.png') });
   ok(!err.length, 'sayfa hatası yok' + (err.length ? ': ' + err.slice(0, 3).join(' | ') : ''));
   await b.close(); sunucu.kapat();
   process.exitCode = hata ? 1 : 0;

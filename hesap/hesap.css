@@ -30,6 +30,7 @@
 .hm-statik::part(menu-toggle), .hm-statik::part(virtual-keyboard-toggle) { display: none; }
 .hm-esittir { display: flex; justify-content: flex-end; overflow-x: auto; }
 .hm-islem .hm-esittir { justify-content: flex-end; }
+.hm-buyuk-yazi { margin: 0; font-size: 24px; font-weight: 700; color: var(--hm-vurgu); }
 .hm-yaklasik { text-align: right; color: var(--hm-soluk); font-size: 18px; font-variant-numeric: tabular-nums; }
 .hm-mini { color: var(--hm-soluk); font-size: 12.5px; margin: 0; }
 .hm-not { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--hm-vurgu-acik); color: var(--hm-yazi); font-size: 14px; }
