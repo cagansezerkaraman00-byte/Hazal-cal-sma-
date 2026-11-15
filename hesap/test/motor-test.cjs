@@ -108,6 +108,19 @@ const okunan = [
   ['f ( x ) = 3 x ^ { 2 } + 2 x', 'fonksiyon', [-2 / 3, 0]],
   ['2 ^ { 3 } + 4 ^ { 2 }', 'islem', 24],
 ];
+// toplu resim denemesinden (GitHub, 1000 resim): okuyucunun limit, türev ve integral yazımları
+okunan.push(
+  ['\\frac { d } { d x } \\left ( 6 ~ \\sqrt { x } \\right )', 'turev', 3],
+  ['{ \\frac { d } { d x } } ~ \\left ( { \\frac { 2 } { x } } \\right )', 'turev', -2],
+  ['\\operatorname* { l i m } _ { x \\rarr 2 } { \\frac { - 4 x + 1 } { - x + 5 } }', 'limit', -7 / 3],
+  ['\\operatorname* { l i m } _ { x \\rarr - 2 } \\left ( 2 x ^ { 2 } - 1 \\right )', 'limit', 7],
+  ['\\operatorname* { l i m } _ { x \\rarr 0 } { \\frac { \\sin \\left ( 3 x \\right ) } { x } }', 'limit', 3],
+  ['\\operatorname* { l i m } _ { x \\rarr \\infty } { \\frac { 2 x ^ { 2 } } { x ^ { 2 } + 1 } }', 'limit', 2],
+  ['\\int _ { 1 } ^ { 3 } \\ln x \\, d x', 'integral', 3 * Math.log(3) - 2],
+  ['{ \\int _ { 0 } ^ { 2 } } \\left ( 3 x ^ { 2 } + 1 \\right ) \\, d x', 'integral', 10],
+  ['\\displaystyle \\int \\limits _ { 0 } ^ { 1 } x ^ { 2 } \\mathrm { d } x', 'integral', 1 / 3],
+  ['\\int _ { 0 } ^ { \\pi } \\sin x ~ d x', 'integral', 2],
+);
 for (const [l, tur, bek] of okunan) {
   try {
     const r = M.coz(l, { derece: true });
@@ -116,7 +129,9 @@ for (const [l, tur, bek] of okunan) {
     if (iyi && tur === 'denklem') iyi = r.denklem.kokler.length === bek.length && bek.every((k, i) => yakin(r.denklem.kokler[i], k));
     if (iyi && tur === 'fonksiyon') iyi = r.analiz.kokler.length === bek.length && bek.every((k, i) => yakin(r.analiz.kokler[i], k, 1e-6));
     if (iyi && tur === 'turev') iyi = yakin(M.derle(r.turev.ifade)(1), bek);
-    ok(iyi, 'okuyucu çıktısı: ' + l + ' → ' + r.tur + ' ' + JSON.stringify(r.islem ? r.islem.deger : r.denklem ? r.denklem.kokler : r.analiz ? r.analiz.kokler : r.turev && r.turev.ifade));
+    if (iyi && tur === 'limit') iyi = yakin(r.limit.deger, bek);
+    if (iyi && tur === 'integral') iyi = yakin((r.belirli || {}).deger, bek);
+    ok(iyi, 'okuyucu çıktısı: ' + l + ' → ' + r.tur + ' ' + JSON.stringify(r.islem ? r.islem.deger : r.denklem ? r.denklem.kokler : r.analiz ? r.analiz.kokler : r.limit ? r.limit.deger : r.belirli ? r.belirli.deger : r.turev && r.turev.ifade));
   } catch (e) { ok(false, 'okuyucu çıktısı: ' + l + ': ' + e.message); }
 }
 console.log(`\n${gecen} geçti, ${hata} hata`);

@@ -19,8 +19,21 @@
   const ATLA = new Set(['left', 'right', 'big', 'Big', 'bigg', 'Bigg', 'bigl', 'bigr', 'Bigl', 'Bigr', 'displaystyle', 'textstyle',
     'scriptstyle', ',', ';', ':', '!', ' ', 'quad', 'qquad', 'limits', 'nolimits', 'mathstrut', 'phantom']);
 
+  // Okuyucunun (ve farklı LaTeX yazarlarının) aynı anlama gelen yazımları tek biçime getirilir
+  function normalle(s) {
+    return String(s)
+      .replace(/~/g, ' ') // bölünmez boşluk
+      .replace(/\\(?:displaystyle|textstyle|scriptstyle|scriptscriptstyle)\b/g, ' ')
+      .replace(/\\(?:operatorname\*?|mathrm|text|textrm|rm)\s*\{\s*l\s*i\s*m\s*\}/g, '\\lim ') // \operatorname*{l i m}
+      .replace(/\\operatorname\*/g, '\\operatorname')
+      .replace(/\\(?:rarr|rightarrow|longrightarrow|Rightarrow|Longrightarrow|mapsto|xrightarrow\s*\{\s*\})(?![A-Za-z])/g, '\\to ')
+      .replace(/\\(int|lim)\s*\\(?:no)?limits/g, '\\$1')
+      .replace(/\\(?:mathrm|operatorname|text|mathit)\s*\{\s*d\s*\}\s*([a-z])/g, ' d$1') // \mathrm{d}x → dx
+      .replace(/\\differentialD\s*/g, ' d');
+  }
   function parcala(s) {
     const t = [];
+    s = normalle(s);
     // LaTeX'te \frac13 = \frac{1}{3} (MathLive tek haneli kesirleri böyle kısaltır): tek karakterli argümanları süslü paranteze al
     const tekArg = '(?:\\d|[A-Za-z])';
     s = String(s)
@@ -265,7 +278,16 @@
     return { degisken: dm[1], alt: alt === null ? null : sayiDegeri(alt), ust: ust === null ? null : sayiDegeri(ust), govde };
   }
   function anla(latex) {
-    let s = String(latex || '').trim().replace(/\\(?:,|;|!|quad)/g, ' ');
+    let s = normalle(String(latex || '')).trim().replace(/\\(?:,|;|!|quad)/g, ' ');
+    // okuyucu ∫ ya da lim'i sınırlarıyla birlikte süslü paranteze sarabiliyor: { \int _ { 0 } ^ { 2 } } …, { \lim _ { x \to 0 } } …
+    for (let k = 0; k < 3 && /^\{/.test(s); k++) {
+      const j = grupSonu(s, 0);
+      if (j < 0) break;
+      const ic = s.slice(1, j).trim();
+      if (/^\\(?:int|lim)\b/.test(ic) && !/^\\(?:int|lim)\b[\s\S]*[A-Za-z0-9)]\s*$/.test(ic.replace(/(?:_|\^)\s*(\{[^{}]*\}|\S)/g, ''))) s = ic + ' ' + s.slice(j + 1);
+      else if (j === s.length - 1) s = ic; // tamamı sarılı
+      else break;
+    }
     const lim = limitAyikla(s);
     if (lim) return { tur: 'limit', ifade: latexCevir(lim.govde), degisken: lim.degisken, nokta: lim.nokta, yon: lim.yon };
     const int = integralAyikla(s);

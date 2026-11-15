@@ -30,8 +30,9 @@ const BICIMLER = ['baski', 'foto'];
     .orn { display: inline-block; padding: 26px 34px; font-size: 40px; color: #111; background: #fff; }
     .orn math-field { font-size: 40px; border: 0; background: transparent; color: inherit; }
     .orn.foto { background: #efeadd; color: #262a33; transform: rotate(-1.6deg); filter: blur(.55px) contrast(.92); }` });
-  const tablo = {}, hatalar = [], basla = Date.now();
-  let okumaSuresi = 0, okumaSayisi = 0, kayitli = 0;
+  const tablo = {}, hatalar = {}, basla = Date.now();
+  let okumaSuresi = 0, okumaSayisi = 0;
+  const kayitli = {};
   for (const s of sorular) {
     for (const bicim of BICIMLER) {
       await page.evaluate(([latex, bicim]) => {
@@ -60,8 +61,8 @@ const BICIMLER = ['baski', 'foto'];
       const k = (tablo[anahtar] = tablo[anahtar] || { kolay: [0, 0], orta: [0, 0], zor: [0, 0] });
       k[s.seviye][1]++; if (d.tamam) k[s.seviye][0]++;
       else {
-        hatalar.push(`#${s.no} ${s.kategori}/${s.seviye} [${bicim}]  soru: ${s.latex}  okunan: ${latex}  →  ${d.aciklama}`);
-        if (kayitli < 40) { fs.writeFileSync(path.join(out, 'okunamayan', `${s.no}-${bicim}.${bicim === 'foto' ? 'jpg' : 'png'}`), resim); kayitli++; }
+        (hatalar[anahtar] = hatalar[anahtar] || []).push(`#${s.no} ${s.kategori}/${s.seviye} [${bicim}]  soru: ${s.latex}  okunan: ${latex}  →  ${d.aciklama}`);
+        if ((kayitli[anahtar] = (kayitli[anahtar] || 0) + 1) <= 6) fs.writeFileSync(path.join(out, 'okunamayan', `${s.kategori}-${s.no}-${bicim}.${bicim === 'foto' ? 'jpg' : 'png'}`), resim);
       }
     }
   }
@@ -78,7 +79,7 @@ const BICIMLER = ['baski', 'foto'];
   }
   satirlar.push(`\n${sahte ? 'SAHTE OKUYUCU (yalnızca düzenek denemesi)' : 'okuma başına ortalama ' + Math.round(okumaSuresi / Math.max(1, okumaSayisi)) + ' ms'} · toplam ${Math.round((Date.now() - basla) / 1000)} sn`);
   if (sayfaHatasi.length) satirlar.push('sayfa hataları: ' + sayfaHatasi.slice(0, 5).join(' | '));
-  if (hatalar.length) satirlar.push('\nÇözülemeyenler (ilk 120):', ...hatalar.slice(0, 120).map((h) => '  ' + h));
+  for (const [anahtar, liste] of Object.entries(hatalar)) satirlar.push(`\nÇözülemeyenler: ${anahtar.replace('|', ' · ')} (${liste.length}; ilk 12)`, ...liste.slice(0, 12).map((h) => '  ' + h));
   console.log(satirlar.join('\n'));
   fs.writeFileSync(path.join(out, 'toplu-foto-rapor.txt'), satirlar.join('\n') + '\n');
   await b.close(); sunucu.kapat();
