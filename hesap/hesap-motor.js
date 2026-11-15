@@ -23,6 +23,10 @@
   function normalle(s) {
     return String(s)
       .replace(/~/g, ' ') // bölünmez boşluk
+      .replace(/\\infin(?![A-Za-z])/g, '\\infty ') // okuyucu ∞'yi \infin yazıyor
+      // büyük parantezler: { \big ( } … { \big ) }, \Bigl[ … \Bigr] → ( … ), [ … ]
+      .replace(/\{\s*\\(?:big|Big|bigg|Bigg)[lr]?\s*(\(|\)|\[|\]|\|)\s*\}/g, ' $1 ')
+      .replace(/\\(?:big|Big|bigg|Bigg)[lr]?\s*(\(|\)|\[|\]|\|)/g, ' $1 ')
       .replace(/\\(?:displaystyle|textstyle|scriptstyle|scriptscriptstyle)\b/g, ' ')
       .replace(/\\(?:operatorname\*?|mathrm|text|textrm|rm)\s*\{\s*l\s*i\s*m\s*\}/g, '\\lim ') // \operatorname*{l i m}
       .replace(/\\operatorname\*/g, '\\operatorname')

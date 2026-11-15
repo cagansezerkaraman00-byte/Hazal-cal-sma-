@@ -120,6 +120,12 @@ okunan.push(
   ['{ \\int _ { 0 } ^ { 2 } } \\left ( 3 x ^ { 2 } + 1 \\right ) \\, d x', 'integral', 10],
   ['\\displaystyle \\int \\limits _ { 0 } ^ { 1 } x ^ { 2 } \\mathrm { d } x', 'integral', 1 / 3],
   ['\\int _ { 0 } ^ { \\pi } \\sin x ~ d x', 'integral', 2],
+  // ikinci toplu deneme: \infin ve süslü parantezli büyük parantezler
+  ['\\operatorname* { l i m } _ { x \\rarr \\infin } { \\frac { 5 x ^ { 2 } + x - 2 } { 3 x ^ { 2 } + 2 x + 3 } }', 'limit', 5 / 3],
+  ['\\operatorname* { l i m } _ { x \\rarr \\infin } \\left ( 1 + { \\frac { 4 } { x } } \\right ) ^ { x }', 'limit', Math.exp(4)],
+  ['\\int _ { - 1 } ^ { 1 } { \\big ( } 3 x ^ { 2 } + 4 x + 4 { \\big ) } ~ d x', 'integral', 10],
+  ['\\int _ { 1 } ^ { 3 } { \\Big ( } \\left ( x - 4 \\right ) ^ { 5 } { \\Big ) } ~ d x', 'integral', -364 / 3],
+  ['\\int _ { 0 } ^ { 2 } { \\big ( } \\sin ( 2 x + 3 { \\big ) } { \\big ) } ~ d x', 'integral', (Math.cos(3) - Math.cos(7)) / 2],
 );
 for (const [l, tur, bek] of okunan) {
   try {
