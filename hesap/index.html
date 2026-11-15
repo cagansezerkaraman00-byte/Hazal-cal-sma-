@@ -15,22 +15,27 @@
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,700;0,800;0,900;1,700&family=Jersey+10&family=Press+Start+2P&display=swap">
+<!-- yazı tipleri sayfanın açılmasını bekletmez (Luna'daki gibi) -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,700;0,800;0,900;1,700&family=Jersey+10&family=Press+Start+2P&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="hesap.css">
 <style>
   html, body { margin: 0; height: 100%; background: #1b1036; overflow: hidden; }
   #hesap { position: fixed; inset: 0; } /* görünen alanın tamamı (adres çubuğu açılıp kapansa da) */
+  .yukleniyor { margin: 0; height: 100%; display: grid; place-items: center; color: #dcbcff; font: 800 28px 'Nunito', system-ui, sans-serif; opacity: .8; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mathlive@0.108.3/mathlive.min.js"></script>
-<script src="hesap-motor.js"></script>
-<script src="hesap-grafik.js"></script>
-<script src="hesap-kediler.js"></script>
-<script src="hesap-ui.js"></script>
+<!-- kütüphaneler aynı anda iner, sayfayı bekletmez; sırayla çalışır (defer) -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathlive@0.108.3/mathlive.min.js"></script>
+<script defer src="hesap-motor.js"></script>
+<script defer src="hesap-grafik.js"></script>
+<script defer src="hesap-kediler.js"></script>
+<script defer src="hesap-ui.js"></script>
 </head>
 <body>
-<div id="hesap"></div>
+<div id="hesap"><p class="yukleniyor">🌙 Luna</p></div>
 <script>
+ addEventListener('DOMContentLoaded', () => {
   MathfieldElement.soundsDirectory = null;
   MathfieldElement.fontsDirectory = 'https://cdn.jsdelivr.net/npm/mathlive@0.108.3/fonts'; // yanında bulamıyor (adres sonunda / yok)
   window.hesap = HesapUI.baslat(document.getElementById('hesap'), {
@@ -40,6 +45,7 @@
       model: 'alephpi/FormulaNet',
     },
   });
+ });
 </script>
 </body>
 </html>

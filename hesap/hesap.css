@@ -158,7 +158,8 @@
 }
 .hm-alt { grid-area: alt; text-align: center; font-style: italic; font-weight: 700; font-size: 15px; color: #dcbcff; letter-spacing: .02em; padding-bottom: 2px; }
 
-.hm-kart { background: var(--hm-kart); border: 1px solid var(--hm-cizgi); border-radius: var(--hm-radius); padding: 14px; display: flex; flex-direction: column; gap: 10px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 8px 22px rgba(8, 0, 30, .3); }
+.hm-kart { background: var(--hm-kart); border: 1px solid var(--hm-cizgi); border-radius: var(--hm-radius); padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 22px rgba(8, 0, 30, .3); }
+.hm-pc-ipucu { display: none; }
 .hm-statik { border: 0; background: transparent; color: var(--hm-yazi); font-size: 19px; max-width: 100%; overflow-x: auto; pointer-events: none; padding: 0; --primary-color: var(--hm-vurgu); }
 .hm-statik.buyuk { font-size: 30px; }
 .hm-statik.orta { font-size: 22px; }
@@ -304,9 +305,27 @@
   .hm-alt { display: none; }
   .hm-cicek { display: none; }
 }
-@media (min-width: 1100px) {
-  .hm-alan { font-size: 38px; }
+/* bilgisayar: hesap makinesi tasarımdaki gibi tek parça ortada, sonuç paneli yanında; çok büyük ekranda da toplu durur */
+@media (min-width: 1024px) and (min-height: 600px) {
+  .hm {
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 440px) minmax(0, 700px) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 620px) auto; align-content: center;
+    grid-template-areas: ". ust sonuc ." ". ekran sonuc ." ". govde sonuc ." ". alt sonuc ."; column-gap: 36px; row-gap: 14px;
+  }
+  .hm-sonuc { grid-area: sonuc; align-self: stretch; padding: 40px 6px 4px 0; scrollbar-width: thin; scrollbar-color: rgba(205, 175, 255, .35) transparent; }
+  .hm-ekran { margin-top: 30px; }
+  .hm-alan { font-size: 32px; }
+  .hm-grafik canvas { height: min(46vh, 420px); }
+  .hm-statik { font-size: 20px; } .hm-statik.buyuk { font-size: 32px; }
   .hm-cicek { width: 70px; }
+  .hm-pc-ipucu { display: block; }
+}
+/* fareyle: tuşlar üzerine gelince hafif parlar */
+@media (hover: hover) and (pointer: fine) {
+  .hm-tus:hover { filter: brightness(1.08) saturate(1.05); }
+  .hm-sekme:not(.etkin):hover { background: rgba(205, 175, 255, .12); }
+  .hm-aci-btn:hover, .hm-yuvarlak:hover, .hm-imlec button:hover { filter: brightness(1.15); }
+  .hm-gecmis-satir:hover { border-color: rgba(255, 159, 214, .5); }
 }
 @media (prefers-reduced-motion: reduce) {
   .hm-yildizlar i, .hm-z, .hm-kalp, .hm-onizleme.kesin { animation: none; }

@@ -150,7 +150,8 @@
     kap.querySelector('.hm-sekmeler').addEventListener('click', (e) => { const b = e.target.closest('.hm-sekme'); if (b) sekmeSec(b.dataset.sekme); });
     sekmeSec('bilimsel');
     // geniş ekranda sonucun yeri baştan görünür: ne yapılabileceğini söyler
-    sonuc.innerHTML = '<div class="hm-kart hm-hosgeldin"><b>✨ Yaz ya da fotoğrafını çek</b><p class="hm-mini">İşlem, denklem, eşitsizlik, fonksiyon, türev, limit, integral, Σ, denklem sistemi… Sonuç, grafik ve adım adım çözüm burada görünür.</p></div>';
+    sonuc.innerHTML = '<div class="hm-kart hm-hosgeldin"><b>✨ Yaz ya da fotoğrafını çek</b><p class="hm-mini">İşlem, denklem, eşitsizlik, fonksiyon, türev, limit, integral, Σ, denklem sistemi… Sonuç, grafik ve adım adım çözüm burada görünür.</p>' +
+      '<p class="hm-mini hm-pc-ipucu">⌨ Klavyeden de yazabilirsin: <b>/</b> kesir, <b>^</b> üs, <b>Enter</b> çözer, <b>Esc</b> siler, <b>←</b> <b>→</b> imleci gezdirir.</p></div>';
     // Tuş dokunulduğu anda çalışır (parmağın kalkması beklenmez; telefonlar "click"i geciktirebiliyor).
     // ⌫ basılı tutulursa art arda siler. Klavyeyle (Tab + Enter) basılan tuş "click" ile gelir.
     let tekrar = 0, tekrarBasla = 0;
@@ -192,7 +193,23 @@
       requestAnimationFrame(() => setTimeout(() => { onizlemeBekliyor = false; canliOnizleme(); }, 0));
     };
     mf.addEventListener('input', onizlemeSonra);
-    mf.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); coz(); } });
+    mf.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); coz(); }
+      else if (e.key === 'Escape') { e.preventDefault(); mf.value = ''; canliOnizleme(); }
+    });
+    // Bilgisayarda kutuya tıklamadan da yazılır: sayfada basılan tuş kutuya gider (başka bir yazı alanı ya da fotoğraf penceresi açıkken değil)
+    const belge = kap.ownerDocument || document;
+    belge.addEventListener('keydown', (e) => {
+      if (!kap.isConnected || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      const yol = e.composedPath ? e.composedPath() : [e.target];
+      if (yol.includes(mf) || kap.querySelector('.hm-kirp-katman')) return;
+      if (yol.some((n) => n && n.matches && n.matches('input, textarea, select, [contenteditable="true"], math-field'))) return;
+      if (e.key === 'Enter') { e.preventDefault(); coz(); return; }
+      if (e.key === 'Escape') { mf.value = ''; canliOnizleme(); return; }
+      if (e.key === 'Backspace') { e.preventDefault(); odakla(); mf.executeCommand('deleteBackward'); onizlemeSonra(); return; }
+      if (e.key.length === 1 && e.key !== ' ') { e.preventDefault(); tuslarAcik(true); odakla(); mf.executeCommand(['typedText', e.key]); onizlemeSonra(); }
+    });
+    if (typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches) setTimeout(() => { if (!belge.activeElement || belge.activeElement === belge.body) mf.focus(); }, 350);
 
     // Ekranın sağ altı: yazarken sonucun önizlemesi (sade yazı, hızlı), çözünce kesin sonuç (matematik yazısı)
     const IPUCU = { fonksiyon: '📈 grafiği ve kökleri', turev: '📐 türevi adım adım', denklem: '🔎 denklemin kökleri', limit: '➡️ limiti adım adım', integral: '∫ integrali adım adım',

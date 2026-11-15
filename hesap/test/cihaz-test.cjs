@@ -9,6 +9,7 @@ fs.mkdirSync(out, { recursive: true });
 const CIHAZLAR = [
   ['telefon', 390, 844, true], ['kucuk-telefon', 375, 667, true], ['telefon-yatay', 844, 390, true],
   ['tablet-dikey', 820, 1180, true], ['tablet-yatay', 1180, 820, true],
+  ['bilgisayar', 1366, 768, false], ['genis-ekran', 1920, 1080, false],
 ];
 let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if (!c) hata++; };
 (async () => {
@@ -54,6 +55,18 @@ let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if 
       await page.waitForTimeout(300);
       o = await olc();
       ok(!o.kapali && o.tusAlt <= h + 0.5, `${ad}: "⌨ Tuşlar" ile tuşlar geri geldi`);
+    }
+    if (!dokunmatik) {
+      // bilgisayar: hesap makinesi ortada toplu durur; kutuya tıklamadan klavyeyle yazılır, Enter çözer
+      const g = await page.evaluate(() => { const e = document.querySelector('.hm-ekran').getBoundingClientRect(), t = document.querySelector('.hm-tuslar').getBoundingClientRect(); return { sol: e.left, sag: t.right, genislik: t.right - e.left }; });
+      ok(g.genislik <= 460 && g.sol > 50, `${ad}: hesap makinesi toplu (genişlik ${Math.round(g.genislik)} px, soldan ${Math.round(g.sol)} px)`);
+      await page.mouse.click(w - 20, h / 2); // boş bir yere tıkla: odak kutuda değil
+      await page.evaluate(() => { window.hesap.mf.value = ''; });
+      await page.keyboard.type('7*6'); await page.keyboard.press('Enter'); await page.waitForTimeout(300);
+      const yaz = await page.locator('.hm-onizleme').innerText();
+      ok(/42/.test(yaz), `${ad}: klavyeyle yazılıyor, Enter çözüyor (7*6 → ${yaz.trim()})`);
+      await page.keyboard.press('Escape'); await page.waitForTimeout(100);
+      ok(await page.evaluate(() => window.hesap.mf.value === ''), `${ad}: Esc siliyor`);
     }
     ok(!err.length, `${ad}: sayfa hatası yok` + (err.length ? ': ' + err.join(' | ') : ''));
     await ctx.close();
