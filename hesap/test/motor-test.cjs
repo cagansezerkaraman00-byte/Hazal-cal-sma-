@@ -188,6 +188,12 @@ ok(!!M.coz('\\int x^2 \\mathrm{d}x').integral && M.coz('\\operatorname{EBOB}\\le
 
 ok(M.coz('2 + 4 .').islem.deger === 6 && M.coz('2+4.').islem.deger === 6, 'sondaki nokta yok sayılır: "2 + 4 ."');
 ok(M.coz('3.5+1').islem.deger === 4.5, 'ondalık nokta bozulmuyor');
+// gerçek okuyucunun el yazısında rakam yerine harf okuması (CI gerçek fotoğraf testi)
+const rb = M.coz('q \\times 3');
+ok(rb.islem.deger === 27 && /q → 9/.test(rb.okumaDuzeltme), 'q × 3 → 9 × 3 = 27, söyleniyor: ' + rb.okumaDuzeltme);
+ok(M.coz('l 2 + 3').islem.deger === 15 && M.coz('\\Theta + 1').islem.deger === 1, 'l → 1, Θ → 0');
+ok(M.coz('x + 1').tur === 'fonksiyon' && M.coz('2a+3=7').tur === 'denklem' && M.coz('q+1=4').tur === 'denklem', 'gerçek değişkenlere dokunulmuyor');
+ok(!M.coz('2+4').okumaDuzeltme && M.coz('\\sin 30').islem && !M.coz('\\sin 30').okumaDuzeltme, 'düzgün işlemde düzeltme yok');
 
 console.log(`\n${gecen} geçti, ${hata} hata`);
 process.exit(hata ? 1 : 0);

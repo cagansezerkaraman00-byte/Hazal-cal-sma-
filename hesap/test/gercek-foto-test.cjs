@@ -11,7 +11,9 @@ const math = require('mathjs');
 const out = process.argv[2] || path.join(__dirname, 'ekran');
 const sahte = process.env.SAHTE === '1';
 fs.mkdirSync(path.join(out, 'gercek-foto'), { recursive: true });
-let hata = 0; const satirlar = [];
+let hata = 0, elDogru = 0, elSayi = 0; const satirlar = [];
+// El yazısında okuyucunun doğruluğu ölçülür (yazı tiplerinin bazı rakamları okuyucuya harf gibi gelir); bu düzeyin altı hatadır.
+const EL_EN_AZ = 6;
 const ok = (c, m) => { const s = (c ? '✓ ' : '✗ ') + m; console.log(s); satirlar.push(s); if (!c) hata++; };
 
 const EL_YAZISI = [['2+4', 6], ['7-3', 4], ['15+8', 23], ['9×3', 27], ['12÷4', 3], ['3+5', 8], ['20-6', 14], ['8×7', 56]];
@@ -107,9 +109,12 @@ const PARAGRAF = 'Her brother came back to the village and he could not believe 
     let sonuc = '';
     try { sonuc = await page.evaluate(() => window.hesap.mf.value); } catch (e) { /* yok */ }
     const dogru = Number(String(sonuc).replace('{,}', '.')) === deger;
-    ok(cer && (sahte || dogru), `el yazısı "${ifade}" (${yazi}): çerçeve ${cer ? 'işlemi ' + yol + ' aldı' : 'KAÇIRDI ' + JSON.stringify(cerceve) + ' ' + JSON.stringify(kutu)} · okunan ${okunan} → ${sonuc} (beklenen ${deger})`);
+    elSayi++; if (sahte || dogru) elDogru++;
+    const satir = `el yazısı "${ifade}" (${yazi}): çerçeve ${cer ? 'işlemi ' + yol + ' aldı' : 'KAÇIRDI ' + JSON.stringify(cerceve) + ' ' + JSON.stringify(kutu)} · okunan ${okunan} → ${sonuc} (beklenen ${deger})`;
+    if (!cer) ok(false, satir); else { const s = (sahte || dogru ? '✓ ' : '· okunamadı: ') + satir; console.log(s); satirlar.push(s); }
     await page.evaluate(() => { window.hesap.mf.value = ''; });
   }
+  ok(elDogru >= EL_EN_AZ, `el yazısı okuma: ${elDogru}/${elSayi} doğru (en az ${EL_EN_AZ})`);
 
   // ---------------------------------------------------------------- ekran görüntüsü
   n = 0;

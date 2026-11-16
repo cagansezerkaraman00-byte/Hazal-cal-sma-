@@ -344,6 +344,7 @@
           <div class="hm-esittir">${kutu('=' + anaTex, 'buyuk vurgu')}</div>
           ${s.tam && isFinite(s.deger) ? `<div class="hm-yaklasik">≈ ${esc(sayi(s.deger))}</div>` : ''}
           ${s.karmasik ? '<div class="hm-mini">Karmaşık sayı (i² = −1)</div>' : ''}
+          ${r.okumaDuzeltme ? `<div class="hm-mini">📷 ${esc(r.okumaDuzeltme)}</div>` : ''}
           ${s.adimlar ? adimListe(s.adimlar) : ''}
           ${/sin|cos|tan|cot/.test(r.ifade) ? `<div class="hm-mini">${durum.derece ? 'Açılar derece cinsinden' : 'Açılar radyan cinsinden'} · üstteki DEG/RAD düğmesiyle değiştir</div>` : ''}
         </div>`;

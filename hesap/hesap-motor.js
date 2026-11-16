@@ -1615,7 +1615,34 @@
   }
 
   // ---------------------------------------------------------------- hepsi bir arada
+  // Fotoğraftan okunan sayı işleminde rakam yerine ona benzeyen harf (9 → q, 0 → O, 1 → l, 8 → Θ…):
+  // işlem başka türlü çözülemiyor ve harflerin hepsi rakam benzeriyse rakam sayılır; ne değiştiği söylenir.
+  const RAKAM_BENZERI = { q: '9', g: '9', o: '0', O: '0', D: '0', l: '1', I: '1', S: '5', Z: '2', z: '2', B: '8', G: '6' };
+  function rakamBenzeri(latex) {
+    let s = String(latex).replace(/\\(?:Theta|theta|vartheta)(?![A-Za-z])/g, ' \\THETA ');
+    const degisen = [];
+    let out = '';
+    for (let i = 0; i < s.length;) {
+      if (s[i] === '\\') { const m = s.slice(i).match(/^\\([A-Za-z]+|.)/); const ad = m[1]; if (ad === 'THETA') { out += ' 0 '; degisen.push('θ → 0'); } else out += m[0]; i += m[0].length; continue; }
+      if (/[A-Za-z]/.test(s[i])) {
+        let j = i; while (j < s.length && /[A-Za-z]/.test(s[j])) j++;
+        const kelime = s.slice(i, j);
+        if (kelime.length !== 1 || !RAKAM_BENZERI[kelime]) return null; // başka harf var: gerçek bir değişken ya da fonksiyon
+        out += RAKAM_BENZERI[kelime]; degisen.push(kelime + ' → ' + RAKAM_BENZERI[kelime]); i = j; continue;
+      }
+      out += s[i]; i++;
+    }
+    if (!degisen.length || !/\d/.test(out.replace(/\\[A-Za-z]+/g, ''))) return null;
+    return { latex: out, aciklama: 'Fotoğrafta rakama benzeyen harfler rakam sayıldı: ' + [...new Set(degisen)].join(', ') };
+  }
   function coz(latex, ayar = {}) {
+    try { return coz0(latex, ayar); } catch (e) {
+      const d = rakamBenzeri(latex);
+      if (d) { try { const r = coz0(d.latex, ayar); if (r.tur === 'islem' && isFinite(r.islem.deger)) { r.okumaDuzeltme = d.aciklama; return r; } } catch (e2) { /* olmadı */ } }
+      throw e;
+    }
+  }
+  function coz0(latex, ayar) {
     const a = anla(latex);
     const s = { ...a, sayi: sayiMetin, tamBicim };
     if (a.tur === 'islem') s.islem = islem(a.ifade, ayar);
