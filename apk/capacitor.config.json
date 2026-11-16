@@ -1,0 +1,8 @@
+{
+  "appId": "com.hazal.luna",
+  "appName": "Luna",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#241c3d"
+  }
+}

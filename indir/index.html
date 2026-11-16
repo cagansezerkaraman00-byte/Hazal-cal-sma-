@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#241c3d">
+<title>Luna'yı indir</title>
+<link rel="icon" href="../icons/favicon-48.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap">
+<!--
+  Luna'nın Android uygulamasını indirme sayfası. Hazal'a hep aynı bağlantı gönderilir:
+  https://cagansezerkaraman00-byte.github.io/Hazal-cal-sma-/indir/?guncel
+  (?guncel olmadan, telefonda kurulu Luna'nın önbelleği bu sayfanın yerine Luna'yı açar.)
+  "Luna'yı indir" düğmesi Hazal'a giden (Çağan'ın onayladığı) sürümü indirir: apk/guncel.json. Sürüm, boyut ve yenilikler oradan gelir.
+-->
+<style>
+  :root {
+    --gece: #241c3d; --gece-2: #3a2c66; --kart: rgba(255, 255, 255, .07); --cizgi: rgba(255, 255, 255, .14);
+    --yazi: #f6f1ff; --soluk: #c9bfe6; --altin: #ffc552; --altin-2: #ffb169; --lav: #8f74f0; --pembe: #f2789f; --nane: #46c79a;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--gece); }
+  body {
+    margin: 0; min-height: 100vh; min-height: 100dvh; color: var(--yazi);
+    font: 16px/1.5 Nunito, system-ui, -apple-system, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(circle at 18% 8%, rgba(143, 116, 240, .45), transparent 42%),
+      radial-gradient(circle at 90% 30%, rgba(242, 120, 159, .22), transparent 40%),
+      linear-gradient(180deg, #2c2150 0%, var(--gece) 55%, #19132c 100%);
+    background-attachment: fixed;
+  }
+  .yildizlar { position: fixed; inset: 0; pointer-events: none; opacity: .8;
+    background-image:
+      radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 28% 40%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 70% 12%, #ffe9b0, transparent), radial-gradient(1px 1px at 84% 52%, #fff, transparent),
+      radial-gradient(1px 1px at 46% 70%, #d8cdff, transparent), radial-gradient(1.5px 1.5px at 8% 82%, #fff, transparent),
+      radial-gradient(1px 1px at 62% 88%, #fff, transparent), radial-gradient(1.5px 1.5px at 93% 80%, #ffd6e6, transparent);
+  }
+  main {
+    position: relative; max-width: 460px; margin: 0 auto;
+    padding: max(28px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(32px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .ust { text-align: center; padding-top: 8px; }
+  .simge {
+    width: 112px; height: 112px; border-radius: 28px; display: block; margin: 0 auto 14px; object-fit: cover;
+    box-shadow: 0 14px 40px rgba(143, 116, 240, .55), 0 0 0 3px rgba(255, 255, 255, .18);
+  }
+  h1 { margin: 0; font-size: 2.3rem; font-weight: 800; letter-spacing: .01em; }
+  .alt { margin: 2px 0 0; color: var(--soluk); font-weight: 600; }
+  .surum { display: inline-flex; gap: 6px; align-items: center; margin-top: 12px; padding: 5px 12px; border-radius: 999px;
+    background: var(--kart); border: 1px solid var(--cizgi); color: var(--soluk); font-size: .88rem; font-weight: 700; }
+  .surum b { color: var(--yazi); }
+  .indir {
+    display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 17px 20px; border-radius: 18px;
+    background: linear-gradient(135deg, var(--altin), var(--altin-2)); color: #2b2350; text-decoration: none;
+    font-size: 1.2rem; font-weight: 800; box-shadow: 0 5px 0 #d98a3e, 0 14px 30px rgba(255, 177, 105, .35);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .indir:active { transform: translateY(3px); box-shadow: 0 2px 0 #d98a3e, 0 8px 18px rgba(255, 177, 105, .3); }
+  .indir svg { width: 24px; height: 24px; flex: none; }
+  .bilgi { margin: -6px 0 0; text-align: center; color: var(--soluk); font-size: .88rem; }
+  .kart { background: var(--kart); border: 1px solid var(--cizgi); border-radius: 20px; padding: 16px 18px; backdrop-filter: blur(6px); }
+  .kart h2 { margin: 0 0 10px; font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+  .yeni ul { margin: 0; padding-left: 20px; color: var(--soluk); }
+  .yeni li { margin: 4px 0; }
+  .adimlar { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .adimlar li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; color: var(--soluk); }
+  .adimlar .no { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #2b2350;
+    background: linear-gradient(135deg, #cbb8ff, var(--lav)); }
+  .adimlar li:nth-child(2) .no { background: linear-gradient(135deg, #ffc9da, var(--pembe)); }
+  .adimlar li:nth-child(3) .no { background: linear-gradient(135deg, #b9f0dc, var(--nane)); }
+  .adimlar li:nth-child(4) .no { background: linear-gradient(135deg, #ffe3a6, var(--altin)); }
+  .adimlar b { color: var(--yazi); }
+  .not { display: flex; gap: 10px; align-items: flex-start; color: var(--soluk); font-size: .93rem; }
+  .not span { font-size: 1.3rem; line-height: 1.2; }
+  .not b { color: var(--yazi); }
+  .ios { display: none; text-align: center; }
+  .ios a { color: var(--altin); font-weight: 800; }
+  body.ios-cihaz .android { display: none; }
+  body.ios-cihaz .ios { display: block; }
+  footer { text-align: center; color: rgba(201, 191, 230, .7); font-size: .82rem; padding-top: 4px; }
+</style>
+</head>
+<body>
+<div class="yildizlar" aria-hidden="true"></div>
+<main>
+  <header class="ust">
+    <img class="simge" src="../icons/icon-512-maskable.png" alt="" width="112" height="112">
+    <h1>Luna</h1>
+    <p class="alt">Çalışma arkadaşın, artık telefonunda bir uygulama</p>
+    <div class="surum" id="surum">Android uygulaması</div>
+  </header>
+
+  <section class="android">
+    <a class="indir" id="indir" href="https://github.com/cagansezerkaraman00-byte/Hazal-cal-sma-/releases">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a1.2 1.2 0 0 1 1.2 1.2v8.9l2.9-2.9a1.2 1.2 0 1 1 1.7 1.7l-5 5a1.2 1.2 0 0 1-1.6 0l-5-5a1.2 1.2 0 1 1 1.7-1.7l2.9 2.9V4.2A1.2 1.2 0 0 1 12 3zM5 18.6h14a1.2 1.2 0 1 1 0 2.4H5a1.2 1.2 0 1 1 0-2.4z"/></svg>
+      Luna'yı indir
+    </a>
+  </section>
+  <p class="bilgi android" id="bilgi">Android 7 ve üstü · her zaman en yeni sürüm</p>
+
+  <section class="kart yeni" id="yeni" hidden>
+    <h2>✨ Bu sürümde</h2>
+    <ul id="yeni-liste"></ul>
+  </section>
+
+  <section class="kart android">
+    <h2>🐾 Kurulum</h2>
+    <ol class="adimlar">
+      <li><span class="no">1</span><div><b>Luna'yı indir</b>'e bas.</div></li>
+      <li><span class="no">2</span><div>Chrome <b>"Bu dosya zarar verebilir"</b> derse <b>Yine de indir</b>'e bas. Bu uyarı Play Store dışından gelen her uygulamada çıkar.</div></li>
+      <li><span class="no">3</span><div>İnen dosyaya dokun. İlk seferde <b>"Bu kaynaktan izin ver"</b>i aç, sonra <b>Yükle</b>.</div></li>
+      <li><span class="no">4</span><div>Play Protect sorarsa <b>Yine de yükle</b>. Luna açılınca hazırsın.</div></li>
+    </ol>
+  </section>
+
+  <section class="kart android">
+    <div class="not"><span>💜</span><div><b>Güncellerken de aynı adımlar.</b> Yeni Luna eskisinin üstüne kurulur; çalışmaların, notların ve rozetlerin olduğu gibi kalır.</div></div>
+  </section>
+
+  <section class="kart ios">
+    <h2 style="justify-content:center">🍎 Bu sayfa Android içindir</h2>
+    <p>iPhone ve iPad'de Luna'yı Safari'den kullanabilirsin:<br><a href="../">Luna'yı aç</a></p>
+  </section>
+
+  <footer>Luna · Çağan'dan Hazal'a</footer>
+</main>
+<script>
+(() => {
+  const ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) document.body.classList.add('ios-cihaz');
+  const $ = (id) => document.getElementById(id);
+  const tarih = (s) => new Date(s).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+  // Hazal'a giden sürüm (apk/guncel.json): yalnızca Çağan onaylayınca değişir. ?guncel: telefondaki Luna önbelleği değil, sunucudaki hali.
+  fetch('../apk/guncel.json?guncel=1&t=' + Date.now(), { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then((g) => {
+      if (!g || !(+g.kod > 0) || !/^https:\/\//.test(g.apk || '')) { hazirDegil(); return; }
+      $('indir').href = g.apk;
+      if (g.surum) $('surum').innerHTML = `Sürüm <b>${g.surum}</b>${g.tarih ? ' · ' + tarih(g.tarih) : ''}`;
+      if (g.boyut) $('bilgi').textContent = `${(g.boyut / 1e6).toFixed(1).replace('.', ',')} MB · Android 7 ve üstü · her zaman en yeni sürüm`;
+      const notes = Array.isArray(g.yenilikler) ? g.yenilikler : [];
+      if (notes.length) {
+        const ul = $('yeni-liste');
+        notes.slice(0, 6).forEach((n) => { const li = document.createElement('li'); li.textContent = n; ul.appendChild(li); });
+        $('yeni').hidden = false;
+      }
+    })
+    .catch(() => {}); // okunamazsa düğme yine son onaylı sürümü bilmez; varsayılan bağlantı kalır
+  function hazirDegil() {
+    const a = $('indir');
+    a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); a.style.opacity = '.55'; a.style.pointerEvents = 'none';
+    a.lastChild.textContent = ' Çok yakında';
+    $('bilgi').textContent = 'Luna uygulaması hazırlanıyor; bu sayfa hazır olunca indirmeyi açar.';
+  }
+})();
+</script>
+</body>
+</html>

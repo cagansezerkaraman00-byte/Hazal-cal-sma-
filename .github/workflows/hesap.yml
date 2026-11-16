@@ -1,0 +1,99 @@
+# Luna'nın hesap makinesi (hesap/): motor testleri, telefon boyutunda arayüz testi ve gerçek fotoğraf okuyucu denemesi.
+# Okuyucu (Texo, cihazda çalışan açık kaynak model) burada internetten iner ve YKS tarzı örnekleri okur; rapor ve
+# örnek resimler "hesap-deneme" ön sürümüne konur (kurulacak bir sürüm değildir, en yeni sürüm sayılmaz).
+name: Hesap makinesi denemesi
+
+on:
+  push:
+    paths: ['hesap/**', '.github/workflows/hesap.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hesap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hesap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Araçlar
+        run: |
+          mkdir -p cikti
+          npm install --no-save --no-package-lock mathjs@15.2.0 playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Motor testleri
+        run: node hesap/test/motor-test.cjs
+      - name: Ekrandaki kediler Luna'nın çizimleriyle aynı
+        run: node hesap/test/kedi-test.cjs
+      - name: 500 rastgele soru (türev, denklem, fonksiyon, limit, integral × kolay/orta/zor)
+        run: node hesap/test/toplu-test.cjs | tee cikti/toplu-rapor.txt
+      - name: 900 rastgele YKS sorusu (eşitsizlik, mutlak değer, üstel-log, trigonometri, Σ, kombinasyon, sistem, üslü-köklü, karmaşık)
+        run: URETICI=yks node hesap/test/toplu-test.cjs | tee cikti/toplu-rapor-yks.txt
+      - name: Arayüz testi
+        run: node hesap/test/ui-test.cjs cikti
+      - name: YKS konularının arayüz testi
+        run: node hesap/test/yks-ui-test.cjs cikti
+      - name: Telefon ve tablet düzeni (5 cihaz boyutu)
+        run: node hesap/test/cihaz-test.cjs cikti
+      - name: Tuş gecikmesi (4 kat yavaş işlemci)
+        run: node hesap/test/hiz-test.cjs | tee cikti/hiz.txt
+      - name: Gerçek fotoğraf okuyucu
+        timeout-minutes: 15
+        run: node hesap/test/okuyucu-test.cjs cikti
+      - name: Gerçek kullanım gibi fotoğraflar (el yazısı gri kâğıtta, yazıların arasında formül; kendiliğinden çerçeve)
+        timeout-minutes: 15
+        run: node hesap/test/gercek-foto-test.cjs cikti
+      - name: Aynı 500 sorunun resimleri gerçek okuyucuyla (temiz baskı ve telefon fotoğrafı gibi)
+        timeout-minutes: 40
+        run: node hesap/test/toplu-foto-test.cjs cikti
+      - name: Sonuçları ön sürüme koy
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view hesap-deneme > /dev/null 2>&1 || \
+            gh release create hesap-deneme --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Hesap makinesi denemesi (otomatik)" --notes "Hesap makinesi testlerinin ekran görüntüleri ve fotoğraf okuyucu raporu. Kurulacak bir sürüm değildir." || true
+          ls cikti
+          for i in 1 2 3; do gh release upload hesap-deneme $(find cikti -maxdepth 1 -type f) --clobber && break; sleep 5; done
+          if [ -d cikti/okunamayan ] && [ -n "$(ls cikti/okunamayan)" ]; then (cd cikti/okunamayan && zip -q ../okunamayan.zip *) && gh release upload hesap-deneme cikti/okunamayan.zip --clobber; fi
+          if [ -d cikti/gercek-foto ] && [ -n "$(ls cikti/gercek-foto)" ]; then (cd cikti/gercek-foto && zip -q ../gercek-foto.zip *) && gh release upload hesap-deneme cikti/gercek-foto.zip --clobber; fi
+
+  # YKS konularının resimleri ayrı işte, aynı anda okunur (her konu için 60 soru: 20 kolay, 20 orta, 20 zor; iki biçim)
+  yks-foto:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Araçlar
+        run: |
+          mkdir -p cikti
+          npm install --no-save --no-package-lock mathjs@15.2.0 playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: YKS konularının resimleri gerçek okuyucuyla (temiz baskı ve telefon fotoğrafı gibi)
+        timeout-minutes: 45
+        run: URETICI=yks node hesap/test/toplu-foto-test.cjs cikti 60
+      - name: Sonuçları ön sürüme koy
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 20
+          gh release view hesap-deneme > /dev/null 2>&1 || \
+            gh release create hesap-deneme --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Hesap makinesi denemesi (otomatik)" --notes "Hesap makinesi testlerinin ekran görüntüleri ve fotoğraf okuyucu raporu. Kurulacak bir sürüm değildir." || true
+          for i in 1 2 3; do gh release upload hesap-deneme cikti/toplu-foto-rapor-yks.txt --clobber && break; sleep 5; done
+          if [ -d cikti/okunamayan-yks ] && [ -n "$(ls cikti/okunamayan-yks)" ]; then (cd cikti/okunamayan-yks && zip -q ../okunamayan-yks.zip *) && gh release upload hesap-deneme cikti/okunamayan-yks.zip --clobber; fi

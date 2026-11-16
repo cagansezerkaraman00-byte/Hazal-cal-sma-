@@ -1,0 +1,6 @@
+node_modules/
+www/
+# imza anahtarları depoya asla girmez (GitHub sırlarında ve Çağan'ın yedeğinde durur)
+*.p12
+*.jks
+*.keystore

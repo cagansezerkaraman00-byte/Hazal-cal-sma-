@@ -1,0 +1,20 @@
+{
+  "name": "luna-apk",
+  "private": true,
+  "description": "Luna'nın Android uygulaması (Capacitor kabuğu). Luna'nın kendi dosyaları değişmez; www klasörü derlemede kopyalanır.",
+  "scripts": {
+    "web": "node scripts/web.cjs",
+    "sync": "node scripts/web.cjs && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.4",
+    "@capacitor/share": "8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}
