@@ -69,9 +69,18 @@ function sigdir(im) {
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) cikis[(y + py) * BOY + x + px] = kucuk[(y * w + x) * 4];
   return cikis;
 }
+let goruntu = null;
 async function oku(gorsel) {
+  if (!goruntu) { try { await import('./hesap-goruntu.js'); goruntu = self.HesapGoruntu || false; } catch (e) { goruntu = false; } }
   const img = await createImageBitmap(gorsel);
-  const piksel = sigdir(kirp(tersCevir(griTon(img))));
+  let gri = griTon(img);
+  // telefonla çekilmiş kâğıt (gri, gölgeli, arka sayfası geçen): önce temizlenir, yalnızca işlem kalır (hesap-goruntu.js)
+  // ekran görüntüsünde de: çerçevede formülden başka şey (ayırıcı çizgi, yazı) varsa atılır; yalnızca formül varsa dokunulmaz
+  if (goruntu) {
+    const foto = goruntu.fotografMi(gri), t = goruntu.temizle(gri);
+    if (t && (foto || t.pay < 0.97 || t.kagit < 215)) gri = { w: t.w, h: t.h, d: t.d }; // gri kâğıt da temizlenir
+  }
+  const piksel = sigdir(kirp(tersCevir(gri)));
   const dizi = new Float32Array(BOY * BOY);
   for (let i = 0; i < piksel.length; i++) dizi[i] = (piksel[i] / 255 - ORTALAMA) / SAPMA;
   const t = new tf.Tensor('float32', dizi, [1, 1, BOY, BOY]);

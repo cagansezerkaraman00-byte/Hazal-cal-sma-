@@ -93,6 +93,10 @@
 .hm-onizleme.kesin.kucuk .hm-statik { font-size: 26px; }
 .hm-onizleme .hm-yaklasik { display: block; flex: none; font-family: var(--hm-piksel-yazi); font-size: 20px; line-height: 1; color: rgba(255, 255, 255, .8); text-shadow: none; margin-bottom: 6px; }
 .hm-onizleme .hm-statik { flex: none; }
+/* "=" sonrası: sonuç üst satırda, altta küçükçe ne hesaplandığı (9 + 1 =) */
+.hm-onizleme.kesin.onceki { align-items: center; text-shadow: none; }
+.hm-onizleme.kesin.onceki .hm-statik.hm-onceki-ifade { font-size: 24px; color: rgba(255, 255, 255, .7); }
+.hm-okundu .hm-btn { margin-left: 6px; padding: 6px 10px; font-size: 13px; vertical-align: middle; }
 @keyframes hm-belir { from { opacity: .3; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 /* uyuyan kediler (Luna'nın piksel çizimleri) ekranın üst kenarında */
@@ -222,8 +226,9 @@
 .hm-kirp-katman { position: absolute; inset: 0; z-index: 20; background: rgba(12, 6, 30, .66); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: grid; place-items: center; padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)); }
 .hm-kirp-kart { width: min(560px, 100%); max-height: 100%; overflow: auto; background: linear-gradient(180deg, rgba(64, 42, 120, .96), rgba(36, 24, 74, .96)); border: 1.5px solid rgba(225, 205, 255, .45); border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 0 30px rgba(186, 140, 255, .4); color: var(--hm-yazi); }
 .hm-kirp-kart h3 { margin: 0; font-size: 18px; font-weight: 900; }
-.hm-kirp-alan { position: relative; touch-action: none; user-select: none; border-radius: 14px; overflow: hidden; background: #000; }
-.hm-kirp-alan img { display: block; width: 100%; max-height: 52vh; object-fit: contain; }
+/* kutu resmin kendisi kadar: çerçevenin yüzdeleri resmin yüzdeleridir (dikey fotoğrafta yanlarda boşluk kalmaz, kesit kaymaz) */
+.hm-kirp-alan { position: relative; align-self: center; width: fit-content; max-width: 100%; touch-action: none; user-select: none; border-radius: 14px; overflow: hidden; background: #000; }
+.hm-kirp-alan img { display: block; max-width: 100%; max-height: 52vh; width: auto; height: auto; }
 .hm-cerceve { position: absolute; border: 2.5px solid var(--hm-vurgu); box-shadow: 0 0 0 9999px rgba(10, 4, 26, .55), 0 0 14px rgba(255, 159, 214, .7); border-radius: 8px; cursor: move; }
 .hm-cerceve i { position: absolute; width: 26px; height: 26px; border-radius: 50%; background: var(--hm-vurgu); border: 3px solid #fff; }
 .hm-cerceve i[data-k="sol-ust"] { left: -13px; top: -13px; } .hm-cerceve i[data-k="sag-ust"] { right: -13px; top: -13px; }

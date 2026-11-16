@@ -48,6 +48,9 @@ jobs:
       - name: Gerçek fotoğraf okuyucu
         timeout-minutes: 15
         run: node hesap/test/okuyucu-test.cjs cikti
+      - name: Gerçek kullanım gibi fotoğraflar (el yazısı gri kâğıtta, yazıların arasında formül; kendiliğinden çerçeve)
+        timeout-minutes: 15
+        run: node hesap/test/gercek-foto-test.cjs cikti
       - name: Aynı 500 sorunun resimleri gerçek okuyucuyla (temiz baskı ve telefon fotoğrafı gibi)
         timeout-minutes: 40
         run: node hesap/test/toplu-foto-test.cjs cikti
@@ -63,6 +66,7 @@ jobs:
           ls cikti
           for i in 1 2 3; do gh release upload hesap-deneme $(find cikti -maxdepth 1 -type f) --clobber && break; sleep 5; done
           if [ -d cikti/okunamayan ] && [ -n "$(ls cikti/okunamayan)" ]; then (cd cikti/okunamayan && zip -q ../okunamayan.zip *) && gh release upload hesap-deneme cikti/okunamayan.zip --clobber; fi
+          if [ -d cikti/gercek-foto ] && [ -n "$(ls cikti/gercek-foto)" ]; then (cd cikti/gercek-foto && zip -q ../gercek-foto.zip *) && gh release upload hesap-deneme cikti/gercek-foto.zip --clobber; fi
 
   # YKS konularının resimleri ayrı işte, aynı anda okunur (her konu için 60 soru: 20 kolay, 20 orta, 20 zor; iki biçim)
   yks-foto:

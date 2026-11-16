@@ -63,8 +63,10 @@ let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if 
       await page.mouse.click(w - 20, h / 2); // boş bir yere tıkla: odak kutuda değil
       await page.evaluate(() => { window.hesap.mf.value = ''; });
       await page.keyboard.type('7*6'); await page.keyboard.press('Enter'); await page.waitForTimeout(300);
-      const yaz = await page.locator('.hm-onizleme').innerText();
-      ok(/42/.test(yaz), `${ad}: klavyeyle yazılıyor, Enter çözüyor (7*6 → ${yaz.trim()})`);
+      const yaz = await page.evaluate(() => window.hesap.mf.value);
+      ok(yaz === '42', `${ad}: klavyeyle yazılıyor, Enter çözüyor, sonuç üste çıkıyor (7*6 → ${yaz})`);
+      await page.keyboard.type('+8'); await page.keyboard.press('Enter'); await page.waitForTimeout(300);
+      ok(await page.evaluate(() => window.hesap.mf.value) === '50', `${ad}: klavyeyle sonuçtan devam: 42+8 = 50`);
       await page.keyboard.press('Escape'); await page.waitForTimeout(100);
       ok(await page.evaluate(() => window.hesap.mf.value === ''), `${ad}: Esc siliyor`);
     }

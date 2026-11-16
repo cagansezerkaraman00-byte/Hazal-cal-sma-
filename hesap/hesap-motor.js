@@ -42,6 +42,7 @@
   function normalle(s) {
     return String(s)
       .replace(/~/g, ' ') // bölünmez boşluk
+      .replace(/(?:\s|\\[,;:!]|\\quad)*(?:\\ldots|\\dots|\\cdots|[.;:]|\s,)\s*$/, '') // sondaki nokta: "2 + 4 ." (kalemin bıraktığı nokta)
       .replace(/\\infin(?![A-Za-z])/g, '\\infty ') // okuyucu ∞'yi \infin yazıyor
       // büyük parantezler: { \big ( } … { \big ) }, \Bigl[ … \Bigr] → ( … ), [ … ]
       .replace(/\{\s*\\(?:big|Big|bigg|Bigg)[lr]?\s*(\(|\)|\[|\]|\|)\s*\}/g, ' $1 ')

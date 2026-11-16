@@ -26,6 +26,19 @@ let hata = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '✗ ') + m); if 
   await tus('Çöz');
   ok(/=14/.test(await sonucYazi()), 'işlem sonucu 14: ' + (await sonucYazi()).slice(0, 80));
   await page.screenshot({ path: path.join(out, '1-islem.png') });
+  // "=" sonrası sonuç üst satıra çıkar ve işlem ondan sürer: 9 + 1 = 10, + 5 = 15; rakam yeni işleme başlar; √ sonucu içine alır
+  await tus('AC', '9', '+', '1', 'Çöz');
+  ok(await deger() === '10', '9 + 1 = → üst satırda 10: ' + await deger());
+  ok(/9\+1=/.test(await page.evaluate(() => [...document.querySelectorAll('.hm-onizleme math-field')].map((m) => m.value).join(''))), 'altta küçükçe "9+1="');
+  await page.screenshot({ path: path.join(out, '1b-sonuc-yukarida.png') });
+  await tus('+', '5'); ok(await deger() === '10+5', 'işlem sonuçtan sürüyor: ' + await deger());
+  ok(/15/.test(await page.locator('.hm-onizleme').innerText()), 'önizleme 15');
+  await tus('Çöz'); ok(await deger() === '15', '= ile 15 üste çıktı');
+  await tus('Çöz'); ok(await deger() === '15', '= bir daha: yine 15 ile başlıyor');
+  await tus('×', '2'); await tus('Çöz'); ok(await deger() === '30', '15 × 2 = 30');
+  await tus('7'); ok(await deger() === '7', 'rakam yeni işleme başlar: ' + await deger());
+  await tus('AC', '1', '6', 'Çöz', '√'); ok(/\\sqrt\{16\}/.test(await deger()), '√ sonucu içine alır: ' + await deger());
+  await tus('AC', '2', '−', '5', 'Çöz', 'x²'); ok(/\\left\(-3\\right\)\^\{?2/.test(await deger()), 'eksi sonucun karesi parantezli: ' + await deger());
   // 2) kesir: 1/3 + 1/6 = 1/2
   await temizle();
   await tus('kesir', '1', '▶', '3', '▶', '+', 'kesir', '1', '▶', '6');

@@ -186,5 +186,8 @@ ok(yakin(iD('9 _ { 2 } ^ { \\frac { 3 } { 2 } }'), 27), 'sayının alt simgesi y
 ok(tx(M.coz('2 \\sin ^ { 2 } x - 0. 5 = 0').denklem.ikiPi.map((v) => +v.toFixed(6))) === tx([Math.PI / 6, 5 * Math.PI / 6, 7 * Math.PI / 6, 11 * Math.PI / 6].map((v) => +v.toFixed(6))), '"0. 5" = 0,5 ondalık');
 ok(!!M.coz('\\int x^2 \\mathrm{d}x').integral && M.coz('\\operatorname{EBOB}\\left(12,18\\right)').islem.deger === 6, '\\mathrm{d}x ve \\operatorname{EBOB} adları bozulmuyor');
 
+ok(M.coz('2 + 4 .').islem.deger === 6 && M.coz('2+4.').islem.deger === 6, 'sondaki nokta yok sayılır: "2 + 4 ."');
+ok(M.coz('3.5+1').islem.deger === 4.5, 'ondalık nokta bozulmuyor');
+
 console.log(`\n${gecen} geçti, ${hata} hata`);
 process.exit(hata ? 1 : 0);

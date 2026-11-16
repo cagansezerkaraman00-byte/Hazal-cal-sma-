@@ -174,14 +174,30 @@
       const eylem = JSON.parse(b.dataset.e);
       if (navigator.vibrate) try { navigator.vibrate(6); } catch (err) { /* yok */ }
       if (eylem === 'coz') return coz();
-      if (eylem === 'temizle') { mf.value = ''; canliOnizleme(); odakla(); return; }
+      if (eylem === 'temizle') { durum.yukarida = null; mf.value = ''; canliOnizleme(); odakla(); return; }
       if (eylem === 'ans') { if (durum.ans) ekle(durum.ans); return; }
-      if (eylem.komut) { odakla(); mf.executeCommand(eylem.komut); onizlemeSonra(); return; }
+      if (eylem.komut) { durum.yukarida = null; odakla(); mf.executeCommand(eylem.komut); onizlemeSonra(); return; }
       if (eylem.ekle) ekle(eylem.ekle);
     }
     const odakla = () => { if (document.activeElement !== mf) mf.focus(); };
+    // "=" ile sonuç üst satıra çıkmışsa: işlem tuşu (+ − × ÷ ^ x² ! % 1/x) sonuçtan devam eder; sin, √, |x| sonucu içine alır;
+    // rakam, harf, sabit ya da açılan parantez yeni işleme başlar.
+    const DEVAM = /^(?:\+|-|\\times|\\div|\\cdot|\*|\/|\^|!|\\%|%|=|#@|\\frac\{1\}\{#@\})/;
+    function sonuctanDevam(latex) {
+      const r = durum.yukarida;
+      if (!r) return;
+      durum.yukarida = null;
+      if (mf.value !== r.tex) return; // kullanıcı üst satırı değiştirmiş
+      if (DEVAM.test(latex)) {
+        // bileşik sonuç (5 + i, −3) üstüne üs/çarpım gelirse parantez: (5 + i)·2, (−3)²
+        if (/[+-]/.test(r.tex.replace(/^-/, '')) || (/^-/.test(r.tex) && /^(?:\^|#@|!)/.test(latex))) mf.value = '\\left(' + r.tex + '\\right)';
+        mf.executeCommand('moveToMathfieldEnd');
+      } else if (/#0/.test(latex)) mf.executeCommand('selectAll'); // √, sin, |x|: sonuç içine girer
+      else mf.value = '';
+    }
     function ekle(latex) {
       odakla();
+      sonuctanDevam(latex);
       mf.executeCommand(['insert', latex, { selectionMode: 'placeholder', format: 'latex', mode: 'math' }]);
       onizlemeSonra();
     }
@@ -195,7 +211,9 @@
     mf.addEventListener('input', onizlemeSonra);
     mf.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); coz(); }
-      else if (e.key === 'Escape') { e.preventDefault(); mf.value = ''; canliOnizleme(); }
+      else if (e.key === 'Escape') { e.preventDefault(); durum.yukarida = null; mf.value = ''; canliOnizleme(); }
+      else if (durum.yukarida && e.key.length === 1 && !e.ctrlKey && !e.metaKey) sonuctanDevam(e.key); // klavyeyle de sonuçtan devam
+      else if (durum.yukarida && e.key === 'Backspace') durum.yukarida = null;
     });
     // Bilgisayarda kutuya tıklamadan da yazılır: sayfada basılan tuş kutuya gider (başka bir yazı alanı ya da fotoğraf penceresi açıkken değil)
     const belge = kap.ownerDocument || document;
@@ -205,9 +223,9 @@
       if (yol.includes(mf) || kap.querySelector('.hm-kirp-katman')) return;
       if (yol.some((n) => n && n.matches && n.matches('input, textarea, select, [contenteditable="true"], math-field'))) return;
       if (e.key === 'Enter') { e.preventDefault(); coz(); return; }
-      if (e.key === 'Escape') { mf.value = ''; canliOnizleme(); return; }
-      if (e.key === 'Backspace') { e.preventDefault(); odakla(); mf.executeCommand('deleteBackward'); onizlemeSonra(); return; }
-      if (e.key.length === 1 && e.key !== ' ') { e.preventDefault(); tuslarAcik(true); odakla(); mf.executeCommand(['typedText', e.key]); onizlemeSonra(); }
+      if (e.key === 'Escape') { durum.yukarida = null; mf.value = ''; canliOnizleme(); return; }
+      if (e.key === 'Backspace') { e.preventDefault(); durum.yukarida = null; odakla(); mf.executeCommand('deleteBackward'); onizlemeSonra(); return; }
+      if (e.key.length === 1 && e.key !== ' ') { e.preventDefault(); tuslarAcik(true); odakla(); sonuctanDevam(e.key); mf.executeCommand(['typedText', e.key]); onizlemeSonra(); }
     });
     if (typeof matchMedia === 'function' && matchMedia('(hover: hover) and (pointer: fine)').matches) setTimeout(() => { if (!belge.activeElement || belge.activeElement === belge.body) mf.focus(); }, 350);
 
@@ -216,6 +234,7 @@
       esitsizlik: '📏 çözüm kümesi', sistem: '🔗 ortak çözüm', toplamN: 'Σ kapalı biçim' };
     function canliOnizleme() {
       const l = mf.value;
+      if (durum.yukarida && l === durum.yukarida.tex) return; // sonuç az önce üste çıktı: alttaki "9 + 1 =" kalsın
       onizleme.className = 'hm-onizleme';
       if (!l.trim()) { onizleme.textContent = ''; return; }
       try {
@@ -262,6 +281,7 @@
 
     // ------------------------------------------------ çözüm ve gösterim
     function coz() {
+      durum.yukarida = null;
       const l = mf.value.trim();
       if (!l) { sonuc.innerHTML = `<p class="hm-not">Önce bir işlem yaz ya da 📷 ile fotoğrafını çek.</p>`; if (dar()) tuslarAcik(false); return; }
       let r;
@@ -308,8 +328,16 @@
       const s = r.islem;
       const anaTex = s.tam ? s.tam.tex : sayiTex(s.deger);
       durum.ans = anaTex;
-      ekranSonuc(anaTex, s.tam && isFinite(s.deger) ? sayi(s.deger) : '');
       gecmiseEkle(l, anaTex);
+      if (isFinite(s.deger) || s.karmasik) {
+        // hesap makinesi gibi: sonuç üst satıra çıkar, işlem oradan sürer; altta küçükçe ne hesaplandığı (9 + 1 =) kalır
+        durum.yukarida = { tex: anaTex, onceki: l };
+        mf.value = anaTex;
+        mf.executeCommand('moveToMathfieldEnd');
+        onizleme.className = 'hm-onizleme kesin onceki';
+        onizleme.innerHTML = `<math-field read-only class="hm-statik hm-onceki-ifade">${esc(l + '=')}</math-field>` + (s.tam && isFinite(s.deger) ? `<span class="hm-yaklasik">≈ ${esc(sayi(s.deger))}</span>` : '');
+        pikselYap(onizleme.querySelector('math-field'));
+      } else ekranSonuc(anaTex, '');
       sonuc.innerHTML = `
         <div class="hm-kart hm-islem">
           <div class="hm-baslik">${kutu(l)}</div>
@@ -606,14 +634,35 @@
     $('.hm-foto-btn').addEventListener('click', () => { dosya.value = ''; dosya.click(); });
     dosya.addEventListener('change', () => { if (dosya.files && dosya.files[0]) kirpmaAc(dosya.files[0]); });
 
-    function kirpmaAc(file) {
+    // fotoğraftaki işlemi bul (hesap-goruntu.js): çerçeve açılırken onun üstüne konur
+    function otomatikCerceve(img, odak) {
+      const G = kok.HesapGoruntu;
+      if (!G || !img.naturalWidth) return null;
+      try {
+        const olcek = Math.min(1, 900 / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.max(1, Math.round(img.naturalWidth * olcek)), h = Math.max(1, Math.round(img.naturalHeight * olcek));
+        const tv = document.createElement('canvas'); tv.width = w; tv.height = h;
+        const g = tv.getContext('2d', { willReadFrequently: true });
+        g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(img, 0, 0, w, h);
+        const v = g.getImageData(0, 0, w, h).data, gri = new Uint8ClampedArray(w * h);
+        for (let i = 0, j = 0; i < v.length; i += 4, j++) gri[j] = Math.round(0.2126 * v[i] + 0.7152 * v[i + 1] + 0.0722 * v[i + 2]);
+        const t = G.temizle({ w, h, d: gri }, odak ? { odak: { x: odak.x * w, y: odak.y * h } } : {});
+        if (!t) return null;
+        const k = t.kutu, py = (t.harf || 10) * 0.8, px = (t.harf || 10) * 1.2;
+        const x0 = Math.max(0, k.x0 - px), y0 = Math.max(0, k.y0 - py), x1 = Math.min(w, k.x1 + px), y1 = Math.min(h, k.y1 + py);
+        if ((x1 - x0) < w * 0.04 || (y1 - y0) < h * 0.02) return null;
+        return { x: x0 / w, y: y0 / h, w: (x1 - x0) / w, h: (y1 - y0) / h };
+      } catch (e) { return null; }
+    }
+    function kirpmaAc(file, oncekiCerceve) {
+      durum.sonFoto = file;
       const url = URL.createObjectURL(file);
       const katman = document.createElement('div');
       katman.className = 'hm-kirp-katman';
       katman.innerHTML = `
         <div class="hm-kirp-kart" role="dialog" aria-label="Fotoğrafta işlemi seç">
           <h3>İşlemi çerçevenin içine al</h3>
-          <p class="hm-mini">Çerçeveyi sürükle, köşesinden büyüt ya da küçült. Yalnızca tek bir işlem ya da fonksiyon kalsın.</p>
+          <p class="hm-mini">Çerçeve işlemi kendisi bulur. Yanlış yerdeyse fotoğrafta işlemin üstüne <b>dokun</b>, ya da çerçeveyi sürükle, köşesinden büyüt.</p>
           <div class="hm-kirp-alan"><img alt="Seçilen fotoğraf"><div class="hm-cerceve"><i data-k="sol-ust"></i><i data-k="sag-ust"></i><i data-k="sol-alt"></i><i data-k="sag-alt"></i></div></div>
           <div class="hm-kirp-durum" aria-live="polite"></div>
           <div class="hm-kirp-tuslar"><button type="button" class="hm-btn ince" data-k="vazgec">Vazgeç</button><button type="button" class="hm-btn" data-k="oku">Oku ve çöz</button></div>
@@ -623,11 +672,24 @@
       const kapat = () => { URL.revokeObjectURL(url); katman.remove(); };
       let c = { x: 0.06, y: 0.3, w: 0.88, h: 0.4 }; // görüntüye oranla
       const yerlestir = () => { Object.assign(cer.style, { left: c.x * 100 + '%', top: c.y * 100 + '%', width: c.w * 100 + '%', height: c.h * 100 + '%' }); };
-      img.onload = () => { if (img.naturalHeight < img.naturalWidth * 0.35) c = { x: 0.02, y: 0.04, w: 0.96, h: 0.92 }; yerlestir(); };
+      img.onload = () => {
+        if (oncekiCerceve) c = { ...oncekiCerceve };
+        else if (img.naturalHeight < img.naturalWidth * 0.35) c = { x: 0.02, y: 0.04, w: 0.96, h: 0.92 };
+        yerlestir();
+        // işlemi kendisi bulur: çerçeve onun üstüne geçer (bulamazsa ortada kalır)
+        if (!oncekiCerceve) setTimeout(() => { const o = otomatikCerceve(img); if (o && !tut) { c = o; yerlestir(); } }, 30);
+      };
       img.src = url;
       let tut = null;
       alan.addEventListener('pointerdown', (e) => {
         const r = alan.getBoundingClientRect(), kose = e.target.dataset && e.target.dataset.k;
+        // çerçevenin dışına dokunuş: oradaki işlemi bul, çerçeve onu sarsın
+        if (!cer.contains(e.target)) {
+          const o = otomatikCerceve(img, { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height });
+          if (o) { c = o; yerlestir(); }
+          e.preventDefault();
+          return;
+        }
         tut = { kose, x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height, c: { ...c } };
         alan.setPointerCapture(e.pointerId); e.preventDefault();
       });
@@ -654,12 +716,17 @@
         try {
           const parca = await kirpilmis(img, c);
           const latex = await okut(parca, (m) => { durumYer.innerHTML = m; });
+          durum.sonCerceve = { ...c }; durum.sonOkunan = latex;
           kapat();
           mf.value = latex;
           canliOnizleme();
           coz();
-          const not = document.createElement('p'); not.className = 'hm-not hm-okundu';
-          not.innerHTML = '📷 Fotoğraftan okundu. Yanlış okuduysam yukarıda düzelt ve <b>=</b> tuşuna bas.';
+          const hata = !!sonuc.querySelector('.hm-hata');
+          const not = document.createElement('div'); not.className = 'hm-not hm-okundu';
+          not.innerHTML = (hata ? '📷 Fotoğraftan okuduğum işlem eksik ya da yanlış görünüyor. Çerçeve işlemin tamamını almamış olabilir.'
+            : '📷 Fotoğraftan okundu. Yanlış okuduysam yukarıda düzelt ve <b>=</b> tuşuna bas.') +
+            ' <button type="button" class="hm-btn ince" data-ac="cerceve">✂️ Çerçeveyi düzelt</button>';
+          not.querySelector('[data-ac="cerceve"]').addEventListener('click', () => { if (durum.sonFoto) kirpmaAc(durum.sonFoto, durum.sonCerceve); });
           sonuc.prepend(not);
         } catch (err) {
           tusOku.disabled = false;
@@ -713,7 +780,7 @@
       return latex;
     }
 
-    return { mf, coz, ekle, durum, kirpmaAc, fotoOku: (gorsel) => okut(gorsel, () => {}) };
+    return { mf, coz, ekle, durum, kirpmaAc, otomatikCerceve, fotoOku: (gorsel) => okut(gorsel, () => {}) };
   }
   kok.HesapUI = { baslat };
 })(typeof window !== 'undefined' ? window : globalThis);
